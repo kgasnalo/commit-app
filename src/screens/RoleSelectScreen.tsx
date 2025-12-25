@@ -6,7 +6,11 @@ import { MaterialIcons, Feather } from '@expo/vector-icons';
 
 const ROLES: Role[] = ['Founder', 'HR', 'Manager', 'Specialist'];
 
-export default function RoleSelectScreen() {
+interface Props {
+  navigation: any;
+}
+
+export default function RoleSelectScreen({ navigation }: Props) {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   const handleRoleSelect = (role: Role) => {
@@ -17,6 +21,10 @@ export default function RoleSelectScreen() {
     if (url) {
       Linking.openURL(url);
     }
+  };
+
+  const handleBookSelect = (book: Book) => {
+    navigation.navigate('CreateCommitment', { preselectedBook: book });
   };
 
   const renderRoleItem = ({ item }: { item: Role }) => (
@@ -51,7 +59,10 @@ export default function RoleSelectScreen() {
           <Feather name="external-link" color="#666" size={14} style={{ marginLeft: 4 }} />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.selectBookButton}>
+      <TouchableOpacity
+        style={styles.selectBookButton}
+        onPress={() => handleBookSelect(item)}
+      >
         <Text style={styles.selectBookButtonText}>選択</Text>
       </TouchableOpacity>
     </View>
