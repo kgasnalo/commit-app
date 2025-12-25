@@ -8,6 +8,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import AuthScreen from '../screens/AuthScreen';
 import RoleSelectScreen from '../screens/RoleSelectScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
+import CreateCommitmentScreen from '../screens/CreateCommitmentScreen';
 
 const Stack = createStackNavigator();
 
@@ -69,7 +70,10 @@ export default function AppNavigator() {
               {(props) => <SubscriptionScreen {...props} onComplete={() => setIsSubscribed(true)} />}
             </Stack.Screen>
           ) : (
-            <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
+            <>
+              <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
+              <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
+            </>
           )}
         </Stack.Navigator>
       </NavigationContainer>
