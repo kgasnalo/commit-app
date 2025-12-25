@@ -1,0 +1,108 @@
+import { Role, Book } from '../types';
+
+export const RECOMMENDED_BOOKS: Record<Role, Book[]> = {
+  Founder: [
+    {
+      id: '1',
+      google_books_id: 'v_v_DwAAQBAJ',
+      title: 'HARD THINGS',
+      author: 'ベン・ホロウィッツ',
+      cover_url: 'https://books.google.com/books/content?id=v_v_DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '2',
+      google_books_id: '7L80DwAAQBAJ',
+      title: 'ゼロ・トゥ・ワン',
+      author: 'ピーター・ティール',
+      cover_url: 'https://books.google.com/books/content?id=7L80DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '3',
+      google_books_id: 'yvY0DwAAQBAJ',
+      title: '原則',
+      author: 'レイ・ダリオ',
+      cover_url: 'https://books.google.com/books/content?id=yvY0DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+  ],
+  HR: [
+    {
+      id: '4',
+      google_books_id: '9_v_DwAAQBAJ',
+      title: 'ワーク・ルールズ！',
+      author: 'ラズロ・ボック',
+      cover_url: 'https://books.google.com/books/content?id=9_v_DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '5',
+      google_books_id: '8L80DwAAQBAJ',
+      title: 'NETFLIXの最強人事戦略',
+      author: 'パティ・マッコード',
+      cover_url: 'https://books.google.com/books/content?id=8L80DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '6',
+      google_books_id: 'zvY0DwAAQBAJ',
+      title: 'マインドセット',
+      author: 'キャロル・S・ドゥエック',
+      cover_url: 'https://books.google.com/books/content?id=zvY0DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+  ],
+  Manager: [
+    {
+      id: '7',
+      google_books_id: '7_v_DwAAQBAJ',
+      title: 'HIGH OUTPUT MANAGEMENT',
+      author: 'アンドリュー・S・グローブ',
+      cover_url: 'https://books.google.com/books/content?id=7_v_DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '8',
+      google_books_id: '9L80DwAAQBAJ',
+      title: 'マネジメント',
+      author: 'P.F.ドラッカー',
+      cover_url: 'https://books.google.com/books/content?id=9L80DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '9',
+      google_books_id: '0vY0DwAAQBAJ',
+      title: 'リーダーの仮面',
+      author: '安藤広大',
+      cover_url: 'https://books.google.com/books/content?id=0vY0DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+  ],
+  Specialist: [
+    {
+      id: '10',
+      google_books_id: '6_v_DwAAQBAJ',
+      title: '達人プログラマー',
+      author: 'Andrew Hunt',
+      cover_url: 'https://books.google.com/books/content?id=6_v_DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '11',
+      google_books_id: '0L80DwAAQBAJ',
+      title: 'Clean Code',
+      author: 'Robert C. Martin',
+      cover_url: 'https://books.google.com/books/content?id=0L80DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+    {
+      id: '12',
+      google_books_id: '1vY0DwAAQBAJ',
+      title: 'リファクタリング',
+      author: 'Martin Fowler',
+      cover_url: 'https://books.google.com/books/content?id=1vY0DwAAQBAJ&printsec=frontcover&img=1&zoom=1',
+      amazon_link: 'https://amzn.to/3PjXyXz',
+    },
+  ],
+};
