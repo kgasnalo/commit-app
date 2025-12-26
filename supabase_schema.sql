@@ -49,13 +49,20 @@ ALTER TABLE public.verification_logs ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 CREATE POLICY "Users can view their own data" ON public.users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own data" ON public.users FOR UPDATE USING (auth.uid() = id);
+
+-- Books table policies
 CREATE POLICY "Anyone can view books" ON public.books FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can insert books" ON public.books FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Commitments table policies
 CREATE POLICY "Users can view their own commitments" ON public.commitments FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can create their own commitments" ON public.commitments FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Verification logs table policies
 CREATE POLICY "Users can view their own verification logs" ON public.verification_logs FOR SELECT USING (
     EXISTS (
-        SELECT 1 FROM public.commitments 
-        WHERE commitments.id = verification_logs.commitment_id 
+        SELECT 1 FROM public.commitments
+        WHERE commitments.id = verification_logs.commitment_id
         AND commitments.user_id = auth.uid()
     )
 );

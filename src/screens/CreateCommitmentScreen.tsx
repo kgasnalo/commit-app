@@ -14,7 +14,7 @@ import {
   Platform
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Book } from '../types';
 
@@ -63,6 +63,17 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       }
     };
   }
+
+  const BookThumbnail = ({ uri, large }: { uri?: string; large?: boolean }) => {
+    if (!uri) {
+      return (
+        <View style={large ? styles.placeholderLarge : styles.placeholder}>
+          <Ionicons name="book-outline" size={large ? 48 : 32} color="#ccc" />
+        </View>
+      );
+    }
+    return <Image source={{ uri }} style={large ? styles.selectedBookCover : styles.bookCover} />;
+  };
 
   const searchBooks = async () => {
     if (!searchQuery.trim()) {
@@ -188,10 +199,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       style={styles.bookItem}
       onPress={() => handleBookSelect(item)}
     >
-      <Image
-        source={{ uri: item.volumeInfo.imageLinks?.thumbnail || item.volumeInfo.imageLinks?.smallThumbnail }}
-        style={styles.bookCover}
-      />
+      <BookThumbnail uri={item.volumeInfo.imageLinks?.thumbnail || item.volumeInfo.imageLinks?.smallThumbnail} />
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle} numberOfLines={2}>{item.volumeInfo.title}</Text>
         <Text style={styles.bookAuthor}>{item.volumeInfo.authors?.join(', ') || '著者不明'}</Text>
@@ -217,9 +225,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
           {selectedBook ? (
             <View style={styles.selectedBookCard}>
-              <Image
-                source={{ uri: selectedBook.volumeInfo.imageLinks?.thumbnail || selectedBook.volumeInfo.imageLinks?.smallThumbnail }}
-                style={styles.selectedBookCover}
+              <BookThumbnail
+                uri={selectedBook.volumeInfo.imageLinks?.thumbnail || selectedBook.volumeInfo.imageLinks?.smallThumbnail}
+                large
               />
               <View style={styles.selectedBookInfo}>
                 <Text style={styles.selectedBookTitle}>{selectedBook.volumeInfo.title}</Text>
@@ -410,6 +418,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#f0f0f0',
   },
+  placeholder: {
+    width: 40,
+    height: 60,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   bookInfo: {
     flex: 1,
     marginLeft: 12,
@@ -438,6 +454,14 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 4,
     backgroundColor: '#f0f0f0',
+  },
+  placeholderLarge: {
+    width: 60,
+    height: 90,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectedBookInfo: {
     flex: 1,
