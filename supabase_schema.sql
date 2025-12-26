@@ -49,6 +49,7 @@ ALTER TABLE public.verification_logs ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 CREATE POLICY "Users can view their own data" ON public.users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own data" ON public.users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own data" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Books table policies
 CREATE POLICY "Anyone can view books" ON public.books FOR SELECT USING (true);
