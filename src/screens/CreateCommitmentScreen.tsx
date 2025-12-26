@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
-  FlatList,
   Image,
   ScrollView,
   Platform
@@ -266,13 +265,13 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               </View>
 
               {searchResults.length > 0 && (
-                <FlatList
-                  data={searchResults}
-                  renderItem={renderBookItem}
-                  keyExtractor={(item) => item.id}
-                  style={styles.searchResults}
-                  scrollEnabled={false}
-                />
+                <View style={styles.searchResults}>
+                  {searchResults.map((item) => (
+                    <View key={item.id}>
+                      {renderBookItem({ item })}
+                    </View>
+                  ))}
+                </View>
               )}
             </>
           )}
@@ -409,7 +408,6 @@ const styles = StyleSheet.create({
   },
   searchResults: {
     marginTop: 12,
-    maxHeight: 300,
   },
   bookItem: {
     flexDirection: 'row',

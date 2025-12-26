@@ -22,10 +22,15 @@ export default function AppNavigator() {
     checkUserStatus();
 
     // 認証状態の変化を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('Auth state change:', _event, session?.user?.id);
       setSession(session);
       if (session) {
-        checkSubscription(session.user.id);
+        // 新規ユーザーの場合、usersテーブルレコード作成を待つため少し遅延
+        if (_event === 'SIGNED_IN' || _event === 'USER_UPDATED') {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        await checkSubscription(session.user.id);
       } else {
         setIsSubscribed(false);
       }
@@ -43,8 +48,11 @@ export default function AppNavigator() {
     setLoading(false);
   }
 
-  async function checkSubscription(userId: string) {
+  async function checkSubscription(userId: string, retryCount = 0) {
+    const maxRetries = 3;
     try {
+      console.log(`Checking subscription for user ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
       const { data, error } = await supabase
         .from('users')
         .select('subscription_status')
@@ -53,6 +61,14 @@ export default function AppNavigator() {
 
       if (error) {
         console.error('Subscription check error:', error);
+
+        // usersテーブルにレコードが見つからない場合、リトライ
+        if (error.code === 'PGRST116' && retryCount < maxRetries) {
+          console.log(`User record not found, retrying in ${(retryCount + 1) * 500}ms...`);
+          await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 500));
+          return checkSubscription(userId, retryCount + 1);
+        }
+
         setIsSubscribed(false);
         return;
       }
@@ -61,7 +77,7 @@ export default function AppNavigator() {
         console.log('User subscription is active');
         setIsSubscribed(true);
       } else {
-        console.log('User subscription is inactive or not found');
+        console.log('User subscription is inactive or not found:', data?.subscription_status);
         setIsSubscribed(false);
       }
     } catch (err) {
