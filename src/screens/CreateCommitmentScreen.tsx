@@ -11,12 +11,23 @@ import {
   FlatList,
   Image,
   ScrollView,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Book } from '../types';
+
+// 通貨リスト
+const CURRENCIES = [
+  { code: 'JPY', symbol: '¥', name: '日本円' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CNY', symbol: '¥', name: '人民币' },
+  { code: 'KRW', symbol: '₩', name: '한국 원' },
+];
 
 interface GoogleBook {
   id: string;
@@ -50,6 +61,11 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   const [agreedToPenalty, setAgreedToPenalty] = useState(false);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  // 新規追加: ペナルティ金額と通貨選択
+  const [pledgeAmount, setPledgeAmount] = useState<string>('1000');
+  const [currency, setCurrency] = useState<string>('JPY');
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
   function convertToGoogleBook(book: Book): GoogleBook {
     return {
@@ -111,6 +127,39 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const selectedDay = new Date(selectedDate);
+      selectedDay.setHours(0, 0, 0, 0);
+
+      const maxDate = new Date();
+      maxDate.setMonth(maxDate.getMonth() + 1);
+      maxDate.setHours(23, 59, 59, 999);
+
+      // 1ヶ月以上先のチェック
+      if (selectedDay > maxDate) {
+        Alert.alert(
+          '期限エラー',
+          '期限は最大1ヶ月先までです。',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // 明日以降のチェック
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      if (selectedDay < tomorrow) {
+        Alert.alert(
+          '期限エラー',
+          '期限は明日以降を選択してください。',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       setDeadline(selectedDate);
     }
   };
@@ -164,6 +213,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       }
 
       // 3. コミットメント作成
+      const amount = parseFloat(pledgeAmount) || 0;
       const { error: commitmentError } = await supabase
         .from('commitments')
         .insert({
@@ -171,14 +221,16 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           book_id: bookId,
           deadline: deadline.toISOString(),
           status: 'pending',
-          pledge_amount: 1000
+          pledge_amount: amount,
+          currency: currency
         });
 
       if (commitmentError) throw commitmentError;
 
+      const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol || currency;
       Alert.alert(
         '成功',
-        `コミットメントを作成しました。\n期限: ${deadline.toLocaleDateString('ja-JP')}\nペナルティ: ¥1,000`,
+        `コミットメントを作成しました。\n期限: ${deadline.toLocaleDateString('ja-JP')}\nペナルティ: ${currencySymbol}${amount.toLocaleString()}`,
         [
           {
             text: 'OK',
@@ -301,20 +353,38 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               mode="date"
               display="default"
               onChange={handleDateChange}
-              minimumDate={new Date()}
+              minimumDate={new Date(Date.now() + 24 * 60 * 60 * 1000)} // 明日以降
+              maximumDate={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)} // 1ヶ月後
             />
           )}
         </View>
 
-        {/* ペナルティ同意セクション */}
+        {/* ペナルティ設定セクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. ペナルティに同意</Text>
-          <View style={styles.penaltyCard}>
-            <Text style={styles.penaltyAmount}>¥1,000</Text>
-            <Text style={styles.penaltyDescription}>
-              期限までに読了証明を提出できなかった場合、上記金額が自動的に課金されます。
-            </Text>
+          <Text style={styles.sectionTitle}>3. ペナルティ金額を設定</Text>
+
+          <View style={styles.amountRow}>
+            <TouchableOpacity
+              style={styles.currencySelector}
+              onPress={() => setShowCurrencyPicker(true)}
+            >
+              <Text style={styles.currencyText}>
+                {CURRENCIES.find(c => c.code === currency)?.symbol} {currency}
+              </Text>
+              <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.amountInput}
+              value={pledgeAmount}
+              onChangeText={setPledgeAmount}
+              keyboardType="numeric"
+              placeholder="1000"
+            />
           </View>
+
+          <Text style={styles.penaltyNote}>
+            期限までに読了証明を提出できなかった場合、上記金額が課金されます。
+          </Text>
 
           <TouchableOpacity
             style={styles.checkbox}
@@ -345,6 +415,39 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* 通貨選択モーダル */}
+      <Modal visible={showCurrencyPicker} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCurrencyPicker(false)}
+        >
+          <View style={styles.currencyModal} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>通貨を選択</Text>
+            {CURRENCIES.map((c) => (
+              <TouchableOpacity
+                key={c.code}
+                style={[
+                  styles.currencyOption,
+                  currency === c.code && styles.currencyOptionSelected
+                ]}
+                onPress={() => {
+                  setCurrency(c.code);
+                  setShowCurrencyPicker(false);
+                }}
+              >
+                <Text style={styles.currencyOptionText}>
+                  {c.symbol} {c.code} - {c.name}
+                </Text>
+                {currency === c.code && (
+                  <MaterialIcons name="check" size={24} color="#000" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -558,5 +661,77 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 1,
+  },
+  // 新規追加: 通貨選択とペナルティ金額入力のスタイル
+  amountRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  currencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+    gap: 4,
+  },
+  currencyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  amountInput: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  penaltyNote: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  currencyModal: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  currencyOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  currencyOptionSelected: {
+    backgroundColor: '#f9f9f9',
+  },
+  currencyOptionText: {
+    fontSize: 16,
+    color: '#000',
   },
 });
