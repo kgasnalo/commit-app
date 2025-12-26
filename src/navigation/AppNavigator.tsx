@@ -9,6 +9,8 @@ import AuthScreen from '../screens/AuthScreen';
 import RoleSelectScreen from '../screens/RoleSelectScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
 import CreateCommitmentScreen from '../screens/CreateCommitmentScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import VerificationScreen from '../screens/VerificationScreen';
 
 const Stack = createStackNavigator();
 
@@ -84,8 +86,10 @@ export default function AppNavigator() {
             </Stack.Screen>
           ) : (
             <>
+              <Stack.Screen name="Dashboard" component={DashboardScreen} />
               <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
               <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
+              <Stack.Screen name="Verification" component={VerificationScreen} />
             </>
           )}
         </Stack.Navigator>
