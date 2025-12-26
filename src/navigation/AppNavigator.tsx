@@ -44,15 +44,28 @@ export default function AppNavigator() {
   }
 
   async function checkSubscription(userId: string) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('subscription_status')
-      .eq('id', userId)
-      .single();
-    
-    if (data && data.subscription_status === 'active') {
-      setIsSubscribed(true);
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('subscription_status')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Subscription check error:', error);
+        setIsSubscribed(false);
+        return;
+      }
+
+      if (data && data.subscription_status === 'active') {
+        console.log('User subscription is active');
+        setIsSubscribed(true);
+      } else {
+        console.log('User subscription is inactive or not found');
+        setIsSubscribed(false);
+      }
+    } catch (err) {
+      console.error('Unexpected error checking subscription:', err);
       setIsSubscribed(false);
     }
   }

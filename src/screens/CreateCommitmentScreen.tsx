@@ -218,7 +218,12 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
         {/* 書籍選択セクション */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. 読む書籍を選択</Text>
@@ -363,9 +368,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   section: {
     marginTop: 24,

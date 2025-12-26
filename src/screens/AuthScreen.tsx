@@ -17,18 +17,55 @@ export default function AuthScreen() {
 
     setLoading(true);
     if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
-      if (error) Alert.alert('サインアップエラー', error.message);
-      else Alert.alert('成功', '確認メールを送信しました。');
+
+      if (error) {
+        Alert.alert('サインアップエラー', error.message);
+      } else if (data.user) {
+        // usersテーブルにレコードを作成
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: data.user.email,
+            subscription_status: 'inactive'
+          });
+
+        if (insertError) {
+          console.error('Failed to create user record:', insertError);
+        }
+        Alert.alert('成功', '確認メールを送信しました。');
+      }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) Alert.alert('ログインエラー', error.message);
+
+      if (error) {
+        Alert.alert('ログインエラー', error.message);
+      } else if (data.user) {
+        // ログイン時にusersテーブルのレコードが存在するか確認
+        const { data: userData, error: checkError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', data.user.id)
+          .single();
+
+        // レコードが存在しない場合は作成（既存ユーザー対応）
+        if (!userData && !checkError) {
+          await supabase
+            .from('users')
+            .insert({
+              id: data.user.id,
+              email: data.user.email,
+              subscription_status: 'inactive'
+            });
+        }
+      }
     }
     setLoading(false);
   }
