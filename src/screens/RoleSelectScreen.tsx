@@ -68,6 +68,13 @@ export default function RoleSelectScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.topHeader}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <MaterialIcons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.topHeaderTitle}>本を追加</Text>
+        <View style={{ width: 24 }} />
+      </View>
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <Text style={styles.title}>COMMIT</Text>
@@ -156,6 +163,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  topHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,

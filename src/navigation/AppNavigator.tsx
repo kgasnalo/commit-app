@@ -11,6 +11,8 @@ import SubscriptionScreen from '../screens/SubscriptionScreen';
 import CreateCommitmentScreen from '../screens/CreateCommitmentScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import VerificationScreen from '../screens/VerificationScreen';
+import CommitmentDetailScreen from '../screens/CommitmentDetailScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -89,7 +91,9 @@ export default function AppNavigator() {
               <Stack.Screen name="Dashboard" component={DashboardScreen} />
               <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
               <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
+              <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
               <Stack.Screen name="Verification" component={VerificationScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
             </>
           )}
         </Stack.Navigator>

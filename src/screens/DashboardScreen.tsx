@@ -98,8 +98,7 @@ export default function DashboardScreen({ navigation }: any) {
         key={commitment.id}
         style={[styles.card, isUrgent && styles.urgentCard]}
         onPress={() => {
-          // 詳細画面へのナビゲーション（後で実装）
-          console.log('Navigate to commitment detail:', commitment.id);
+          navigation.navigate('CommitmentDetail', { id: commitment.id });
         }}
       >
         <View style={styles.cardHeader}>
@@ -145,10 +144,7 @@ export default function DashboardScreen({ navigation }: any) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>COMMIT</Text>
-        <TouchableOpacity onPress={() => {
-          // 設定画面へのナビゲーション（後で実装）
-          console.log('Navigate to settings');
-        }}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="settings-outline" size={24} color="#000" />
         </TouchableOpacity>
       </View>
