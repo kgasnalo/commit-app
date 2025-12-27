@@ -233,7 +233,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('RoleSelect')
+            onPress: () => navigation.navigate('Dashboard')
           }
         ]
       );
