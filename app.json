@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kgasnalo.commitapp"
+      "bundleIdentifier": "com.kgxxx.commitapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,14 +23,14 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.kgasnalo.commitapp"
+      "package": "com.kgxxx.commitapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id-will-be-added-by-eas"
+        "projectId": "bddbc0ec-bba0-47ef-974d-9c6974ea2c8b"
       }
     }
   }
