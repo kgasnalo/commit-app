@@ -14,6 +14,22 @@ import VerificationScreen from '../screens/VerificationScreen';
 import CommitmentDetailScreen from '../screens/CommitmentDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
+// Onboarding screens
+import OnboardingScreen0 from '../screens/onboarding/OnboardingScreen0_Welcome';
+import OnboardingScreen1 from '../screens/onboarding/OnboardingScreen1_TsundokuCount';
+import OnboardingScreen2 from '../screens/onboarding/OnboardingScreen2_LastRead';
+import OnboardingScreen3 from '../screens/onboarding/OnboardingScreen3_BookSelect';
+import OnboardingScreen4 from '../screens/onboarding/OnboardingScreen4_Deadline';
+import OnboardingScreen5 from '../screens/onboarding/OnboardingScreen5_Penalty';
+import OnboardingScreen6 from '../screens/onboarding/OnboardingScreen6_Account';
+import OnboardingScreen7 from '../screens/onboarding/OnboardingScreen7_OpportunityCost';
+import OnboardingScreen8 from '../screens/onboarding/OnboardingScreen8_Stats';
+import OnboardingScreen9 from '../screens/onboarding/OnboardingScreen9_HowItWorks';
+import OnboardingScreen10 from '../screens/onboarding/OnboardingScreen10_Authority';
+import OnboardingScreen11 from '../screens/onboarding/OnboardingScreen11_Testimonials';
+import OnboardingScreen12 from '../screens/onboarding/OnboardingScreen12_CustomPlan';
+import OnboardingScreen13 from '../screens/onboarding/OnboardingScreen13_Paywall';
+
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
@@ -97,11 +113,35 @@ export default function AppNavigator() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!session ? (
-            <Stack.Screen name="Auth" component={AuthScreen} />
+            <>
+              {/* Onboarding flow screens (14 screens total) */}
+              <Stack.Screen name="Onboarding0" component={OnboardingScreen0} />
+              <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
+              <Stack.Screen name="Onboarding2" component={OnboardingScreen2} />
+              <Stack.Screen name="Onboarding3" component={OnboardingScreen3} />
+              <Stack.Screen name="Onboarding4" component={OnboardingScreen4} />
+              <Stack.Screen name="Onboarding5" component={OnboardingScreen5} />
+              <Stack.Screen name="Onboarding6" component={OnboardingScreen6} />
+              <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
+              <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
+              <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
+              <Stack.Screen name="Onboarding10" component={OnboardingScreen10} />
+              <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
+              <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
+              <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
+
+              {/* Legacy auth screen (for existing users or testing) */}
+              <Stack.Screen name="Auth" component={AuthScreen} />
+            </>
           ) : !isSubscribed ? (
-            <Stack.Screen name="Subscription">
-              {(props) => <SubscriptionScreen {...props} onComplete={() => setIsSubscribed(true)} />}
-            </Stack.Screen>
+            <>
+              {/* For existing users who haven't subscribed yet */}
+              <Stack.Screen name="Subscription">
+                {(props) => <SubscriptionScreen {...props} onComplete={() => setIsSubscribed(true)} />}
+              </Stack.Screen>
+              {/* Also allow access to Onboarding13 for existing users */}
+              <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
+            </>
           ) : (
             <>
               <Stack.Screen name="Dashboard" component={DashboardScreen} />
