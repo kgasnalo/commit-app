@@ -42,7 +42,7 @@ export default function AppNavigator() {
     checkUserStatus();
 
     // 認証状態の変化を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log('Auth state change:', _event, session?.user?.id);
       setSession(session);
       if (session) {
@@ -56,7 +56,43 @@ export default function AppNavigator() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // usersテーブルのsubscription_statusの変更を監視
+    let realtimeSubscription: any = null;
+
+    async function setupRealtimeSubscription() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        realtimeSubscription = supabase
+          .channel('subscription-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'users',
+              filter: `id=eq.${session.user.id}`,
+            },
+            (payload) => {
+              console.log('Subscription status changed:', payload);
+              if (payload.new.subscription_status === 'active') {
+                setIsSubscribed(true);
+              } else {
+                setIsSubscribed(false);
+              }
+            }
+          )
+          .subscribe();
+      }
+    }
+
+    setupRealtimeSubscription();
+
+    return () => {
+      authSubscription.unsubscribe();
+      if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe();
+      }
+    };
   }, []);
 
   async function checkUserStatus() {

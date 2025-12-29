@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Aler
 import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 
-export default function AuthScreen() {
+export default function AuthScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,6 +72,13 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* 戻るボタン */}
+      <View style={styles.backButtonContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>COMMIT</Text>
@@ -130,6 +137,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  backButtonContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  backButton: {
+    padding: 8,
+    alignSelf: 'flex-start',
   },
   content: {
     flex: 1,
