@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../theme';
 import ProgressBar from './ProgressBar';
 
@@ -11,6 +13,7 @@ type Props = {
   subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  showBackButton?: boolean;
 };
 
 export default function OnboardingLayout({
@@ -20,10 +23,29 @@ export default function OnboardingLayout({
   subtitle,
   children,
   footer,
+  showBackButton = true,
 }: Props) {
+  const navigation = useNavigation();
+
   return (
     <SafeAreaView style={styles.container}>
-      <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
+      {/* 戻るボタン + プログレスバー */}
+      <View style={styles.topBar}>
+        {showBackButton ? (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.backButtonPlaceholder} />
+        )}
+        <View style={styles.progressContainer}>
+          <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
+        </View>
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
@@ -43,6 +65,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  backButton: {
+    padding: spacing.sm,
+    marginRight: spacing.xs,
+  },
+  backButtonPlaceholder: {
+    width: 40,
+    marginRight: spacing.xs,
+  },
+  progressContainer: {
+    flex: 1,
   },
   content: {
     flex: 1,

@@ -19,14 +19,21 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       // Stripe決済処理（後で実装）
       // 仮実装：subscription_statusを更新
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('users')
-          .update({ subscription_status: 'active' })
-          .eq('id', user.id);
+      if (!user) {
+        throw new Error('ユーザーが見つかりません');
+      }
 
-        // コミットメント作成
-        await supabase.from('commitments').insert({
+      // subscription_statusを更新
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ subscription_status: 'active' })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // コミットメント作成
+      if (selectedBook) {
+        const { error: commitmentError } = await supabase.from('commitments').insert({
           user_id: user.id,
           book_id: selectedBook?.id,
           deadline: deadline,
@@ -34,15 +41,16 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           currency: 'JPY',
           status: 'pending',
         });
+
+        if (commitmentError) throw commitmentError;
       }
 
-      // Dashboardへ遷移
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Dashboard' }],
-      });
+      // 認証状態の変更でAppNavigatorが自動的にDashboardに遷移する
+      // navigation.resetではなく、シンプルに何もしない
+      // AppNavigatorのuseEffectがsubscription_statusの変更を検知して遷移する
     } catch (error: any) {
-      Alert.alert('エラー', error.message);
+      console.error('Subscription error:', error);
+      Alert.alert('エラー', error.message || 'サブスクリプションの開始に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -67,7 +75,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             </View>
             <View style={styles.guarantee}>
               <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
-              <Text style={styles.guaranteeText}>ペナルティは全額、教育支援に寄付</Text>
+              <Text style={styles.guaranteeText}>覚悟金は全額、教育支援に寄付</Text>
             </View>
           </View>
         </View>

@@ -21,7 +21,6 @@ export default function ProgressBar({ currentStep, totalSteps }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
     paddingVertical: 12,
   },
   track: {
