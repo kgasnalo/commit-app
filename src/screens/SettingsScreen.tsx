@@ -21,7 +21,13 @@ export default function SettingsScreen({ navigation }: any) {
           text: 'ログアウト',
           style: 'destructive',
           onPress: async () => {
-            await supabase.auth.signOut();
+            try {
+              const { error } = await supabase.auth.signOut();
+              if (error) throw error;
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('エラー', 'ログアウトに失敗しました。もう一度お試しください。');
+            }
           },
         },
       ]

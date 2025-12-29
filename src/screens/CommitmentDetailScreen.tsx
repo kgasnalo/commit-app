@@ -37,24 +37,36 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   }, []);
 
   const fetchCommitment = async () => {
-    const { data, error } = await supabase
-      .from('commitments')
-      .select(`
-        id,
-        deadline,
-        status,
-        pledge_amount,
-        currency,
-        created_at,
-        book:books(id, title, author, cover_url)
-      `)
-      .eq('id', id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('commitments')
+        .select(`
+          id,
+          deadline,
+          status,
+          pledge_amount,
+          currency,
+          created_at,
+          book:books(id, title, author, cover_url)
+        `)
+        .eq('id', id)
+        .single();
 
-    if (data) {
-      setCommitment(data as any);
+      if (error) throw error;
+
+      if (data) {
+        setCommitment(data as any);
+      }
+    } catch (error) {
+      console.error('Error fetching commitment:', error);
+      Alert.alert(
+        'エラー',
+        'コミットメント情報の取得に失敗しました。',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getCountdown = (deadline: string) => {
@@ -89,7 +101,23 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   if (!commitment) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text>コミットメントが見つかりません</Text>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <MaterialIcons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>エラー</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#ccc" />
+          <Text style={styles.errorText}>コミットメントが見つかりません</Text>
+          <TouchableOpacity
+            style={styles.errorButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.errorButtonText}>戻る</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -361,5 +389,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#4caf50',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  errorButton: {
+    marginTop: 24,
+    backgroundColor: '#000',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  errorButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
