@@ -8,18 +8,18 @@ import { colors, typography, spacing, borderRadius } from '../../theme';
 const FEATURES = [
   {
     icon: 'time-outline',
-    title: '締め切り',
-    description: '期限を設定して、先延ばしを防ぐ',
+    title: '締切',
+    description: '期限が迫ると、人は動く。',
   },
   {
-    icon: 'cash-outline',
-    title: 'ペナルティ',
-    description: '金銭的な痛みで、本気度を担保',
+    icon: 'flame-outline',
+    title: '覚悟',
+    description: '失うものがあると、人は本気になる。',
   },
   {
     icon: 'heart-outline',
-    title: '寄付',
-    description: '失敗しても、誰かの学びに変わる',
+    title: '貢献',
+    description: '失敗しても、誰かの学びになる。',
   },
 ];
 
@@ -27,7 +27,7 @@ export default function OnboardingScreen9({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={9}
-      totalSteps={13}
+      totalSteps={14}
       title="意志力ではなく、仕組みで読む。"
       footer={
         <PrimaryButton

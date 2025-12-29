@@ -51,7 +51,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={13}
-      totalSteps={13}
+      totalSteps={14}
       title="COMMITを始める"
       footer={
         <View>

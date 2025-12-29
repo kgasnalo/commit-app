@@ -23,7 +23,7 @@ export default function OnboardingScreen4({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={4}
-      totalSteps={13}
+      totalSteps={14}
       title="いつまでに読み切る？"
       subtitle="締切がないから、読めない。"
     >

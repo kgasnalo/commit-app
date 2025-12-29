@@ -55,7 +55,7 @@ export default function OnboardingScreen3({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={3}
-      totalSteps={13}
+      totalSteps={14}
       title="次に読み切る1冊を決めよう。"
       subtitle="「いつか読む」の『いつか』を、今日にする。"
     >

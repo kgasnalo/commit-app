@@ -9,7 +9,7 @@ export default function OnboardingScreen7({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={7}
-      totalSteps={13}
+      totalSteps={14}
       title="読まなかった1冊は、得られなかった1つの武器。"
       subtitle="知識は複利で効く。1年後、差がつく。"
       footer={

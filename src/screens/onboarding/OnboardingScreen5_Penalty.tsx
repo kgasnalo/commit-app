@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
@@ -27,9 +28,9 @@ export default function OnboardingScreen5({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={5}
-      totalSteps={13}
-      title="本気度を、金額で示せ。"
-      subtitle="読み切れなかったとき、いくら払う覚悟がある？"
+      totalSteps={14}
+      title="覚悟を、金額で示せ。"
+      subtitle="読み切れなかったら、いくら届ける？"
       footer={
         <PrimaryButton
           label="次へ"
@@ -59,8 +60,18 @@ export default function OnboardingScreen5({ navigation, route }: any) {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* 寄付先情報 */}
+      <View style={styles.donationInfo}>
+        <Ionicons name="book" size={20} color={colors.accent.primary} />
+        <View style={styles.donationTextContainer}>
+          <Text style={styles.donationTitle}>📚 本を届ける活動に寄付されます</Text>
+          <Text style={styles.donationOrg}>Room to Read（子どもの教育支援）</Text>
+        </View>
+      </View>
+
       <Text style={styles.note}>
-        失敗時のペナルティは、子どもの教育支援に全額寄付されます。
+        読了できなかった場合、この金額がRoom to Readに届けられます。
       </Text>
     </OnboardingLayout>
   );
@@ -93,11 +104,34 @@ const styles = StyleSheet.create({
   amountLabelSelected: {
     color: colors.accent.primary,
   },
+  donationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.secondary,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  donationTextContainer: {
+    flex: 1,
+  },
+  donationTitle: {
+    color: colors.text.primary,
+    fontSize: typography.fontSize.body,
+    fontWeight: typography.fontWeight.semibold,
+    marginBottom: 4,
+  },
+  donationOrg: {
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.caption,
+  },
   note: {
     color: colors.text.muted,
     fontSize: typography.fontSize.caption,
     textAlign: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
     lineHeight: typography.fontSize.caption * 1.6,
   },
 });

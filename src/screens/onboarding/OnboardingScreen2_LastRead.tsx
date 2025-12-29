@@ -18,7 +18,7 @@ export default function OnboardingScreen2({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={2}
-      totalSteps={13}
+      totalSteps={14}
       title="最後に1冊読み切ったのは？"
     >
       <View>

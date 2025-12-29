@@ -27,7 +27,7 @@ export default function OnboardingScreen11({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={11}
-      totalSteps={13}
+      totalSteps={14}
       title="COMMITを使った人たちの声"
       footer={
         <PrimaryButton

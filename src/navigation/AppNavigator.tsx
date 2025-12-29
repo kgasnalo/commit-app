@@ -15,6 +15,7 @@ import CommitmentDetailScreen from '../screens/CommitmentDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
 // Onboarding screens
+import OnboardingScreen0 from '../screens/onboarding/OnboardingScreen0_Welcome';
 import OnboardingScreen1 from '../screens/onboarding/OnboardingScreen1_TsundokuCount';
 import OnboardingScreen2 from '../screens/onboarding/OnboardingScreen2_LastRead';
 import OnboardingScreen3 from '../screens/onboarding/OnboardingScreen3_BookSelect';
@@ -113,7 +114,8 @@ export default function AppNavigator() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!session ? (
             <>
-              {/* Onboarding flow screens */}
+              {/* Onboarding flow screens (14 screens total) */}
+              <Stack.Screen name="Onboarding0" component={OnboardingScreen0} />
               <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
               <Stack.Screen name="Onboarding2" component={OnboardingScreen2} />
               <Stack.Screen name="Onboarding3" component={OnboardingScreen3} />

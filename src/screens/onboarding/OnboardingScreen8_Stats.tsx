@@ -8,7 +8,7 @@ export default function OnboardingScreen8({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={8}
-      totalSteps={13}
+      totalSteps={14}
       title="意志力に頼った人の読了率、23%。"
       footer={
         <PrimaryButton

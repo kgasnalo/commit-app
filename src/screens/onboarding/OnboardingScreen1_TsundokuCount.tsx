@@ -19,7 +19,7 @@ export default function OnboardingScreen1({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={1}
-      totalSteps={13}
+      totalSteps={14}
       title="積読、何冊ありますか？"
     >
       <View>

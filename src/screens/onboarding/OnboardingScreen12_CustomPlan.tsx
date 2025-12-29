@@ -16,7 +16,7 @@ export default function OnboardingScreen12({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={12}
-      totalSteps={13}
+      totalSteps={14}
       title="あなたのCOMMIT"
       subtitle="これが、あなたが自分に課した約束。"
       footer={
@@ -50,10 +50,11 @@ export default function OnboardingScreen12({ navigation, route }: any) {
         <View style={styles.divider} />
 
         <View style={styles.commitItem}>
-          <Ionicons name="cash" size={24} color={colors.accent.primary} />
+          <Ionicons name="heart" size={24} color={colors.accent.primary} />
           <View style={styles.commitContent}>
-            <Text style={styles.commitLabel}>ペナルティ</Text>
+            <Text style={styles.commitLabel}>覚悟金</Text>
             <Text style={styles.commitValue}>¥{pledgeAmount?.toLocaleString()}</Text>
+            <Text style={styles.commitNote}>Room to Readに届けられます</Text>
           </View>
         </View>
       </View>
@@ -86,6 +87,11 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: typography.fontSize.body,
     fontWeight: typography.fontWeight.semibold,
+  },
+  commitNote: {
+    color: colors.text.muted,
+    fontSize: typography.fontSize.caption,
+    marginTop: 2,
   },
   divider: {
     height: 1,

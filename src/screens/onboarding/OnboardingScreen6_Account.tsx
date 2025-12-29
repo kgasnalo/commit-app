@@ -59,7 +59,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={6}
-      totalSteps={13}
+      totalSteps={14}
       title="COMMITに参加する"
       subtitle="同じ志を持つ読書家たちのコミュニティへ。"
       footer={

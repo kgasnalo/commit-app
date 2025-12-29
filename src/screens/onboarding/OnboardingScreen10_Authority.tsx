@@ -9,7 +9,7 @@ export default function OnboardingScreen10({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={10}
-      totalSteps={13}
+      totalSteps={14}
       title=""
       footer={
         <PrimaryButton
