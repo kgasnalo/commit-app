@@ -126,20 +126,22 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       await AsyncStorage.removeItem('onboardingData');
       console.log('Onboarding data cleared from AsyncStorage');
 
-      // Realtimeが反応する時間を与える（1秒待機）
-      // これにより、AppNavigatorのRealtimeサブスクリプションが
-      // subscription_statusの変更を検知してisSubscribedを更新する
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // 成功メッセージ
+      // 成功メッセージを表示し、OKボタンで直接Dashboardに遷移
       Alert.alert(
         'ようこそ！',
         'COMMITへの登録が完了しました。',
-        [{ text: 'OK' }]
+        [{
+          text: 'OK',
+          onPress: () => {
+            // navigation.resetを使用してDashboardに直接遷移
+            // これにより、戻るボタンでオンボーディングに戻れなくなる
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Dashboard' }],
+            });
+          }
+        }]
       );
-
-      // AppNavigatorのRealtimeサブスクリプションが
-      // subscription_statusの変更を検知してDashboardに自動遷移する
 
     } catch (error: any) {
       console.error('Subscription error:', error);
