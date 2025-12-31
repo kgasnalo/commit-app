@@ -25,11 +25,20 @@ type Commitment = {
   created_at: string;
 };
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  JPY: '¥',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  CNY: '¥',
+  KRW: '₩',
+};
+
 export default function DashboardScreen({ navigation }: any) {
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [totalPledged, setTotalPledged] = useState(0);
-  const [totalDonated, setTotalDonated] = useState(0);
+  const [poolByCurrency, setPoolByCurrency] = useState<Record<string, number>>({});
+  const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchCommitments();
@@ -57,12 +66,24 @@ export default function DashboardScreen({ navigation }: any) {
       if (data) {
         setCommitments(data as any);
 
-        // 集計
+        // 通貨ごとに集計
         const pending = data.filter(c => c.status === 'pending');
         const defaulted = data.filter(c => c.status === 'defaulted');
 
-        setTotalPledged(pending.reduce((sum, c) => sum + (c.pledge_amount || 0), 0));
-        setTotalDonated(defaulted.reduce((sum, c) => sum + (c.pledge_amount || 0), 0));
+        const poolByC = pending.reduce((acc, c) => {
+          const currency = c.currency || 'JPY';
+          acc[currency] = (acc[currency] || 0) + (c.pledge_amount || 0);
+          return acc;
+        }, {} as Record<string, number>);
+
+        const donatedByC = defaulted.reduce((acc, c) => {
+          const currency = c.currency || 'JPY';
+          acc[currency] = (acc[currency] || 0) + (c.pledge_amount || 0);
+          return acc;
+        }, {} as Record<string, number>);
+
+        setPoolByCurrency(poolByC);
+        setDonatedByCurrency(donatedByC);
       }
     } catch (error) {
       console.error('Error fetching commitments:', error);
@@ -159,11 +180,27 @@ export default function DashboardScreen({ navigation }: any) {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>寄付金プール</Text>
-            <Text style={styles.statValue}>¥{totalPledged.toLocaleString()}</Text>
+            <Text style={styles.statValue}>
+              {Object.entries(poolByCurrency)
+                .filter(([_, amount]) => amount > 0)
+                .map(([currency, amount]) => {
+                  const symbol = CURRENCY_SYMBOLS[currency] || currency;
+                  return `${symbol}${amount.toLocaleString()}`;
+                })
+                .join(' + ') || '¥0'}
+            </Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>累計寄付額</Text>
-            <Text style={styles.statValue}>¥{totalDonated.toLocaleString()}</Text>
+            <Text style={styles.statValue}>
+              {Object.entries(donatedByCurrency)
+                .filter(([_, amount]) => amount > 0)
+                .map(([currency, amount]) => {
+                  const symbol = CURRENCY_SYMBOLS[currency] || currency;
+                  return `${symbol}${amount.toLocaleString()}`;
+                })
+                .join(' + ') || '¥0'}
+            </Text>
           </View>
         </View>
 
