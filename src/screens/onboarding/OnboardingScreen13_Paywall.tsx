@@ -122,6 +122,15 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         }
       }
 
+      // AsyncStorageをクリーンアップ
+      await AsyncStorage.removeItem('onboardingData');
+      console.log('Onboarding data cleared from AsyncStorage');
+
+      // Realtimeが反応する時間を与える（1秒待機）
+      // これにより、AppNavigatorのRealtimeサブスクリプションが
+      // subscription_statusの変更を検知してisSubscribedを更新する
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // 成功メッセージ
       Alert.alert(
         'ようこそ！',
@@ -129,7 +138,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         [{ text: 'OK' }]
       );
 
-      // 注: AppNavigatorのRealtimeサブスクリプションが
+      // AppNavigatorのRealtimeサブスクリプションが
       // subscription_statusの変更を検知してDashboardに自動遷移する
 
     } catch (error: any) {
