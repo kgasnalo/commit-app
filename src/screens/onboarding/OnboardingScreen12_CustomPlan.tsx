@@ -6,10 +6,20 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  JPY: '¥',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  CNY: '¥',
+  KRW: '₩',
+};
+
 export default function OnboardingScreen12({ navigation, route }: any) {
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [deadline, setDeadline] = useState<string>('');
   const [pledgeAmount, setPledgeAmount] = useState<number>(0);
+  const [currency, setCurrency] = useState<string>('JPY');
 
   // オンボーディングデータを読み込む
   useEffect(() => {
@@ -20,6 +30,7 @@ export default function OnboardingScreen12({ navigation, route }: any) {
           setSelectedBook(route.params.selectedBook);
           setDeadline(route.params.deadline);
           setPledgeAmount(route.params.pledgeAmount);
+          setCurrency(route.params.currency || 'JPY');
         } else {
           // route.paramsがない場合、AsyncStorageから読み込む（認証後のスタック切り替え後）
           const data = await AsyncStorage.getItem('onboardingData');
@@ -28,6 +39,7 @@ export default function OnboardingScreen12({ navigation, route }: any) {
             setSelectedBook(parsed.selectedBook);
             setDeadline(parsed.deadline);
             setPledgeAmount(parsed.pledgeAmount);
+            setCurrency(parsed.currency || 'JPY');
             console.log('Onboarding data loaded from AsyncStorage');
           } else {
             console.warn('No onboarding data found in AsyncStorage');
@@ -86,7 +98,9 @@ export default function OnboardingScreen12({ navigation, route }: any) {
           <Ionicons name="heart" size={24} color={colors.accent.primary} />
           <View style={styles.commitContent}>
             <Text style={styles.commitLabel}>覚悟金</Text>
-            <Text style={styles.commitValue}>¥{pledgeAmount?.toLocaleString()}</Text>
+            <Text style={styles.commitValue}>
+              {CURRENCY_SYMBOLS[currency] || '¥'}{pledgeAmount?.toLocaleString()}
+            </Text>
             <Text style={styles.commitNote}>Room to Readに届けられます</Text>
           </View>
         </View>

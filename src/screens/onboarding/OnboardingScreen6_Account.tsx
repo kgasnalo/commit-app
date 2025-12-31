@@ -8,7 +8,7 @@ import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
 export default function OnboardingScreen6({ navigation, route }: any) {
-  const { selectedBook, deadline, pledgeAmount } = route.params;
+  const { selectedBook, deadline, pledgeAmount, currency = 'JPY' } = route.params;
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +36,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         selectedBook,
         deadline,
         pledgeAmount,
+        currency,
       }));
       console.log('Onboarding data saved to AsyncStorage');
 

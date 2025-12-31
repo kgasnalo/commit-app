@@ -158,7 +158,7 @@ export default function DashboardScreen({ navigation }: any) {
         {/* 統計カード */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>罰金プール</Text>
+            <Text style={styles.statLabel}>寄付金プール</Text>
             <Text style={styles.statValue}>¥{totalPledged.toLocaleString()}</Text>
           </View>
           <View style={styles.statCard}>
