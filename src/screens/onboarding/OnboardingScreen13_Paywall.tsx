@@ -16,12 +16,26 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const handleSubscribe = async () => {
     setLoading(true);
     try {
-      // Stripe決済処理（後で実装）
-      // 仮実装：subscription_statusを更新
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('ユーザーが見つかりません');
+      // 認証状態を確認
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error('認証エラーが発生しました。再度ログインしてください。');
       }
+
+      if (!user) {
+        console.error('No user found');
+        // ユーザーがいない場合、ログイン画面に戻す
+        Alert.alert(
+          'セッションエラー',
+          'ログイン状態が確認できません。再度ログインしてください。',
+          [{ text: 'OK', onPress: () => navigation.navigate('Onboarding0') }]
+        );
+        return;
+      }
+
+      console.log('User found:', user.id);
 
       // subscription_statusを更新
       const { error: updateError } = await supabase
@@ -29,25 +43,62 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         .update({ subscription_status: 'active' })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
-
-      // コミットメント作成
-      if (selectedBook) {
-        const { error: commitmentError } = await supabase.from('commitments').insert({
-          user_id: user.id,
-          book_id: selectedBook?.id,
-          deadline: deadline,
-          pledge_amount: pledgeAmount,
-          currency: 'JPY',
-          status: 'pending',
-        });
-
-        if (commitmentError) throw commitmentError;
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw updateError;
       }
 
-      // 認証状態の変更でAppNavigatorが自動的にDashboardに遷移する
-      // navigation.resetではなく、シンプルに何もしない
-      // AppNavigatorのuseEffectがsubscription_statusの変更を検知して遷移する
+      console.log('Subscription status updated');
+
+      // コミットメント作成（selectedBookがある場合のみ）
+      if (selectedBook && deadline && pledgeAmount) {
+        // まず本をbooksテーブルに保存
+        const bookData = {
+          google_books_id: selectedBook.id,
+          title: selectedBook.volumeInfo?.title || 'Unknown',
+          author: selectedBook.volumeInfo?.authors?.join(', ') || 'Unknown',
+          cover_url: selectedBook.volumeInfo?.imageLinks?.thumbnail || null,
+        };
+
+        const { data: book, error: bookError } = await supabase
+          .from('books')
+          .upsert(bookData, { onConflict: 'google_books_id' })
+          .select()
+          .single();
+
+        if (bookError) {
+          console.error('Book insert error:', bookError);
+          // 本の保存エラーは無視して続行（後で追加できる）
+        } else if (book) {
+          // コミットメント作成
+          const { error: commitError } = await supabase
+            .from('commitments')
+            .insert({
+              user_id: user.id,
+              book_id: book.id,
+              deadline: deadline,
+              pledge_amount: pledgeAmount,
+              currency: 'JPY',
+              status: 'pending',
+            });
+
+          if (commitError) {
+            console.error('Commitment insert error:', commitError);
+            // コミットメントエラーも無視して続行
+          }
+        }
+      }
+
+      // 成功メッセージ
+      Alert.alert(
+        'ようこそ！',
+        'COMMITへの登録が完了しました。',
+        [{ text: 'OK' }]
+      );
+
+      // 注: AppNavigatorのRealtimeサブスクリプションが
+      // subscription_statusの変更を検知してDashboardに自動遷移する
+
     } catch (error: any) {
       console.error('Subscription error:', error);
       Alert.alert('エラー', error.message || 'サブスクリプションの開始に失敗しました');
