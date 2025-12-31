@@ -5,7 +5,7 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 
-export default function OnboardingScreen10({ navigation, route }: any) {
+export default function OnboardingScreen10({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={10}
@@ -14,7 +14,7 @@ export default function OnboardingScreen10({ navigation, route }: any) {
       footer={
         <PrimaryButton
           label="次へ"
-          onPress={() => navigation.navigate('Onboarding11', route.params)}
+          onPress={() => navigation.navigate('Onboarding11')}
         />
       }
     >

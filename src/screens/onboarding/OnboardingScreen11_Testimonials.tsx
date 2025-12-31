@@ -23,7 +23,7 @@ const TESTIMONIALS = [
   },
 ];
 
-export default function OnboardingScreen11({ navigation, route }: any) {
+export default function OnboardingScreen11({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={11}
@@ -32,7 +32,7 @@ export default function OnboardingScreen11({ navigation, route }: any) {
       footer={
         <PrimaryButton
           label="次へ"
-          onPress={() => navigation.navigate('Onboarding12', route.params)}
+          onPress={() => navigation.navigate('Onboarding12')}
         />
       }
     >

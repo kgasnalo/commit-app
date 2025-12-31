@@ -23,7 +23,7 @@ const FEATURES = [
   },
 ];
 
-export default function OnboardingScreen9({ navigation, route }: any) {
+export default function OnboardingScreen9({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={9}
@@ -32,7 +32,7 @@ export default function OnboardingScreen9({ navigation, route }: any) {
       footer={
         <PrimaryButton
           label="次へ"
-          onPress={() => navigation.navigate('Onboarding10', route.params)}
+          onPress={() => navigation.navigate('Onboarding10')}
         />
       }
     >
