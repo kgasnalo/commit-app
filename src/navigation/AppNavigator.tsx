@@ -171,12 +171,21 @@ export default function AppNavigator() {
             </>
           ) : !isSubscribed ? (
             <>
-              {/* For existing users who haven't subscribed yet */}
-              <Stack.Screen name="Subscription">
-                {(props) => <SubscriptionScreen {...props} onComplete={() => setIsSubscribed(true)} />}
-              </Stack.Screen>
-              {/* Also allow access to Onboarding13 for existing users */}
+              {/* Authenticated but not subscribed - show Onboarding7-13 + Dashboard for transition */}
+              <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
+              <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
+              <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
+              <Stack.Screen name="Onboarding10" component={OnboardingScreen10} />
+              <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
+              <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
               <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
+              {/* Dashboard and other screens for direct navigation after subscription */}
+              <Stack.Screen name="Dashboard" component={DashboardScreen} />
+              <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
+              <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
+              <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
+              <Stack.Screen name="Verification" component={VerificationScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
             </>
           ) : (
             <>

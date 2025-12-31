@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
@@ -7,7 +8,7 @@ import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
 export default function OnboardingScreen6({ navigation, route }: any) {
-  const { selectedBook, deadline, pledgeAmount } = route.params;
+  const { selectedBook, deadline, pledgeAmount, currency = 'JPY' } = route.params;
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +29,16 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     setLoading(true);
     try {
       console.log('Starting signup process...');
+
+      // オンボーディングデータをAsyncStorageに保存
+      // 認証後にAppNavigatorのスタックが切り替わるため、route.paramsが失われる
+      await AsyncStorage.setItem('onboardingData', JSON.stringify({
+        selectedBook,
+        deadline,
+        pledgeAmount,
+        currency,
+      }));
+      console.log('Onboarding data saved to AsyncStorage');
 
       const { data, error } = await supabase.auth.signUp({
         email,

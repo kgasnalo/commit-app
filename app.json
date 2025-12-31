@@ -28,6 +28,15 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "読了確認のために写真へのアクセスが必要です",
+          "cameraPermission": "読了確認のためにカメラへのアクセスが必要です"
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "bddbc0ec-bba0-47ef-974d-9c6974ea2c8b"

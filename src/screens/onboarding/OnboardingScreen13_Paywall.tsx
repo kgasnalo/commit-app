@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
@@ -9,9 +10,44 @@ import { supabase } from '../../lib/supabase';
 type Plan = 'yearly' | 'monthly';
 
 export default function OnboardingScreen13({ navigation, route }: any) {
-  const { selectedBook, deadline, pledgeAmount } = route.params;
+  const [selectedBook, setSelectedBook] = useState<any>(null);
+  const [deadline, setDeadline] = useState<string>('');
+  const [pledgeAmount, setPledgeAmount] = useState<number>(0);
+  const [currency, setCurrency] = useState<string>('JPY');
   const [selectedPlan, setSelectedPlan] = useState<Plan>('yearly');
   const [loading, setLoading] = useState(false);
+
+  // オンボーディングデータを読み込む
+  useEffect(() => {
+    const loadOnboardingData = async () => {
+      try {
+        // route.paramsがあればそれを使用（直接遷移の場合）
+        if (route.params?.selectedBook) {
+          setSelectedBook(route.params.selectedBook);
+          setDeadline(route.params.deadline);
+          setPledgeAmount(route.params.pledgeAmount);
+          setCurrency(route.params.currency || 'JPY');
+        } else {
+          // route.paramsがない場合、AsyncStorageから読み込む（認証後のスタック切り替え後）
+          const data = await AsyncStorage.getItem('onboardingData');
+          if (data) {
+            const parsed = JSON.parse(data);
+            setSelectedBook(parsed.selectedBook);
+            setDeadline(parsed.deadline);
+            setPledgeAmount(parsed.pledgeAmount);
+            setCurrency(parsed.currency || 'JPY');
+            console.log('Onboarding data loaded from AsyncStorage');
+          } else {
+            console.warn('No onboarding data found in AsyncStorage');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading onboarding data:', error);
+      }
+    };
+
+    loadOnboardingData();
+  }, [route.params]);
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -78,7 +114,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
               book_id: book.id,
               deadline: deadline,
               pledge_amount: pledgeAmount,
-              currency: 'JPY',
+              currency: currency,
               status: 'pending',
             });
 
@@ -89,15 +125,26 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         }
       }
 
-      // 成功メッセージ
+      // AsyncStorageをクリーンアップ
+      await AsyncStorage.removeItem('onboardingData');
+      console.log('Onboarding data cleared from AsyncStorage');
+
+      // 成功メッセージを表示し、OKボタンで直接Dashboardに遷移
       Alert.alert(
         'ようこそ！',
         'COMMITへの登録が完了しました。',
-        [{ text: 'OK' }]
+        [{
+          text: 'OK',
+          onPress: () => {
+            // navigation.resetを使用してDashboardに直接遷移
+            // これにより、戻るボタンでオンボーディングに戻れなくなる
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Dashboard' }],
+            });
+          }
+        }]
       );
-
-      // 注: AppNavigatorのRealtimeサブスクリプションが
-      // subscription_statusの変更を検知してDashboardに自動遷移する
 
     } catch (error: any) {
       console.error('Subscription error:', error);
