@@ -21,30 +21,49 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
     setLoading(true);
     try {
+      console.log('Starting signup process...');
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Signup error:', error);
+        throw error;
+      }
 
       if (data.user) {
+        console.log('User created:', data.user.id);
+
         // usersテーブルにレコード作成
-        await supabase.from('users').insert({
+        const { error: insertError } = await supabase.from('users').insert({
           id: data.user.id,
           email: data.user.email,
           username: username,
           subscription_status: 'inactive',
         });
-      }
 
-      navigation.navigate('Onboarding7', {
-        selectedBook,
-        deadline,
-        pledgeAmount,
-        userId: data.user?.id,
-      });
+        if (insertError) {
+          console.error('User insert error:', insertError);
+          // UNIQUE制約違反の場合は無視（既存ユーザー）
+          if (!insertError.message.includes('duplicate')) {
+            throw insertError;
+          }
+        }
+
+        console.log('User record created, navigating to next screen...');
+
+        // 次の画面に遷移（認証状態は保持される）
+        navigation.navigate('Onboarding7', {
+          selectedBook,
+          deadline,
+          pledgeAmount,
+          userId: data.user.id,
+        });
+      }
     } catch (error: any) {
+      console.error('Signup flow error:', error);
       Alert.alert('エラー', error.message);
     } finally {
       setLoading(false);

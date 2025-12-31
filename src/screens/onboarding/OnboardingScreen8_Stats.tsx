@@ -9,7 +9,7 @@ export default function OnboardingScreen8({ navigation, route }: any) {
     <OnboardingLayout
       currentStep={8}
       totalSteps={14}
-      title="意志力に頼った人の読了率、23%。"
+      title="気合いに頼った人の読了率、23%。"
       footer={
         <PrimaryButton
           label="次へ"
@@ -20,7 +20,7 @@ export default function OnboardingScreen8({ navigation, route }: any) {
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>23%</Text>
-          <Text style={styles.statLabel}>意志力のみ</Text>
+          <Text style={styles.statLabel}>気合いのみ</Text>
         </View>
         <View style={[styles.statCard, styles.statCardHighlight]}>
           <Text style={[styles.statValue, styles.statValueHighlight]}>87%</Text>

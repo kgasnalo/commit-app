@@ -36,7 +36,7 @@ export default function OnboardingScreen4({ navigation, route }: any) {
           />
         ))}
       </View>
-      <Text style={styles.note}>短いほど、読む。</Text>
+      <Text style={styles.note}>いつまでに読むか、コミット宣言をしろ。</Text>
     </OnboardingLayout>
   );
 }

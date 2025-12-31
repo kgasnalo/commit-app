@@ -28,7 +28,7 @@ export default function OnboardingScreen9({ navigation, route }: any) {
     <OnboardingLayout
       currentStep={9}
       totalSteps={14}
-      title="意志力ではなく、仕組みで読む。"
+      title="気合いではなく、仕組みで読む。"
       footer={
         <PrimaryButton
           label="次へ"
