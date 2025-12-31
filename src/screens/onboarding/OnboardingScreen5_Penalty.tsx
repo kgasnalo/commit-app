@@ -5,14 +5,13 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 
-type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'CNY' | 'KRW';
+type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
 const CURRENCY_OPTIONS: { code: Currency; symbol: string; name: string }[] = [
   { code: 'JPY', symbol: '¥', name: '日本円' },
   { code: 'USD', symbol: '$', name: '米ドル' },
   { code: 'EUR', symbol: '€', name: 'ユーロ' },
   { code: 'GBP', symbol: '£', name: '英ポンド' },
-  { code: 'CNY', symbol: '¥', name: '人民元' },
   { code: 'KRW', symbol: '₩', name: '韓国ウォン' },
 ];
 
@@ -40,12 +39,6 @@ const AMOUNTS_BY_CURRENCY: Record<Currency, { id: string; value: number; label: 
     { id: '15', value: 15, label: '£15' },
     { id: '25', value: 25, label: '£25' },
     { id: '50', value: 50, label: '£50' },
-  ],
-  CNY: [
-    { id: '50', value: 50, label: '¥50' },
-    { id: '150', value: 150, label: '¥150' },
-    { id: '250', value: 250, label: '¥250' },
-    { id: '500', value: 500, label: '¥500' },
   ],
   KRW: [
     { id: '9000', value: 9000, label: '₩9,000' },

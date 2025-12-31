@@ -18,7 +18,7 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Book } from '../types';
 
-type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'CNY' | 'KRW';
+type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
 // 通貨オプション
 const CURRENCY_OPTIONS: { code: Currency; symbol: string; name: string }[] = [
@@ -26,7 +26,6 @@ const CURRENCY_OPTIONS: { code: Currency; symbol: string; name: string }[] = [
   { code: 'USD', symbol: '$', name: '米ドル' },
   { code: 'EUR', symbol: '€', name: 'ユーロ' },
   { code: 'GBP', symbol: '£', name: '英ポンド' },
-  { code: 'CNY', symbol: '¥', name: '人民元' },
   { code: 'KRW', symbol: '₩', name: '韓国ウォン' },
 ];
 
@@ -36,7 +35,6 @@ const AMOUNTS_BY_CURRENCY: Record<Currency, number[]> = {
   USD: [7, 20, 35, 70],
   EUR: [6, 18, 30, 60],
   GBP: [5, 15, 25, 50],
-  CNY: [50, 150, 250, 500],
   KRW: [9000, 27000, 45000, 90000],
 };
 
