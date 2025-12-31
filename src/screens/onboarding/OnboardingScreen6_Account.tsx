@@ -19,6 +19,12 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       return;
     }
 
+    // パスワードの長さチェック
+    if (password.length < 6) {
+      Alert.alert('エラー', 'パスワードは6文字以上で入力してください');
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('Starting signup process...');
@@ -36,23 +42,22 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       if (data.user) {
         console.log('User created:', data.user.id);
 
-        // usersテーブルにレコード作成
-        const { error: insertError } = await supabase.from('users').insert({
-          id: data.user.id,
-          email: data.user.email,
-          username: username,
-          subscription_status: 'inactive',
-        });
+        // トリガーがpublic.usersにレコードを自動作成するので、
+        // ここではusernameをUPDATEするだけ
+        // 少し待ってからUPDATE（トリガーの完了を待つ）
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-        if (insertError) {
-          console.error('User insert error:', insertError);
-          // UNIQUE制約違反の場合は無視（既存ユーザー）
-          if (!insertError.message.includes('duplicate')) {
-            throw insertError;
-          }
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ username: username })
+          .eq('id', data.user.id);
+
+        if (updateError) {
+          console.error('Username update error:', updateError);
+          // usernameの更新エラーは無視して続行（後で設定可能）
         }
 
-        console.log('User record created, navigating to next screen...');
+        console.log('Username updated, navigating to next screen...');
 
         // 次の画面に遷移（認証状態は保持される）
         navigation.navigate('Onboarding7', {
@@ -64,7 +69,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       }
     } catch (error: any) {
       console.error('Signup flow error:', error);
-      Alert.alert('エラー', error.message);
+      Alert.alert('エラー', error.message || 'アカウント作成に失敗しました');
     } finally {
       setLoading(false);
     }
