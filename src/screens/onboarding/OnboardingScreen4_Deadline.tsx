@@ -38,12 +38,3 @@ export default function OnboardingScreen4({ navigation, route }: any) {
     </OnboardingLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  note: {
-    color: colors.text.muted,
-    fontSize: typography.fontSize.caption,
-    textAlign: 'center',
-    marginTop: spacing.lg,
-  },
-});
