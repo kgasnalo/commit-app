@@ -2,12 +2,13 @@ import React from 'react';
 import { View } from 'react-native';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import SelectionCard from '../../components/onboarding/SelectionCard';
+import i18n from '../../i18n';
 
-const OPTIONS = [
-  { id: 'this-month', label: '今月' },
-  { id: '2-3-months', label: '2〜3ヶ月前' },
-  { id: '6-months+', label: '半年以上前' },
-  { id: 'unknown', label: '思い出せない' },
+const getOptions = () => [
+  { id: 'week', labelKey: 'onboarding.screen2_option1' },
+  { id: 'month', labelKey: 'onboarding.screen2_option2' },
+  { id: '6-months', labelKey: 'onboarding.screen2_option3' },
+  { id: 'year+', labelKey: 'onboarding.screen2_option4' },
 ];
 
 export default function OnboardingScreen2({ navigation }: any) {
@@ -19,13 +20,13 @@ export default function OnboardingScreen2({ navigation }: any) {
     <OnboardingLayout
       currentStep={2}
       totalSteps={14}
-      title="最後に1冊読み切ったのは？"
+      title={i18n.t('onboarding.screen2_title')}
     >
       <View>
-        {OPTIONS.map((option) => (
+        {getOptions().map((option) => (
           <SelectionCard
             key={option.id}
-            label={option.label}
+            label={i18n.t(option.labelKey)}
             onPress={() => handleSelect(option.id)}
           />
         ))}

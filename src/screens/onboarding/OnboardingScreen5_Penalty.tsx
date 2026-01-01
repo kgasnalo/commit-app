@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
+import i18n from '../../i18n';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -69,11 +70,11 @@ export default function OnboardingScreen5({ navigation, route }: any) {
     <OnboardingLayout
       currentStep={5}
       totalSteps={14}
-      title="覚悟を、金額で示せ。"
-      subtitle="読み切れなかったら、いくら届ける？"
+      title={i18n.t('onboarding.screen5_title')}
+      subtitle={i18n.t('onboarding.screen5_subtitle')}
       footer={
         <PrimaryButton
-          label="次へ"
+          label={i18n.t('onboarding.next')}
           onPress={handleContinue}
           disabled={!selectedAmount}
         />
@@ -81,7 +82,7 @@ export default function OnboardingScreen5({ navigation, route }: any) {
     >
       {/* 通貨選択 */}
       <View style={styles.currencyContainer}>
-        <Text style={styles.currencyLabel}>通貨を選択</Text>
+        <Text style={styles.currencyLabel}>{i18n.t('onboarding.screen5_select_currency')}</Text>
         <View style={styles.currencyButtons}>
           {CURRENCY_OPTIONS.map((currency) => (
             <TouchableOpacity
@@ -135,14 +136,10 @@ export default function OnboardingScreen5({ navigation, route }: any) {
       <View style={styles.donationInfo}>
         <Ionicons name="book" size={20} color={colors.accent.primary} />
         <View style={styles.donationTextContainer}>
-          <Text style={styles.donationTitle}>📚 本を届ける活動に寄付されます</Text>
-          <Text style={styles.donationOrg}>Room to Read（子どもの教育支援）</Text>
+          <Text style={styles.donationTitle}>{i18n.t('onboarding.screen5_donation_info')}</Text>
+          <Text style={styles.donationOrg}>Room to Read</Text>
         </View>
       </View>
-
-      <Text style={styles.note}>
-        読了できなかった場合、この金額がRoom to Readに届けられます。
-      </Text>
     </OnboardingLayout>
   );
 }

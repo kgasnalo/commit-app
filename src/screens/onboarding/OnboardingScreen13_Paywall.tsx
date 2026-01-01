@@ -6,6 +6,7 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import i18n from '../../i18n';
 
 type Plan = 'yearly' | 'monthly';
 
@@ -131,10 +132,10 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       // 成功メッセージを表示し、OKボタンで直接Dashboardに遷移
       Alert.alert(
-        'ようこそ！',
-        'COMMITへの登録が完了しました。',
+        i18n.t('common.welcome', { defaultValue: 'ようこそ！' }),
+        i18n.t('common.registration_complete', { defaultValue: 'COMMITへの登録が完了しました。' }),
         [{
-          text: 'OK',
+          text: i18n.t('common.ok'),
           onPress: () => {
             // navigation.resetを使用してDashboardに直接遷移
             // これにより、戻るボタンでオンボーディングに戻れなくなる
@@ -148,7 +149,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
     } catch (error: any) {
       console.error('Subscription error:', error);
-      Alert.alert('エラー', error.message || 'サブスクリプションの開始に失敗しました');
+      Alert.alert(i18n.t('common.error'), error.message || i18n.t('errors.subscription_failed', { defaultValue: 'サブスクリプションの開始に失敗しました' }));
     } finally {
       setLoading(false);
     }
@@ -158,22 +159,22 @@ export default function OnboardingScreen13({ navigation, route }: any) {
     <OnboardingLayout
       currentStep={13}
       totalSteps={14}
-      title="COMMITを始める"
+      title={i18n.t('onboarding.screen13_title')}
       footer={
         <View>
           <PrimaryButton
-            label={selectedPlan === 'yearly' ? '年額プランで始める' : '月額プランで始める'}
+            label={selectedPlan === 'yearly' ? i18n.t('onboarding.screen13_start_annual') : i18n.t('onboarding.screen13_monthly_note')}
             onPress={handleSubscribe}
             loading={loading}
           />
           <View style={styles.guarantees}>
             <View style={styles.guarantee}>
               <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
-              <Text style={styles.guaranteeText}>いつでもキャンセル可能</Text>
+              <Text style={styles.guaranteeText}>{i18n.t('onboarding.screen13_cancel_note')}</Text>
             </View>
             <View style={styles.guarantee}>
               <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
-              <Text style={styles.guaranteeText}>覚悟金は全額、教育支援に寄付</Text>
+              <Text style={styles.guaranteeText}>{i18n.t('onboarding.screen13_donation_note')}</Text>
             </View>
           </View>
         </View>
@@ -187,19 +188,19 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           <View style={styles.planBadge}>
             <Text style={styles.planBadgeText}>50% OFF</Text>
           </View>
-          <Text style={styles.planName}>年額プラン</Text>
-          <Text style={styles.planPrice}>¥3,000/年</Text>
-          <Text style={styles.planDetail}>月額換算 ¥250</Text>
-          <Text style={styles.planLabel}>本気の人向け</Text>
+          <Text style={styles.planName}>{i18n.t('onboarding.screen13_annual')}</Text>
+          <Text style={styles.planPrice}>{i18n.t('onboarding.screen13_annual_price')}</Text>
+          <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_annual_note')}</Text>
+          <Text style={styles.planLabel}>{i18n.t('common.for_serious', { defaultValue: '本気の人向け' })}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
           onPress={() => setSelectedPlan('monthly')}
         >
-          <Text style={styles.planName}>月額プラン</Text>
-          <Text style={styles.planPrice}>¥500/月</Text>
-          <Text style={styles.planDetail}>いつでも解約OK</Text>
+          <Text style={styles.planName}>{i18n.t('onboarding.screen13_monthly')}</Text>
+          <Text style={styles.planPrice}>{i18n.t('onboarding.screen13_monthly_price')}</Text>
+          <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_monthly_note')}</Text>
         </TouchableOpacity>
       </View>
     </OnboardingLayout>

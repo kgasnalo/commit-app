@@ -6,6 +6,7 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import i18n from '../../i18n';
 
 export default function OnboardingScreen6({ navigation, route }: any) {
   const { selectedBook, deadline, pledgeAmount, currency = 'JPY' } = route.params;
@@ -16,13 +17,13 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   const handleEmailSignup = async () => {
     if (!username.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('エラー', '全ての項目を入力してください');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.fill_all_fields', { defaultValue: '全ての項目を入力してください' }));
       return;
     }
 
     // パスワードの長さチェック
     if (password.length < 6) {
-      Alert.alert('エラー', 'パスワードは6文字以上で入力してください');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.password_length', { defaultValue: 'パスワードは6文字以上で入力してください' }));
       return;
     }
 
@@ -80,7 +81,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       }
     } catch (error: any) {
       console.error('Signup flow error:', error);
-      Alert.alert('エラー', error.message || 'アカウント作成に失敗しました');
+      Alert.alert(i18n.t('common.error'), error.message || i18n.t('errors.account_creation', { defaultValue: 'アカウント作成に失敗しました' }));
     } finally {
       setLoading(false);
     }
@@ -88,18 +89,18 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     // OAuth実装（後で追加）
-    Alert.alert('準備中', `${provider}ログインは準備中です`);
+    Alert.alert(i18n.t('common.coming_soon', { defaultValue: '準備中' }), i18n.t('errors.oauth_coming_soon', { defaultValue: `${provider}ログインは準備中です` }));
   };
 
   return (
     <OnboardingLayout
       currentStep={6}
       totalSteps={14}
-      title="COMMITに参加する"
-      subtitle="同じ志を持つ読書家たちのコミュニティへ。"
+      title={i18n.t('onboarding.screen6_title')}
+      subtitle={i18n.t('onboarding.screen6_subtitle')}
       footer={
         <PrimaryButton
-          label="アカウントを作成"
+          label={i18n.t('onboarding.screen6_create_account')}
           onPress={handleEmailSignup}
           loading={loading}
           disabled={!username || !email || !password}
@@ -108,7 +109,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     >
       <View style={styles.form}>
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>ユーザーネーム</Text>
+          <Text style={styles.label}>{i18n.t('onboarding.screen6_username')}</Text>
           <TextInput
             style={styles.input}
             value={username}
@@ -120,7 +121,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>メールアドレス</Text>
+          <Text style={styles.label}>{i18n.t('onboarding.screen6_email')}</Text>
           <TextInput
             style={styles.input}
             value={email}
@@ -133,7 +134,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>パスワード</Text>
+          <Text style={styles.label}>{i18n.t('onboarding.screen6_password')}</Text>
           <TextInput
             style={styles.input}
             value={password}
@@ -147,7 +148,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
       <View style={styles.divider}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>または</Text>
+        <Text style={styles.dividerText}>{i18n.t('onboarding.screen6_or')}</Text>
         <View style={styles.dividerLine} />
       </View>
 
@@ -157,7 +158,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           onPress={() => handleOAuth('google')}
         >
           <Ionicons name="logo-google" size={20} color={colors.text.primary} />
-          <Text style={styles.oauthButtonText}>Googleで続ける</Text>
+          <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_google')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -165,11 +166,11 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           onPress={() => handleOAuth('apple')}
         >
           <Ionicons name="logo-apple" size={20} color={colors.text.primary} />
-          <Text style={styles.oauthButtonText}>Appleで続ける</Text>
+          <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_apple')}</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.note}>ユーザーネームは後から変更できます</Text>
+      <Text style={styles.note}>{i18n.t('onboarding.screen6_username_note')}</Text>
     </OnboardingLayout>
   );
 }

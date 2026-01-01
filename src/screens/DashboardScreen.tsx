@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import i18n from '../i18n';
 
 type Commitment = {
   id: string;
@@ -131,8 +132,8 @@ export default function DashboardScreen({ navigation }: any) {
             commitment.status === 'defaulted' && styles.defaultedBadge,
           ]}>
             <Text style={styles.statusText}>
-              {commitment.status === 'pending' ? '進行中' :
-               commitment.status === 'completed' ? '完了' : '期限切れ'}
+              {commitment.status === 'pending' ? i18n.t('dashboard.in_progress') :
+               commitment.status === 'completed' ? i18n.t('dashboard.completed') : i18n.t('dashboard.failed')}
             </Text>
           </View>
         </View>
@@ -146,14 +147,14 @@ export default function DashboardScreen({ navigation }: any) {
             />
             <Text style={[styles.countdownText, isUrgent && styles.urgentText]}>
               {countdown.expired
-                ? '期限切れ'
-                : `残り ${countdown.days}日 ${countdown.hours}時間`}
+                ? i18n.t('dashboard.failed')
+                : `${i18n.t('dashboard.remaining')} ${countdown.days}${i18n.t('dashboard.days')} ${countdown.hours}${i18n.t('dashboard.hours')}`}
             </Text>
           </View>
         )}
 
         <Text style={styles.pledgeAmount}>
-          ペナルティ: {commitment.currency === 'JPY' ? '¥' : commitment.currency}
+          {i18n.t('dashboard.penalty')}: {commitment.currency === 'JPY' ? '¥' : commitment.currency}
           {commitment.pledge_amount.toLocaleString()}
         </Text>
       </TouchableOpacity>
@@ -163,7 +164,7 @@ export default function DashboardScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>COMMIT</Text>
+        <Text style={styles.headerTitle}>{i18n.t('dashboard.title')}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="settings-outline" size={24} color="#000" />
         </TouchableOpacity>
@@ -178,7 +179,7 @@ export default function DashboardScreen({ navigation }: any) {
         {/* 統計カード */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>寄付金プール</Text>
+            <Text style={styles.statLabel}>{i18n.t('dashboard.donation_pool')}</Text>
             <Text style={styles.statValue}>
               {Object.entries(poolByCurrency)
                 .filter(([_, amount]) => amount > 0)
@@ -190,7 +191,7 @@ export default function DashboardScreen({ navigation }: any) {
             </Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>累計寄付額</Text>
+            <Text style={styles.statLabel}>{i18n.t('dashboard.total_donated')}</Text>
             <Text style={styles.statValue}>
               {Object.entries(donatedByCurrency)
                 .filter(([_, amount]) => amount > 0)
@@ -206,7 +207,7 @@ export default function DashboardScreen({ navigation }: any) {
         {/* コミットメント一覧 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>進行中のコミットメント</Text>
+            <Text style={styles.sectionTitle}>{i18n.t('dashboard.active_commitments')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('RoleSelect')}>
               <MaterialIcons name="add" size={28} color="#000" />
             </TouchableOpacity>
@@ -215,12 +216,12 @@ export default function DashboardScreen({ navigation }: any) {
           {commitments.filter(c => c.status === 'pending').length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="book-outline" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>進行中のコミットメントはありません</Text>
+              <Text style={styles.emptyText}>{i18n.t('dashboard.no_commitments', { defaultValue: '進行中のコミットメントはありません' })}</Text>
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => navigation.navigate('RoleSelect')}
               >
-                <Text style={styles.addButtonText}>本を追加する</Text>
+                <Text style={styles.addButtonText}>{i18n.t('dashboard.add_book', { defaultValue: '本を追加する' })}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -233,7 +234,7 @@ export default function DashboardScreen({ navigation }: any) {
         {/* 完了・失敗した本 */}
         {commitments.filter(c => c.status !== 'pending').length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>履歴</Text>
+            <Text style={styles.sectionTitle}>{i18n.t('dashboard.history', { defaultValue: '履歴' })}</Text>
             {commitments
               .filter(c => c.status !== 'pending')
               .map(renderCommitmentCard)}

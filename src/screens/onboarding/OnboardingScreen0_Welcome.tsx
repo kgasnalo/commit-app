@@ -1,12 +1,45 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../theme';
+import i18n, { LANGUAGES, setLanguage, loadLanguage } from '../../i18n';
 
 export default function OnboardingScreen0({ navigation }: any) {
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('ja');
+
+  useEffect(() => {
+    // Load saved language on mount
+    loadLanguage().then(locale => {
+      setCurrentLanguage(locale);
+    });
+  }, []);
+
+  const handleLanguageChange = async (languageCode: string) => {
+    await setLanguage(languageCode);
+    setCurrentLanguage(languageCode);
+    setLanguageModalVisible(false);
+  };
+
+  const getCurrentLanguageFlag = () => {
+    const lang = LANGUAGES.find(l => l.code === currentLanguage);
+    return lang?.flag || '🇯🇵';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Language Selector Button */}
+      <TouchableOpacity
+        style={styles.languageButton}
+        onPress={() => setLanguageModalVisible(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.languageFlag}>{getCurrentLanguageFlag()}</Text>
+        <Text style={styles.languageButtonText}>{i18n.t('welcome.select_language')}</Text>
+        <Ionicons name="chevron-down" size={20} color={colors.text.secondary} />
+      </TouchableOpacity>
+
       <View style={styles.content}>
         {/* ロゴ/アイコン */}
         <View style={styles.logoContainer}>
@@ -19,11 +52,10 @@ export default function OnboardingScreen0({ navigation }: any) {
         {/* メインコピー */}
         <View style={styles.copyContainer}>
           <Text style={styles.headline}>
-            読めなかったら、{'\n'}子どもの学びに変わる。
+            {i18n.t('welcome.title')}
           </Text>
           <Text style={styles.subheadline}>
-            締切と覚悟で、読み切る仕組みを作ろう。{'\n'}
-            失敗しても、誰かの未来になる。
+            {i18n.t('welcome.subtitle')}
           </Text>
         </View>
 
@@ -31,8 +63,7 @@ export default function OnboardingScreen0({ navigation }: any) {
         <View style={styles.donationInfo}>
           <Ionicons name="heart" size={20} color={colors.accent.primary} />
           <Text style={styles.donationText}>
-            読了できなかった場合の覚悟金は{'\n'}
-            Room to Read（子どもの教育支援）に届けられます
+            {i18n.t('welcome.donation_info')}
           </Text>
         </View>
       </View>
@@ -44,7 +75,7 @@ export default function OnboardingScreen0({ navigation }: any) {
           onPress={() => navigation.navigate('Onboarding1')}
           activeOpacity={0.8}
         >
-          <Text style={styles.primaryButtonText}>始める</Text>
+          <Text style={styles.primaryButtonText}>{i18n.t('welcome.start')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -53,10 +84,50 @@ export default function OnboardingScreen0({ navigation }: any) {
           activeOpacity={0.7}
         >
           <Text style={styles.secondaryButtonText}>
-            すでにアカウントをお持ちの方
+            {i18n.t('welcome.already_have_account')}
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={languageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{i18n.t('welcome.select_language')}</Text>
+            {LANGUAGES.map((language) => (
+              <TouchableOpacity
+                key={language.code}
+                style={[
+                  styles.languageOption,
+                  currentLanguage === language.code && styles.languageOptionSelected
+                ]}
+                onPress={() => handleLanguageChange(language.code)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.languageOptionFlag}>{language.flag}</Text>
+                <Text style={[
+                  styles.languageOptionText,
+                  currentLanguage === language.code && styles.languageOptionTextSelected
+                ]}>
+                  {language.name}
+                </Text>
+                {currentLanguage === language.code && (
+                  <Ionicons name="checkmark" size={24} color={colors.accent.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -65,6 +136,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  languageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+    marginRight: spacing.md,
+    gap: spacing.xs,
+  },
+  languageFlag: {
+    fontSize: 24,
+  },
+  languageButtonText: {
+    fontSize: typography.fontSize.caption,
+    color: colors.text.secondary,
   },
   content: {
     flex: 1,
@@ -147,5 +235,49 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.text.secondary,
     fontSize: typography.fontSize.caption,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.background.primary,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '80%',
+    maxWidth: 320,
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.headingMedium,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.xs,
+    gap: spacing.md,
+  },
+  languageOptionSelected: {
+    backgroundColor: colors.background.secondary,
+  },
+  languageOptionFlag: {
+    fontSize: 28,
+  },
+  languageOptionText: {
+    flex: 1,
+    fontSize: typography.fontSize.body,
+    color: colors.text.secondary,
+  },
+  languageOptionTextSelected: {
+    color: colors.text.primary,
+    fontWeight: typography.fontWeight.semibold,
   },
 });
