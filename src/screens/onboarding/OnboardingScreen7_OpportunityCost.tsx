@@ -1,20 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
-import { colors, typography, spacing } from '../../theme';
+import { colors } from '../../theme';
+import i18n from '../../i18n';
 
 export default function OnboardingScreen7({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={7}
       totalSteps={14}
-      title="読まなかった1冊は、手に入らなかった1つの武器。"
-      subtitle="知識は複利で効く。1年後、差がつく。"
+      title={i18n.t('onboarding.screen7_title')}
+      subtitle={i18n.t('onboarding.screen7_subtitle')}
       footer={
         <PrimaryButton
-          label="次へ"
+          label={i18n.t('onboarding.next')}
           onPress={() => navigation.navigate('Onboarding8')}
         />
       }

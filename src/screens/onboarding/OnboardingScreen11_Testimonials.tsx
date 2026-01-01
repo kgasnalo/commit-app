@@ -4,22 +4,23 @@ import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
+import i18n from '../../i18n';
 
-const TESTIMONIALS = [
+const getTESTIMONIALS = () => [
   {
-    name: 'Taro S.',
-    role: '34歳・経営者',
-    text: '積読が30冊あったのに、3ヶ月で全部消化できた。ペナルティがあると本気になる。',
+    nameKey: 'onboarding.screen11_testimonial1_name',
+    roleKey: 'onboarding.screen11_testimonial1_role',
+    textKey: 'onboarding.screen11_testimonial1_text',
   },
   {
-    name: 'Yuki M.',
-    role: '29歳・投資家',
-    text: '意志力に頼らない仕組みが良い。失敗しても寄付になるから罪悪感がない。',
+    nameKey: 'onboarding.screen11_testimonial2_name',
+    roleKey: 'onboarding.screen11_testimonial2_role',
+    textKey: 'onboarding.screen11_testimonial2_text',
   },
   {
-    name: 'Ken T.',
-    role: '41歳・コンサルタント',
-    text: '週1冊ペースで読めるようになった。年間50冊、人生変わった。',
+    nameKey: 'onboarding.screen11_testimonial3_name',
+    roleKey: 'onboarding.screen11_testimonial3_role',
+    textKey: 'onboarding.screen11_testimonial3_text',
   },
 ];
 
@@ -28,27 +29,27 @@ export default function OnboardingScreen11({ navigation }: any) {
     <OnboardingLayout
       currentStep={11}
       totalSteps={14}
-      title="COMMITを使った人たちの声"
+      title={i18n.t('onboarding.screen11_title')}
       footer={
         <PrimaryButton
-          label="次へ"
+          label={i18n.t('onboarding.next')}
           onPress={() => navigation.navigate('Onboarding12')}
         />
       }
     >
       <ScrollView showsVerticalScrollIndicator={false}>
-        {TESTIMONIALS.map((testimonial, index) => (
+        {getTESTIMONIALS().map((testimonial, index) => (
           <View key={index} style={styles.testimonialCard}>
             <View style={styles.header}>
               <View style={styles.avatar}>
                 <Ionicons name="person" size={20} color={colors.text.muted} />
               </View>
               <View>
-                <Text style={styles.name}>{testimonial.name}</Text>
-                <Text style={styles.role}>{testimonial.role}</Text>
+                <Text style={styles.name}>{i18n.t(testimonial.nameKey)}</Text>
+                <Text style={styles.role}>{i18n.t(testimonial.roleKey)}</Text>
               </View>
             </View>
-            <Text style={styles.text}>{testimonial.text}</Text>
+            <Text style={styles.text}>{i18n.t(testimonial.textKey)}</Text>
           </View>
         ))}
       </ScrollView>
