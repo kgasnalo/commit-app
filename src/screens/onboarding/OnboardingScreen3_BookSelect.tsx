@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import { colors, typography, borderRadius, spacing } from '../../theme';
+import i18n from '../../i18n';
 
 const GOOGLE_BOOKS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
@@ -56,14 +57,14 @@ export default function OnboardingScreen3({ navigation }: any) {
     <OnboardingLayout
       currentStep={3}
       totalSteps={14}
-      title="次に読み切る1冊を決めよう。"
-      subtitle="「いつか読む」の『いつか』を、今日にする。"
+      title={i18n.t('onboarding.screen3_title')}
+      subtitle={i18n.t('onboarding.screen3_subtitle')}
     >
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color={colors.text.muted} />
         <TextInput
           style={styles.searchInput}
-          placeholder="書籍タイトルを入力"
+          placeholder={i18n.t('onboarding.screen3_search_placeholder')}
           placeholderTextColor={colors.text.muted}
           value={query}
           onChangeText={setQuery}
@@ -98,7 +99,7 @@ export default function OnboardingScreen3({ navigation }: any) {
                   {item.volumeInfo.title}
                 </Text>
                 <Text style={styles.bookAuthor} numberOfLines={1}>
-                  {item.volumeInfo.authors?.join(', ') || '著者不明'}
+                  {item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author', { defaultValue: '著者不明' })}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text.muted} />
@@ -107,8 +108,6 @@ export default function OnboardingScreen3({ navigation }: any) {
           showsVerticalScrollIndicator={false}
         />
       )}
-
-      <Text style={styles.note}>後で変更できます</Text>
     </OnboardingLayout>
   );
 }

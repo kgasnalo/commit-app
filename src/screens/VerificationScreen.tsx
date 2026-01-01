@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
+import i18n from '../i18n';
 
 const MIN_MEMO_LENGTH = 100;
 
@@ -27,7 +28,7 @@ export default function VerificationScreen({ route, navigation }: any) {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('エラー', 'カメラへのアクセス許可が必要です');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.camera_permission', { defaultValue: 'カメラへのアクセス許可が必要です' }));
       return;
     }
 
@@ -55,9 +56,13 @@ export default function VerificationScreen({ route, navigation }: any) {
   const validateMemo = () => {
     if (memo.length < MIN_MEMO_LENGTH) {
       Alert.alert(
-        'メモが短すぎます',
-        `読書から得た学びを${MIN_MEMO_LENGTH}文字以上で記入してください。\n現在: ${memo.length}文字`,
-        [{ text: 'OK' }]
+        i18n.t('errors.memo_too_short', { defaultValue: 'メモが短すぎます' }),
+        i18n.t('errors.memo_length_requirement', {
+          defaultValue: `読書から得た学びを${MIN_MEMO_LENGTH}文字以上で記入してください。\n現在: ${memo.length}文字`,
+          length: MIN_MEMO_LENGTH,
+          current: memo.length
+        }),
+        [{ text: i18n.t('common.ok') }]
       );
       return false;
     }
@@ -66,7 +71,7 @@ export default function VerificationScreen({ route, navigation }: any) {
 
   const submitVerification = async () => {
     if (!image) {
-      Alert.alert('エラー', '本の最終ページの写真を撮影してください');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.photo_required', { defaultValue: '本の最終ページの写真を撮影してください' }));
       return;
     }
 

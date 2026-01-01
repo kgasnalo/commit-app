@@ -2,12 +2,13 @@ import React from 'react';
 import { View } from 'react-native';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import SelectionCard from '../../components/onboarding/SelectionCard';
+import i18n from '../../i18n';
 
-const OPTIONS = [
-  { id: '1-3', label: '1〜3冊' },
-  { id: '4-10', label: '4〜10冊' },
-  { id: '10+', label: '10冊以上' },
-  { id: 'unknown', label: '数えたくない' },
+const getOptions = () => [
+  { id: '1-3', labelKey: 'onboarding.screen1_option1' },
+  { id: '4-10', labelKey: 'onboarding.screen1_option2' },
+  { id: '11-30', labelKey: 'onboarding.screen1_option3' },
+  { id: '31+', labelKey: 'onboarding.screen1_option4' },
 ];
 
 export default function OnboardingScreen1({ navigation }: any) {
@@ -20,13 +21,14 @@ export default function OnboardingScreen1({ navigation }: any) {
     <OnboardingLayout
       currentStep={1}
       totalSteps={14}
-      title="積読、何冊ありますか？"
+      title={i18n.t('onboarding.screen1_title')}
+      subtitle={i18n.t('onboarding.screen1_subtitle')}
     >
       <View>
-        {OPTIONS.map((option) => (
+        {getOptions().map((option) => (
           <SelectionCard
             key={option.id}
-            label={option.label}
+            label={i18n.t(option.labelKey)}
             onPress={() => handleSelect(option.id)}
           />
         ))}
