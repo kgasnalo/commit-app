@@ -3,7 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing } from '../../theme';
+import i18n from '../../i18n';
 
 export default function OnboardingScreen10({ navigation }: any) {
   return (
@@ -13,7 +14,7 @@ export default function OnboardingScreen10({ navigation }: any) {
       title=""
       footer={
         <PrimaryButton
-          label="次へ"
+          label={i18n.t('onboarding.next')}
           onPress={() => navigation.navigate('Onboarding11')}
         />
       }
@@ -21,10 +22,10 @@ export default function OnboardingScreen10({ navigation }: any) {
       <View style={styles.quoteContainer}>
         <Ionicons name="chatbubble-outline" size={40} color={colors.accent.primary} />
         <Text style={styles.quote}>
-          "読書は最もコスパの良い自己投資だ"
+          "{i18n.t('onboarding.screen10_quote')}"
         </Text>
         <Text style={styles.attribution}>
-          — 世界の経営者たちの共通見解
+          {i18n.t('onboarding.screen10_attribution')}
         </Text>
       </View>
     </OnboardingLayout>

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
+import i18n from '../../i18n';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   JPY: '¥',
@@ -61,11 +62,11 @@ export default function OnboardingScreen12({ navigation, route }: any) {
     <OnboardingLayout
       currentStep={12}
       totalSteps={14}
-      title="あなたのCOMMIT"
-      subtitle="これが、あなたが自分に課した約束。"
+      title={i18n.t('onboarding.screen12_title')}
+      subtitle={i18n.t('onboarding.screen12_subtitle')}
       footer={
         <PrimaryButton
-          label="この約束を有効化する"
+          label={i18n.t('onboarding.screen12_activate')}
           onPress={() => navigation.navigate('Onboarding13')}
         />
       }
@@ -74,9 +75,9 @@ export default function OnboardingScreen12({ navigation, route }: any) {
         <View style={styles.commitItem}>
           <Ionicons name="book" size={24} color={colors.accent.primary} />
           <View style={styles.commitContent}>
-            <Text style={styles.commitLabel}>読む本</Text>
+            <Text style={styles.commitLabel}>{i18n.t('onboarding.screen12_book_label')}</Text>
             <Text style={styles.commitValue} numberOfLines={2}>
-              {selectedBook?.volumeInfo?.title || '未選択'}
+              {selectedBook?.volumeInfo?.title || i18n.t('onboarding.screen12_not_selected')}
             </Text>
           </View>
         </View>
@@ -86,7 +87,7 @@ export default function OnboardingScreen12({ navigation, route }: any) {
         <View style={styles.commitItem}>
           <Ionicons name="time" size={24} color={colors.accent.primary} />
           <View style={styles.commitContent}>
-            <Text style={styles.commitLabel}>期限</Text>
+            <Text style={styles.commitLabel}>{i18n.t('onboarding.screen12_deadline_label')}</Text>
             <Text style={styles.commitValue}>{formatDate(deadline)}</Text>
           </View>
         </View>
@@ -96,11 +97,11 @@ export default function OnboardingScreen12({ navigation, route }: any) {
         <View style={styles.commitItem}>
           <Ionicons name="heart" size={24} color={colors.accent.primary} />
           <View style={styles.commitContent}>
-            <Text style={styles.commitLabel}>覚悟金</Text>
+            <Text style={styles.commitLabel}>{i18n.t('onboarding.screen12_pledge_label')}</Text>
             <Text style={styles.commitValue}>
               {CURRENCY_SYMBOLS[currency] || '¥'}{pledgeAmount?.toLocaleString()}
             </Text>
-            <Text style={styles.commitNote}>Room to Readに届けられます</Text>
+            <Text style={styles.commitNote}>{i18n.t('onboarding.screen12_pledge_note')}</Text>
           </View>
         </View>
       </View>

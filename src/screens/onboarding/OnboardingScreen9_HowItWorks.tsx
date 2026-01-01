@@ -4,22 +4,23 @@ import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
+import i18n from '../../i18n';
 
-const FEATURES = [
+const getFEATURES = () => [
   {
     icon: 'time-outline',
-    title: '締切',
-    description: '期限が迫ると、人は動く。',
+    titleKey: 'onboarding.screen9_feature1_title',
+    descriptionKey: 'onboarding.screen9_feature1_desc',
   },
   {
     icon: 'flame-outline',
-    title: '覚悟',
-    description: '失うものがあると、人は本気になる。',
+    titleKey: 'onboarding.screen9_feature2_title',
+    descriptionKey: 'onboarding.screen9_feature2_desc',
   },
   {
     icon: 'heart-outline',
-    title: '貢献',
-    description: '失敗しても、誰かの学びになる。',
+    titleKey: 'onboarding.screen9_feature3_title',
+    descriptionKey: 'onboarding.screen9_feature3_desc',
   },
 ];
 
@@ -28,16 +29,16 @@ export default function OnboardingScreen9({ navigation }: any) {
     <OnboardingLayout
       currentStep={9}
       totalSteps={14}
-      title="気合いではなく、仕組みで読む。"
+      title={i18n.t('onboarding.screen9_title')}
       footer={
         <PrimaryButton
-          label="次へ"
+          label={i18n.t('onboarding.next')}
           onPress={() => navigation.navigate('Onboarding10')}
         />
       }
     >
       <View style={styles.features}>
-        {FEATURES.map((feature, index) => (
+        {getFEATURES().map((feature, index) => (
           <View key={index} style={styles.featureCard}>
             <View style={styles.iconContainer}>
               <Ionicons
@@ -47,8 +48,8 @@ export default function OnboardingScreen9({ navigation }: any) {
               />
             </View>
             <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              <Text style={styles.featureDescription}>{feature.description}</Text>
+              <Text style={styles.featureTitle}>{i18n.t(feature.titleKey)}</Text>
+              <Text style={styles.featureDescription}>{i18n.t(feature.descriptionKey)}</Text>
             </View>
           </View>
         ))}

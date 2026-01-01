@@ -3,31 +3,32 @@ import { View, Text, StyleSheet } from 'react-native';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
+import i18n from '../../i18n';
 
 export default function OnboardingScreen8({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={8}
       totalSteps={14}
-      title="気合いに頼った人の読了率、23%。"
+      title={i18n.t('onboarding.screen8_title')}
       footer={
         <PrimaryButton
-          label="次へ"
+          label={i18n.t('onboarding.next')}
           onPress={() => navigation.navigate('Onboarding9')}
         />
       }
     >
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>23%</Text>
-          <Text style={styles.statLabel}>気合いのみ</Text>
+          <Text style={styles.statValue}>{i18n.t('onboarding.screen8_stat1_value')}</Text>
+          <Text style={styles.statLabel}>{i18n.t('onboarding.screen8_stat1_label')}</Text>
         </View>
         <View style={[styles.statCard, styles.statCardHighlight]}>
-          <Text style={[styles.statValue, styles.statValueHighlight]}>87%</Text>
-          <Text style={styles.statLabel}>COMMITを使用</Text>
+          <Text style={[styles.statValue, styles.statValueHighlight]}>{i18n.t('onboarding.screen8_stat2_value')}</Text>
+          <Text style={styles.statLabel}>{i18n.t('onboarding.screen8_stat2_label')}</Text>
         </View>
       </View>
-      <Text style={styles.subtitle}>仕組みが、意志を超える。</Text>
+      <Text style={styles.subtitle}>{i18n.t('onboarding.screen8_subtitle')}</Text>
     </OnboardingLayout>
   );
 }
