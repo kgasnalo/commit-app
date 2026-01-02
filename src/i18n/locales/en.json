@@ -102,28 +102,51 @@
     "completed": "Completed",
     "failed": "Failed"
   },
+  "paywall": {
+    "for_serious": "For serious readers",
+    "welcome": "Welcome!",
+    "registration_complete": "Registration complete."
+  },
+  "book_search": {
+    "title": "Add Book",
+    "subtitle": "Turn discipline into assets",
+    "search_title": "Search for a book",
+    "search_subtitle": "Search by title",
+    "recommended": "Choose from recommendations (optional)"
+  },
   "commitment": {
     "create_title": "Create Commitment",
-    "select_book": "Select a book",
+    "select_book": "1. Select a book",
     "search_placeholder": "Enter book title",
-    "set_deadline": "Set deadline",
-    "set_penalty": "Set penalty amount",
+    "set_deadline": "2. Set deadline",
+    "set_penalty": "3. Set penalty amount",
     "select_currency": "Select currency",
     "select_amount": "Select amount",
-    "penalty_note": "If you don't submit proof of completion by the deadline, you will be charged this amount.",
+    "penalty_note": "If you don't submit proof by the deadline, you will be charged this amount.",
     "agree_terms": "I agree to the penalty and create this commitment",
     "create_button": "Create Commitment"
   },
+  "commitment_detail": {
+    "title": "Commitment Details",
+    "in_progress": "In Progress",
+    "time_remaining": "Time remaining",
+    "days": "days",
+    "hours": "hours",
+    "minutes": "min",
+    "penalty_amount": "Penalty Amount",
+    "penalty_note": "If you don't verify completion by the deadline, you will be charged this amount",
+    "verify_button": "Verify Completion"
+  },
   "verification": {
     "title": "Reading Verification",
-    "photo_section": "Final Page Photo",
+    "photo_section": "1. Final Page Photo",
     "photo_instruction": "Take a photo of the final page",
     "take_photo": "Take Photo",
     "choose_photo": "Choose Photo",
-    "memo_section": "Learning Memo",
+    "memo_section": "2. Learning Memo",
     "memo_instruction": "Record what you learned from this book (100+ characters)",
     "memo_placeholder": "Write about what you learned, memorable content, things you want to practice...",
-    "char_count": "characters minimum",
+    "char_count": "characters min",
     "submit": "Confirm Completion"
   },
   "settings": {

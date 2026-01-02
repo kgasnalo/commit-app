@@ -126,13 +126,13 @@ export default function VerificationScreen({ route, navigation }: any) {
       }
 
       Alert.alert(
-        '読了完了！',
-        'おめでとうございます！読了が確認されました。',
-        [{ text: 'OK', onPress: () => navigation.navigate('Dashboard') }]
+        i18n.t('verification.success_title', { defaultValue: '読了完了！' }),
+        i18n.t('verification.success_message', { defaultValue: 'おめでとうございます！読了が確認されました。' }),
+        [{ text: i18n.t('common.ok'), onPress: () => navigation.navigate('Dashboard') }]
       );
     } catch (error) {
       console.error('Verification error:', error);
-      Alert.alert('エラー', '読了確認の保存に失敗しました');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.verification_failed', { defaultValue: '読了確認の保存に失敗しました' }));
     } finally {
       setLoading(false);
     }
@@ -144,7 +144,7 @@ export default function VerificationScreen({ route, navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>読了確認</Text>
+        <Text style={styles.title}>{i18n.t('verification.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -153,8 +153,8 @@ export default function VerificationScreen({ route, navigation }: any) {
 
         {/* 写真撮影セクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. 最終ページの写真</Text>
-          <Text style={styles.sectionDesc}>本の最終ページを撮影してください</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('verification.photo_section')}</Text>
+          <Text style={styles.sectionDesc}>{i18n.t('verification.photo_instruction')}</Text>
 
           {image ? (
             <View style={styles.imageContainer}>
@@ -164,18 +164,18 @@ export default function VerificationScreen({ route, navigation }: any) {
                 onPress={takePhoto}
               >
                 <Ionicons name="camera" size={20} color="#fff" />
-                <Text style={styles.retakeText}>撮り直す</Text>
+                <Text style={styles.retakeText}>{i18n.t('verification.retake', { defaultValue: '撮り直す' })}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.photoButtons}>
               <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
                 <Ionicons name="camera" size={32} color="#000" />
-                <Text style={styles.photoButtonText}>撮影する</Text>
+                <Text style={styles.photoButtonText}>{i18n.t('verification.take_photo')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
                 <Ionicons name="images" size={32} color="#000" />
-                <Text style={styles.photoButtonText}>選択する</Text>
+                <Text style={styles.photoButtonText}>{i18n.t('verification.choose_photo')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -183,16 +183,16 @@ export default function VerificationScreen({ route, navigation }: any) {
 
         {/* メモセクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. 学びのメモ</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('verification.memo_section')}</Text>
           <Text style={styles.sectionDesc}>
-            この本から得た学びを記録してください（{MIN_MEMO_LENGTH}文字以上）
+            {i18n.t('verification.memo_instruction')}
           </Text>
 
           <TextInput
             style={styles.memoInput}
             value={memo}
             onChangeText={setMemo}
-            placeholder="この本を読んで学んだこと、印象に残った内容、実践したいことなどを書いてください..."
+            placeholder={i18n.t('verification.memo_placeholder')}
             multiline
             numberOfLines={8}
             textAlignVertical="top"
@@ -202,7 +202,7 @@ export default function VerificationScreen({ route, navigation }: any) {
             styles.charCount,
             memo.length >= MIN_MEMO_LENGTH && styles.charCountValid
           ]}>
-            {memo.length} / {MIN_MEMO_LENGTH}文字以上
+            {memo.length} / {MIN_MEMO_LENGTH}{i18n.t('verification.char_count')}
           </Text>
         </View>
 
@@ -218,7 +218,7 @@ export default function VerificationScreen({ route, navigation }: any) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>読了を確認する</Text>
+            <Text style={styles.submitButtonText}>{i18n.t('verification.submit')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
