@@ -102,29 +102,52 @@
     "completed": "완료",
     "failed": "실패"
   },
+  "paywall": {
+    "for_serious": "진지한 독자를 위해",
+    "welcome": "환영합니다!",
+    "registration_complete": "등록이 완료되었습니다."
+  },
+  "book_search": {
+    "title": "책 추가",
+    "subtitle": "규율을 자산으로",
+    "search_title": "읽고 싶은 책 검색",
+    "search_subtitle": "제목으로 검색",
+    "recommended": "추천에서 선택 (선택사항)"
+  },
   "commitment": {
     "create_title": "커밋먼트 생성",
-    "select_book": "읽을 책을 선택",
+    "select_book": "1. 책 선택",
     "search_placeholder": "책 제목 입력",
-    "set_deadline": "완독 기한 설정",
-    "set_penalty": "페널티 금액 설정",
+    "set_deadline": "2. 기한 설정",
+    "set_penalty": "3. 페널티 금액 설정",
     "select_currency": "통화 선택",
     "select_amount": "금액 선택",
-    "penalty_note": "기한까지 완독 증명을 제출하지 못한 경우 위 금액이 청구됩니다.",
-    "agree_terms": "위 페널티에 동의하고 커밋먼트를 생성합니다",
+    "penalty_note": "기한까지 완료 증명을 제출하지 않으면 이 금액이 청구됩니다.",
+    "agree_terms": "페널티에 동의하고 커밋먼트를 생성합니다",
     "create_button": "커밋먼트 생성"
   },
+  "commitment_detail": {
+    "title": "커밋먼트 상세",
+    "in_progress": "진행 중",
+    "time_remaining": "남은 시간",
+    "days": "일",
+    "hours": "시간",
+    "minutes": "분",
+    "penalty_amount": "페널티 금액",
+    "penalty_note": "기한까지 완료 확인을 하지 않으면 이 금액이 청구됩니다",
+    "verify_button": "완료 확인"
+  },
   "verification": {
-    "title": "완독 확인",
-    "photo_section": "마지막 페이지 사진",
-    "photo_instruction": "책의 마지막 페이지를 촬영해주세요",
-    "take_photo": "촬영하기",
-    "choose_photo": "선택하기",
-    "memo_section": "배움 메모",
-    "memo_instruction": "이 책에서 얻은 배움을 기록해주세요 (100자 이상)",
-    "memo_placeholder": "이 책을 읽고 배운 것, 인상 깊은 내용, 실천하고 싶은 것 등을 적어주세요...",
+    "title": "독서 확인",
+    "photo_section": "1. 마지막 페이지 사진",
+    "photo_instruction": "마지막 페이지를 촬영해주세요",
+    "take_photo": "촬영",
+    "choose_photo": "선택",
+    "memo_section": "2. 학습 메모",
+    "memo_instruction": "이 책에서 배운 것을 기록해주세요 (100자 이상)",
+    "memo_placeholder": "배운 것, 인상 깊었던 내용, 실천하고 싶은 것 등을 적어주세요...",
     "char_count": "자 이상",
-    "submit": "완독 확인하기"
+    "submit": "완료 확인"
   },
   "settings": {
     "title": "설정",

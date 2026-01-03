@@ -102,7 +102,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
   const searchBooks = async () => {
     if (!searchQuery.trim()) {
-      Alert.alert('エラー', '検索キーワードを入力してください。');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.search_keyword_required', { defaultValue: '検索キーワードを入力してください。' }));
       return;
     }
 
@@ -116,11 +116,11 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       if (data.items && data.items.length > 0) {
         setSearchResults(data.items);
       } else {
-        Alert.alert('検索結果なし', '該当する書籍が見つかりませんでした。');
+        Alert.alert(i18n.t('errors.no_results', { defaultValue: '検索結果なし' }), i18n.t('errors.no_books_found', { defaultValue: '該当する書籍が見つかりませんでした。' }));
         setSearchResults([]);
       }
     } catch (error: any) {
-      Alert.alert('エラー', '書籍の検索に失敗しました。');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.search_failed', { defaultValue: '書籍の検索に失敗しました。' }));
       console.error('Search error:', error);
     } finally {
       setSearching(false);
@@ -149,9 +149,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       // 1ヶ月以上先のチェック
       if (selectedDay > maxDate) {
         Alert.alert(
-          '期限エラー',
-          '期限は最大1ヶ月先までです。',
-          [{ text: 'OK' }]
+          i18n.t('errors.deadline_error', { defaultValue: '期限エラー' }),
+          i18n.t('errors.deadline_max_one_month', { defaultValue: '期限は最大1ヶ月先までです。' }),
+          [{ text: i18n.t('common.ok') }]
         );
         return;
       }
@@ -162,9 +162,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       if (selectedDay < tomorrow) {
         Alert.alert(
-          '期限エラー',
-          '期限は明日以降を選択してください。',
-          [{ text: 'OK' }]
+          i18n.t('errors.deadline_error', { defaultValue: '期限エラー' }),
+          i18n.t('errors.deadline_tomorrow_or_later', { defaultValue: '期限は明日以降を選択してください。' }),
+          [{ text: i18n.t('common.ok') }]
         );
         return;
       }
@@ -175,22 +175,22 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
   const handleCreateCommitment = async () => {
     if (!selectedBook) {
-      Alert.alert('エラー', '書籍を選択してください。');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.select_book', { defaultValue: '書籍を選択してください。' }));
       return;
     }
 
     if (!pledgeAmount) {
-      Alert.alert('エラー', 'ペナルティ金額を選択してください。');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.select_penalty', { defaultValue: 'ペナルティ金額を選択してください。' }));
       return;
     }
 
     if (!agreedToPenalty) {
-      Alert.alert('エラー', 'ペナルティに同意してください。');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.agree_penalty', { defaultValue: 'ペナルティに同意してください。' }));
       return;
     }
 
     if (deadline < new Date()) {
-      Alert.alert('エラー', '期限は現在より後の日付を選択してください。');
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.deadline_future', { defaultValue: '期限は現在より後の日付を選択してください。' }));
       return;
     }
 
@@ -242,17 +242,21 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       const currencySymbol = CURRENCY_OPTIONS.find(c => c.code === currency)?.symbol || currency;
       Alert.alert(
-        '成功',
-        `コミットメントを作成しました。\n期限: ${deadline.toLocaleDateString('ja-JP')}\nペナルティ: ${currencySymbol}${pledgeAmount.toLocaleString()}`,
+        i18n.t('common.success'),
+        i18n.t('commitment.success_message', {
+          defaultValue: `コミットメントを作成しました。\n期限: ${deadline.toLocaleDateString('ja-JP')}\nペナルティ: ${currencySymbol}${pledgeAmount.toLocaleString()}`,
+          deadline: deadline.toLocaleDateString('ja-JP'),
+          penalty: `${currencySymbol}${pledgeAmount.toLocaleString()}`
+        }),
         [
           {
-            text: 'OK',
+            text: i18n.t('common.ok'),
             onPress: () => navigation.navigate('Dashboard')
           }
         ]
       );
     } catch (error: any) {
-      Alert.alert('エラー', error.message || 'コミットメントの作成に失敗しました。');
+      Alert.alert(i18n.t('common.error'), error.message || i18n.t('errors.create_commitment_failed', { defaultValue: 'コミットメントの作成に失敗しました。' }));
       console.error('Create commitment error:', error);
     } finally {
       setCreating(false);
@@ -279,7 +283,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>コミットメント作成</Text>
+        <Text style={styles.title}>{i18n.t('commitment.create_title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -291,7 +295,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       >
         {/* 書籍選択セクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. 読む書籍を選択</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('commitment.select_book')}</Text>
 
           {selectedBook ? (
             <View style={styles.selectedBookCard}>
@@ -312,7 +316,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               <View style={styles.searchContainer}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="書籍タイトルを入力"
+                  placeholder={i18n.t('commitment.search_placeholder')}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   onSubmitEditing={searchBooks}
@@ -345,7 +349,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
         {/* 期限設定セクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. 読了期限を設定</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('commitment.set_deadline')}</Text>
           <TouchableOpacity
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
@@ -374,10 +378,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
         {/* ペナルティ設定セクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. ペナルティ金額を設定</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('commitment.set_penalty')}</Text>
 
           {/* 通貨選択 */}
-          <Text style={styles.subsectionTitle}>通貨を選択</Text>
+          <Text style={styles.subsectionTitle}>{i18n.t('commitment.select_currency')}</Text>
           <View style={styles.currencyButtons}>
             {CURRENCY_OPTIONS.map((curr) => (
               <TouchableOpacity
@@ -404,7 +408,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           </View>
 
           {/* 金額選択 */}
-          <Text style={styles.subsectionTitle}>金額を選択</Text>
+          <Text style={styles.subsectionTitle}>{i18n.t('commitment.select_amount')}</Text>
           <View style={styles.amountButtons}>
             {AMOUNTS_BY_CURRENCY[currency].map((amount) => (
               <TouchableOpacity
@@ -428,7 +432,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           </View>
 
           <Text style={styles.penaltyNote}>
-            期限までに読了証明を提出できなかった場合、上記金額が課金されます。
+            {i18n.t('commitment.penalty_note')}
           </Text>
 
           <TouchableOpacity
@@ -439,7 +443,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               {agreedToPenalty && <MaterialIcons name="check" size={18} color="#fff" />}
             </View>
             <Text style={styles.checkboxLabel}>
-              上記ペナルティに同意し、コミットメントを作成します
+              {i18n.t('commitment.agree_terms')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -456,7 +460,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           {creating ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.createButtonText}>コミットメントを作成</Text>
+            <Text style={styles.createButtonText}>{i18n.t('commitment.create_button')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

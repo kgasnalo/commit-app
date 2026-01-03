@@ -132,8 +132,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       // 成功メッセージを表示し、OKボタンで直接Dashboardに遷移
       Alert.alert(
-        i18n.t('common.welcome', { defaultValue: 'ようこそ！' }),
-        i18n.t('common.registration_complete', { defaultValue: 'COMMITへの登録が完了しました。' }),
+        i18n.t('paywall.welcome'),
+        i18n.t('paywall.registration_complete'),
         [{
           text: i18n.t('common.ok'),
           onPress: () => {
@@ -191,7 +191,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           <Text style={styles.planName}>{i18n.t('onboarding.screen13_annual')}</Text>
           <Text style={styles.planPrice}>{i18n.t('onboarding.screen13_annual_price')}</Text>
           <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_annual_note')}</Text>
-          <Text style={styles.planLabel}>{i18n.t('common.for_serious', { defaultValue: '本気の人向け' })}</Text>
+          <Text style={styles.planLabel}>{i18n.t('paywall.for_serious')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

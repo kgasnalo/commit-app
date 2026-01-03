@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import i18n from '../i18n';
 
 type CommitmentDetail = {
   id: string;
@@ -60,9 +61,9 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
     } catch (error) {
       console.error('Error fetching commitment:', error);
       Alert.alert(
-        'エラー',
-        'コミットメント情報の取得に失敗しました。',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        i18n.t('common.error'),
+        i18n.t('errors.fetch_commitment_failed', { defaultValue: 'コミットメント情報の取得に失敗しました。' }),
+        [{ text: i18n.t('common.ok'), onPress: () => navigation.goBack() }]
       );
     } finally {
       setLoading(false);
@@ -105,17 +106,17 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <MaterialIcons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>エラー</Text>
+          <Text style={styles.headerTitle}>{i18n.t('common.error')}</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#ccc" />
-          <Text style={styles.errorText}>コミットメントが見つかりません</Text>
+          <Text style={styles.errorText}>{i18n.t('errors.commitment_not_found', { defaultValue: 'コミットメントが見つかりません' })}</Text>
           <TouchableOpacity
             style={styles.errorButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.errorButtonText}>戻る</Text>
+            <Text style={styles.errorButtonText}>{i18n.t('common.back')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -131,7 +132,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>コミットメント詳細</Text>
+        <Text style={styles.headerTitle}>{i18n.t('commitment_detail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -158,36 +159,36 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
           commitment.status === 'defaulted' && styles.defaultedBadge,
         ]}>
           <Text style={styles.statusText}>
-            {commitment.status === 'pending' ? '進行中' :
-             commitment.status === 'completed' ? '読了完了' : '期限切れ'}
+            {commitment.status === 'pending' ? i18n.t('commitment_detail.in_progress') :
+             commitment.status === 'completed' ? i18n.t('dashboard.completed') : i18n.t('dashboard.failed')}
           </Text>
         </View>
 
         {/* カウントダウン */}
         {commitment.status === 'pending' && (
           <View style={[styles.countdownCard, isUrgent && styles.urgentCard]}>
-            <Text style={styles.countdownLabel}>期限まで</Text>
+            <Text style={styles.countdownLabel}>{i18n.t('commitment_detail.time_remaining')}</Text>
             {countdown.expired ? (
-              <Text style={styles.expiredText}>期限切れ</Text>
+              <Text style={styles.expiredText}>{i18n.t('dashboard.failed')}</Text>
             ) : (
               <View style={styles.countdownNumbers}>
                 <View style={styles.countdownItem}>
                   <Text style={[styles.countdownValue, isUrgent && styles.urgentText]}>
                     {countdown.days}
                   </Text>
-                  <Text style={styles.countdownUnit}>日</Text>
+                  <Text style={styles.countdownUnit}>{i18n.t('commitment_detail.days')}</Text>
                 </View>
                 <View style={styles.countdownItem}>
                   <Text style={[styles.countdownValue, isUrgent && styles.urgentText]}>
                     {countdown.hours}
                   </Text>
-                  <Text style={styles.countdownUnit}>時間</Text>
+                  <Text style={styles.countdownUnit}>{i18n.t('commitment_detail.hours')}</Text>
                 </View>
                 <View style={styles.countdownItem}>
                   <Text style={[styles.countdownValue, isUrgent && styles.urgentText]}>
                     {countdown.minutes}
                   </Text>
-                  <Text style={styles.countdownUnit}>分</Text>
+                  <Text style={styles.countdownUnit}>{i18n.t('commitment_detail.minutes')}</Text>
                 </View>
               </View>
             )}
@@ -196,12 +197,12 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 
         {/* ペナルティ金額 */}
         <View style={styles.penaltyCard}>
-          <Text style={styles.penaltyLabel}>ペナルティ金額</Text>
+          <Text style={styles.penaltyLabel}>{i18n.t('commitment_detail.penalty_amount')}</Text>
           <Text style={styles.penaltyAmount}>
             {getCurrencySymbol(commitment.currency)}{commitment.pledge_amount.toLocaleString()}
           </Text>
           <Text style={styles.penaltyNote}>
-            期限までに読了確認ができない場合、この金額が課金されます
+            {i18n.t('commitment_detail.penalty_note')}
           </Text>
         </View>
 
@@ -215,14 +216,14 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
             })}
           >
             <Ionicons name="checkmark-circle" size={24} color="#fff" />
-            <Text style={styles.verifyButtonText}>読了確認する</Text>
+            <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
           </TouchableOpacity>
         )}
 
         {commitment.status === 'completed' && (
           <View style={styles.completedMessage}>
             <Ionicons name="checkmark-circle" size={48} color="#4caf50" />
-            <Text style={styles.completedText}>読了完了しました！</Text>
+            <Text style={styles.completedText}>{i18n.t('commitment_detail.completed_message', { defaultValue: '読了完了しました！' })}</Text>
           </View>
         )}
       </View>

@@ -102,25 +102,48 @@
     "completed": "完了",
     "failed": "失敗"
   },
+  "paywall": {
+    "for_serious": "本気の人向け",
+    "welcome": "ようこそ！",
+    "registration_complete": "COMMITへの登録が完了しました。"
+  },
+  "book_search": {
+    "title": "本を追加",
+    "subtitle": "規律を資産に変える",
+    "search_title": "読みたい本を検索",
+    "search_subtitle": "書籍タイトルから探す",
+    "recommended": "おすすめから選ぶ（任意）"
+  },
   "commitment": {
     "create_title": "コミットメント作成",
-    "select_book": "読む書籍を選択",
+    "select_book": "1. 読む書籍を選択",
     "search_placeholder": "書籍タイトルを入力",
-    "set_deadline": "読了期限を設定",
-    "set_penalty": "ペナルティ金額を設定",
+    "set_deadline": "2. 読了期限を設定",
+    "set_penalty": "3. ペナルティ金額を設定",
     "select_currency": "通貨を選択",
     "select_amount": "金額を選択",
     "penalty_note": "期限までに読了証明を提出できなかった場合、上記金額が課金されます。",
     "agree_terms": "上記ペナルティに同意し、コミットメントを作成します",
     "create_button": "コミットメントを作成"
   },
+  "commitment_detail": {
+    "title": "コミットメント詳細",
+    "in_progress": "進行中",
+    "time_remaining": "期限まで",
+    "days": "日",
+    "hours": "時間",
+    "minutes": "分",
+    "penalty_amount": "ペナルティ金額",
+    "penalty_note": "期限までに読了確認ができない場合、この金額が課金されます",
+    "verify_button": "読了確認する"
+  },
   "verification": {
     "title": "読了確認",
-    "photo_section": "最終ページの写真",
+    "photo_section": "1. 最終ページの写真",
     "photo_instruction": "本の最終ページを撮影してください",
     "take_photo": "撮影する",
     "choose_photo": "選択する",
-    "memo_section": "学びのメモ",
+    "memo_section": "2. 学びのメモ",
     "memo_instruction": "この本から得た学びを記録してください（100文字以上）",
     "memo_placeholder": "この本を読んで学んだこと、印象に残った内容、実践したいことなどを書いてください...",
     "char_count": "文字以上",
