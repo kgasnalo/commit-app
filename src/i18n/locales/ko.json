@@ -180,5 +180,36 @@
     "network": "네트워크 오류가 발생했습니다",
     "auth": "인증 오류가 발생했습니다. 다시 로그인해주세요.",
     "unknown": "오류가 발생했습니다"
+  },
+  "tabs": {
+    "home": "홈",
+    "library": "서재",
+    "settings": "설정"
+  },
+  "library": {
+    "title": "서재",
+    "total_books": "권 읽음",
+    "monthly_pace": "권/월 페이스",
+    "streak": "개월 연속",
+    "all": "전체",
+    "add_tag": "추가",
+    "empty_title": "서재가 비어 있습니다.",
+    "empty_subtitle": "첫 번째 책을 완독하고 여기에 추가하세요.",
+    "empty_button": "커밋먼트 생성",
+    "grid_view": "그리드",
+    "shelf_view": "서재",
+    "books_count": "권",
+    "edit_tags": "태그 편집",
+    "new_tag": "새 태그 만들기",
+    "save": "저장",
+    "read_date": "완독일",
+    "deadline": "기한",
+    "pledge_amount": "각오금",
+    "reading_days": "독서 기간",
+    "days": "일",
+    "success": "성공",
+    "memo": "메모",
+    "edit": "편집",
+    "recommendations_for": "추천"
   }
 }

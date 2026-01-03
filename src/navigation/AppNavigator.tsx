@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
+import i18n from '../i18n';
 
 import AuthScreen from '../screens/AuthScreen';
 import RoleSelectScreen from '../screens/RoleSelectScreen';
@@ -13,6 +16,8 @@ import DashboardScreen from '../screens/DashboardScreen';
 import VerificationScreen from '../screens/VerificationScreen';
 import CommitmentDetailScreen from '../screens/CommitmentDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import LibraryScreen from '../screens/LibraryScreen';
+import BookDetailScreen from '../screens/BookDetailScreen';
 
 // Onboarding screens
 import OnboardingScreen0 from '../screens/onboarding/OnboardingScreen0_Welcome';
@@ -31,6 +36,90 @@ import OnboardingScreen12 from '../screens/onboarding/OnboardingScreen12_CustomP
 import OnboardingScreen13 from '../screens/onboarding/OnboardingScreen13_Paywall';
 
 const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+
+// Home Stack Navigator
+function HomeStackNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
+      <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
+      <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
+      <Stack.Screen name="Verification" component={VerificationScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Library Stack Navigator
+function LibraryStackNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Library" component={LibraryScreen} />
+      <Stack.Screen name="BookDetail" component={BookDetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Settings Stack Navigator
+function SettingsStackNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Main Tab Navigator (for authenticated and subscribed users)
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#0A0A0A',
+          borderTopColor: '#1A1A1A',
+          height: 85,
+          paddingBottom: 30,
+          paddingTop: 10,
+        },
+        tabBarActiveTintColor: '#FF4D00',
+        tabBarInactiveTintColor: '#666666',
+      }}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStackNavigator}
+        options={{
+          tabBarLabel: i18n.t('tabs.home'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="LibraryTab"
+        component={LibraryStackNavigator}
+        options={{
+          tabBarLabel: i18n.t('tabs.library'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="library" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="SettingsTab"
+        component={SettingsStackNavigator}
+        options={{
+          tabBarLabel: i18n.t('tabs.settings'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 export default function AppNavigator() {
   const [session, setSession] = useState<Session | null>(null);
@@ -171,7 +260,7 @@ export default function AppNavigator() {
             </>
           ) : !isSubscribed ? (
             <>
-              {/* Authenticated but not subscribed - show Onboarding7-13 + Dashboard for transition */}
+              {/* Authenticated but not subscribed - show Onboarding7-13 + MainTabs for transition */}
               <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
               <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
               <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
@@ -179,22 +268,13 @@ export default function AppNavigator() {
               <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
               <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
               <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
-              {/* Dashboard and other screens for direct navigation after subscription */}
-              <Stack.Screen name="Dashboard" component={DashboardScreen} />
-              <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
-              <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
-              <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
-              <Stack.Screen name="Verification" component={VerificationScreen} />
-              <Stack.Screen name="Settings" component={SettingsScreen} />
+              {/* Main tabs for direct navigation after subscription */}
+              <Stack.Screen name="MainTabs" component={MainTabs} />
             </>
           ) : (
             <>
-              <Stack.Screen name="Dashboard" component={DashboardScreen} />
-              <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
-              <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
-              <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
-              <Stack.Screen name="Verification" component={VerificationScreen} />
-              <Stack.Screen name="Settings" component={SettingsScreen} />
+              {/* Authenticated and subscribed - show MainTabs */}
+              <Stack.Screen name="MainTabs" component={MainTabs} />
             </>
           )}
         </Stack.Navigator>

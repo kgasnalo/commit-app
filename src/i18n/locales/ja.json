@@ -180,5 +180,36 @@
     "network": "ネットワークエラーが発生しました",
     "auth": "認証エラーが発生しました。再度ログインしてください。",
     "unknown": "エラーが発生しました"
+  },
+  "tabs": {
+    "home": "ホーム",
+    "library": "本棚",
+    "settings": "設定"
+  },
+  "library": {
+    "title": "本棚",
+    "total_books": "冊読了",
+    "monthly_pace": "冊/月ペース",
+    "streak": "ヶ月連続",
+    "all": "すべて",
+    "add_tag": "追加",
+    "empty_title": "まだ本棚は空です。",
+    "empty_subtitle": "最初の1冊を読み切って、ここに並べよう。",
+    "empty_button": "COMMITを作成する",
+    "grid_view": "グリッド",
+    "shelf_view": "本棚",
+    "books_count": "冊",
+    "edit_tags": "タグを編集",
+    "new_tag": "新しいタグを作成",
+    "save": "保存",
+    "read_date": "読了日",
+    "deadline": "期限",
+    "pledge_amount": "覚悟金",
+    "reading_days": "読了期間",
+    "days": "日間",
+    "success": "成功",
+    "memo": "メモ",
+    "edit": "編集",
+    "recommendations_for": "へのおすすめ"
   }
 }
