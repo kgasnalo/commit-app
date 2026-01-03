@@ -112,7 +112,12 @@
     "subtitle": "규율을 자산으로",
     "search_title": "읽고 싶은 책 검색",
     "search_subtitle": "제목으로 검색",
-    "recommended": "추천에서 선택 (선택사항)"
+    "recommended": "추천에서 선택 (선택사항)",
+    "role_prompt": "역할을 선택해주세요",
+    "recommendations_for": "추천",
+    "change": "변경",
+    "select": "선택",
+    "buy_on_amazon": "Amazon에서 구매"
   },
   "commitment": {
     "create_title": "커밋먼트 생성",
@@ -157,6 +162,9 @@
     "privacy": "개인정보 처리방침",
     "terms": "이용 약관",
     "logout": "로그아웃",
+    "logout_confirm_title": "로그아웃",
+    "logout_confirm_message": "로그아웃 하시겠습니까?",
+    "logout_error": "로그아웃에 실패했습니다. 다시 시도해주세요.",
     "delete_account": "계정 삭제"
   },
   "common": {

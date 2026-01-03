@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Image
 import { RECOMMENDED_BOOKS } from '../constants/recommendations';
 import { Role, Book } from '../types';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
+import i18n from '../i18n';
 
 const ROLES: Role[] = ['Founder', 'HR', 'Manager', 'Specialist'];
 
@@ -49,11 +50,11 @@ export default function RoleSelectScreen({ navigation }: Props) {
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
         <Text style={styles.bookAuthor}>{item.author}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.amazonButton}
           onPress={() => openAmazon(item.amazon_link)}
         >
-          <Text style={styles.amazonButtonText}>Amazonで購入</Text>
+          <Text style={styles.amazonButtonText}>{i18n.t('book_search.buy_on_amazon')}</Text>
           <Feather name="external-link" color="#666" size={14} style={{ marginLeft: 4 }} />
         </TouchableOpacity>
       </View>
@@ -61,7 +62,7 @@ export default function RoleSelectScreen({ navigation }: Props) {
         style={styles.selectBookButton}
         onPress={() => handleBookSelect(item)}
       >
-        <Text style={styles.selectBookButtonText}>選択</Text>
+        <Text style={styles.selectBookButtonText}>{i18n.t('book_search.select')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -72,13 +73,13 @@ export default function RoleSelectScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.topHeaderTitle}>本を追加</Text>
+        <Text style={styles.topHeaderTitle}>{i18n.t('book_search.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <Text style={styles.title}>COMMIT</Text>
-          <Text style={styles.subtitle}>規律を資産に変える</Text>
+          <Text style={styles.subtitle}>{i18n.t('book_search.subtitle')}</Text>
         </View>
 
         <View style={styles.content}>
@@ -91,8 +92,8 @@ export default function RoleSelectScreen({ navigation }: Props) {
               <Ionicons name="search" size={32} color="#fff" />
             </View>
             <View style={styles.searchCTAContent}>
-              <Text style={styles.searchCTATitle}>読みたい本を検索</Text>
-              <Text style={styles.searchCTASubtitle}>書籍タイトルから探す</Text>
+              <Text style={styles.searchCTATitle}>{i18n.t('book_search.search_title')}</Text>
+              <Text style={styles.searchCTASubtitle}>{i18n.t('book_search.search_subtitle')}</Text>
             </View>
             <MaterialIcons name="chevron-right" size={32} color="#000" />
           </TouchableOpacity>
@@ -107,7 +108,7 @@ export default function RoleSelectScreen({ navigation }: Props) {
           >
             <View style={styles.recommendationToggleLeft}>
               <Ionicons name="bulb-outline" size={24} color="#666" />
-              <Text style={styles.recommendationToggleText}>おすすめから選ぶ（任意）</Text>
+              <Text style={styles.recommendationToggleText}>{i18n.t('book_search.recommended')}</Text>
             </View>
             <MaterialIcons
               name={showRecommendations ? "expand-less" : "expand-more"}
@@ -121,7 +122,7 @@ export default function RoleSelectScreen({ navigation }: Props) {
               {/* 役職選択 */}
               {!selectedRole ? (
                 <>
-                  <Text style={styles.rolePrompt}>あなたの役割を選択してください</Text>
+                  <Text style={styles.rolePrompt}>{i18n.t('book_search.role_prompt')}</Text>
                   <View style={styles.roleGrid}>
                     {ROLES.map((role) => (
                       <TouchableOpacity
@@ -137,9 +138,9 @@ export default function RoleSelectScreen({ navigation }: Props) {
               ) : (
                 <>
                   <View style={styles.selectionHeader}>
-                    <Text style={styles.sectionTitle}>{selectedRole}へのおすすめ</Text>
+                    <Text style={styles.sectionTitle}>{selectedRole}{i18n.t('book_search.recommendations_for')}</Text>
                     <TouchableOpacity onPress={() => setSelectedRole(null)}>
-                      <Text style={styles.changeRoleText}>変更する</Text>
+                      <Text style={styles.changeRoleText}>{i18n.t('book_search.change')}</Text>
                     </TouchableOpacity>
                   </View>
                   <FlatList

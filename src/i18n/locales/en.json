@@ -112,7 +112,12 @@
     "subtitle": "Turn discipline into assets",
     "search_title": "Search for a book",
     "search_subtitle": "Search by title",
-    "recommended": "Choose from recommendations (optional)"
+    "recommended": "Choose from recommendations (optional)",
+    "role_prompt": "Select your role",
+    "recommendations_for": "Recommendations for",
+    "change": "Change",
+    "select": "Select",
+    "buy_on_amazon": "Buy on Amazon"
   },
   "commitment": {
     "create_title": "Create Commitment",
@@ -157,6 +162,9 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "logout": "Log Out",
+    "logout_confirm_title": "Log Out",
+    "logout_confirm_message": "Are you sure you want to log out?",
+    "logout_error": "Failed to log out. Please try again.",
     "delete_account": "Delete Account"
   },
   "common": {

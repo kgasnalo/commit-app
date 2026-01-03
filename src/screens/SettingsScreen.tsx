@@ -9,16 +9,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import i18n from '../i18n';
 
 export default function SettingsScreen({ navigation }: any) {
   const handleLogout = async () => {
     Alert.alert(
-      'ログアウト',
-      'ログアウトしますか？',
+      i18n.t('settings.logout_confirm_title'),
+      i18n.t('settings.logout_confirm_message'),
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: i18n.t('common.cancel'), style: 'cancel' },
         {
-          text: 'ログアウト',
+          text: i18n.t('settings.logout'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -26,7 +27,7 @@ export default function SettingsScreen({ navigation }: any) {
               if (error) throw error;
             } catch (error) {
               console.error('Logout error:', error);
-              Alert.alert('エラー', 'ログアウトに失敗しました。もう一度お試しください。');
+              Alert.alert(i18n.t('common.error'), i18n.t('settings.logout_error'));
             }
           },
         },
@@ -40,14 +41,14 @@ export default function SettingsScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>設定</Text>
+        <Text style={styles.headerTitle}>{i18n.t('settings.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#ff6b6b" />
-          <Text style={[styles.menuText, { color: '#ff6b6b' }]}>ログアウト</Text>
+          <Text style={[styles.menuText, { color: '#ff6b6b' }]}>{i18n.t('settings.logout')}</Text>
           <MaterialIcons name="chevron-right" size={24} color="#ccc" />
         </TouchableOpacity>
       </View>
