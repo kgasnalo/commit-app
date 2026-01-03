@@ -112,7 +112,12 @@
     "subtitle": "規律を資産に変える",
     "search_title": "読みたい本を検索",
     "search_subtitle": "書籍タイトルから探す",
-    "recommended": "おすすめから選ぶ（任意）"
+    "recommended": "おすすめから選ぶ（任意）",
+    "role_prompt": "あなたの役割を選択してください",
+    "recommendations_for": "へのおすすめ",
+    "change": "変更する",
+    "select": "選択",
+    "buy_on_amazon": "Amazonで購入"
   },
   "commitment": {
     "create_title": "コミットメント作成",
@@ -157,6 +162,9 @@
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
     "logout": "ログアウト",
+    "logout_confirm_title": "ログアウト",
+    "logout_confirm_message": "ログアウトしますか？",
+    "logout_error": "ログアウトに失敗しました。もう一度お試しください。",
     "delete_account": "アカウント削除"
   },
   "common": {
