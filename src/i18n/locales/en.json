@@ -180,5 +180,36 @@
     "network": "Network error occurred",
     "auth": "Authentication error. Please log in again.",
     "unknown": "An error occurred"
+  },
+  "tabs": {
+    "home": "Home",
+    "library": "Library",
+    "settings": "Settings"
+  },
+  "library": {
+    "title": "Library",
+    "total_books": "books read",
+    "monthly_pace": "books/month",
+    "streak": "month streak",
+    "all": "All",
+    "add_tag": "Add",
+    "empty_title": "Your library is empty.",
+    "empty_subtitle": "Finish your first book and add it here.",
+    "empty_button": "Create COMMIT",
+    "grid_view": "Grid",
+    "shelf_view": "Shelf",
+    "books_count": "books",
+    "edit_tags": "Edit Tags",
+    "new_tag": "Create new tag",
+    "save": "Save",
+    "read_date": "Read Date",
+    "deadline": "Deadline",
+    "pledge_amount": "Pledge",
+    "reading_days": "Reading Time",
+    "days": "days",
+    "success": "Success",
+    "memo": "Memo",
+    "edit": "Edit",
+    "recommendations_for": "Recommendations for"
   }
 }
