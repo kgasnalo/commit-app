@@ -242,12 +242,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       const currencySymbol = CURRENCY_OPTIONS.find(c => c.code === currency)?.symbol || currency;
       Alert.alert(
-        i18n.t('common.success'),
-        i18n.t('commitment.success_message', {
-          defaultValue: `コミットメントを作成しました。\n期限: ${deadline.toLocaleDateString('ja-JP')}\nペナルティ: ${currencySymbol}${pledgeAmount.toLocaleString()}`,
-          deadline: deadline.toLocaleDateString('ja-JP'),
-          penalty: `${currencySymbol}${pledgeAmount.toLocaleString()}`
-        }),
+        i18n.t('commitment.success_title'),
+        `${i18n.t('commitment.success_message')}\n${i18n.t('commitment.deadline_label')}: ${deadline.toLocaleDateString('ja-JP')}\n${i18n.t('commitment.penalty_label')}: ${currencySymbol}${pledgeAmount.toLocaleString()}`,
         [
           {
             text: i18n.t('common.ok'),

@@ -126,8 +126,8 @@ export default function VerificationScreen({ route, navigation }: any) {
       }
 
       Alert.alert(
-        i18n.t('verification.success_title', { defaultValue: '読了完了！' }),
-        i18n.t('verification.success_message', { defaultValue: 'おめでとうございます！読了が確認されました。' }),
+        i18n.t('verification.success_title'),
+        i18n.t('verification.success_message'),
         [{ text: i18n.t('common.ok'), onPress: () => navigation.navigate('Dashboard') }]
       );
     } catch (error) {

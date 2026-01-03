@@ -129,7 +129,11 @@
     "select_amount": "金額を選択",
     "penalty_note": "期限までに読了証明を提出できなかった場合、上記金額が課金されます。",
     "agree_terms": "上記ペナルティに同意し、コミットメントを作成します",
-    "create_button": "コミットメントを作成"
+    "create_button": "コミットメントを作成",
+    "success_title": "成功",
+    "success_message": "コミットメントを作成しました。",
+    "deadline_label": "期限",
+    "penalty_label": "ペナルティ"
   },
   "commitment_detail": {
     "title": "コミットメント詳細",
@@ -152,7 +156,9 @@
     "memo_instruction": "この本から得た学びを記録してください（100文字以上）",
     "memo_placeholder": "この本を読んで学んだこと、印象に残った内容、実践したいことなどを書いてください...",
     "char_count": "文字以上",
-    "submit": "読了を確認する"
+    "submit": "読了を確認する",
+    "success_title": "読了完了！",
+    "success_message": "おめでとうございます！読了が確認されました。"
   },
   "settings": {
     "title": "設定",

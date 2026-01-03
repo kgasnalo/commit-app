@@ -129,7 +129,11 @@
     "select_amount": "금액 선택",
     "penalty_note": "기한까지 완료 증명을 제출하지 않으면 이 금액이 청구됩니다.",
     "agree_terms": "페널티에 동의하고 커밋먼트를 생성합니다",
-    "create_button": "커밋먼트 생성"
+    "create_button": "커밋먼트 생성",
+    "success_title": "성공",
+    "success_message": "커밋먼트가 생성되었습니다.",
+    "deadline_label": "기한",
+    "penalty_label": "페널티"
   },
   "commitment_detail": {
     "title": "커밋먼트 상세",
@@ -152,7 +156,9 @@
     "memo_instruction": "이 책에서 배운 것을 기록해주세요 (100자 이상)",
     "memo_placeholder": "배운 것, 인상 깊었던 내용, 실천하고 싶은 것 등을 적어주세요...",
     "char_count": "자 이상",
-    "submit": "완료 확인"
+    "submit": "완료 확인",
+    "success_title": "완료!",
+    "success_message": "축하합니다! 독서가 확인되었습니다."
   },
   "settings": {
     "title": "설정",

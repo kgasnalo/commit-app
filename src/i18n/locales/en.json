@@ -129,7 +129,11 @@
     "select_amount": "Select amount",
     "penalty_note": "If you don't submit proof by the deadline, you will be charged this amount.",
     "agree_terms": "I agree to the penalty and create this commitment",
-    "create_button": "Create Commitment"
+    "create_button": "Create Commitment",
+    "success_title": "Success",
+    "success_message": "Commitment created.",
+    "deadline_label": "Deadline",
+    "penalty_label": "Penalty"
   },
   "commitment_detail": {
     "title": "Commitment Details",
@@ -152,7 +156,9 @@
     "memo_instruction": "Record what you learned from this book (100+ characters)",
     "memo_placeholder": "Write about what you learned, memorable content, things you want to practice...",
     "char_count": "characters min",
-    "submit": "Confirm Completion"
+    "submit": "Confirm Completion",
+    "success_title": "Complete!",
+    "success_message": "Congratulations! Your reading has been verified."
   },
   "settings": {
     "title": "Settings",
