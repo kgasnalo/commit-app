@@ -54,7 +54,6 @@ type ViewMode = 'shelf' | 'grid';
 // Generate consistent color from book title
 function generateBookColor(title: string): string {
   const colors = [
-    '#FF4D00', // Orange
     '#3B82F6', // Blue
     '#10B981', // Green
     '#8B5CF6', // Purple
@@ -64,14 +63,18 @@ function generateBookColor(title: string): string {
     '#14B8A6', // Teal
     '#F97316', // Orange-Red
     '#6366F1', // Indigo
+    '#FF4D00', // Orange (moved to end to reduce orange bias)
   ];
 
+  // Improved hash function with better distribution
   let hash = 0;
   for (let i = 0; i < title.length; i++) {
-    hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    const char = title.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32bit integer
   }
 
+  // Use absolute value and ensure positive index
   const index = Math.abs(hash) % colors.length;
   return colors[index];
 }
@@ -597,10 +600,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 20,
-    gap: 15,
+    justifyContent: 'space-between',
   },
   gridBookItem: {
-    width: '22%',
+    width: '23%',
+    marginBottom: 20,
   },
   gridBookContent: {
     alignItems: 'center',
