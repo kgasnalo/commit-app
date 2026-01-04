@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { fetchBookCover } from '../utils/googleBooks';
 
 interface Book {
   id: string;
@@ -49,6 +51,31 @@ interface Tag {
 
 type ViewMode = 'shelf' | 'grid';
 
+// Generate consistent color from book title
+function generateBookColor(title: string): string {
+  const colors = [
+    '#FF4D00', // Orange
+    '#3B82F6', // Blue
+    '#10B981', // Green
+    '#8B5CF6', // Purple
+    '#F59E0B', // Amber
+    '#EF4444', // Red
+    '#EC4899', // Pink
+    '#14B8A6', // Teal
+    '#F97316', // Orange-Red
+    '#6366F1', // Indigo
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+}
+
 export default function LibraryScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
@@ -56,6 +83,7 @@ export default function LibraryScreen() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('shelf');
+  const [coverUrls, setCoverUrls] = useState<{ [bookId: string]: string }>({});
   const [stats, setStats] = useState({
     totalBooks: 0,
     monthlyPace: 0,
@@ -108,6 +136,9 @@ export default function LibraryScreen() {
 
       // Calculate stats
       calculateStats(booksData || []);
+
+      // Fetch cover images from Google Books API for books without covers
+      fetchMissingCovers(booksData || []);
     } catch (error) {
       console.error('Error loading library data:', error);
     } finally {
@@ -153,6 +184,31 @@ export default function LibraryScreen() {
       monthlyPace,
       streak,
     });
+  }
+
+  async function fetchMissingCovers(books: Commitment[]) {
+    const newCoverUrls: { [bookId: string]: string } = {};
+
+    for (const commitment of books) {
+      const book = commitment.books;
+
+      // Skip if book already has a cover image
+      if (book.cover_image_url) {
+        continue;
+      }
+
+      // Fetch cover from Google Books API
+      const coverUrl = await fetchBookCover(book.title, book.author);
+
+      if (coverUrl) {
+        newCoverUrls[book.id] = coverUrl;
+      }
+    }
+
+    // Update state with fetched covers
+    if (Object.keys(newCoverUrls).length > 0) {
+      setCoverUrls((prev) => ({ ...prev, ...newCoverUrls }));
+    }
   }
 
   function getFilteredBooks() {
@@ -267,6 +323,8 @@ export default function LibraryScreen() {
 
   function renderBookItem(commitment: Commitment) {
     const book = commitment.books;
+    const bookColor = generateBookColor(book.title);
+    const coverUrl = book.cover_image_url || coverUrls[book.id];
 
     return (
       <TouchableOpacity
@@ -278,17 +336,25 @@ export default function LibraryScreen() {
       >
         {viewMode === 'grid' ? (
           <View style={styles.gridBookContent}>
-            <View style={styles.bookCover}>
-              <Text style={styles.bookCoverText} numberOfLines={3}>
-                {book.title}
-              </Text>
+            <View style={[styles.bookCover, { backgroundColor: bookColor }]}>
+              {coverUrl ? (
+                <Image
+                  source={{ uri: coverUrl }}
+                  style={styles.bookCoverImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.bookCoverText} numberOfLines={3}>
+                  {book.title}
+                </Text>
+              )}
             </View>
             <Text style={styles.bookTitle} numberOfLines={1}>
               {book.title}
             </Text>
           </View>
         ) : (
-          <View style={styles.bookSpine}>
+          <View style={[styles.bookSpine, { backgroundColor: bookColor }]}>
             <Text style={styles.bookSpineText} numberOfLines={1}>
               {book.title}
             </Text>
@@ -320,6 +386,7 @@ export default function LibraryScreen() {
           {viewMode === 'shelf' && <View style={styles.shelf} />}
           {books.map((commitment) => renderBookItem(commitment))}
         </View>
+        <View style={styles.shelfLine} />
       </View>
     );
   }
@@ -513,7 +580,6 @@ const styles = StyleSheet.create({
   bookSpine: {
     width: 60,
     height: 200,
-    backgroundColor: '#FF4D00',
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
@@ -534,7 +600,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   gridBookItem: {
-    width: '30%',
+    width: '22%',
   },
   gridBookContent: {
     alignItems: 'center',
@@ -542,12 +608,20 @@ const styles = StyleSheet.create({
   bookCover: {
     width: '100%',
     aspectRatio: 2 / 3,
-    backgroundColor: '#FF4D00',
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 8,
     marginBottom: 8,
+    overflow: 'hidden',
+  },
+  bookCoverImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    borderRadius: 4,
   },
   bookCoverText: {
     color: '#FFFFFF',
@@ -590,5 +664,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  shelfLine: {
+    height: 2,
+    backgroundColor: '#2A2A2A',
+    marginHorizontal: 20,
+    marginTop: 15,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
