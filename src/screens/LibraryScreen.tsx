@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 interface Book {
   id: string;
@@ -62,9 +62,11 @@ export default function LibraryScreen() {
     streak: 0,
   });
 
-  useEffect(() => {
-    loadLibraryData();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      loadLibraryData();
+    }, [])
+  );
 
   async function loadLibraryData() {
     try {
