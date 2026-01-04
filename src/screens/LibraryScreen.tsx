@@ -55,9 +55,9 @@ type ViewMode = 'shelf' | 'grid';
 // Grid layout constants
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const GRID_PADDING = 20;
-const BOOK_GAP = 12;
+const BOOK_GAP = 10;
 const BOOKS_PER_ROW = 4;
-const BOOK_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - BOOK_GAP * (BOOKS_PER_ROW - 1)) / BOOKS_PER_ROW;
+const BOOK_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - BOOK_GAP * BOOKS_PER_ROW) / BOOKS_PER_ROW;
 const BOOK_HEIGHT = BOOK_WIDTH * 1.5;
 
 // Generate consistent color from book title
@@ -609,18 +609,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: GRID_PADDING,
-    gap: BOOK_GAP,
   },
   gridBookItem: {
     width: BOOK_WIDTH,
-    marginBottom: 20,
+    marginRight: BOOK_GAP,
+    marginBottom: BOOK_GAP,
   },
   gridBookContent: {
     alignItems: 'center',
   },
   bookCover: {
-    width: BOOK_WIDTH,
-    height: BOOK_HEIGHT,
+    width: '100%',
+    aspectRatio: 2 / 3,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
