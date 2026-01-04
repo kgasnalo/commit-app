@@ -259,16 +259,6 @@ export default function LibraryScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-
-        <TouchableOpacity
-          style={styles.addTagButton}
-          onPress={() => {
-            // TODO: Open add tag modal
-          }}
-        >
-          <Ionicons name="add" size={20} color="#FF4D00" />
-          <Text style={styles.addTagText}>{i18n.t('library.add_tag')}</Text>
-        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -488,22 +478,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginRight: 6,
-  },
-  addTagButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1A1A1A',
-    borderWidth: 1,
-    borderColor: '#FF4D00',
-    borderStyle: 'dashed',
-  },
-  addTagText: {
-    fontSize: 14,
-    color: '#FF4D00',
-    marginLeft: 4,
   },
   monthSection: {
     marginBottom: 30,
