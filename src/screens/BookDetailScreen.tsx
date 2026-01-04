@@ -52,7 +52,7 @@ interface Commitment {
 interface VerificationLog {
   id: string;
   commitment_id: string;
-  memo: string;
+  memo_text: string;
   created_at: string;
 }
 
@@ -421,7 +421,7 @@ export default function BookDetailScreen() {
               <Ionicons name="document-text" size={20} color="#FF4D00" />
               <Text style={styles.memoTitle}>{i18n.t('library.memo')}</Text>
             </View>
-            <Text style={styles.memoText}>{verificationLog.memo}</Text>
+            <Text style={styles.memoText}>{verificationLog.memo_text}</Text>
           </View>
         )}
       </ScrollView>

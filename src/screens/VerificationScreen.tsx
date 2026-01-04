@@ -118,7 +118,10 @@ export default function VerificationScreen({ route, navigation }: any) {
       // コミットメントのステータスを更新
       const { error: updateError } = await supabase
         .from('commitments')
-        .update({ status: 'completed' })
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', commitmentId);
 
       if (updateError) {
