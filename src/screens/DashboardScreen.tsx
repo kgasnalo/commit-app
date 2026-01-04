@@ -232,11 +232,11 @@ export default function DashboardScreen({ navigation }: any) {
         </View>
 
         {/* 完了・失敗した本 */}
-        {commitments.filter(c => c.status !== 'pending').length > 0 && (
+        {commitments.filter(c => c.status === 'defaulted').length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{i18n.t('dashboard.history', { defaultValue: '履歴' })}</Text>
             {commitments
-              .filter(c => c.status !== 'pending')
+              .filter(c => c.status === 'defaulted')
               .map(renderCommitmentCard)}
           </View>
         )}
