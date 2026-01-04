@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -19,7 +20,7 @@ interface Book {
   id: string;
   title: string;
   author: string;
-  cover_image_url?: string;
+  cover_url?: string;
   page_count?: number;
 }
 
@@ -50,6 +51,14 @@ interface Tag {
 }
 
 type ViewMode = 'shelf' | 'grid';
+
+// Grid layout constants
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const GRID_PADDING = 20;
+const BOOK_GAP = 12;
+const BOOKS_PER_ROW = 4;
+const BOOK_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - BOOK_GAP * (BOOKS_PER_ROW - 1)) / BOOKS_PER_ROW;
+const BOOK_HEIGHT = BOOK_WIDTH * 1.5;
 
 // Generate consistent color from book title
 function generateBookColor(title: string): string {
@@ -196,7 +205,7 @@ export default function LibraryScreen() {
       const book = commitment.books;
 
       // Skip if book already has a cover image
-      if (book.cover_image_url) {
+      if (book.cover_url) {
         continue;
       }
 
@@ -327,7 +336,7 @@ export default function LibraryScreen() {
   function renderBookItem(commitment: Commitment) {
     const book = commitment.books;
     const bookColor = generateBookColor(book.title);
-    const coverUrl = book.cover_image_url || coverUrls[book.id];
+    const coverUrl = book.cover_url || coverUrls[book.id];
 
     return (
       <TouchableOpacity
@@ -599,19 +608,19 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    justifyContent: 'space-between',
+    paddingHorizontal: GRID_PADDING,
+    gap: BOOK_GAP,
   },
   gridBookItem: {
-    width: '23%',
+    width: BOOK_WIDTH,
     marginBottom: 20,
   },
   gridBookContent: {
     alignItems: 'center',
   },
   bookCover: {
-    width: '100%',
-    aspectRatio: 2 / 3,
+    width: BOOK_WIDTH,
+    height: BOOK_HEIGHT,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
