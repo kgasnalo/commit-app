@@ -370,6 +370,7 @@ export default function LibraryScreen() {
             <Text style={styles.bookSpineText} numberOfLines={1}>
               {book.title}
             </Text>
+            <View style={styles.pageEdge} />
           </View>
         )}
       </TouchableOpacity>
@@ -390,15 +391,21 @@ export default function LibraryScreen() {
           {monthName} ({books.length}
           {i18n.t('library.books_count')})
         </Text>
-        <View
-          style={
-            viewMode === 'grid' ? styles.gridContainer : styles.shelfContainer
-          }
-        >
-          {viewMode === 'shelf' && <View style={styles.shelf} />}
-          {books.map((commitment) => renderBookItem(commitment))}
-        </View>
-        <View style={styles.shelfLine} />
+        {viewMode === 'grid' ? (
+          <>
+            <View style={styles.gridContainer}>
+              {books.map((commitment) => renderBookItem(commitment))}
+            </View>
+            <View style={styles.shelfLine} />
+          </>
+        ) : (
+          <View style={styles.shelfRow}>
+            <View style={styles.booksContainer}>
+              {books.map((commitment) => renderBookItem(commitment))}
+            </View>
+            <View style={styles.shelfBoard} />
+          </View>
+        )}
       </View>
     );
   }
@@ -561,7 +568,12 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   monthSection: {
-    marginBottom: 30,
+    backgroundColor: '#151515',
+    marginHorizontal: 12,
+    marginBottom: 16,
+    borderRadius: 8,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   monthHeader: {
     fontSize: 18,
@@ -570,42 +582,57 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 20,
   },
-  shelfContainer: {
-    position: 'relative',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
+  shelfRow: {
+    marginBottom: 20,
+  },
+  booksContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    gap: 6,
+    paddingBottom: 0,
   },
-  shelf: {
-    position: 'absolute',
-    bottom: 0,
-    left: 20,
-    right: 20,
-    height: 8,
-    backgroundColor: '#2A2A2A',
+  shelfBoard: {
+    height: 12,
+    backgroundColor: '#3D322A',
+    borderTopWidth: 2,
+    borderTopColor: '#4A3C31',
+    marginTop: 0,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 4,
     },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 5,
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 6,
   },
   shelfBookItem: {
-    marginRight: 6,
-    marginBottom: 10,
+    marginRight: 0,
+    marginBottom: 0,
   },
   bookSpine: {
     width: 35,
     height: 130,
     borderTopRightRadius: 2,
     borderBottomRightRadius: 2,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(0,0,0,0.4)',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 8,
+  },
+  pageEdge: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: '#D0D0D0',
+    borderBottomLeftRadius: 1,
+    borderBottomRightRadius: 1,
   },
   bookSpineText: {
     color: '#FFFFFF',
