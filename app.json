@@ -35,7 +35,8 @@
           "photosPermission": "読了確認のために写真へのアクセスが必要です",
           "cameraPermission": "読了確認のためにカメラへのアクセスが必要です"
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {

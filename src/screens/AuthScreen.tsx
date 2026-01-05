@@ -1,13 +1,25 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { makeRedirectUri } from 'expo-auth-session';
+
+// WebBrowserの結果を適切に処理するために必要
+WebBrowser.maybeCompleteAuthSession();
 
 export default function AuthScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+
+  // リダイレクトURIの設定
+  const redirectUri = makeRedirectUri({
+    scheme: 'commitapp',
+    path: 'auth/callback',
+  });
 
   async function handleAuth() {
     if (!email || !password) {
@@ -70,6 +82,123 @@ export default function AuthScreen({ navigation }: any) {
     setLoading(false);
   }
 
+  // Google Sign In
+  async function handleGoogleSignIn() {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUri,
+          skipBrowserRedirect: false,
+        },
+      });
+
+      if (error) {
+        Alert.alert('Google Sign Inエラー', error.message);
+        return;
+      }
+
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUri
+        );
+
+        if (result.type === 'success') {
+          const url = result.url;
+          // URLからアクセストークンとリフレッシュトークンを抽出
+          const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1]);
+          const access_token = params.get('access_token');
+          const refresh_token = params.get('refresh_token');
+
+          if (access_token && refresh_token) {
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token,
+              refresh_token,
+            });
+
+            if (sessionError) {
+              Alert.alert('認証エラー', sessionError.message);
+            } else if (sessionData.user) {
+              // usersテーブルにレコードが存在するか確認
+              const { data: userData, error: checkError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('id', sessionData.user.id)
+                .single();
+
+              // レコードが存在しない場合は作成
+              if (!userData && !checkError) {
+                await supabase
+                  .from('users')
+                  .insert({
+                    id: sessionData.user.id,
+                    email: sessionData.user.email,
+                    subscription_status: 'inactive'
+                  });
+              }
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      Alert.alert('エラー', error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Apple Sign In
+  async function handleAppleSignIn() {
+    try {
+      setLoading(true);
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (credential.identityToken) {
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+        });
+
+        if (error) {
+          Alert.alert('Apple Sign Inエラー', error.message);
+        } else if (data.user) {
+          // usersテーブルにレコードが存在するか確認
+          const { data: userData, error: checkError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', data.user.id)
+            .single();
+
+          // レコードが存在しない場合は作成
+          if (!userData && !checkError) {
+            await supabase
+              .from('users')
+              .insert({
+                id: data.user.id,
+                email: data.user.email,
+                subscription_status: 'inactive'
+              });
+          }
+        }
+      }
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        // ユーザーがキャンセルした場合は何もしない
+      } else {
+        Alert.alert('エラー', error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 戻るボタン */}
@@ -119,14 +248,43 @@ export default function AuthScreen({ navigation }: any) {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.switchButton} 
+          <TouchableOpacity
+            style={styles.switchButton}
             onPress={() => setIsSignUp(!isSignUp)}
           >
             <Text style={styles.switchButtonText}>
               {isSignUp ? '既にアカウントをお持ちの方はこちら' : '新規登録はこちら'}
             </Text>
           </TouchableOpacity>
+
+          {/* または セパレーター */}
+          <View style={styles.separatorContainer}>
+            <View style={styles.separatorLine} />
+            <Text style={styles.separatorText}>または</Text>
+            <View style={styles.separatorLine} />
+          </View>
+
+          {/* Google Sign In ボタン */}
+          <TouchableOpacity
+            style={styles.googleButton}
+            onPress={handleGoogleSignIn}
+            disabled={loading}
+          >
+            <MaterialIcons name="login" size={20} color="#4285F4" />
+            <Text style={styles.googleButtonText}>Googleでログイン</Text>
+          </TouchableOpacity>
+
+          {/* Apple Sign In ボタン (iOS only) */}
+          {Platform.OS === 'ios' && (
+            <TouchableOpacity
+              style={styles.appleButton}
+              onPress={handleAppleSignIn}
+              disabled={loading}
+            >
+              <MaterialIcons name="apple" size={20} color="#000" />
+              <Text style={styles.appleButtonText}>Appleでログイン</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -210,5 +368,52 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
     textDecorationLine: 'underline',
+  },
+  separatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  separatorText: {
+    color: '#999',
+    fontSize: 14,
+    marginHorizontal: 16,
+    fontWeight: '500',
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    height: 56,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 12,
+  },
+  googleButtonText: {
+    color: '#4285F4',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  appleButton: {
+    backgroundColor: '#000',
+    height: 56,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  appleButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
