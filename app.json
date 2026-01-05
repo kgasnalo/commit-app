@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kgxxx.commitapp"
+      "bundleIdentifier": "com.kgxxx.commitapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +26,10 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.kgxxx.commitapp"
+      "package": "com.kgxxx.commitapp",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,8 +41,7 @@
           "photosPermission": "読了確認のために写真へのアクセスが必要です",
           "cameraPermission": "読了確認のためにカメラへのアクセスが必要です"
         }
-      ],
-      "expo-apple-authentication"
+      ]
     ],
     "extra": {
       "eas": {
