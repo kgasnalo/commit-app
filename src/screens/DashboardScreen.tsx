@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Commitment = {
   id: string;
@@ -39,10 +40,18 @@ export default function DashboardScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [poolByCurrency, setPoolByCurrency] = useState<Record<string, number>>({});
   const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
+  const [currentLocale, setCurrentLocale] = useState(i18n.locale);
 
   useEffect(() => {
     fetchCommitments();
   }, []);
+
+  // Update locale when screen is focused to reflect language changes
+  useFocusEffect(
+    React.useCallback(() => {
+      setCurrentLocale(i18n.locale);
+    }, [])
+  );
 
   const fetchCommitments = async () => {
     try {
