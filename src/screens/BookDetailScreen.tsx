@@ -77,6 +77,8 @@ export default function BookDetailScreen() {
   const [showTagModal, setShowTagModal] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
+  const [showMemoModal, setShowMemoModal] = useState(false);
+  const [editedMemo, setEditedMemo] = useState('');
 
   useEffect(() => {
     loadBookDetail();
@@ -212,6 +214,26 @@ export default function BookDetailScreen() {
     }
   }
 
+  async function updateMemo() {
+    if (!verificationLog) return;
+
+    try {
+      const { error } = await supabase
+        .from('verification_logs')
+        .update({ memo_text: editedMemo })
+        .eq('id', verificationLog.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setVerificationLog({ ...verificationLog, memo_text: editedMemo });
+      setShowMemoModal(false);
+    } catch (error) {
+      console.error('Error updating memo:', error);
+      alert('メモの更新に失敗しました');
+    }
+  }
+
   function calculateReadingDays() {
     if (!commitment) return 0;
 
@@ -328,6 +350,54 @@ export default function BookDetailScreen() {
     );
   }
 
+  function renderMemoEditModal() {
+    return (
+      <Modal
+        visible={showMemoModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMemoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>メモを編集</Text>
+              <TouchableOpacity onPress={() => setShowMemoModal(false)}>
+                <Ionicons name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.memoInput}
+              value={editedMemo}
+              onChangeText={setEditedMemo}
+              placeholder="読了後の感想を入力してください"
+              placeholderTextColor="#666666"
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowMemoModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>キャンセル</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={updateMemo}
+              >
+                <Text style={styles.saveButtonText}>保存</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
   if (loading || !commitment) {
     return (
       <View style={styles.loadingContainer}>
@@ -418,8 +488,18 @@ export default function BookDetailScreen() {
         {verificationLog && (
           <View style={styles.memoCard}>
             <View style={styles.memoHeader}>
-              <Ionicons name="document-text" size={20} color="#FF4D00" />
-              <Text style={styles.memoTitle}>{i18n.t('library.memo')}</Text>
+              <View style={styles.memoTitleContainer}>
+                <Ionicons name="document-text" size={20} color="#FF4D00" />
+                <Text style={styles.memoTitle}>{i18n.t('library.memo')}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditedMemo(verificationLog.memo_text);
+                  setShowMemoModal(true);
+                }}
+              >
+                <Text style={styles.editButton}>編集</Text>
+              </TouchableOpacity>
             </View>
             <Text style={styles.memoText}>{verificationLog.memo_text}</Text>
           </View>
@@ -427,6 +507,7 @@ export default function BookDetailScreen() {
       </ScrollView>
 
       {renderTagEditModal()}
+      {renderMemoEditModal()}
     </SafeAreaView>
   );
 }
@@ -565,7 +646,12 @@ const styles = StyleSheet.create({
   memoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  memoTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   memoTitle: {
     fontSize: 16,
@@ -573,10 +659,51 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginLeft: 8,
   },
+  editButton: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF4D00',
+  },
   memoText: {
     fontSize: 14,
     color: '#FFFFFF',
     lineHeight: 22,
+  },
+  memoInput: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 8,
+    padding: 16,
+    fontSize: 16,
+    color: '#FFFFFF',
+    minHeight: 150,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  cancelButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#2A2A2A',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  saveButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#FF4D00',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,
