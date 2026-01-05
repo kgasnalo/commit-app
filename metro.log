@@ -1,0 +1,8 @@
+Starting project at /Users/kg_xxx/commit-app
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+iOS ./index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 1054ms index.js (1486 modules)
+ LOG  Auth state change: INITIAL_SESSION undefined
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
