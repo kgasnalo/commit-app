@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Image, Linking, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Linking, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RECOMMENDED_BOOKS } from '../constants/recommendations';
 import { Role, Book } from '../types';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
