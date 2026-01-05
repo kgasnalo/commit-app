@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 
 // WebBrowserの結果を適切に処理するために必要
@@ -149,56 +148,6 @@ export default function AuthScreen({ navigation }: any) {
     }
   }
 
-  // Apple Sign In
-  async function handleAppleSignIn() {
-    try {
-      setLoading(true);
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-
-      if (credential.identityToken) {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'apple',
-          token: credential.identityToken,
-        });
-
-        if (error) {
-          Alert.alert('Apple Sign Inエラー', error.message);
-        } else if (data.user) {
-          // usersテーブルにレコードが存在するか確認
-          const { data: userData, error: checkError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', data.user.id)
-            .single();
-
-          // レコードが存在しない場合は作成
-          if (!userData && !checkError) {
-            await supabase
-              .from('users')
-              .insert({
-                id: data.user.id,
-                email: data.user.email,
-                subscription_status: 'inactive'
-              });
-          }
-        }
-      }
-    } catch (error: any) {
-      if (error.code === 'ERR_REQUEST_CANCELED') {
-        // ユーザーがキャンセルした場合は何もしない
-      } else {
-        Alert.alert('エラー', error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       {/* 戻るボタン */}
@@ -273,18 +222,6 @@ export default function AuthScreen({ navigation }: any) {
             <MaterialIcons name="login" size={20} color="#4285F4" />
             <Text style={styles.googleButtonText}>Googleでログイン</Text>
           </TouchableOpacity>
-
-          {/* Apple Sign In ボタン (iOS only) */}
-          {Platform.OS === 'ios' && (
-            <TouchableOpacity
-              style={styles.appleButton}
-              onPress={handleAppleSignIn}
-              disabled={loading}
-            >
-              <MaterialIcons name="apple" size={20} color="#000" />
-              <Text style={styles.appleButtonText}>Appleでログイン</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     </SafeAreaView>
@@ -398,20 +335,6 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     color: '#4285F4',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  appleButton: {
-    backgroundColor: '#000',
-    height: 56,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  appleButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
