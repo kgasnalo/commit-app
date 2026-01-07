@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ type CommitmentDetail = {
   pledge_amount: number;
   currency: string;
   created_at: string;
+  target_pages: number;
   book: {
     id: string;
     title: string;
@@ -29,15 +31,17 @@ type CommitmentDetail = {
 };
 
 export default function CommitmentDetailScreen({ route, navigation }: any) {
-  const { id } = route.params;
+  // Safe extraction of id with fallback
+  const id = route?.params?.id;
   const [commitment, setCommitment] = useState<CommitmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCommitment();
-  }, []);
+  const fetchCommitment = useCallback(async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
 
-  const fetchCommitment = async () => {
     try {
       const { data, error } = await supabase
         .from('commitments')
@@ -48,6 +52,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
           pledge_amount,
           currency,
           created_at,
+          target_pages,
           book:books(id, title, author, cover_url)
         `)
         .eq('id', id)
@@ -59,7 +64,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         setCommitment(data as any);
       }
     } catch (error) {
-      console.error('Error fetching commitment:', error);
+      console.error('[CommitmentDetailScreen] Fetch error:', error);
       Alert.alert(
         i18n.t('common.error'),
         i18n.t('errors.fetch_commitment_failed', { defaultValue: 'コミットメント情報の取得に失敗しました。' }),
@@ -68,7 +73,11 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigation]);
+
+  useEffect(() => {
+    fetchCommitment();
+  }, [fetchCommitment]);
 
   const getCountdown = (deadline: string) => {
     const now = new Date();
@@ -136,7 +145,11 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {/* 書籍情報 */}
         <View style={styles.bookCard}>
           {commitment.book.cover_url ? (
@@ -163,6 +176,21 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
              commitment.status === 'completed' ? i18n.t('dashboard.completed') : i18n.t('dashboard.failed')}
           </Text>
         </View>
+
+        {/* ページ目標 */}
+        {commitment.target_pages > 0 && (
+          <View style={styles.targetPagesCard}>
+            <MaterialIcons name="menu-book" size={24} color="#2196F3" />
+            <View style={styles.targetPagesInfo}>
+              <Text style={styles.targetPagesLabel}>
+                {i18n.t('commitment_detail.target_pages', { defaultValue: 'ページ目標' })}
+              </Text>
+              <Text style={styles.targetPagesValue}>
+                {commitment.target_pages.toLocaleString()} {i18n.t('commitment.pages', { defaultValue: 'ページ' })}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* カウントダウン */}
         {commitment.status === 'pending' && (
@@ -207,26 +235,54 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         </View>
 
         {/* アクションボタン */}
-        {commitment.status === 'pending' && (
+        <View style={styles.actionButtonsContainer}>
+          {commitment.status === 'pending' && (
+            <TouchableOpacity
+              style={styles.verifyButton}
+              onPress={() => navigation.navigate('Verification', {
+                commitmentId: commitment.id,
+                bookTitle: commitment.book.title,
+              })}
+            >
+              <Ionicons name="checkmark-circle" size={24} color="#fff" />
+              <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
+            </TouchableOpacity>
+          )}
+
+          {commitment.status === 'completed' && (
+            <View style={styles.completedMessage}>
+              <Ionicons name="checkmark-circle" size={48} color="#4caf50" />
+              <Text style={styles.completedText}>{i18n.t('commitment_detail.completed_message', { defaultValue: '読了完了しました！' })}</Text>
+            </View>
+          )}
+
+          {/* Continue button - shown for all statuses */}
           <TouchableOpacity
-            style={styles.verifyButton}
-            onPress={() => navigation.navigate('Verification', {
-              commitmentId: commitment.id,
-              bookTitle: commitment.book.title,
+            style={[
+              styles.continueButton,
+              commitment.status === 'pending' && styles.continueButtonSecondary,
+            ]}
+            onPress={() => navigation.navigate('CreateCommitment', {
+              bookId: commitment.book.id,
             })}
           >
-            <Ionicons name="checkmark-circle" size={24} color="#fff" />
-            <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
+            <MaterialIcons
+              name="auto-stories"
+              size={24}
+              color={commitment.status === 'pending' ? '#000' : '#fff'}
+            />
+            <Text style={[
+              styles.continueButtonText,
+              commitment.status === 'pending' && styles.continueButtonTextSecondary,
+            ]}>
+              {commitment.status === 'pending'
+                ? i18n.t('commitment_detail.add_next_commitment', { defaultValue: '次のコミットメントを追加' })
+                : i18n.t('commitment_detail.continue_this_book', { defaultValue: 'この本を続ける' })
+              }
+            </Text>
           </TouchableOpacity>
-        )}
-
-        {commitment.status === 'completed' && (
-          <View style={styles.completedMessage}>
-            <Ionicons name="checkmark-circle" size={48} color="#4caf50" />
-            <Text style={styles.completedText}>{i18n.t('commitment_detail.completed_message', { defaultValue: '読了完了しました！' })}</Text>
-          </View>
-        )}
-      </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -249,8 +305,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  content: {
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
   bookCard: {
     flexDirection: 'row',
@@ -414,5 +474,52 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  actionButtonsContainer: {
+    gap: 12,
+  },
+  continueButton: {
+    flexDirection: 'row',
+    backgroundColor: '#000',
+    paddingVertical: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  continueButtonSecondary: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  continueButtonTextSecondary: {
+    color: '#000',
+  },
+  targetPagesCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e3f2fd',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  targetPagesInfo: {
+    flex: 1,
+  },
+  targetPagesLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  targetPagesValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1976D2',
   },
 });

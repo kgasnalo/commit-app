@@ -100,7 +100,10 @@
     "penalty": "Penalty",
     "in_progress": "In Progress",
     "completed": "Completed",
-    "failed": "Failed"
+    "failed": "Failed",
+    "page_range": "Target: pp. {{start}} - {{end}}",
+    "active_goals": "{{count}} goals",
+    "continuation_part": "Part {{part}}"
   },
   "paywall": {
     "for_serious": "For serious readers",
@@ -124,12 +127,20 @@
     "select_book": "1. Select a book",
     "search_placeholder": "Enter book title",
     "set_deadline": "2. Set deadline",
-    "set_penalty": "3. Set penalty amount",
+    "set_page_count": "3. Set page goal",
+    "page_count_note": "How many pages will you commit to reading?",
+    "pages": "pages",
+    "set_penalty": "4. Set penalty amount",
     "select_currency": "Select currency",
     "select_amount": "Select amount",
     "penalty_note": "If you don't submit proof by the deadline, you will be charged this amount.",
     "agree_terms": "I agree to the penalty and create this commitment",
-    "create_button": "Create Commitment"
+    "create_button": "Create Commitment",
+    "no_charge_disclaimer": "No immediate charge. You pay ONLY if you miss the deadline.",
+    "loading_book_data": "Loading book data...",
+    "pages_read_so_far": "{{pages}} pages read so far",
+    "progress_near_max": "Amazing! You've already read {{pages}} pages of this book.",
+    "slider_min_note": "* {{pages}} pages already read. You can set goals from page {{next}}."
   },
   "commitment_detail": {
     "title": "Commitment Details",
@@ -140,7 +151,10 @@
     "minutes": "min",
     "penalty_amount": "Penalty Amount",
     "penalty_note": "If you don't verify completion by the deadline, you will be charged this amount",
-    "verify_button": "Verify Completion"
+    "verify_button": "Verify Completion",
+    "continue_this_book": "Continue This Book",
+    "add_next_commitment": "Add Next Commitment",
+    "target_pages": "Page Goal"
   },
   "verification": {
     "title": "Reading Verification",
@@ -180,12 +194,21 @@
   "errors": {
     "network": "Network error occurred",
     "auth": "Authentication error. Please log in again.",
-    "unknown": "An error occurred"
+    "unknown": "An error occurred",
+    "continue_flow_failed": "Failed to load book data.",
+    "page_count_overlap": "Page goal must be greater than previously read pages ({{pages}} pages)."
   },
   "tabs": {
     "home": "Home",
     "library": "Library",
     "settings": "Settings"
+  },
+  "celebration": {
+    "title": "Commitment Achieved!",
+    "subtitle": "You kept your promise!",
+    "money_saved": "Money Saved",
+    "saved_note": "Your pledge stays with you!",
+    "return_button": "Return to Dashboard"
   },
   "library": {
     "title": "Library",

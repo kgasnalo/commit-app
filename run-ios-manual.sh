@@ -8,8 +8,7 @@ xcodebuild -workspace ios/COMMIT.xcworkspace \
   -scheme COMMIT \
   -configuration Debug \
   -destination "platform=iOS Simulator,name=$DEVICE_NAME" \
-  -derivedDataPath build \
-  -quiet
+  -derivedDataPath build
 
 echo "Installing on simulator..."
 xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/COMMIT.app

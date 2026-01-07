@@ -1,84 +1,98 @@
-# COMMIT App Development Roadmap & Design Spec
+# Agentic Roadmap: COMMIT App
 
-## 🛠 Project Context & Tech Stack
-- **Framework**: React Native (Expo SDK 50+)
-- **Animation**: `react-native-reanimated` (v3), `moti`
-- **Backend**: Supabase, Edge Functions
-- **Payments**: RevenueCat (IAP for Subscription), Stripe (Off-Session for Penalties)
-- **Concept**: "Fluid Commitment" - A habit tracking app that uses financial stakes.
+This roadmap is designed for **Autonomous AI Agents (Claude Code)**.
+Do **NOT** skip steps. Do **NOT** combine tasks unless explicitly instructed.
+Each task is atomic, role-specific, and has a clear definition of done.
 
 ---
 
-## 📅 Phase 1: Release Blockers (Priority: High)
-*Essential tasks for Store Review and App Functionality.*
+## 🟢 Phase 1: Interactive Core Components
 
-### 1. Store Admin & Legal
-- [ ] **Tax & Banking**: Setup in App Store Connect / Google Play Console.
-- [ ] **Subscription Product**: Create Product IDs (e.g., `com.commitapp.monthly`).
-- [ ] **iPad Support**: Verify `app.json` settings (set `ios.supportsTablet: false` if layout is broken).
-- [ ] **Legal Docs**: Create TOS and Privacy Policy pages (must explain penalty usage).
-- [ ] **Attribution**: Add "Powered by Google" to Book Search screen.
+**Objective:** Implement high-quality, animated interactive components for the commitment creation flow.
 
-### 2. Payment Infrastructure (Hybrid Model)
-- [ ] **RevenueCat Integration**:
-    - Replace current Stripe subscription logic with RevenueCat (or `react-native-iap`).
-    - Implement Restore Purchase button.
-- [ ] **Stripe Flow Migration**:
-    - Move card registration (SetupIntent) to `CreateCommitmentScreen`.
-    - Remove Stripe UI from Onboarding Paywall.
-    - Save Stripe Customer ID to Supabase `users` table.
-- [ ] **Apple Privacy Manifest**: Ensure SDKs (Stripe/RevenueCat) are declared.
+- [x] **1.1 Interactive Slider (Page Count)**
+    - **Role:** `[Frontend Specialist]`
+    - **Action:** Create `src/components/AnimatedPageSlider.tsx`.
+    - **Details:**
+        - Implement drag gestures using `react-native-gesture-handler`.
+        - Use `useSharedValue` and `useAnimatedStyle` for smooth 60fps animations.
+        - Add haptic feedback on value changes using `expo-haptics`.
+    - **DoD:** Component handles gestures smoothly and provides tactile feedback.
 
-### 3. Backend Logic (Edge Functions)
-- [ ] **Deadline Check**: Create batch job to identify expired commitments.
-- [ ] **Penalty Execution**: Implement Off-Session Stripe payment logic.
-- [ ] **Cron Job**: Schedule daily checks via `pg_cron`.
-- [ ] **Timezone**: Add `timezone` column to `commitments` and handle logic.
+- [x] **1.2 Amount Setting (Penalty)**
+    - **Role:** `[Frontend Specialist]`
+    - **Action:** Create `src/components/PenaltyAmountInput.tsx` and integrate into `CreateCommitmentScreen`.
+    - **Details:**
+        - **Component:** Create a standalone component that takes `amount` and `onAmountChange`.
+        - **Vignette Effect:** Use `expo-linear-gradient` inside an `Animated.View`. Interpolate opacity based on amount (0 to max). Darken corners visually.
+        - **Pulse Animation:** Use `react-native-reanimated` (`withRepeat`, `withSequence`) on the "Set Pledge" button to simulate a heartbeat.
+        - **Haptics:** Trigger impact on significant amount increments.
+        - **Trust UI:** Add a clear disclaimer text explicitly stating: *"No immediate charge. You pay ONLY if you miss the deadline."* to reduce user anxiety.
+    - **DoD:** Functional amount input with visible darkening effect and pulsating button.
 
----
+- [x] **1.3 Quick Continue Flow**
+    - **Role:** `[Fullstack Engineer]`
+    - **Action:** Enable "Continue Reading" flow from history or completion screen.
+    - **Details:**
+        - **Routing:** Updated `CreateCommitmentScreen` to accept optional `continueBookId` param.
+        - **Logic:** If `continueBookId` is present, fetches book details and progress from Supabase, skips the "Search Book" step, sets slider `minValue` to (totalPagesRead + 1), and pre-fills settings from last commitment.
+        - **UI:** Added "Continue this Book" button to `CommitmentDetailScreen` (shown for ALL statuses: pending, completed, defaulted).
+        - **Target Pages Display:** `CommitmentDetailScreen` now shows the target page count for each commitment.
+        - **Smart Slider:** `AnimatedPageSlider` respects dynamic `minValue` prop. User cannot set goals overlapping with previously read pages.
+        - **Validation:** Added validation to prevent submitting `target_pages` <= `totalPagesRead`.
+        - **Helper Functions:** Created `src/lib/commitmentHelpers.ts` with `getBookProgress`, `getBookById`, `calculateSliderStartPage`, `calculateSuggestedDeadline`.
+    - **DoD:** Tapping "Continue" on any commitment immediately starts a new commitment creation for the same book without searching, with progress-aware defaults. Slider starts from the next unread page.
 
-## 🎨 UI/UX Design Spec: "Fluid Commitment"
-*Implementation utilizing `react-native-reanimated` and `moti`.*
+- [ ] **1.4 UX Overhaul - Group Commitments and Enhance Card UI**
+    - **Role:** `[UX Engineer]`
+    - **Action:** Group commitments by book on the Dashboard and improve card feedback.
+    - **Details:**
+        - **Data Grouping:** Modify `DashboardScreen` logic to group active commitments by `book_id`.
+        - **Primary Card:** If a book has multiple commitments, display the most recent one as the primary card.
+        - **Stack Effect:** Add a visual "Stack" effect or a count (e.g., "3 active goals for this book") to indicate multiple commitments.
+        - **Page Segments:** Instead of showing "Target: 328 pages", show "Target: pp. 656 - 984".
+        - **Badging:** Add a small badge or label like "Part 2" or "Continuation" based on how many previous commitments exist for that book_id.
+        - **Sorting:** Ensure the Dashboard list is sorted so that the book with the most recently updated commitment appears at the top.
+    - **DoD:** Dashboard is organized by book, showing clear page ranges and historical context for each goal. The Home Screen no longer shows multiple identical-looking cards for the same book.
 
-### Core Principles
-1. **Continuity**: Seamless shared element transitions.
-2. **Feedback**: Immediate reaction to touch.
-3. **Delight**: Physical, spring-based animations.
-
-### 1. Dashboard (The Focus)
-- **Hero Card**:
-    - Large active book card (60% height).
-    - **"Breathing" Animation**: Glow effect when deadline < 3 days.
-    - **Transition**: `SharedTransition` to Detail Screen.
-- **Stats Ticker**:
-    - Slot-machine style number rotation for "Money Saved".
-- **FAB (Floating Action Button)**:
-    - Ripple effect on tap to open Search.
-    - Auto-hide (opacity) on scroll.
-
-### 2. Library (The Trophy Room)
-- **Layout**: Grid view (2 or 3 columns) with 3D book cover effect (shadow/thickness).
-- **Holographic Stamp**: Use `DeviceMotion` to create a shiny "Completed" stamp overlay.
-- **Entrance**: Staggered fade-in using `Moti` (delay by index).
-
-### 3. Creation Flow & Inputs
-- **Interactive Slider (Page Count)**:
-    - Spring animation on value change.
-    - Background color morphing: White -> Grey -> Warning Red.
-    - Haptic feedback at milestones (10, 50, etc).
-- **Amount Setting (Penalty)**:
-    - **Vignette Effect**: Darken screen corners as amount increases.
-    - **Pulse**: The "Set Pledge" button mimics a heartbeat.
+- [x] **1.5 Completion Celebration (The Reward)**
+    - **Role:** `[Animation Specialist]`
+    - **Action:** Implemented a celebration effect upon marking a commitment as complete.
+    - **Details:**
+        - Created `VerificationSuccessModal` component with `react-native-confetti-cannon` for confetti explosion.
+        - Used `react-native-reanimated` for spring animations and scale effects.
+        - Implemented "Money Saved" counter animation (ticking up from ¥0 to pledge amount).
+        - Modal includes localized success messages (en/ja/ko) and "Return to Dashboard" button.
+    - **DoD:** Completing a commitment triggers a visible, exciting animation with confetti and money saved counter.
 
 ---
 
-## 🛡 Phase 2: Stability & Trust
-- [ ] **Global Error Boundary**: Friendly crash screen + restart button.
-- [ ] **Support**: Add link to Developer contact/SNS in Settings.
-- [ ] **Notifications**: Local notifications for 3-day, 1-day, and same-day reminders.
-- [ ] **Free Trial**: Configure trial period in IAP settings.
+## 🟡 Phase 2: Release Blockers (Stabilization)
 
-## 📈 Phase 3: Growth
-- [ ] **In-App Review**: Trigger via `expo-store-review` upon commitment completion.
-- [ ] **Social Share**: Generate image for SNS sharing.
-- [ ] **Reading Progress**: Visual progress bar based on page count.
+**Objective:** Ensure the app is stable, type-safe, and configurable before adding new features.
+
+- [ ] **2.1 Environment & Configuration Safety**
+    - **Role:** `[System Architect]`
+    - **Action:** Create `src/config/env.ts` with strict validation.
+    - **DoD:** App crashes immediately on boot if `.env` is broken.
+
+- [ ] **2.2 Global Error Handling**
+    - **Role:** `[React Component Dev]`
+    - **Action:** Create `src/components/common/ErrorBoundary.tsx`.
+    - **DoD:** Graceful failure UI instead of white screens.
+
+- [ ] **2.3 Strict Type Definitions (Supabase)**
+    - **Role:** `[TypeScript Expert]`
+    - **Action:** Update `src/types/database.types.ts` and `src/lib/supabase.ts`.
+    - **DoD:** No `any` types in data fetching.
+
+- [ ] **2.4 Critical UI Edge Cases**
+    - **Role:** `[UI Designer]`
+    - **Action:** Polish `BookDetailScreen` loading state and `DashboardScreen` empty state.
+    - **DoD:** UI feels responsive and inviting even with no data.
+
+---
+
+## 🔵 Phase 3: Polish & Animation
+
+*To be detailed after Phase 2 completion.*

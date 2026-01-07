@@ -19,9 +19,12 @@
 - **Animations:** Prefer `react-native-reanimated` (v3) and `moti` for all UI animations.
 - Icons: Use `lucide-react-native` or `@expo/vector-icons`.
 - Formatting: Ensure code is clean and readable.
+- **Import Paths:** Use relative paths (e.g., `../../utils`) consistently to avoid path resolution errors.
 
 # Critical Rules
 - **Dependency Management:** ALWAYS use `npx expo install` to install libraries (ensures version compatibility).
 - **Navigation:** We use React Navigation v7. Do NOT mix with Expo Router syntax.
 - **Safety:** Always add error handling (try/catch) when calling Supabase or async functions.
 - **Context:** Before editing a file, always READ it first to understand existing logic.
+- **Language:** ユーザーへの回答や説明は常に日本語で行うこと。
+- **Page Count Logic:** In Continue Flow, the slider displays "end page number" but DB stores "pages to read" (quantity). Calculate delta: `pagesToRead = pageCount - totalPagesRead`. This is because `getBookProgress` sums `target_pages` from all commitments.

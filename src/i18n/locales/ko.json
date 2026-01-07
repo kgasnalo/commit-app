@@ -100,7 +100,10 @@
     "penalty": "페널티",
     "in_progress": "진행 중",
     "completed": "완료",
-    "failed": "실패"
+    "failed": "실패",
+    "page_range": "목표: {{start}} - {{end}}페이지",
+    "active_goals": "{{count}}개 목표",
+    "continuation_part": "파트 {{part}}"
   },
   "paywall": {
     "for_serious": "진지한 독자를 위해",
@@ -124,12 +127,20 @@
     "select_book": "1. 책 선택",
     "search_placeholder": "책 제목 입력",
     "set_deadline": "2. 기한 설정",
-    "set_penalty": "3. 페널티 금액 설정",
+    "set_page_count": "3. 페이지 목표 설정",
+    "page_count_note": "몇 페이지를 읽기로 약속하시겠습니까?",
+    "pages": "페이지",
+    "set_penalty": "4. 페널티 금액 설정",
     "select_currency": "통화 선택",
     "select_amount": "금액 선택",
     "penalty_note": "기한까지 완료 증명을 제출하지 않으면 이 금액이 청구됩니다.",
     "agree_terms": "페널티에 동의하고 커밋먼트를 생성합니다",
-    "create_button": "커밋먼트 생성"
+    "create_button": "커밋먼트 생성",
+    "no_charge_disclaimer": "즉시 결제되지 않습니다. 마감 기한을 넘긴 경우에만 결제됩니다.",
+    "loading_book_data": "책 데이터 로딩 중...",
+    "pages_read_so_far": "지금까지 {{pages}}페이지 읽음",
+    "progress_near_max": "대단해요! 이 책을 이미 {{pages}}페이지 읽었습니다.",
+    "slider_min_note": "※ 이전까지 {{pages}}페이지 읽음. {{next}}페이지부터 설정할 수 있습니다."
   },
   "commitment_detail": {
     "title": "커밋먼트 상세",
@@ -140,7 +151,10 @@
     "minutes": "분",
     "penalty_amount": "페널티 금액",
     "penalty_note": "기한까지 완료 확인을 하지 않으면 이 금액이 청구됩니다",
-    "verify_button": "완료 확인"
+    "verify_button": "완료 확인",
+    "continue_this_book": "이 책 계속 읽기",
+    "add_next_commitment": "다음 커밋 추가",
+    "target_pages": "페이지 목표"
   },
   "verification": {
     "title": "독서 확인",
@@ -180,12 +194,21 @@
   "errors": {
     "network": "네트워크 오류가 발생했습니다",
     "auth": "인증 오류가 발생했습니다. 다시 로그인해주세요.",
-    "unknown": "오류가 발생했습니다"
+    "unknown": "오류가 발생했습니다",
+    "continue_flow_failed": "책 데이터 로드에 실패했습니다.",
+    "page_count_overlap": "페이지 목표는 이전 읽은 페이지 수({{pages}}페이지)보다 많아야 합니다."
   },
   "tabs": {
     "home": "홈",
     "library": "서재",
     "settings": "설정"
+  },
+  "celebration": {
+    "title": "커밋먼트 달성!",
+    "subtitle": "약속을 지켰습니다!",
+    "money_saved": "절약한 금액",
+    "saved_note": "각오금은 당신의 것입니다!",
+    "return_button": "대시보드로 돌아가기"
   },
   "library": {
     "title": "서재",

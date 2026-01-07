@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,18 +12,29 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useFocusEffect } from '@react-navigation/native';
+import CommitmentCard from '../components/CommitmentCard';
+import {
+  calculatePageRangesForAll,
+  groupCommitmentsByBook,
+  GroupedBookCommitments,
+  RawCommitmentWithBook,
+  CommitmentWithRange,
+} from '../lib/commitmentHelpers';
 
 type Commitment = {
   id: string;
+  book_id: string;
   book: {
+    id: string;
     title: string;
     author: string;
-    cover_url: string;
+    cover_url: string | null;
   };
   deadline: string;
   status: 'pending' | 'completed' | 'defaulted';
   pledge_amount: number;
   currency: string;
+  target_pages: number;
   created_at: string;
 };
 
@@ -37,6 +48,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 export default function DashboardScreen({ navigation }: any) {
   const [commitments, setCommitments] = useState<Commitment[]>([]);
+  const [groupedCommitments, setGroupedCommitments] = useState<GroupedBookCommitments[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [poolByCurrency, setPoolByCurrency] = useState<Record<string, number>>({});
   const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
@@ -62,18 +74,30 @@ export default function DashboardScreen({ navigation }: any) {
         .from('commitments')
         .select(`
           id,
+          book_id,
           deadline,
           status,
           pledge_amount,
           currency,
+          target_pages,
           created_at,
-          book:books(title, author, cover_url)
+          book:books(id, title, author, cover_url)
         `)
         .eq('user_id', user.id)
-        .order('deadline', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (data) {
         setCommitments(data as any);
+
+        // Calculate page ranges and group by book
+        // Transform data to ensure book is a single object (not array from Supabase join)
+        const transformedData: RawCommitmentWithBook[] = data.map((c: any) => ({
+          ...c,
+          book: Array.isArray(c.book) ? c.book[0] : c.book,
+        }));
+        const withRanges = calculatePageRangesForAll(transformedData);
+        const grouped = groupCommitmentsByBook(withRanges);
+        setGroupedCommitments(grouped);
 
         // 通貨ごとに集計
         const pending = data.filter(c => c.status === 'pending');
@@ -219,7 +243,7 @@ export default function DashboardScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          {commitments.filter(c => c.status === 'pending').length === 0 ? (
+          {groupedCommitments.filter(g => g.activeCount > 0).length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="book-outline" size={48} color="#ccc" />
               <Text style={styles.emptyText}>{i18n.t('dashboard.no_commitments', { defaultValue: '進行中のコミットメントはありません' })}</Text>
@@ -231,9 +255,18 @@ export default function DashboardScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           ) : (
-            commitments
-              .filter(c => c.status === 'pending')
-              .map(renderCommitmentCard)
+            groupedCommitments
+              .filter(g => g.activeCount > 0)
+              .map(group => (
+                <CommitmentCard
+                  key={group.bookId}
+                  commitment={group.mostRecentCommitment}
+                  activeCount={group.activeCount}
+                  onPress={() => navigation.navigate('CommitmentDetail', {
+                    id: group.mostRecentCommitment.id
+                  })}
+                />
+              ))
           )}
         </View>
 

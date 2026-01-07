@@ -15,6 +15,7 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
+import VerificationSuccessModal from '../components/VerificationSuccessModal';
 
 const MIN_MEMO_LENGTH = 100;
 
@@ -24,6 +25,10 @@ export default function VerificationScreen({ route, navigation }: any) {
   const [image, setImage] = useState<string | null>(null);
   const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedAmount, setSavedAmount] = useState(0);
+  const [currency, setCurrency] = useState('JPY');
+  const [bookId, setBookId] = useState<string | null>(null);
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -82,6 +87,17 @@ export default function VerificationScreen({ route, navigation }: any) {
     setLoading(true);
 
     try {
+      // Fetch commitment details for the celebration modal
+      const { data: commitmentData, error: fetchError } = await supabase
+        .from('commitments')
+        .select('pledge_amount, currency')
+        .eq('id', commitmentId)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
       // 画像をSupabase Storageにアップロード
       const fileName = `verification_${commitmentId}_${Date.now()}.jpg`;
       const response = await fetch(image);
@@ -128,17 +144,21 @@ export default function VerificationScreen({ route, navigation }: any) {
         throw updateError;
       }
 
-      Alert.alert(
-        i18n.t('verification.success_title', { defaultValue: '読了完了！' }),
-        i18n.t('verification.success_message', { defaultValue: 'おめでとうございます！読了が確認されました。' }),
-        [{ text: i18n.t('common.ok'), onPress: () => navigation.navigate('Dashboard') }]
-      );
+      // Show celebration modal instead of Alert
+      setSavedAmount(commitmentData.pledge_amount);
+      setCurrency(commitmentData.currency);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Verification error:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('errors.verification_failed', { defaultValue: '読了確認の保存に失敗しました' }));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleModalClose = () => {
+    setShowSuccessModal(false);
+    navigation.navigate('Dashboard');
   };
 
   return (
@@ -225,6 +245,14 @@ export default function VerificationScreen({ route, navigation }: any) {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Success Celebration Modal */}
+      <VerificationSuccessModal
+        visible={showSuccessModal}
+        savedAmount={savedAmount}
+        currency={currency}
+        onClose={handleModalClose}
+      />
     </SafeAreaView>
   );
 }

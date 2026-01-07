@@ -100,7 +100,10 @@
     "penalty": "ペナルティ",
     "in_progress": "進行中",
     "completed": "完了",
-    "failed": "失敗"
+    "failed": "失敗",
+    "page_range": "目標: {{start}} - {{end}}ページ",
+    "active_goals": "{{count}}つの目標",
+    "continuation_part": "パート{{part}}"
   },
   "paywall": {
     "for_serious": "本気の人向け",
@@ -124,12 +127,20 @@
     "select_book": "1. 読む書籍を選択",
     "search_placeholder": "書籍タイトルを入力",
     "set_deadline": "2. 読了期限を設定",
-    "set_penalty": "3. ペナルティ金額を設定",
+    "set_page_count": "3. ページ目標を設定",
+    "page_count_note": "何ページ読むことをコミットしますか？",
+    "pages": "ページ",
+    "set_penalty": "4. ペナルティ金額を設定",
     "select_currency": "通貨を選択",
     "select_amount": "金額を選択",
     "penalty_note": "期限までに読了証明を提出できなかった場合、上記金額が課金されます。",
     "agree_terms": "上記ペナルティに同意し、コミットメントを作成します",
-    "create_button": "コミットメントを作成"
+    "create_button": "コミットメントを作成",
+    "no_charge_disclaimer": "即時の課金はありません。期限を過ぎた場合のみ課金されます。",
+    "loading_book_data": "書籍データを読み込み中...",
+    "pages_read_so_far": "これまでに{{pages}}ページ読了",
+    "progress_near_max": "すごい！この本はすでに{{pages}}ページ読みました。",
+    "slider_min_note": "※ 前回までに{{pages}}ページ読了済み。{{next}}ページ目から設定できます。"
   },
   "commitment_detail": {
     "title": "コミットメント詳細",
@@ -140,7 +151,10 @@
     "minutes": "分",
     "penalty_amount": "ペナルティ金額",
     "penalty_note": "期限までに読了確認ができない場合、この金額が課金されます",
-    "verify_button": "読了確認する"
+    "verify_button": "読了確認する",
+    "continue_this_book": "この本を続ける",
+    "add_next_commitment": "次のコミットメントを追加",
+    "target_pages": "ページ目標"
   },
   "verification": {
     "title": "読了確認",
@@ -180,12 +194,21 @@
   "errors": {
     "network": "ネットワークエラーが発生しました",
     "auth": "認証エラーが発生しました。再度ログインしてください。",
-    "unknown": "エラーが発生しました"
+    "unknown": "エラーが発生しました",
+    "continue_flow_failed": "書籍データの読み込みに失敗しました。",
+    "page_count_overlap": "ページ目標は前回の読了ページ数（{{pages}}ページ）より多く設定してください。"
   },
   "tabs": {
     "home": "ホーム",
     "library": "本棚",
     "settings": "設定"
+  },
+  "celebration": {
+    "title": "コミットメント達成！",
+    "subtitle": "約束を守りました！",
+    "money_saved": "節約できた金額",
+    "saved_note": "覚悟金はあなたの手元に！",
+    "return_button": "ダッシュボードに戻る"
   },
   "library": {
     "title": "本棚",

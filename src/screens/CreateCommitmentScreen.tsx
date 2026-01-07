@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,29 @@ import {
   Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+  SharedValue,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
+import {
+  getBookProgress,
+  getBookById,
+  calculateSliderStartPage,
+  calculateSuggestedDeadline,
+} from '../lib/commitmentHelpers';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Book } from '../types';
 import i18n from '../i18n';
+import AnimatedPageSlider from '../components/AnimatedPageSlider';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -39,6 +57,87 @@ const AMOUNTS_BY_CURRENCY: Record<Currency, number[]> = {
   KRW: [9000, 27000, 45000, 90000],
 };
 
+// Vignette intensity mapping (0-4 tiers)
+const getAmountTierIndex = (amount: number | null, currency: Currency): number => {
+  if (amount === null) return 0;
+  const amounts = AMOUNTS_BY_CURRENCY[currency];
+  const index = amounts.indexOf(amount);
+  return index === -1 ? 0 : index + 1;
+};
+
+const VIGNETTE_INTENSITY = [0, 0.15, 0.25, 0.35, 0.45];
+
+// VignetteOverlay Component
+interface VignetteOverlayProps {
+  intensity: SharedValue<number>;
+}
+
+const VignetteOverlay: React.FC<VignetteOverlayProps> = ({ intensity }) => {
+  const animatedOpacity = useAnimatedStyle(() => ({
+    opacity: intensity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[StyleSheet.absoluteFill, animatedOpacity]}
+      pointerEvents="none"
+    >
+      {/* Top-left corner gradient */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.8)', 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.6, y: 0.6 }}
+        style={vignetteStyles.corner}
+      />
+      {/* Top-right corner gradient */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.8)', 'transparent']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0.4, y: 0.6 }}
+        style={[vignetteStyles.corner, vignetteStyles.topRight]}
+      />
+      {/* Bottom-left corner gradient */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.8)', 'transparent']}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 0.6, y: 0.4 }}
+        style={[vignetteStyles.corner, vignetteStyles.bottomLeft]}
+      />
+      {/* Bottom-right corner gradient */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.8)', 'transparent']}
+        start={{ x: 1, y: 1 }}
+        end={{ x: 0.4, y: 0.4 }}
+        style={[vignetteStyles.corner, vignetteStyles.bottomRight]}
+      />
+    </Animated.View>
+  );
+};
+
+const vignetteStyles = StyleSheet.create({
+  corner: {
+    position: 'absolute',
+    width: '60%',
+    height: '40%',
+    top: 0,
+    left: 0,
+  },
+  topRight: {
+    left: undefined,
+    right: 0,
+  },
+  bottomLeft: {
+    top: undefined,
+    bottom: 0,
+  },
+  bottomRight: {
+    top: undefined,
+    bottom: 0,
+    left: undefined,
+    right: 0,
+  },
+});
+
 interface GoogleBook {
   id: string;
   volumeInfo: {
@@ -56,6 +155,7 @@ interface Props {
   route?: {
     params?: {
       preselectedBook?: Book;
+      bookId?: string;
     };
   };
 }
@@ -75,6 +175,146 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   // ペナルティ金額と通貨選択
   const [pledgeAmount, setPledgeAmount] = useState<number | null>(null);
   const [currency, setCurrency] = useState<Currency>('JPY');
+
+  // ページ数目標
+  const [pageCount, setPageCount] = useState<number>(100);
+
+  // Continue Flow state
+  const [isContinueFlow, setIsContinueFlow] = useState(false);
+  const [loadingContinueData, setLoadingContinueData] = useState(false);
+  const [totalPagesRead, setTotalPagesRead] = useState(0);
+  const [continueInfoMessage, setContinueInfoMessage] = useState<string | null>(null);
+  const [continueBookIdInternal, setContinueBookIdInternal] = useState<string | null>(null);
+
+  // Vignette and Pulse Animation Shared Values
+  const vignetteIntensity = useSharedValue(0);
+  const pulseScale = useSharedValue(1);
+
+  // Vignette Effect - darken corners as penalty amount increases
+  useEffect(() => {
+    const tierIndex = getAmountTierIndex(pledgeAmount, currency);
+    const targetIntensity = VIGNETTE_INTENSITY[tierIndex];
+
+    vignetteIntensity.value = withTiming(targetIntensity, {
+      duration: 400,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [pledgeAmount, currency]);
+
+  // Pulse Animation - heartbeat effect on create button when ready
+  useEffect(() => {
+    if (pledgeAmount !== null && selectedBook && agreedToPenalty) {
+      // Start heartbeat pulse animation
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 300, easing: Easing.out(Easing.ease) }),
+          withTiming(1.0, { duration: 300, easing: Easing.in(Easing.ease) }),
+          withTiming(1.03, { duration: 200, easing: Easing.out(Easing.ease) }),
+          withTiming(1.0, { duration: 400, easing: Easing.in(Easing.ease) }),
+        ),
+        -1, // Repeat indefinitely
+        false // Don't reverse
+      );
+    } else {
+      // Stop animation and reset
+      pulseScale.value = withTiming(1, { duration: 200 });
+    }
+  }, [pledgeAmount, selectedBook, agreedToPenalty]);
+
+  // Animated style for create button
+  const createButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
+
+  // Continue Flow initialization
+  useEffect(() => {
+    const bookId = route?.params?.bookId;
+    if (bookId) {
+      initializeContinueFlow(bookId);
+    }
+  }, [route?.params?.bookId]);
+
+  async function initializeContinueFlow(bookId: string) {
+    setLoadingContinueData(true);
+    setIsContinueFlow(true);
+    setContinueBookIdInternal(bookId);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Fetch book metadata
+      const bookData = await getBookById(bookId);
+      if (!bookData) throw new Error('Book not found');
+
+      // Convert to GoogleBook format for compatibility
+      const googleBook: GoogleBook = {
+        id: bookData.google_books_id,
+        volumeInfo: {
+          title: bookData.title,
+          authors: [bookData.author],
+          imageLinks: {
+            thumbnail: bookData.cover_url || undefined,
+          },
+        },
+      };
+      setSelectedBook(googleBook);
+
+      // Fetch progress data
+      const progress = await getBookProgress(bookId, user.id);
+      console.log('[ContinueFlow] progress:', progress);
+      console.log('[ContinueFlow] totalPagesRead:', progress.totalPagesRead);
+      setTotalPagesRead(progress.totalPagesRead);
+
+      // Calculate and set slider start position
+      const sliderStart = calculateSliderStartPage(progress.totalPagesRead);
+      console.log('[ContinueFlow] sliderStart:', sliderStart);
+      setPageCount(sliderStart);
+
+      // Show info message if near max
+      if (progress.totalPagesRead >= 950) {
+        setContinueInfoMessage(
+          i18n.t('commitment.progress_near_max', {
+            defaultValue: 'すごい！この本はすでに{{pages}}ページ読みました。',
+            pages: progress.totalPagesRead,
+          })
+        );
+      }
+
+      // Pre-fill settings from last commitment
+      if (progress.lastCommitment) {
+        // Pre-fill currency
+        const lastCurrency = progress.lastCommitment.currency as Currency;
+        if (CURRENCY_OPTIONS.some(c => c.code === lastCurrency)) {
+          setCurrency(lastCurrency);
+        }
+
+        // Pre-fill pledge amount
+        const lastAmount = progress.lastCommitment.pledge_amount;
+        if (AMOUNTS_BY_CURRENCY[lastCurrency]?.includes(lastAmount)) {
+          setPledgeAmount(lastAmount);
+        }
+
+        // Calculate suggested deadline
+        const suggestedDeadline = calculateSuggestedDeadline(
+          progress.lastCommitment.deadline,
+          progress.lastCommitment.created_at
+        );
+        setDeadline(suggestedDeadline);
+      }
+    } catch (error) {
+      console.error('[ContinueFlow] Error:', error);
+      Alert.alert(
+        i18n.t('common.error'),
+        i18n.t('errors.continue_flow_failed', { defaultValue: '書籍データの読み込みに失敗しました。' })
+      );
+      // Fall back to normal flow
+      setIsContinueFlow(false);
+      setContinueBookIdInternal(null);
+    } finally {
+      setLoadingContinueData(false);
+    }
+  }
 
   function convertToGoogleBook(book: Book): GoogleBook {
     return {
@@ -194,40 +434,98 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       return;
     }
 
+    // Validate page count for Continue Flow
+    if (isContinueFlow && totalPagesRead > 0 && pageCount <= totalPagesRead) {
+      Alert.alert(
+        i18n.t('common.error'),
+        i18n.t('errors.page_count_overlap', {
+          defaultValue: 'ページ目標は前回の読了ページ数（{{pages}}ページ）より多く設定してください。',
+          pages: totalPagesRead,
+        })
+      );
+      return;
+    }
+
     setCreating(true);
+    console.log('[CreateCommitment] Starting commitment creation...');
+
     try {
       // 1. ユーザー情報取得
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      console.log('[CreateCommitment] Step 1: Fetching user...');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('[CreateCommitment] User fetch error:', userError);
+        throw userError;
+      }
+      if (!user) {
+        console.error('[CreateCommitment] No user found');
+        throw new Error('User not authenticated');
+      }
+      console.log('[CreateCommitment] User found:', user.id);
 
       // 2. 書籍をDBに保存（既存チェック）
+      console.log('[CreateCommitment] Step 2: Checking for existing book...');
       let bookId: string;
-      const { data: existingBook } = await supabase
+      const { data: existingBook, error: existingBookError } = await supabase
         .from('books')
         .select('id')
         .eq('google_books_id', selectedBook.id)
         .single();
 
+      if (existingBookError && existingBookError.code !== 'PGRST116') {
+        // PGRST116 = "No rows returned" which is expected if book doesn't exist
+        console.error('[CreateCommitment] Error checking existing book:', existingBookError);
+        throw existingBookError;
+      }
+
       if (existingBook) {
         bookId = existingBook.id;
+        console.log('[CreateCommitment] Existing book found:', bookId);
       } else {
+        console.log('[CreateCommitment] Step 2b: Inserting new book...');
+        // Convert empty string to null for cover_url
+        const coverUrl = selectedBook.volumeInfo.imageLinks?.thumbnail
+          || selectedBook.volumeInfo.imageLinks?.smallThumbnail
+          || null;
+
         const { data: newBook, error: bookError } = await supabase
           .from('books')
           .insert({
             google_books_id: selectedBook.id,
             title: selectedBook.volumeInfo.title,
             author: selectedBook.volumeInfo.authors?.join(', ') || '不明',
-            cover_url: selectedBook.volumeInfo.imageLinks?.thumbnail || selectedBook.volumeInfo.imageLinks?.smallThumbnail || '',
+            cover_url: coverUrl,
           })
           .select('id')
           .single();
 
-        if (bookError) throw bookError;
+        if (bookError) {
+          console.error('[CreateCommitment] Book insert error:', bookError);
+          throw bookError;
+        }
         bookId = newBook.id;
+        console.log('[CreateCommitment] New book created:', bookId);
       }
 
       // 3. コミットメント作成
-      const { error: commitmentError } = await supabase
+      console.log('[CreateCommitment] Step 3: Creating commitment...');
+      
+      // Calculate delta for target_pages (Quantity to read)
+      // Slider returns "Ending Page Number", but DB expects "Page Quantity" because getBookProgress sums them.
+      const pagesToRead = Math.max(1, pageCount - totalPagesRead);
+      
+      console.log('[CreateCommitment] Commitment data:', {
+        user_id: user.id,
+        book_id: bookId,
+        deadline: deadline.toISOString(),
+        pledge_amount: pledgeAmount,
+        currency: currency,
+        target_pages: pagesToRead,
+        start_page: totalPagesRead, // Log for debug
+        end_page: pageCount // Log for debug
+      });
+
+      const { data: commitmentData, error: commitmentError } = await supabase
         .from('commitments')
         .insert({
           user_id: user.id,
@@ -235,10 +533,21 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           deadline: deadline.toISOString(),
           status: 'pending',
           pledge_amount: pledgeAmount,
-          currency: currency
-        });
+          currency: currency,
+          target_pages: pagesToRead,
+        })
+        .select('id')
+        .single();
 
-      if (commitmentError) throw commitmentError;
+      if (commitmentError) {
+        console.error('[CreateCommitment] Commitment insert error:', commitmentError);
+        throw commitmentError;
+      }
+
+      console.log('[CreateCommitment] Commitment created successfully:', commitmentData?.id);
+      
+      // Stop loading spinner BEFORE showing the alert
+      setCreating(false);
 
       const currencySymbol = CURRENCY_OPTIONS.find(c => c.code === currency)?.symbol || currency;
       Alert.alert(
@@ -256,9 +565,14 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         ]
       );
     } catch (error: any) {
-      Alert.alert(i18n.t('common.error'), error.message || i18n.t('errors.create_commitment_failed', { defaultValue: 'コミットメントの作成に失敗しました。' }));
-      console.error('Create commitment error:', error);
+      console.error('[CreateCommitment] Error:', error);
+      console.error('[CreateCommitment] Error details:', JSON.stringify(error, null, 2));
+      Alert.alert(
+        i18n.t('common.error'),
+        error.message || i18n.t('errors.create_commitment_failed', { defaultValue: 'コミットメントの作成に失敗しました。' })
+      );
     } finally {
+      console.log('[CreateCommitment] Finished (setCreating(false))');
       setCreating(false);
     }
   };
@@ -287,17 +601,25 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={true}
-        bounces={true}
-      >
+      <View style={styles.contentWrapper}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+        >
         {/* 書籍選択セクション */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{i18n.t('commitment.select_book')}</Text>
 
-          {selectedBook ? (
+          {loadingContinueData ? (
+            <View style={styles.continueLoadingContainer}>
+              <ActivityIndicator color="#000" />
+              <Text style={styles.continueLoadingText}>
+                {i18n.t('commitment.loading_book_data', { defaultValue: '書籍データを読み込み中...' })}
+              </Text>
+            </View>
+          ) : selectedBook ? (
             <View style={styles.selectedBookCard}>
               <BookThumbnail
                 uri={selectedBook.volumeInfo.imageLinks?.thumbnail || selectedBook.volumeInfo.imageLinks?.smallThumbnail}
@@ -306,10 +628,20 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               <View style={styles.selectedBookInfo}>
                 <Text style={styles.selectedBookTitle}>{selectedBook.volumeInfo.title}</Text>
                 <Text style={styles.selectedBookAuthor}>{selectedBook.volumeInfo.authors?.join(', ')}</Text>
+                {isContinueFlow && totalPagesRead > 0 && (
+                  <Text style={styles.progressInfo}>
+                    {i18n.t('commitment.pages_read_so_far', {
+                      defaultValue: 'これまでに{{pages}}ページ読了',
+                      pages: totalPagesRead,
+                    })}
+                  </Text>
+                )}
               </View>
-              <TouchableOpacity onPress={() => setSelectedBook(null)}>
-                <MaterialIcons name="close" size={24} color="#666" />
-              </TouchableOpacity>
+              {!isContinueFlow && (
+                <TouchableOpacity onPress={() => setSelectedBook(null)}>
+                  <MaterialIcons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <>
@@ -345,6 +677,14 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               )}
             </>
           )}
+
+          {/* Continue Flow info message */}
+          {continueInfoMessage && (
+            <View style={styles.infoMessageContainer}>
+              <MaterialIcons name="info" size={20} color="#4CAF50" />
+              <Text style={styles.infoMessageText}>{continueInfoMessage}</Text>
+            </View>
+          )}
         </View>
 
         {/* 期限設定セクション */}
@@ -374,6 +714,29 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               maximumDate={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)} // 1ヶ月後
             />
           )}
+        </View>
+
+        {/* ページ数目標セクション */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{i18n.t('commitment.set_page_count')}</Text>
+          <AnimatedPageSlider
+            value={pageCount}
+            onValueChange={setPageCount}
+            minValue={isContinueFlow && totalPagesRead > 0 ? totalPagesRead + 1 : 1}
+            maxValue={1000}
+          />
+          {isContinueFlow && totalPagesRead > 0 && (
+            <Text style={styles.sliderMinNote}>
+              {i18n.t('commitment.slider_min_note', {
+                defaultValue: '※ 前回までに{{pages}}ページ読了済み。{{next}}ページ目から設定できます。',
+                pages: totalPagesRead,
+                next: totalPagesRead + 1,
+              })}
+            </Text>
+          )}
+          <Text style={styles.pageCountNote}>
+            {i18n.t('commitment.page_count_note')}
+          </Text>
         </View>
 
         {/* ペナルティ設定セクション */}
@@ -417,7 +780,16 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                   styles.amountButton,
                   pledgeAmount === amount && styles.amountButtonSelected,
                 ]}
-                onPress={() => setPledgeAmount(amount)}
+                onPress={() => {
+                  setPledgeAmount(amount);
+                  // Haptic feedback based on amount tier
+                  const tierIndex = AMOUNTS_BY_CURRENCY[currency].indexOf(amount);
+                  if (tierIndex >= 2) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  } else {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+                }}
               >
                 <Text
                   style={[
@@ -430,6 +802,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               </TouchableOpacity>
             ))}
           </View>
+
+          <Text style={styles.trustNote}>
+            {i18n.t('commitment.no_charge_disclaimer')}
+          </Text>
 
           <Text style={styles.penaltyNote}>
             {i18n.t('commitment.penalty_note')}
@@ -448,22 +824,28 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         </View>
 
-        {/* 作成ボタン */}
-        <TouchableOpacity
-          style={[
-            styles.createButton,
-            (!selectedBook || !pledgeAmount || !agreedToPenalty) && styles.createButtonDisabled
-          ]}
-          onPress={handleCreateCommitment}
-          disabled={!selectedBook || !pledgeAmount || !agreedToPenalty || creating}
-        >
-          {creating ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.createButtonText}>{i18n.t('commitment.create_button')}</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+          {/* 作成ボタン */}
+          <Animated.View style={createButtonAnimatedStyle}>
+            <TouchableOpacity
+              style={[
+                styles.createButton,
+                (!selectedBook || !pledgeAmount || !agreedToPenalty) && styles.createButtonDisabled
+              ]}
+              onPress={handleCreateCommitment}
+              disabled={!selectedBook || !pledgeAmount || !agreedToPenalty || creating}
+            >
+              {creating ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.createButtonText}>{i18n.t('commitment.create_button')}</Text>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
+
+        {/* Vignette Overlay - darkens corners based on penalty amount */}
+        <VignetteOverlay intensity={vignetteIntensity} />
+      </View>
     </SafeAreaView>
   );
 }
@@ -486,6 +868,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#000',
+  },
+  contentWrapper: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
@@ -737,10 +1122,59 @@ const styles = StyleSheet.create({
   amountButtonTextSelected: {
     color: '#fff',
   },
+  trustNote: {
+    fontSize: 13,
+    color: '#4CAF50',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
   penaltyNote: {
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
     marginBottom: 16,
+  },
+  pageCountNote: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  sliderMinNote: {
+    fontSize: 12,
+    color: '#2196F3',
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  continueLoadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  continueLoadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  progressInfo: {
+    fontSize: 12,
+    color: '#4CAF50',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  infoMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    gap: 8,
+  },
+  infoMessageText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#2e7d32',
   },
 });
