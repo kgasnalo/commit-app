@@ -158,13 +158,13 @@
   },
   "verification": {
     "title": "Reading Verification",
-    "photo_section": "1. Final Page Photo",
-    "photo_instruction": "Take a photo of the final page",
+    "photo_section": "1. Photo of the page you finished",
+    "photo_instruction": "Take a photo showing your target page or where you stopped reading",
     "take_photo": "Take Photo",
     "choose_photo": "Choose Photo",
-    "memo_section": "2. Learning Memo",
-    "memo_instruction": "Record what you learned from this book (100+ characters)",
-    "memo_placeholder": "Write about what you learned, memorable content, things you want to practice...",
+    "memo_section": "2. Reading Practice Log (100+ chars)",
+    "memo_instruction": "To solidify your learning, reflect on these 3 points:",
+    "memo_placeholder": "[Insight] What surprised or struck you in this book?\n(e.g., I learned that task management is about managing energy, not time.)\n\n[Commitment] What will you change starting tomorrow?\n(e.g., Every morning at 9am, I'll write just one 'most important task' on a sticky note.)\n\n[Expectation] What outcome do you expect from this change?\n(e.g., Reduce overtime and gain an extra hour for myself.)",
     "char_count": "characters min",
     "submit": "Confirm Completion"
   },
@@ -208,7 +208,15 @@
     "subtitle": "You kept your promise!",
     "money_saved": "Money Saved",
     "saved_note": "Your pledge stays with you!",
-    "return_button": "Return to Dashboard"
+    "return_button": "Return to Dashboard",
+    "continue_button": "Continue Reading",
+    "select_new_book": "Choose Another Book",
+    "finish_for_now": "Mark book as finished",
+    "motivation_1": "While many give up halfway, you pushed through to the end. Keep this momentum going with your next book.",
+    "motivation_2": "This book has become 'usable knowledge,' not just information. While the learning is still fresh, take the next step.",
+    "motivation_3": "Finding time to learn despite being busy is an achievement in itself. This consistency will make a big difference in months.",
+    "motivation_4": "The knowledge from this book is now part of you. Learning becomes valuable through your next action.",
+    "motivation_5": "This book has upgraded your judgment and thinking. Accelerate further with your next read."
   },
   "library": {
     "title": "Library",

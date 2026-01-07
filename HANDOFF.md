@@ -1,64 +1,75 @@
 # HANDOFF
 
 ## Goal
-Restore the iOS development environment (Error 65/115) and implement the "Completion Celebration" (Task 1.4) feature.
+Begin Phase 2 (Release Blockers) - starting with Task 2.1 Environment & Configuration Safety.
 
-## Current Critical Status: 🛑 BLOCKED (Environment)
-The development environment is currently unstable. Code changes are complete but untested on device.
+## Current Critical Status: ✅ PHASE 1 COMPLETE + Bug Fix
 
-### Active Issues
-1.  **Error 65 (Build Failed)**:
-    *   **Symptom**: `CompileAssetCatalogVariant` failed for `StripePaymentSheet`.
-    *   **Root Cause**: Corrupted global Xcode `DerivedData` (`~/Library/Developer/Xcode/DerivedData`).
-    *   **Workaround**: `./run-ios-manual.sh` uses local `-derivedDataPath build` and compiles successfully.
+### Phase 1 Summary (All Complete)
+| Task | Description | Status |
+|------|-------------|--------|
+| 1.1 | Interactive Slider (Page Count) | ✅ |
+| 1.2 | Amount Setting (Penalty) | ✅ |
+| 1.3 | Quick Continue Flow | ✅ |
+| 1.4 | UX Overhaul (Grouping, Sorting, Success Modal) | ✅ |
+| 1.5 | Completion Celebration | ✅ |
 
-2.  **Error 115 (Simulator Timeout)**:
-    *   **Symptom**: `Failed to launch app: The operation timed out`.
-    *   **Root Cause**: iOS Simulator process is frozen/zombie.
-    *   **Status**: Even when compilation succeeds, the app cannot be installed/launched.
+### Bug Fix: Login Flow Flicker ✅
+**Problem:** SIGNED_IN → SIGNED_OUT → SIGNED_IN sequence caused UI flicker during login.
 
-3.  **Task 1.4 (Celebration UI)**:
-    *   **Status**: Pending implementation.
-    *   **Requirements**: Install `react-native-confetti-cannon` and create `VerificationSuccessModal`.
+**Root Cause:** `AppNavigator.tsx` had 3 independent `useState` (`session`, `loading`, `isSubscribed`) that updated non-atomically, causing intermediate states.
 
-### Recently Fixed (This Session)
-**Continue Flow Slider Bug** - スライダーがContinue Flowで「1 page」から開始していた問題を修正。
+**Solution:** Unified `AuthState` type with atomic updates:
+```typescript
+type AuthState =
+  | { status: 'loading' }
+  | { status: 'unauthenticated' }
+  | { status: 'authenticated'; session: Session; isSubscribed: boolean };
+```
 
-| File | Change |
-|------|--------|
-| `commitmentHelpers.ts:47-54` | `pending`コミットメントも`totalPagesRead`に含める |
-| `AnimatedPageSlider.tsx:123-124` | 表示値を`minValue`〜`maxValue`でclamp |
-| `CreateCommitmentScreen.tsx:515` | `pagesToRead = pageCount - totalPagesRead` (差分計算) |
-| `CreateCommitmentScreen.tsx:265-271` | デバッグログ追加 |
+**Files Modified:** `src/navigation/AppNavigator.tsx`
+- Unified state management (Line 134)
+- Pure function `checkSubscriptionStatus` returns boolean (Line 137-168)
+- `initializeAuth` with atomic state update (Line 174-197)
+- `onAuthStateChange` sets loading state first (Line 213-214)
+- Branded loading screen with COMMIT logo (Line 281-289, 341-364)
 
 ## What Worked
-*   **Compilation (Manual)**: `./run-ios-manual.sh` successfully compiles when using local build folder.
-*   **Supabase/Database**: Database migrations for `target_pages` and backend logic are complete.
-*   **TypeScript**: `npx tsc --noEmit` passes with no errors.
+- TypeScript: `npx tsc --noEmit` passes with no errors
+- i18n: All 3 languages (en/ja/ko) have complete translations
+- Grouping logic: `groupCommitmentsByBook` with stack effect UI
+- Auth flow: Smooth login → loading screen → dashboard transition
 
-## What Didn't Work
-*   **Standard Build**: `npx expo run:ios` fails due to `DerivedData` corruption.
-*   **App Launch**: Installing on simulator fails because simulator process is hung.
+## What Didn't Work (Historical - Keep for Reference)
+- **Xcode Error 65/115:** DerivedData corruption, Simulator timeout
+- **Solution:** Use `./run-ios-manual.sh` instead of `npm run ios`
+- **Auth Flicker:** Multiple independent useState for auth state
+- **Solution:** Use unified AuthState type with atomic updates
 
-## Next Steps (Immediate Action Plan)
-
-### 1. Nuclear Clean (Environment Fix)
+## Environment Notes
+If build fails with Error 65/115:
 ```bash
+# Nuclear clean
 killall Simulator && killall "SimulatorTrampoline"
 rm -rf ~/Library/Developer/Xcode/DerivedData/COMMIT-*
 rm -rf ios/build ios/Pods node_modules
 npm install && cd ios && pod install && cd ..
-```
 
-### 2. Verify Continue Flow Fix
-```bash
+# Use manual build script
 ./run-ios-manual.sh
 ```
-Then test Continue Flow:
-1. 本を選んでコミットメント作成（pending状態）
-2. 同じ本で「Continue」を選択
-3. スライダーが `totalPagesRead + 1` から開始することを確認
-4. コンソールログで `[ContinueFlow]` の値を確認
 
-### 3. Implement Task 1.4 (Celebration UI)
-After environment is stable.
+## Next Steps (Immediate Action Plan)
+
+### Phase 2: Release Blockers
+| Task | Description | Status |
+|------|-------------|--------|
+| 2.1 | Environment & Configuration Safety | ❌ Not started |
+| 2.2 | Global Error Handling (ErrorBoundary) | ❌ Not started |
+| 2.3 | Strict Type Definitions (Supabase) | ❌ Not started |
+| 2.4 | Critical UI Edge Cases | ❌ Not started |
+
+### Start with Task 2.1:
+1. Create `src/config/env.ts` with strict validation
+2. App should crash immediately on boot if `.env` is broken
+3. No silent failures for missing environment variables

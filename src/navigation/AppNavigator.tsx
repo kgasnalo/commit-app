@@ -2,11 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
+import { colors } from '../theme/colors';
 import i18n from '../i18n';
+
+// 統一された認証状態型
+type AuthState =
+  | { status: 'loading' }
+  | { status: 'unauthenticated' }
+  | { status: 'authenticated'; session: Session; isSubscribed: boolean };
 
 import AuthScreen from '../screens/AuthScreen';
 import RoleSelectScreen from '../screens/RoleSelectScreen';
@@ -122,26 +130,103 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  // 統一された認証状態（フリッカー防止のためアトミックに更新）
+  const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
+
+  // サブスクリプション状態を確認する純粋関数（boolean を返す）
+  async function checkSubscriptionStatus(userId: string, retryCount = 0): Promise<boolean> {
+    const maxRetries = 3;
+    try {
+      console.log(`Checking subscription for user ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('subscription_status')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Subscription check error:', error);
+
+        // usersテーブルにレコードが見つからない場合、リトライ
+        if (error.code === 'PGRST116' && retryCount < maxRetries) {
+          console.log(`User record not found, retrying in ${(retryCount + 1) * 500}ms...`);
+          await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 500));
+          return checkSubscriptionStatus(userId, retryCount + 1);
+        }
+
+        return false;
+      }
+
+      const isActive = data?.subscription_status === 'active';
+      console.log('User subscription is:', isActive ? 'active' : 'inactive');
+      return isActive;
+    } catch (err) {
+      console.error('Unexpected error checking subscription:', err);
+      return false;
+    }
+  }
 
   useEffect(() => {
-    // セッションとサブスク状態の初期確認
-    checkUserStatus();
+    let isMounted = true;
+
+    // 初期化：セッションとサブスク状態を一括で確認・設定
+    async function initializeAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          if (isMounted) setAuthState({ status: 'unauthenticated' });
+          return;
+        }
+
+        // サブスクリプションチェック完了後に状態を一括更新
+        const isSubscribed = await checkSubscriptionStatus(session.user.id);
+
+        if (isMounted) {
+          setAuthState({
+            status: 'authenticated',
+            session,
+            isSubscribed,
+          });
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (isMounted) setAuthState({ status: 'unauthenticated' });
+      }
+    }
+
+    initializeAuth();
 
     // 認証状態の変化を監視
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('Auth state change:', _event, session?.user?.id);
-      setSession(session);
-      if (session) {
-        // 新規ユーザーの場合、usersテーブルレコード作成を待つため少し遅延
-        if (_event === 'SIGNED_IN' || _event === 'USER_UPDATED') {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        await checkSubscription(session.user.id);
-      } else {
-        setIsSubscribed(false);
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.id);
+
+      // INITIAL_SESSION は initializeAuth で処理済み
+      if (event === 'INITIAL_SESSION') return;
+
+      if (!session) {
+        if (isMounted) setAuthState({ status: 'unauthenticated' });
+        return;
+      }
+
+      // 重要: 先にローディング状態にしてフリッカーを防止
+      if (isMounted) setAuthState({ status: 'loading' });
+
+      // 新規ユーザーの場合、usersテーブルレコード作成を待つため少し遅延
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // サブスクリプションチェック完了後に状態を一括更新
+      const isSubscribed = await checkSubscriptionStatus(session.user.id);
+
+      if (isMounted) {
+        setAuthState({
+          status: 'authenticated',
+          session,
+          isSubscribed,
+        });
       }
     });
 
@@ -163,11 +248,13 @@ export default function AppNavigator() {
             },
             (payload) => {
               console.log('Subscription status changed:', payload);
-              if (payload.new.subscription_status === 'active') {
-                setIsSubscribed(true);
-              } else {
-                setIsSubscribed(false);
-              }
+              const newSubscriptionStatus = payload.new.subscription_status === 'active';
+
+              // 既存の認証状態を維持しつつサブスク状態のみ更新
+              setAuthState(prev => {
+                if (prev.status !== 'authenticated') return prev;
+                return { ...prev, isSubscribed: newSubscriptionStatus };
+              });
             }
           )
           .subscribe();
@@ -177,6 +264,7 @@ export default function AppNavigator() {
     setupRealtimeSubscription();
 
     return () => {
+      isMounted = false;
       authSubscription.unsubscribe();
       if (realtimeSubscription) {
         realtimeSubscription.unsubscribe();
@@ -184,54 +272,21 @@ export default function AppNavigator() {
     };
   }, []);
 
-  async function checkUserStatus() {
-    const { data: { session } } = await supabase.auth.getSession();
-    setSession(session);
-    if (session) {
-      await checkSubscription(session.user.id);
-    }
-    setLoading(false);
+  // 統一状態から値を取得
+  const isLoading = authState.status === 'loading';
+  const session = authState.status === 'authenticated' ? authState.session : null;
+  const isSubscribed = authState.status === 'authenticated' ? authState.isSubscribed : false;
+
+  // ローディング中はブランドローディング画面を表示
+  if (isLoading) {
+    return (
+      <View style={loadingStyles.container}>
+        <Text style={loadingStyles.title}>COMMIT</Text>
+        <Text style={loadingStyles.subtitle}>規律を資産に変える</Text>
+        <ActivityIndicator size="large" color={colors.accent.primary} style={loadingStyles.spinner} />
+      </View>
+    );
   }
-
-  async function checkSubscription(userId: string, retryCount = 0) {
-    const maxRetries = 3;
-    try {
-      console.log(`Checking subscription for user ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('subscription_status')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Subscription check error:', error);
-
-        // usersテーブルにレコードが見つからない場合、リトライ
-        if (error.code === 'PGRST116' && retryCount < maxRetries) {
-          console.log(`User record not found, retrying in ${(retryCount + 1) * 500}ms...`);
-          await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 500));
-          return checkSubscription(userId, retryCount + 1);
-        }
-
-        setIsSubscribed(false);
-        return;
-      }
-
-      if (data && data.subscription_status === 'active') {
-        console.log('User subscription is active');
-        setIsSubscribed(true);
-      } else {
-        console.log('User subscription is inactive or not found:', data?.subscription_status);
-        setIsSubscribed(false);
-      }
-    } catch (err) {
-      console.error('Unexpected error checking subscription:', err);
-      setIsSubscribed(false);
-    }
-  }
-
-  if (loading) return null;
 
   return (
     <StripeProvider publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}>
@@ -282,3 +337,28 @@ export default function AppNavigator() {
     </StripeProvider>
   );
 }
+
+// ローディング画面のスタイル
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: 4,
+    color: colors.text.primary,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginTop: 8,
+    letterSpacing: 2,
+  },
+  spinner: {
+    marginTop: 32,
+  },
+});

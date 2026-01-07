@@ -1,6 +1,6 @@
 # Commands
 - start: npx expo start
-- ios: npm run ios
+- ios: ./run-ios-manual.sh (preferred over `npm run ios` to avoid Xcode Error 65/115)
 - android: npm run android
 - install: npx expo install
 - typecheck: npx tsc --noEmit

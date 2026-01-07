@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Modal,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Animated, {
@@ -21,12 +22,21 @@ import i18n from '../i18n';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Completion messages for retention flow (Japanese fallback)
+const COMPLETION_MESSAGES = [
+  "多くの人が「途中」でやめてしまう中、\nあなたは最後までやり切りました。\nこの流れのまま、次の1冊を選びにいきましょう。",
+  "忙しい中でも、学ぶ時間を確保できたこと自体が成果です。\nこの積み重ねが、数ヶ月後に大きな差になります。\n次の一冊で、流れを止めずにいきましょう。",
+  "この1冊から得た知識は、あなたの中に確かに蓄積されました。\n学びは、次の行動によって価値に変わります。\n余韻が残っている今のうちに、次の1冊を選んでみましょう。",
+  "この1冊は、あなたの判断力と視座を確実に引き上げました。\nインプットは、使ってこそ資産になります。\nさらなる知識強化のために、次の一冊を今ここで選びましょう。",
+];
+
 interface VerificationSuccessModalProps {
   visible: boolean;
   savedAmount: number;
   currency: string;
   onClose: () => void;
   onContinue?: () => void;
+  onSelectNewBook?: () => void;
 }
 
 export default function VerificationSuccessModal({
@@ -35,14 +45,36 @@ export default function VerificationSuccessModal({
   currency,
   onClose,
   onContinue,
+  onSelectNewBook,
 }: VerificationSuccessModalProps) {
   const confettiRef = useRef<any>(null);
+  const prevVisibleRef = useRef(false);
+  const [motivationKey, setMotivationKey] = React.useState(1);
 
   // Animation values
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const counterValue = useSharedValue(0);
   const [displayAmount, setDisplayAmount] = React.useState(0);
+
+  // Pick a new random completion message each time modal opens
+  useEffect(() => {
+    if (visible && !prevVisibleRef.current) {
+      // Modal just became visible - pick new random message index
+      const randomIndex = Math.floor(Math.random() * COMPLETION_MESSAGES.length);
+      setMotivationKey(randomIndex);
+    }
+    prevVisibleRef.current = visible;
+  }, [visible]);
+
+  // Get the completion message (stable during visibility)
+  const completionMessage = useMemo(() => {
+    // Try i18n first, fallback to hardcoded Japanese messages
+    const i18nMessage = i18n.t(`celebration.completion_${motivationKey + 1}`, {
+      defaultValue: ''
+    });
+    return i18nMessage || COMPLETION_MESSAGES[motivationKey] || COMPLETION_MESSAGES[0];
+  }, [motivationKey]);
 
   const getCurrencySymbol = (curr: string) => {
     const symbols: { [key: string]: string } = {
@@ -133,6 +165,11 @@ export default function VerificationSuccessModal({
             {i18n.t('celebration.subtitle', { defaultValue: 'You kept your promise!' })}
           </Text>
 
+          {/* Completion Message */}
+          <Text style={styles.motivationText}>
+            {completionMessage}
+          </Text>
+
           {/* Money Saved Counter */}
           <View style={styles.savedContainer}>
             <Text style={styles.savedLabel}>
@@ -146,21 +183,27 @@ export default function VerificationSuccessModal({
             </Text>
           </View>
 
-          {/* Continue Reading Button (Primary) */}
+          {/* Continue Reading Button (Primary) - Set next goal for same book */}
           {onContinue && (
             <TouchableOpacity style={styles.button} onPress={onContinue}>
               <Text style={styles.buttonText}>
-                {i18n.t('celebration.continue_button', { defaultValue: 'Continue Reading' })}
+                {i18n.t('celebration.continue_reading', { defaultValue: '次の目標を立てる' })}
               </Text>
             </TouchableOpacity>
           )}
 
-          {/* Return Button (Secondary) */}
-          <TouchableOpacity
-            style={onContinue ? styles.secondaryButton : styles.button}
-            onPress={onClose}
-          >
-            <Text style={onContinue ? styles.secondaryButtonText : styles.buttonText}>
+          {/* Select Next Book Button (Secondary) - Choose a new book */}
+          {onSelectNewBook && (
+            <TouchableOpacity style={styles.outlineButton} onPress={onSelectNewBook}>
+              <Text style={styles.outlineButtonText}>
+                {i18n.t('celebration.select_new_book', { defaultValue: '次の1冊を選ぶ' })}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Finish for now (Text Link) */}
+          <TouchableOpacity style={styles.textLinkButton} onPress={onClose}>
+            <Text style={styles.textLinkText}>
               {i18n.t('celebration.finish_for_now', { defaultValue: 'Finish for now' })}
             </Text>
           </TouchableOpacity>
@@ -200,7 +243,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 8,
+  },
+  motivationText: {
+    fontSize: 15,
+    color: '#555',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 24,
+    marginVertical: 16,
+    paddingHorizontal: 8,
   },
   savedContainer: {
     backgroundColor: '#e8f5e9',
@@ -239,15 +291,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  secondaryButton: {
+  outlineButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#000',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: '100%',
+    marginBottom: 12,
+  },
+  outlineButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  textLinkButton: {
     paddingVertical: 12,
     paddingHorizontal: 32,
     width: '100%',
   },
-  secondaryButtonText: {
+  textLinkText: {
     color: '#666',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });

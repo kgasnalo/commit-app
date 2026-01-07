@@ -90,13 +90,16 @@ export default function VerificationScreen({ route, navigation }: any) {
       // Fetch commitment details for the celebration modal
       const { data: commitmentData, error: fetchError } = await supabase
         .from('commitments')
-        .select('pledge_amount, currency')
+        .select('pledge_amount, currency, book_id')
         .eq('id', commitmentId)
         .single();
 
       if (fetchError) {
         throw fetchError;
       }
+
+      // Store book_id for continue flow
+      setBookId(commitmentData.book_id);
 
       // 画像をSupabase Storageにアップロード
       const fileName = `verification_${commitmentId}_${Date.now()}.jpg`;
@@ -159,6 +162,28 @@ export default function VerificationScreen({ route, navigation }: any) {
   const handleModalClose = () => {
     setShowSuccessModal(false);
     navigation.navigate('Dashboard');
+  };
+
+  const handleContinue = () => {
+    setShowSuccessModal(false);
+    if (bookId) {
+      // Navigate directly to CreateCommitment with bookId to trigger Quick Continue flow
+      navigation.navigate('CreateCommitment', { bookId });
+    } else {
+      navigation.navigate('Dashboard');
+    }
+  };
+
+  const handleSelectNewBook = () => {
+    setShowSuccessModal(false);
+    // Navigate to RoleSelect to start a fresh book selection flow
+    navigation.reset({
+      index: 0,
+      routes: [
+        { name: 'Main' },
+        { name: 'RoleSelect' },
+      ],
+    });
   };
 
   return (
@@ -252,6 +277,8 @@ export default function VerificationScreen({ route, navigation }: any) {
         savedAmount={savedAmount}
         currency={currency}
         onClose={handleModalClose}
+        onContinue={bookId ? handleContinue : undefined}
+        onSelectNewBook={handleSelectNewBook}
       />
     </SafeAreaView>
   );

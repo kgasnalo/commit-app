@@ -43,17 +43,17 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - **Helper Functions:** Created `src/lib/commitmentHelpers.ts` with `getBookProgress`, `getBookById`, `calculateSliderStartPage`, `calculateSuggestedDeadline`.
     - **DoD:** Tapping "Continue" on any commitment immediately starts a new commitment creation for the same book without searching, with progress-aware defaults. Slider starts from the next unread page.
 
-- [ ] **1.4 UX Overhaul - Group Commitments and Enhance Card UI**
+- [x] **1.4 UX Overhaul - Group Commitments, Enhance Card UI & Verification Flow**
     - **Role:** `[UX Engineer]`
-    - **Action:** Group commitments by book on the Dashboard and improve card feedback.
+    - **Action:** Group commitments by book, improve card feedback, and upgrade verification UX.
     - **Details:**
-        - **Data Grouping:** Modify `DashboardScreen` logic to group active commitments by `book_id`.
-        - **Primary Card:** If a book has multiple commitments, display the most recent one as the primary card.
-        - **Stack Effect:** Add a visual "Stack" effect or a count (e.g., "3 active goals for this book") to indicate multiple commitments.
-        - **Page Segments:** Instead of showing "Target: 328 pages", show "Target: pp. 656 - 984".
-        - **Badging:** Add a small badge or label like "Part 2" or "Continuation" based on how many previous commitments exist for that book_id.
-        - **Sorting:** Ensure the Dashboard list is sorted so that the book with the most recently updated commitment appears at the top.
-    - **DoD:** Dashboard is organized by book, showing clear page ranges and historical context for each goal. The Home Screen no longer shows multiple identical-looking cards for the same book.
+        - **Dashboard:** Group active commitments by `book_id`. Display page ranges (e.g., "pp. 656 - 984") and stack effects.
+        - **Verification Screen:** Implement a "Before/After/Action" reflection framework with guided placeholders to help users meet the 100-character limit meaningfully.
+        - **Success Modal:**
+            - Display randomized motivational messages (5 variations) to reinforce achievement.
+            - Offer dual "Next Steps": "Continue this Book" (same book) AND "Select Next Book" (new book).
+        - **Sorting:** Ensure the Dashboard list is sorted by most recently updated.
+    - **DoD:** Dashboard is organized. Verification prompts deep reflection. Success modal drives immediate retention via "Next Action" buttons.
 
 - [x] **1.5 Completion Celebration (The Reward)**
     - **Role:** `[Animation Specialist]`
@@ -64,6 +64,15 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - Implemented "Money Saved" counter animation (ticking up from ¥0 to pledge amount).
         - Modal includes localized success messages (en/ja/ko) and "Return to Dashboard" button.
     - **DoD:** Completing a commitment triggers a visible, exciting animation with confetti and money saved counter.
+
+- [ ] **1.6 Fix UI Flicker during Login Flow**
+    - **Role:** `[Core Engineer]`
+    - **Action:** Stabilize auth state management to prevent login screen flashes.
+    - **Details:**
+        - **Auth Guard:** Implement a unified `isLoading` state in `AppNavigator` that waits for BOTH Supabase session and subscription check.
+        - **Debug:** Investigate and fix the `SIGNED_IN -> SIGNED_OUT -> SIGNED_IN` event sequence.
+        - **Splash:** Keep the splash screen or a dedicated loading view visible until the final route is determined.
+    - **DoD:** Login transition is smooth with no intermediate screen flashes. The user lands directly on the Dashboard.
 
 ---
 

@@ -256,31 +256,24 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
             </View>
           )}
 
-          {/* Continue button - shown for all statuses */}
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              commitment.status === 'pending' && styles.continueButtonSecondary,
-            ]}
-            onPress={() => navigation.navigate('CreateCommitment', {
-              bookId: commitment.book.id,
-            })}
-          >
-            <MaterialIcons
-              name="auto-stories"
-              size={24}
-              color={commitment.status === 'pending' ? '#000' : '#fff'}
-            />
-            <Text style={[
-              styles.continueButtonText,
-              commitment.status === 'pending' && styles.continueButtonTextSecondary,
-            ]}>
-              {commitment.status === 'pending'
-                ? i18n.t('commitment_detail.add_next_commitment', { defaultValue: '次のコミットメントを追加' })
-                : i18n.t('commitment_detail.continue_this_book', { defaultValue: 'この本を続ける' })
-              }
-            </Text>
-          </TouchableOpacity>
+          {/* Continue button - ONLY shown when NOT pending (to prevent accidental stacking) */}
+          {commitment.status !== 'pending' && (
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={() => navigation.navigate('CreateCommitment', {
+                bookId: commitment.book.id,
+              })}
+            >
+              <MaterialIcons
+                name="auto-stories"
+                size={24}
+                color="#fff"
+              />
+              <Text style={styles.continueButtonText}>
+                {i18n.t('commitment_detail.continue_this_book', { defaultValue: 'この本を続ける' })}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

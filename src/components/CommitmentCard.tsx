@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
@@ -54,14 +54,30 @@ export default function CommitmentCard({
   const showPageRange = commitment.startPage > 0 && commitment.endPage > 0;
   const showPartBadge = commitment.commitmentIndex > 1;
   const showActiveCountBadge = activeCount > 1;
+  const hasStackEffect = activeCount > 1;
 
   return (
-    <AnimatedPressable
-      style={[styles.card, isUrgent && styles.urgentCard, animatedStyle]}
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-    >
+    <View style={hasStackEffect ? styles.stackContainer : undefined}>
+      {/* Stack effect: background layers */}
+      {hasStackEffect && (
+        <>
+          {activeCount >= 3 && (
+            <View style={[styles.stackLayer, styles.stackLayer3]} />
+          )}
+          <View style={[styles.stackLayer, styles.stackLayer2]} />
+        </>
+      )}
+      <AnimatedPressable
+        style={[
+          styles.card,
+          isUrgent && styles.urgentCard,
+          hasStackEffect && styles.cardWithStack,
+          animatedStyle,
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
       <View style={styles.cardHeader}>
         <Text style={styles.bookTitle} numberOfLines={1}>
           {commitment.book.title}
@@ -139,16 +155,54 @@ export default function CommitmentCard({
         {i18n.t('dashboard.penalty')}: {commitment.currency === 'JPY' ? '\u00a5' : commitment.currency}
         {commitment.pledge_amount.toLocaleString()}
       </Text>
-    </AnimatedPressable>
+      </AnimatedPressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  stackContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  stackLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  stackLayer2: {
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+    backgroundColor: '#f5f5f5',
+  },
+  stackLayer3: {
+    transform: [{ translateX: 8 }, { translateY: 8 }],
+    backgroundColor: '#fafafa',
+  },
   card: {
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
+  },
+  cardWithStack: {
+    marginBottom: 0,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   urgentCard: {
     borderLeftWidth: 4,
@@ -205,15 +259,17 @@ const styles = StyleSheet.create({
     color: '#7b1fa2',
   },
   activeCountBadge: {
-    backgroundColor: '#fff3e0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    backgroundColor: '#e65100',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   activeCountText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#e65100',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
   },
   countdown: {
     flexDirection: 'row',
