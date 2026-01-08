@@ -103,7 +103,11 @@
     "failed": "失敗",
     "page_range": "目標: {{start}} - {{end}}ページ",
     "active_goals": "{{count}}つの目標",
-    "continuation_part": "パート{{part}}"
+    "continuation_part": "パート{{part}}",
+    "no_commitments": "進行中のコミットメントはありません",
+    "add_book": "本を追加する",
+    "empty_encouragement": "今日から読書の旅を始めましょう！",
+    "history": "履歴"
   },
   "paywall": {
     "for_serious": "本気の人向け",
@@ -164,7 +168,7 @@
     "choose_photo": "選択する",
     "memo_section": "2. 読書の実践ログ（100文字以上）",
     "memo_instruction": "インプットを定着させるために、以下の3点を意識して書き出してみましょう。",
-    "memo_placeholder": "【気づき】この本を読んで、ハッとした点は？\n（例：タスク管理とは、時間を管理することではなくエネルギーを管理することだと知った。）\n\n【宣言】明日から具体的に何を変えますか？\n（例：毎朝9時に「今日の最重要タスク」を1つだけ付箋に書く。）\n\n【期待】それによってどうなりたいですか？\n（例：夕方の残業を減らし、自分の時間を1時間増やす。）",
+    "memo_placeholder": "【要約】この本を一言でまとめると？\n\n【気づき】最も印象に残った学びは？\n\n【宣言】明日から何を変える？",
     "char_count": "文字以上",
     "submit": "読了を確認する"
   },
@@ -207,7 +211,7 @@
     "title": "コミットメント達成！",
     "subtitle": "約束を守りました！",
     "money_saved": "節約できた金額",
-    "saved_note": "覚悟金はあなたの手元に！",
+    "saved_note": "設定した金額はあなたの手元に残ります",
     "return_button": "ダッシュボードに戻る",
     "continue_button": "続きを読む",
     "continue_reading": "次の目標を立てる",
@@ -248,5 +252,16 @@
     "memo": "メモ",
     "edit": "編集",
     "recommendations_for": "へのおすすめ"
+  },
+  "errorBoundary": {
+    "title": "エラーが発生しました",
+    "message": "アプリで予期しないエラーが発生しました。もう一度お試しください。",
+    "retry": "再試行"
+  },
+  "bookDetail": {
+    "loading": "書籍詳細を読み込み中...",
+    "error_title": "読み込み失敗",
+    "error_message": "書籍詳細を読み込めませんでした。再度お試しください。",
+    "retry": "再試行"
   }
 }

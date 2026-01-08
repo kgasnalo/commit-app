@@ -13,8 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import { colors, typography, borderRadius, spacing } from '../../theme';
 import i18n from '../../i18n';
-
-const GOOGLE_BOOKS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
+import { GOOGLE_API_KEY } from '../../config/env';
 
 type Book = {
   id: string;
@@ -34,10 +33,14 @@ export default function OnboardingScreen3({ navigation }: any) {
 
   const searchBooks = async () => {
     if (!query.trim()) return;
+    if (!GOOGLE_API_KEY) {
+      console.warn('Google Books API key not configured');
+      return;
+    }
     setLoading(true);
     try {
       const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${GOOGLE_BOOKS_API_KEY}`
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${GOOGLE_API_KEY}`
       );
       const data = await response.json();
       setResults(data.items || []);

@@ -13,27 +13,31 @@ export interface Database {
         Row: {
           id: string
           email: string
+          username: string | null
           stripe_customer_id: string | null
-          role: 'Founder' | 'HR' | 'Manager' | 'Specialist' | null
+          role: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status: 'active' | 'inactive'
           created_at: string
         }
         Insert: {
           id: string
           email: string
+          username?: string | null
           stripe_customer_id?: string | null
-          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | null
+          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
           created_at?: string
         }
         Update: {
           id?: string
           email?: string
+          username?: string | null
           stripe_customer_id?: string | null
-          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | null
+          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
           created_at?: string
         }
+        Relationships: []
       }
       books: {
         Row: {
@@ -63,6 +67,7 @@ export interface Database {
           amazon_link?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       commitments: {
         Row: {
@@ -75,6 +80,7 @@ export interface Database {
           currency: string
           target_pages: number
           created_at: string
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -86,6 +92,7 @@ export interface Database {
           currency?: string
           target_pages?: number
           created_at?: string
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -97,7 +104,24 @@ export interface Database {
           currency?: string
           target_pages?: number
           created_at?: string
+          updated_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "commitments_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commitments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       verification_logs: {
         Row: {
@@ -124,6 +148,15 @@ export interface Database {
           ai_result?: Json | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "verification_logs_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "commitments"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       tags: {
         Row: {
@@ -147,6 +180,15 @@ export interface Database {
           color?: string
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "tags_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       book_tags: {
         Row: {
@@ -167,6 +209,22 @@ export interface Database {
           tag_id?: string
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "book_tags_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "commitments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
@@ -178,5 +236,13 @@ export interface Database {
     Enums: {
       [_ in never]: never
     }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
+
+// Helper types for convenience
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type InsertTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type UpdateTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']

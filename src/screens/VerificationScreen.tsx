@@ -177,13 +177,7 @@ export default function VerificationScreen({ route, navigation }: any) {
   const handleSelectNewBook = () => {
     setShowSuccessModal(false);
     // Navigate to RoleSelect to start a fresh book selection flow
-    navigation.reset({
-      index: 0,
-      routes: [
-        { name: 'Main' },
-        { name: 'RoleSelect' },
-      ],
-    });
+    navigation.navigate('RoleSelect');
   };
 
   return (

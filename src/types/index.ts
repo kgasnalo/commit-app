@@ -1,3 +1,5 @@
+import type { Json } from './database.types';
+
 export type Role = 'Founder' | 'HR' | 'Manager' | 'Specialist';
 
 export interface User {
@@ -25,6 +27,8 @@ export interface Commitment {
   status: 'pending' | 'completed' | 'defaulted';
   deadline: string;
   pledge_amount: number;
+  currency: string;
+  target_pages: number;
   created_at: string;
 }
 
@@ -33,6 +37,6 @@ export interface VerificationLog {
   commitment_id: string;
   image_url: string;
   memo_text?: string;
-  ai_result?: any;
+  ai_result?: Json | null;
   created_at: string;
 }

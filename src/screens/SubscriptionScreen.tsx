@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStripe } from '@stripe/stripe-react-native';
 import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
+import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export default function SubscriptionScreen({ onComplete }: { onComplete: () => void }) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -17,7 +19,7 @@ export default function SubscriptionScreen({ onComplete }: { onComplete: () => v
       paymentIntent: 'pi_demo_123',
       ephemeralKey: 'ek_demo_123',
       customer: 'cus_demo_123',
-      publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+      publishableKey: STRIPE_PUBLISHABLE_KEY,
     };
   };
 
@@ -46,8 +48,8 @@ export default function SubscriptionScreen({ onComplete }: { onComplete: () => v
       Alert.alert('成功', 'サブスクリプションが開始されました。', [
         { text: 'OK', onPress: onComplete }
       ]);
-    } catch (error: any) {
-      Alert.alert('エラー', error.message);
+    } catch (error: unknown) {
+      Alert.alert('エラー', getErrorMessage(error));
     } finally {
       setLoading(false);
     }

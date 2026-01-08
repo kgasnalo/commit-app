@@ -103,7 +103,11 @@
     "failed": "실패",
     "page_range": "목표: {{start}} - {{end}}페이지",
     "active_goals": "{{count}}개 목표",
-    "continuation_part": "파트 {{part}}"
+    "continuation_part": "파트 {{part}}",
+    "no_commitments": "진행 중인 커밋먼트가 없습니다",
+    "add_book": "책 추가하기",
+    "empty_encouragement": "오늘부터 독서 여정을 시작하세요!",
+    "history": "기록"
   },
   "paywall": {
     "for_serious": "진지한 독자를 위해",
@@ -164,7 +168,7 @@
     "choose_photo": "선택",
     "memo_section": "2. 독서 실천 로그 (100자 이상)",
     "memo_instruction": "배움을 정착시키기 위해 다음 3가지를 의식하며 작성해보세요.",
-    "memo_placeholder": "[깨달음] 이 책을 읽고 놀랐던 점은?\n(예: 업무 관리는 시간 관리가 아니라 에너지 관리라는 것을 알게 되었다.)\n\n[선언] 내일부터 구체적으로 무엇을 바꾸시겠습니까?\n(예: 매일 아침 9시에 '오늘의 최우선 과제' 하나만 포스트잇에 쓴다.)\n\n[기대] 그로 인해 어떻게 되고 싶으신가요?\n(예: 저녁 야근을 줄이고 나만의 시간을 1시간 늘린다.)",
+    "memo_placeholder": "【요약】이 책을 한 문장으로 요약하면?\n\n【깨달음】가장 인상 깊었던 배움은?\n\n【선언】내일부터 무엇을 바꾸겠습니까?",
     "char_count": "자 이상",
     "submit": "완료 확인"
   },
@@ -207,7 +211,7 @@
     "title": "커밋먼트 달성!",
     "subtitle": "약속을 지켰습니다!",
     "money_saved": "절약한 금액",
-    "saved_note": "각오금은 당신의 것입니다!",
+    "saved_note": "설정한 금액은 당신의 손에 남습니다",
     "return_button": "대시보드로 돌아가기",
     "continue_button": "계속 읽기",
     "select_new_book": "다른 책 선택",
@@ -243,5 +247,16 @@
     "memo": "메모",
     "edit": "편집",
     "recommendations_for": "추천"
+  },
+  "errorBoundary": {
+    "title": "문제가 발생했습니다",
+    "message": "앱에서 예기치 않은 오류가 발생했습니다. 다시 시도해주세요.",
+    "retry": "다시 시도"
+  },
+  "bookDetail": {
+    "loading": "책 상세 로딩 중...",
+    "error_title": "로드 실패",
+    "error_message": "책 상세를 로드할 수 없습니다. 다시 시도해주세요.",
+    "retry": "다시 시도"
   }
 }

@@ -12,10 +12,9 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withSequence,
-  withDelay,
-  runOnJS,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import i18n from '../i18n';
@@ -52,9 +51,9 @@ export default function VerificationSuccessModal({
   const [motivationKey, setMotivationKey] = React.useState(1);
 
   // Animation values
-  const scale = useSharedValue(0);
+  const scale = useSharedValue(0.95);
   const opacity = useSharedValue(0);
-  const counterValue = useSharedValue(0);
+  const amountScale = useSharedValue(1);
   const [displayAmount, setDisplayAmount] = React.useState(0);
 
   // Pick a new random completion message each time modal opens
@@ -83,49 +82,68 @@ export default function VerificationSuccessModal({
     return symbols[curr] || curr;
   };
 
+  // easeOutExpo: starts fast, slows down at the end
+  const easeOutExpo = (t: number): number => {
+    return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  };
+
   useEffect(() => {
     if (visible) {
       // Reset values
-      scale.value = 0;
+      scale.value = 0.95;
       opacity.value = 0;
-      counterValue.value = 0;
+      amountScale.value = 1;
       setDisplayAmount(0);
 
-      // Start animations
-      opacity.value = withSpring(1);
-      scale.value = withSequence(
-        withSpring(1.2, { damping: 8 }),
-        withSpring(1, { damping: 12 })
-      );
+      // Smooth entrance animation (premium feel)
+      const entranceDuration = 300;
+      const entranceEasing = Easing.out(Easing.cubic);
 
-      // Counter animation
+      opacity.value = withTiming(1, { duration: entranceDuration, easing: entranceEasing });
+      scale.value = withTiming(1, { duration: entranceDuration, easing: entranceEasing });
+
+      // Counter animation with easeOutExpo (starts fast, slows at end)
       const duration = 1500;
-      const steps = 30;
-      const increment = savedAmount / steps;
-      let currentStep = 0;
+      const startTime = Date.now();
+      let animationFrameId: number;
 
-      const interval = setInterval(() => {
-        currentStep++;
-        if (currentStep >= steps) {
-          setDisplayAmount(savedAmount);
-          clearInterval(interval);
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeOutExpo(progress);
+
+        setDisplayAmount(Math.floor(savedAmount * easedProgress));
+
+        if (progress < 1) {
+          animationFrameId = requestAnimationFrame(animate);
         } else {
-          setDisplayAmount(Math.floor(increment * currentStep));
+          setDisplayAmount(savedAmount);
+          // Trigger "pop" effect when count-up finishes (climax animation)
+          amountScale.value = withSequence(
+            withTiming(1.15, { duration: 100, easing: Easing.out(Easing.cubic) }),
+            withTiming(1, { duration: 100, easing: Easing.inOut(Easing.cubic) })
+          );
         }
-      }, duration / steps);
+      };
+
+      animationFrameId = requestAnimationFrame(animate);
 
       // Trigger confetti after a short delay
       setTimeout(() => {
         confettiRef.current?.start();
       }, 300);
 
-      return () => clearInterval(interval);
+      return () => cancelAnimationFrame(animationFrameId);
     }
   }, [visible, savedAmount]);
 
   const containerStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
+  }));
+
+  const amountStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: amountScale.value }],
   }));
 
   if (!visible) return null;
@@ -156,7 +174,11 @@ export default function VerificationSuccessModal({
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>
+          <Text 
+            style={styles.title}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
             {i18n.t('celebration.title', { defaultValue: 'Commitment Achieved!' })}
           </Text>
 
@@ -170,16 +192,13 @@ export default function VerificationSuccessModal({
             {completionMessage}
           </Text>
 
-          {/* Money Saved Counter */}
+          {/* Reward Display */}
           <View style={styles.savedContainer}>
-            <Text style={styles.savedLabel}>
-              {i18n.t('celebration.money_saved', { defaultValue: 'Money Saved' })}
-            </Text>
-            <Text style={styles.savedAmount}>
+            <Animated.Text style={[styles.savedAmount, amountStyle]}>
               {getCurrencySymbol(currency)}{displayAmount.toLocaleString()}
-            </Text>
+            </Animated.Text>
             <Text style={styles.savedNote}>
-              {i18n.t('celebration.saved_note', { defaultValue: 'Your pledge stays with you!' })}
+              {i18n.t('celebration.saved_note', { defaultValue: 'The pledged amount stays in your pocket.' })}
             </Text>
           </View>
 
@@ -233,8 +252,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 30,
+    fontWeight: '900',
     color: '#000',
     textAlign: 'center',
     marginBottom: 8,
@@ -246,32 +265,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   motivationText: {
-    fontSize: 15,
-    color: '#555',
+    fontSize: 12,
+    color: '#8E8E93',
     textAlign: 'center',
     fontStyle: 'italic',
-    lineHeight: 24,
-    marginVertical: 16,
-    paddingHorizontal: 8,
+    lineHeight: 20,
+    marginVertical: 12,
+    paddingHorizontal: 32,
   },
   savedContainer: {
     backgroundColor: '#e8f5e9',
     borderRadius: 16,
-    padding: 20,
+    padding: 24,
     alignItems: 'center',
     width: '100%',
-    marginBottom: 24,
-  },
-  savedLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    marginBottom: 28,
   },
   savedAmount: {
     fontSize: 42,
     fontWeight: '800',
     color: '#4caf50',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   savedNote: {
     fontSize: 12,

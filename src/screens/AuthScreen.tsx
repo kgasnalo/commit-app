@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import { getErrorMessage } from '../utils/errorUtils';
 
 // WebBrowserの結果を適切に処理するために必要
 WebBrowser.maybeCompleteAuthSession();
@@ -36,7 +37,7 @@ export default function AuthScreen({ navigation }: any) {
 
       if (error) {
         Alert.alert('サインアップエラー', error.message);
-      } else if (data.user) {
+      } else if (data.user && data.user.email) {
         // usersテーブルにレコードを作成
         const { error: insertError } = await supabase
           .from('users')
@@ -68,7 +69,7 @@ export default function AuthScreen({ navigation }: any) {
           .single();
 
         // レコードが存在しない場合は作成（既存ユーザー対応）
-        if (!userData && !checkError) {
+        if (!userData && !checkError && data.user.email) {
           await supabase
             .from('users')
             .insert({
@@ -129,7 +130,7 @@ export default function AuthScreen({ navigation }: any) {
                 .single();
 
               // レコードが存在しない場合は作成
-              if (!userData && !checkError) {
+              if (!userData && !checkError && sessionData.user.email) {
                 await supabase
                   .from('users')
                   .insert({
@@ -142,8 +143,8 @@ export default function AuthScreen({ navigation }: any) {
           }
         }
       }
-    } catch (error: any) {
-      Alert.alert('エラー', error.message);
+    } catch (error: unknown) {
+      Alert.alert('エラー', getErrorMessage(error));
     } finally {
       setLoading(false);
     }

@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
+import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { colors } from '../theme/colors';
 import i18n from '../i18n';
+import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 
 // 統一された認証状態型
 type AuthState =
@@ -263,9 +264,27 @@ export default function AppNavigator() {
 
     setupRealtimeSubscription();
 
+    // Listen for manual auth refresh events (from OnboardingScreen13 after subscription update)
+    const refreshListener = DeviceEventEmitter.addListener(AUTH_REFRESH_EVENT, async () => {
+      console.log('[AppNavigator] Received REFRESH_AUTH event, re-checking auth state...');
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && isMounted) {
+        const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        console.log('[AppNavigator] Refreshed subscription status:', isSubscribed);
+
+        setAuthState({
+          status: 'authenticated',
+          session,
+          isSubscribed,
+        });
+      }
+    });
+
     return () => {
       isMounted = false;
       authSubscription.unsubscribe();
+      refreshListener.remove();
       if (realtimeSubscription) {
         realtimeSubscription.unsubscribe();
       }
@@ -289,7 +308,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <StripeProvider publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}>
+    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!session ? (

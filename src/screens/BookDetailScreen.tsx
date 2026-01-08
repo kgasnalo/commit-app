@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Modal,
   TextInput,
 } from 'react-native';
@@ -14,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import BookDetailSkeleton from '../components/BookDetailSkeleton';
 
 interface Book {
   id: string;
@@ -40,11 +40,12 @@ interface Commitment {
   user_id: string;
   book_id: string;
   deadline: string;
-  penalty_amount: number;
-  penalty_currency: string;
-  status: string;
+  pledge_amount: number;
+  currency: string;
+  target_pages: number;
+  status: 'pending' | 'completed' | 'defaulted';
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
   books: Book;
   book_tags: BookTag[];
 }
@@ -52,7 +53,7 @@ interface Commitment {
 interface VerificationLog {
   id: string;
   commitment_id: string;
-  memo_text: string;
+  memo_text: string | null;
   created_at: string;
 }
 
@@ -71,6 +72,7 @@ export default function BookDetailScreen() {
   const { commitmentId } = route.params as { commitmentId: string };
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [commitment, setCommitment] = useState<Commitment | null>(null);
   const [verificationLog, setVerificationLog] = useState<VerificationLog | null>(null);
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -85,6 +87,8 @@ export default function BookDetailScreen() {
   }, [commitmentId]);
 
   async function loadBookDetail() {
+    setError(null);
+    setLoading(true);
     try {
       const {
         data: { user },
@@ -135,8 +139,9 @@ export default function BookDetailScreen() {
       if (tagsError) throw tagsError;
 
       setAllTags(tagsData || []);
-    } catch (error) {
-      console.error('Error loading book detail:', error);
+    } catch (err) {
+      console.error('Error loading book detail:', err);
+      setError(i18n.t('bookDetail.error_message'));
     } finally {
       setLoading(false);
     }
@@ -238,7 +243,7 @@ export default function BookDetailScreen() {
     if (!commitment) return 0;
 
     const start = new Date(commitment.created_at);
-    const end = new Date(commitment.updated_at);
+    const end = commitment.updated_at ? new Date(commitment.updated_at) : new Date();
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -371,7 +376,7 @@ export default function BookDetailScreen() {
               style={styles.memoInput}
               value={editedMemo}
               onChangeText={setEditedMemo}
-              placeholder="読了後の感想を入力してください"
+              placeholder="【要約】この本を一言でまとめると？&#10;&#10;【気づき】最も印象に残った学びは？&#10;&#10;【宣言】明日から何を変える？"
               placeholderTextColor="#666666"
               multiline
               numberOfLines={6}
@@ -398,11 +403,29 @@ export default function BookDetailScreen() {
     );
   }
 
-  if (loading || !commitment) {
+  if (loading) {
+    return <BookDetailSkeleton />;
+  }
+
+  if (error || !commitment) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF4D00" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#666666" />
+          <Text style={styles.errorTitle}>{i18n.t('bookDetail.error_title')}</Text>
+          <Text style={styles.errorMessage}>
+            {error || i18n.t('errors.unknown')}
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadBookDetail}>
+            <Text style={styles.retryButtonText}>{i18n.t('bookDetail.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -452,7 +475,7 @@ export default function BookDetailScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{i18n.t('library.read_date')}</Text>
             <Text style={styles.detailValue}>
-              {new Date(commitment.updated_at).toLocaleDateString()}
+              {commitment.updated_at ? new Date(commitment.updated_at).toLocaleDateString() : '-'}
             </Text>
           </View>
 
@@ -471,7 +494,7 @@ export default function BookDetailScreen() {
                 isSuccess ? styles.successText : styles.failText,
               ]}
             >
-              {commitment.penalty_currency} {commitment.penalty_amount}{' '}
+              {commitment.currency} {commitment.pledge_amount}{' '}
               ({isSuccess ? i18n.t('library.success') : i18n.t('dashboard.failed')})
             </Text>
           </View>
@@ -494,7 +517,7 @@ export default function BookDetailScreen() {
               </View>
               <TouchableOpacity
                 onPress={() => {
-                  setEditedMemo(verificationLog.memo_text);
+                  setEditedMemo(verificationLog.memo_text || '');
                   setShowMemoModal(true);
                 }}
               >
@@ -517,11 +540,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0A0A0A',
   },
-  loadingContainer: {
+  errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0A0A0A',
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#A0A0A0',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 24,
+    backgroundColor: '#FF4D00',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',

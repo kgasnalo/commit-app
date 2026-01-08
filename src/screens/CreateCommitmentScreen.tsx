@@ -35,7 +35,9 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Book } from '../types';
 import i18n from '../i18n';
+import { GOOGLE_API_KEY } from '../config/env';
 import AnimatedPageSlider from '../components/AnimatedPageSlider';
+import { getErrorMessage } from '../utils/errorUtils';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -346,10 +348,15 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       return;
     }
 
+    if (!GOOGLE_API_KEY) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.google_api_not_configured', { defaultValue: '書籍検索機能は現在利用できません。' }));
+      return;
+    }
+
     setSearching(true);
     try {
       const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&key=${process.env.EXPO_PUBLIC_GOOGLE_API_KEY}&maxResults=10`
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&key=${GOOGLE_API_KEY}&maxResults=10`
       );
       const data = await response.json();
 
@@ -359,7 +366,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         Alert.alert(i18n.t('errors.no_results', { defaultValue: '検索結果なし' }), i18n.t('errors.no_books_found', { defaultValue: '該当する書籍が見つかりませんでした。' }));
         setSearchResults([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       Alert.alert(i18n.t('common.error'), i18n.t('errors.search_failed', { defaultValue: '書籍の検索に失敗しました。' }));
       console.error('Search error:', error);
     } finally {
@@ -564,12 +571,11 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           }
         ]
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[CreateCommitment] Error:', error);
-      console.error('[CreateCommitment] Error details:', JSON.stringify(error, null, 2));
       Alert.alert(
         i18n.t('common.error'),
-        error.message || i18n.t('errors.create_commitment_failed', { defaultValue: 'コミットメントの作成に失敗しました。' })
+        getErrorMessage(error) || i18n.t('errors.create_commitment_failed', { defaultValue: 'コミットメントの作成に失敗しました。' })
       );
     } finally {
       console.log('[CreateCommitment] Finished (setCreating(false))');

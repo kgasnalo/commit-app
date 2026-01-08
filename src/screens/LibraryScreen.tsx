@@ -20,7 +20,7 @@ interface Book {
   id: string;
   title: string;
   author: string;
-  cover_url?: string;
+  cover_url: string | null;
   page_count?: number;
 }
 
@@ -29,11 +29,12 @@ interface Commitment {
   user_id: string;
   book_id: string;
   deadline: string;
-  penalty_amount: number;
-  penalty_currency: string;
-  status: string;
+  pledge_amount: number;
+  currency: string;
+  target_pages: number;
+  status: 'pending' | 'completed' | 'defaulted';
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
   books: Book;
   book_tags?: {
     tags: {
@@ -165,14 +166,14 @@ export default function LibraryScreen() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentBooks = books.filter(
-      (book) => new Date(book.updated_at) >= thirtyDaysAgo
+      (book) => book.updated_at && new Date(book.updated_at) >= thirtyDaysAgo
     );
     const monthlyPace = recentBooks.length;
 
     // Calculate streak (consecutive months with at least one book read)
     const monthsWithBooks = new Set(
-      books.map((book) => {
-        const date = new Date(book.updated_at);
+      books.filter(book => book.updated_at).map((book) => {
+        const date = new Date(book.updated_at!);
         return `${date.getFullYear()}-${date.getMonth()}`;
       })
     );
@@ -236,7 +237,7 @@ export default function LibraryScreen() {
     const grouped: { [key: string]: Commitment[] } = {};
 
     books.forEach((book) => {
-      const date = new Date(book.updated_at);
+      const date = book.updated_at ? new Date(book.updated_at) : new Date(book.created_at);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       if (!grouped[monthKey]) {
         grouped[monthKey] = [];

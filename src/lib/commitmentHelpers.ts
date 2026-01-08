@@ -225,6 +225,7 @@ export function calculatePageRangesForAll(
 /**
  * Groups commitments by book.
  * Returns sorted by latestUpdated descending (most recently updated first).
+ * Prioritizes PENDING commitments as the "most recent" representation for the card.
  */
 export function groupCommitmentsByBook(
   commitments: CommitmentWithRange[]
@@ -258,10 +259,23 @@ export function groupCommitmentsByBook(
       }
     }
 
-    // Most recent commitment by created_at
+    // Default: update most recent by creation date
+    // This establishes a baseline "latest" (likely the completed one if a new pending hasn't been created yet, or the new pending if it has)
     if (new Date(c.created_at) > new Date(group.latestUpdated)) {
       group.latestUpdated = c.created_at;
       group.mostRecentCommitment = c;
+    }
+  }
+
+  // Final Pass: Explicitly prioritize PENDING commitments
+  // If a group has any pending commitment, force mostRecentCommitment to be the (newest) pending one.
+  // This fixes the bug where a completed commitment hides a newer (or older) active one.
+  for (const group of grouped.values()) {
+    const pendingCommitments = group.allCommitments.filter(c => c.status === 'pending');
+    if (pendingCommitments.length > 0) {
+      // Sort by created_at desc (newest first)
+      pendingCommitments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      group.mostRecentCommitment = pendingCommitments[0];
     }
   }
 

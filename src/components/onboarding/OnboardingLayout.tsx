@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../theme';
 import ProgressBar from './ProgressBar';
+import LivingBackground from './LivingBackground';
+import ReactiveToastManager from './ReactiveToastManager';
+import { useOnboardingAtmosphere } from '../../hooks/useOnboardingAtmosphere';
 
 type Props = {
   currentStep: number;
@@ -26,9 +29,19 @@ export default function OnboardingLayout({
   showBackButton = true,
 }: Props) {
   const navigation = useNavigation();
+  const { updateScreen } = useOnboardingAtmosphere();
+
+  // Update atmosphere context when screen changes
+  useEffect(() => {
+    updateScreen(currentStep);
+  }, [currentStep, updateScreen]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.wrapper}>
+      {/* Living Background - absolute positioned behind everything */}
+      <LivingBackground />
+
+      <SafeAreaView style={styles.container}>
       {/* 戻るボタン + プログレスバー */}
       <View style={styles.topBar}>
         {showBackButton ? (
@@ -58,13 +71,20 @@ export default function OnboardingLayout({
         {footer && <View style={styles.footer}>{footer}</View>}
       </KeyboardAvoidingView>
     </SafeAreaView>
+
+      {/* Reactive Toast Manager - absolute positioned on top */}
+      <ReactiveToastManager />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: 'transparent', // Transparent to show LivingBackground
   },
   topBar: {
     flexDirection: 'row',

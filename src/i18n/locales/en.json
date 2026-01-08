@@ -103,7 +103,11 @@
     "failed": "Failed",
     "page_range": "Target: pp. {{start}} - {{end}}",
     "active_goals": "{{count}} goals",
-    "continuation_part": "Part {{part}}"
+    "continuation_part": "Part {{part}}",
+    "no_commitments": "No active commitments",
+    "add_book": "Add a book",
+    "empty_encouragement": "Start your reading journey today!",
+    "history": "History"
   },
   "paywall": {
     "for_serious": "For serious readers",
@@ -164,7 +168,7 @@
     "choose_photo": "Choose Photo",
     "memo_section": "2. Reading Practice Log (100+ chars)",
     "memo_instruction": "To solidify your learning, reflect on these 3 points:",
-    "memo_placeholder": "[Insight] What surprised or struck you in this book?\n(e.g., I learned that task management is about managing energy, not time.)\n\n[Commitment] What will you change starting tomorrow?\n(e.g., Every morning at 9am, I'll write just one 'most important task' on a sticky note.)\n\n[Expectation] What outcome do you expect from this change?\n(e.g., Reduce overtime and gain an extra hour for myself.)",
+    "memo_placeholder": "[Summary] Summarize this book in one sentence.\n\n[Insight] What was a key realization?\n\n[Declaration] What will you change starting tomorrow?",
     "char_count": "characters min",
     "submit": "Confirm Completion"
   },
@@ -207,7 +211,7 @@
     "title": "Commitment Achieved!",
     "subtitle": "You kept your promise!",
     "money_saved": "Money Saved",
-    "saved_note": "Your pledge stays with you!",
+    "saved_note": "The pledged amount stays in your pocket.",
     "return_button": "Return to Dashboard",
     "continue_button": "Continue Reading",
     "select_new_book": "Choose Another Book",
@@ -243,5 +247,16 @@
     "memo": "Memo",
     "edit": "Edit",
     "recommendations_for": "Recommendations for"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "message": "The app encountered an unexpected error. Please try again.",
+    "retry": "Retry"
+  },
+  "bookDetail": {
+    "loading": "Loading book details...",
+    "error_title": "Failed to load",
+    "error_message": "Could not load book details. Please try again.",
+    "retry": "Retry"
   }
 }

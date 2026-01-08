@@ -7,6 +7,7 @@ import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import i18n from '../../i18n';
+import { getErrorMessage } from '../../utils/errorUtils';
 
 export default function OnboardingScreen6({ navigation, route }: any) {
   const { selectedBook, deadline, pledgeAmount, currency = 'JPY' } = route.params;
@@ -79,9 +80,9 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           userId: data.user.id,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Signup flow error:', error);
-      Alert.alert(i18n.t('common.error'), error.message || i18n.t('errors.account_creation', { defaultValue: 'アカウント作成に失敗しました' }));
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.account_creation', { defaultValue: 'アカウント作成に失敗しました' }));
     } finally {
       setLoading(false);
     }

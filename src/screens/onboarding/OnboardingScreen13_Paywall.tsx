@@ -5,13 +5,25 @@ import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
-import { supabase } from '../../lib/supabase';
+import { supabase, triggerAuthRefresh } from '../../lib/supabase';
 import i18n from '../../i18n';
+import { getErrorMessage } from '../../utils/errorUtils';
 
 type Plan = 'yearly' | 'monthly';
 
+interface GoogleBook {
+  id: string;
+  volumeInfo?: {
+    title?: string;
+    authors?: string[];
+    imageLinks?: {
+      thumbnail?: string;
+    };
+  };
+}
+
 export default function OnboardingScreen13({ navigation, route }: any) {
-  const [selectedBook, setSelectedBook] = useState<any>(null);
+  const [selectedBook, setSelectedBook] = useState<GoogleBook | null>(null);
   const [deadline, setDeadline] = useState<string>('');
   const [pledgeAmount, setPledgeAmount] = useState<number>(0);
   const [currency, setCurrency] = useState<string>('JPY');
@@ -130,26 +142,24 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       await AsyncStorage.removeItem('onboardingData');
       console.log('Onboarding data cleared from AsyncStorage');
 
-      // 成功メッセージを表示し、OKボタンで直接Dashboardに遷移
+      // AppNavigatorに認証状態の再チェックを通知
+      // これによりisSubscribedがtrueに更新され、MainTabsスタックに切り替わる
+      triggerAuthRefresh();
+
+      // 成功メッセージを表示
       Alert.alert(
         i18n.t('paywall.welcome'),
         i18n.t('paywall.registration_complete'),
         [{
           text: i18n.t('common.ok'),
-          onPress: () => {
-            // navigation.resetを使用してDashboardに直接遷移
-            // これにより、戻るボタンでオンボーディングに戻れなくなる
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Dashboard' }],
-            });
-          }
+          // triggerAuthRefresh()が呼ばれたことで、
+          // AppNavigatorが自動的にMainTabsスタックに切り替わる
         }]
       );
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Subscription error:', error);
-      Alert.alert(i18n.t('common.error'), error.message || i18n.t('errors.subscription_failed', { defaultValue: 'サブスクリプションの開始に失敗しました' }));
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.subscription_failed', { defaultValue: 'サブスクリプションの開始に失敗しました' }));
     } finally {
       setLoading(false);
     }

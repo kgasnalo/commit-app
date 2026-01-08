@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -21,21 +22,28 @@ import {
   CommitmentWithRange,
 } from '../lib/commitmentHelpers';
 
+type BookData = {
+  id: string;
+  title: string;
+  author: string;
+  cover_url: string | null;
+};
+
 type Commitment = {
   id: string;
   book_id: string;
-  book: {
-    id: string;
-    title: string;
-    author: string;
-    cover_url: string | null;
-  };
+  book: BookData;
   deadline: string;
   status: 'pending' | 'completed' | 'defaulted';
   pledge_amount: number;
   currency: string;
   target_pages: number;
   created_at: string;
+};
+
+// Supabase join query returns book as array or single object
+type CommitmentQueryResult = Omit<Commitment, 'book'> & {
+  book: BookData | BookData[];
 };
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -50,6 +58,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [groupedCommitments, setGroupedCommitments] = useState<GroupedBookCommitments[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [poolByCurrency, setPoolByCurrency] = useState<Record<string, number>>({});
   const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
   const [currentLocale, setCurrentLocale] = useState(i18n.locale);
@@ -87,13 +96,18 @@ export default function DashboardScreen({ navigation }: any) {
         .order('created_at', { ascending: true });
 
       if (data) {
-        setCommitments(data as any);
-
-        // Calculate page ranges and group by book
         // Transform data to ensure book is a single object (not array from Supabase join)
-        const transformedData: RawCommitmentWithBook[] = data.map((c: any) => ({
+        const queryResults = data as CommitmentQueryResult[];
+        const normalizedData: Commitment[] = queryResults.map((c) => ({
           ...c,
           book: Array.isArray(c.book) ? c.book[0] : c.book,
+        }));
+        setCommitments(normalizedData);
+
+        // Calculate page ranges and group by book
+        const transformedData: RawCommitmentWithBook[] = normalizedData.map((c) => ({
+          ...c,
+          book: c.book,
         }));
         const withRanges = calculatePageRangesForAll(transformedData);
         const grouped = groupCommitmentsByBook(withRanges);
@@ -122,6 +136,7 @@ export default function DashboardScreen({ navigation }: any) {
       console.error('Error fetching commitments:', error);
     } finally {
       setRefreshing(false);
+      setInitialLoading(false);
     }
   };
 
@@ -194,6 +209,20 @@ export default function DashboardScreen({ navigation }: any) {
     );
   };
 
+  if (initialLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{i18n.t('dashboard.title')}</Text>
+        </View>
+        <View style={styles.initialLoadingContainer}>
+          <ActivityIndicator size="large" color="#000" />
+          <Text style={styles.initialLoadingText}>{i18n.t('common.loading')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -245,13 +274,17 @@ export default function DashboardScreen({ navigation }: any) {
 
           {groupedCommitments.filter(g => g.activeCount > 0).length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="book-outline" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>{i18n.t('dashboard.no_commitments', { defaultValue: '進行中のコミットメントはありません' })}</Text>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="book-outline" size={56} color="#ccc" />
+              </View>
+              <Text style={styles.emptyTitle}>{i18n.t('dashboard.no_commitments')}</Text>
+              <Text style={styles.emptySubtitle}>{i18n.t('dashboard.empty_encouragement')}</Text>
               <TouchableOpacity
-                style={styles.addButton}
+                style={styles.emptyButton}
                 onPress={() => navigation.navigate('RoleSelect')}
               >
-                <Text style={styles.addButtonText}>{i18n.t('dashboard.add_book', { defaultValue: '本を追加する' })}</Text>
+                <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.emptyButtonText}>{i18n.t('dashboard.add_book')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -273,7 +306,7 @@ export default function DashboardScreen({ navigation }: any) {
         {/* 完了・失敗した本 */}
         {commitments.filter(c => c.status === 'defaulted').length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{i18n.t('dashboard.history', { defaultValue: '履歴' })}</Text>
+            <Text style={styles.sectionTitle}>{i18n.t('dashboard.history')}</Text>
             {commitments
               .filter(c => c.status === 'defaulted')
               .map(renderCommitmentCard)}
@@ -393,23 +426,55 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  initialLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  initialLoadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    marginTop: 12,
-    color: '#999',
-  },
-  addButton: {
-    marginTop: 16,
-    backgroundColor: '#000',
+    paddingVertical: 48,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
   },
-  addButtonText: {
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  emptyButtonText: {
     color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

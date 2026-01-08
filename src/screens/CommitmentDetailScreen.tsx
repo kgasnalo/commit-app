@@ -14,6 +14,13 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 
+type BookData = {
+  id: string;
+  title: string;
+  author: string;
+  cover_url: string;
+};
+
 type CommitmentDetail = {
   id: string;
   deadline: string;
@@ -22,12 +29,12 @@ type CommitmentDetail = {
   currency: string;
   created_at: string;
   target_pages: number;
-  book: {
-    id: string;
-    title: string;
-    author: string;
-    cover_url: string;
-  };
+  book: BookData;
+};
+
+// Supabase join query returns book as array or single object
+type CommitmentQueryResult = Omit<CommitmentDetail, 'book'> & {
+  book: BookData | BookData[];
 };
 
 export default function CommitmentDetailScreen({ route, navigation }: any) {
@@ -61,7 +68,12 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
       if (error) throw error;
 
       if (data) {
-        setCommitment(data as any);
+        const queryResult = data as CommitmentQueryResult;
+        const normalizedData: CommitmentDetail = {
+          ...queryResult,
+          book: Array.isArray(queryResult.book) ? queryResult.book[0] : queryResult.book,
+        };
+        setCommitment(normalizedData);
       }
     } catch (error) {
       console.error('[CommitmentDetailScreen] Fetch error:', error);
@@ -256,24 +268,28 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
             </View>
           )}
 
-          {/* Continue button - ONLY shown when NOT pending (to prevent accidental stacking) */}
-          {commitment.status !== 'pending' && (
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={() => navigation.navigate('CreateCommitment', {
-                bookId: commitment.book.id,
-              })}
-            >
-              <MaterialIcons
-                name="auto-stories"
-                size={24}
-                color="#fff"
-              />
-              <Text style={styles.continueButtonText}>
-                {i18n.t('commitment_detail.continue_this_book', { defaultValue: 'この本を続ける' })}
-              </Text>
-            </TouchableOpacity>
-          )}
+          {/* Continue button - ALWAYS shown. Uses secondary style when pending to not compete with Verify button. */}
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              commitment.status === 'pending' && styles.continueButtonSecondary
+            ]}
+            onPress={() => navigation.navigate('CreateCommitment', {
+              bookId: commitment.book.id,
+            })}
+          >
+            <MaterialIcons
+              name="auto-stories"
+              size={24}
+              color={commitment.status === 'pending' ? "#000" : "#fff"}
+            />
+            <Text style={[
+              styles.continueButtonText,
+              commitment.status === 'pending' && styles.continueButtonTextSecondary
+            ]}>
+              {i18n.t('commitment_detail.continue_this_book', { defaultValue: 'この本を続ける' })}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
