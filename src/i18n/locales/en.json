@@ -275,7 +275,21 @@
     "logout_confirm_message": "Are you sure you want to log out?",
     "logout_error": "Failed to log out. Please try again.",
     "delete_account": "Delete Account",
-    "default_language": "Japanese"
+    "delete_account_confirm_title": "Delete Account",
+    "delete_account_confirm_message": "Are you sure you want to delete your account? This action is irreversible and all your data will be permanently deleted.",
+    "delete_account_error_failed_payments": "Please settle unpaid penalties before deleting your account.",
+    "default_language": "Japanese",
+    "legal": "Legal",
+    "support": "Support",
+    "contact_support": "Contact Support",
+    "manage_payment": "Manage Payment (Web)"
+  },
+  "profile": {
+    "title": "Profile",
+    "username": "Username",
+    "email": "Email",
+    "member_since": "Member since",
+    "edit_username": "Edit Username"
   },
   "common": {
     "ok": "OK",

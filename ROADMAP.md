@@ -129,24 +129,24 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ---
 
-## 👤 Phase 3.5: User Profile & Settings (The Control Room) 🆕
+## 👤 Phase 3.5: User Profile & Settings (The Control Room) ✅
 
 **Objective:** Essential account management for App Store compliance and user trust.
 
-- [ ] **3.5.1 User Profile UI (MVP)**
+- [x] **3.5.1 User Profile UI (MVP)**
     - **Role:** `[UI Designer]`
     - **Action:** Create `src/screens/ProfileScreen.tsx`.
     - **Details:** Simple display name (or Email) and "Member Since [Date]".
     - **Note:** Keep it minimal. No complex stats for V1.
     - **DoD:** User can see their identity and registration date.
 
-- [ ] **3.5.2 Settings Navigation & Legal Links**
+- [x] **3.5.2 Settings Navigation & Legal Links**
     - **Role:** `[Mobile Engineer]`
     - **Action:** Implement Settings menu.
     - **Items:** "Manage Payment (Web)", "Terms", "Privacy", "Support".
     - **DoD:** Links open external Web Portal/pages correctly.
 
-- [ ] **3.5.3 Account Deletion (Apple Requirement) 🚨**
+- [x] **3.5.3 Account Deletion (Apple Requirement) 🚨**
     - **Role:** `[Backend Engineer]`
     - **Action:** Implement "Delete Account" via Edge Function.
     - **Logic:**
@@ -155,7 +155,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
         3. Active commitments are abandoned (deleted) without penalty.
     - **DoD:** Irreversible deletion of all user data (unless debt exists).
 
-- [ ] **3.5.4 Contact / Support Flow**
+- [x] **3.5.4 Contact / Support Flow**
     - **Role:** `[Frontend Engineer]`
     - **Action:** "Contact Support" button (mailto or form link).
     - **DoD:** User can initiate a support request.

@@ -275,7 +275,21 @@
     "logout_confirm_message": "ログアウトしますか？",
     "logout_error": "ログアウトに失敗しました。もう一度お試しください。",
     "delete_account": "アカウント削除",
-    "default_language": "日本語"
+    "delete_account_confirm_title": "アカウント削除",
+    "delete_account_confirm_message": "本当にアカウントを削除しますか？この操作は取り消せず、すべてのデータが永久に削除されます。",
+    "delete_account_error_failed_payments": "未払いのペナルティがあるため削除できません。先に決済を完了してください。",
+    "default_language": "日本語",
+    "legal": "法的情報",
+    "support": "サポート",
+    "contact_support": "サポートにお問い合わせ",
+    "manage_payment": "支払い管理（Web）"
+  },
+  "profile": {
+    "title": "プロフィール",
+    "username": "ユーザーネーム",
+    "email": "メールアドレス",
+    "member_since": "メンバー登録日",
+    "edit_username": "ユーザーネームを編集"
   },
   "common": {
     "ok": "OK",
