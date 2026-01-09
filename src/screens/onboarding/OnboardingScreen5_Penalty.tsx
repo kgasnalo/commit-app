@@ -112,26 +112,6 @@ export default function OnboardingScreen5({ navigation, route }: any) {
         subtitle={i18n.t('onboarding.screen5_subtitle')}
         footer={
           <View style={styles.footerContainer}>
-            {/* Rule Confirmation Text - Moved here to prevent overlap */}
-            <View style={styles.ruleTextContainer}>
-              <Text
-                style={styles.ruleText}
-                numberOfLines={2}
-                adjustsFontSizeToFit
-                minimumFontScale={0.85}
-              >
-                {i18n.t('onboarding.screen5_rule_text_line1')}
-              </Text>
-              <Text
-                style={styles.ruleText}
-                numberOfLines={2}
-                adjustsFontSizeToFit
-                minimumFontScale={0.85}
-              >
-                {i18n.t('onboarding.screen5_rule_text_line2')}
-              </Text>
-            </View>
-
             {/* Donation Info Card */}
             <View style={styles.donationCard}>
               <View style={styles.donationIconContainer}>
@@ -200,6 +180,26 @@ export default function OnboardingScreen5({ navigation, route }: any) {
           />
         </View>
 
+        {/* Rule Confirmation Text - Placed in body after slider to prevent overlap */}
+        <View style={styles.ruleTextContainer}>
+          <Text
+            style={styles.ruleText}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
+            {i18n.t('onboarding.screen5_rule_text_line1')}
+          </Text>
+          <Text
+            style={styles.ruleText}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
+            {i18n.t('onboarding.screen5_rule_text_line2')}
+          </Text>
+        </View>
+
       </OnboardingLayout>
     </>
   );
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   ruleTextContainer: {
     alignItems: 'center',
     gap: 2, // Tight line spacing
-    marginBottom: GRID, // 8
+    marginTop: GRID * 2, // 16 - Space above from slider labels
     paddingHorizontal: GRID * 2, // 16 - Add horizontal padding for longer text
   },
   ruleText: {
