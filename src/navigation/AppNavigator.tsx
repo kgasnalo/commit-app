@@ -10,6 +10,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import { colors } from '../theme/colors';
 import i18n from '../i18n';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
+import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 
 // 統一された認証状態型
 type AuthState =
@@ -81,6 +82,9 @@ function SettingsStackNavigator() {
 
 // Main Tab Navigator (for authenticated and subscribed users)
 function MainTabs() {
+  // Subscribe to language changes to re-render tab labels
+  const { language } = useLanguage();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -130,7 +134,10 @@ function MainTabs() {
   );
 }
 
-export default function AppNavigator() {
+function AppNavigatorInner() {
+  // Subscribe to language changes to force re-render of entire navigation tree
+  const { language } = useLanguage();
+
   // 統一された認証状態（フリッカー防止のためアトミックに更新）
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
@@ -311,7 +318,7 @@ export default function AppNavigator() {
 
   return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-      <NavigationContainer>
+      <NavigationContainer key={language}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!session ? (
             <>
@@ -356,6 +363,15 @@ export default function AppNavigator() {
         </Stack.Navigator>
       </NavigationContainer>
     </StripeProvider>
+  );
+}
+
+// Wrap with LanguageProvider to enable instant language switching
+export default function AppNavigator() {
+  return (
+    <LanguageProvider>
+      <AppNavigatorInner />
+    </LanguageProvider>
   );
 }
 
