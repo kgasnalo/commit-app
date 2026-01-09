@@ -415,6 +415,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 16,
+    marginBottom: 24, // Added spacing to prevent overlap with footer content
     paddingHorizontal: 0,
   },
   presetLabel: {
