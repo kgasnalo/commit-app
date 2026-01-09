@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -29,6 +30,7 @@ type CommitmentDetail = {
   currency: string;
   created_at: string;
   target_pages: number;
+  is_freeze_used: boolean;
   book: BookData;
 };
 
@@ -42,6 +44,8 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   const id = route?.params?.id;
   const [commitment, setCommitment] = useState<CommitmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lifelineUsedForBook, setLifelineUsedForBook] = useState(false);
+  const [lifelineLoading, setLifelineLoading] = useState(false);
 
   const fetchCommitment = useCallback(async () => {
     if (!id) {
@@ -60,6 +64,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
           currency,
           created_at,
           target_pages,
+          is_freeze_used,
           book:books(id, title, author, cover_url)
         `)
         .eq('id', id)
@@ -111,6 +116,83 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
     };
     return symbols[currency] || currency;
   };
+
+  // Check if lifeline was already used for any commitment on this book
+  const checkLifelineAvailability = useCallback(async (bookId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+
+      const { data, error } = await supabase
+        .from('commitments')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('book_id', bookId)
+        .eq('is_freeze_used', true)
+        .limit(1);
+
+      if (error) throw error;
+      setLifelineUsedForBook(data && data.length > 0);
+    } catch (error) {
+      console.error('[CommitmentDetailScreen] Lifeline check error:', error);
+    }
+  }, []);
+
+  // Handle lifeline usage
+  const handleUseLifeline = async () => {
+    if (!commitment) return;
+
+    Alert.alert(
+      i18n.t('commitment_detail.lifeline_confirm_title'),
+      i18n.t('commitment_detail.lifeline_confirm_message'),
+      [
+        { text: i18n.t('common.cancel'), style: 'cancel' },
+        {
+          text: i18n.t('common.ok'),
+          onPress: async () => {
+            setLifelineLoading(true);
+            try {
+              const { data, error } = await supabase.functions.invoke('use-lifeline', {
+                body: { commitment_id: commitment.id },
+              });
+
+              if (error) {
+                // Handle FunctionsHttpError
+                if (error instanceof FunctionsHttpError) {
+                  const errorBody = await error.context.json();
+                  throw new Error(errorBody.error || 'Unknown error');
+                }
+                throw error;
+              }
+
+              if (data?.success) {
+                Alert.alert(i18n.t('common.success'), i18n.t('commitment_detail.lifeline_success'));
+                fetchCommitment(); // Refresh commitment data
+                setLifelineUsedForBook(true);
+              } else if (data?.error) {
+                Alert.alert(i18n.t('common.error'), data.error);
+              }
+            } catch (error: any) {
+              console.error('[CommitmentDetailScreen] Lifeline error:', error);
+              Alert.alert(
+                i18n.t('common.error'),
+                error.message || i18n.t('commitment_detail.lifeline_already_used')
+              );
+            } finally {
+              setLifelineLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Check lifeline availability when commitment is loaded
+  useEffect(() => {
+    if (commitment?.book?.id) {
+      checkLifelineAvailability(commitment.book.id);
+    }
+  }, [commitment?.book?.id, checkLifelineAvailability]);
 
   if (loading) {
     return (
@@ -249,16 +331,48 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         {/* アクションボタン */}
         <View style={styles.actionButtonsContainer}>
           {commitment.status === 'pending' && (
-            <TouchableOpacity
-              style={styles.verifyButton}
-              onPress={() => navigation.navigate('Verification', {
-                commitmentId: commitment.id,
-                bookTitle: commitment.book.title,
-              })}
-            >
-              <Ionicons name="checkmark-circle" size={24} color="#fff" />
-              <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.verifyButton}
+                onPress={() => navigation.navigate('Verification', {
+                  commitmentId: commitment.id,
+                  bookTitle: commitment.book.title,
+                })}
+              >
+                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
+              </TouchableOpacity>
+
+              {/* ライフラインボタン */}
+              <TouchableOpacity
+                style={[
+                  styles.lifelineButton,
+                  lifelineUsedForBook && styles.lifelineButtonDisabled,
+                ]}
+                onPress={handleUseLifeline}
+                disabled={lifelineUsedForBook || lifelineLoading}
+              >
+                {lifelineLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="time-outline"
+                      size={24}
+                      color={lifelineUsedForBook ? '#999' : '#fff'}
+                    />
+                    <Text style={[
+                      styles.lifelineButtonText,
+                      lifelineUsedForBook && styles.lifelineButtonTextDisabled,
+                    ]}>
+                      {lifelineUsedForBook
+                        ? i18n.t('commitment_detail.lifeline_unavailable')
+                        : i18n.t('commitment_detail.lifeline_button')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </>
           )}
 
           {commitment.status === 'completed' && (
@@ -426,6 +540,26 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  lifelineButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FF9800',
+    paddingVertical: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  lifelineButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  lifelineButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  lifelineButtonTextDisabled: {
+    color: '#999',
   },
   completedMessage: {
     alignItems: 'center',

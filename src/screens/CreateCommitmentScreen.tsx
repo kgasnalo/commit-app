@@ -32,12 +32,14 @@ import {
   calculateSuggestedDeadline,
 } from '../lib/commitmentHelpers';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { ScanBarcode } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Book } from '../types';
 import i18n from '../i18n';
 import { GOOGLE_API_KEY } from '../config/env';
 import AnimatedPageSlider from '../components/AnimatedPageSlider';
 import { getErrorMessage } from '../utils/errorUtils';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -173,6 +175,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   const [agreedToPenalty, setAgreedToPenalty] = useState(false);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   // ペナルティ金額と通貨選択
   const [pledgeAmount, setPledgeAmount] = useState<number | null>(null);
@@ -656,6 +659,12 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                   onSubmitEditing={searchBooks}
                 />
                 <TouchableOpacity
+                  style={styles.scanButton}
+                  onPress={() => setShowScanner(true)}
+                >
+                  <ScanBarcode size={22} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={styles.searchButton}
                   onPress={searchBooks}
                   disabled={searching}
@@ -847,6 +856,17 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         {/* Vignette Overlay - darkens corners based on penalty amount */}
         <VignetteOverlay intensity={vignetteIntensity} />
       </View>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={showScanner}
+        onClose={() => setShowScanner(false)}
+        onBookFound={(book) => {
+          setSelectedBook(book);
+          setShowScanner(false);
+        }}
+        onManualSearch={() => setShowScanner(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -903,6 +923,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+  },
+  scanButton: {
+    width: 44,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: '#eee',
   },
   searchButton: {
     width: 48,

@@ -1,125 +1,147 @@
 # Handoff: Session 2026-01-09
 
-## 📅 Status: 2026-01-09
-**Multiple Bug Fixes & Feature Implementations: COMPLETED**
+## Current Goal
+**Phase 1.9 "Hyper Scanner (ISBN Barcode)" - COMPLETED (Pending User Test)**
 
-This session addressed several UI/UX issues and implemented critical features including language instant switching and cinematic reveal restoration.
-
----
-
-## ✅ Completed Tasks
-
-<<<<<<< Updated upstream
-### 1. OnboardingScreen5 Slider Layout Overlap Fix
-**Problem:** Amount labels (¥0, ¥1,000...) and explanation text overlapped, especially severe in English.
-**Root Cause:** Related elements were in separate Flexbox containers (`body` vs `footer`).
-**Solution:**
-- Reordered HapticResistanceSlider elements: Slider → Labels → Amount Display
-- Integrated ruleText into donationCard in footer
-- Added proper margins and used `numberOfLines={0}` for variable text
-
-### 2. CreateCommitmentScreen Amount Buttons Overlap Fix
-**Problem:** Amount buttons and explanation text overlapped.
-**Root Cause:** `flex: 1` + `flexWrap: 'wrap'` causes incorrect height calculation.
-**Solution:** Changed from `flex: 1, minWidth: '45%'` to explicit `width: '48%'`.
-
-### 3. Missing Translation Keys
-**Added:**
-- `commitment.success_message` to ja/en/ko.json
-- `celebration.continue_reading`, `completion_1-4` to en.json and ko.json
-
-### 4. VerificationSuccessModal Mixed Language Fix
-**Problem:** Celebration screen showed mixed Japanese/English text.
-**Root Cause:** `defaultValue` parameter in `i18n.t()` bypassed translations.
-**Solution:** Removed all `defaultValue` parameters from i18n.t() calls.
-
-### 5. Language Instant Switching Feature
-**Problem:** Changing language in Settings didn't update UI until navigating away and back.
-**Solution:**
-- Created `src/contexts/LanguageContext.tsx` for centralized language state
-- Wrapped `AppNavigator` with `LanguageProvider`
-- Added `key={language}` to `NavigationContainer` to force full remount
-- Updated `SettingsScreen` to use `useLanguage()` hook
-
-### 6. LibraryScreen Navigation Error Fix
-**Problem:** "COMMITを作成する" button showed "NAVIGATE action not handled" error.
-**Root Cause:** Direct navigation to `CreateCommitment` doesn't work from LibraryTab (different stack).
-**Solution:** Changed to nested navigation: `navigation.navigate('HomeTab', { screen: 'CreateCommitment' })`
-
-### 7. Cinematic 007-Style Reveal Restoration
-**Problem:** Cinematic reveal animation never played after subscription.
-**Root Cause:** `handleSubscribe` called `navigation.navigate('WarpTransition')` instead of `setShowWarpTransition(true)`.
-**Solution:**
-- Changed to `setShowWarpTransition(true)` to actually trigger the overlay
-- Added AsyncStorage flag `showDashboardFadeIn` to pass state across stack switch
-- Implemented fade-in overlay in `DashboardScreen` for smooth transition
+Users can now scan book barcodes to instantly search for books.
 
 ---
 
-## 📁 Files Modified
+## Current Critical Status
 
-| File | Changes |
-|------|---------|
-| `src/components/onboarding/HapticResistanceSlider.tsx` | Reordered elements, added margins |
-| `src/screens/onboarding/OnboardingScreen5_Penalty.tsx` | Integrated ruleText into donationCard |
-| `src/screens/CreateCommitmentScreen.tsx` | Fixed flexWrap + flex:1 bug |
-| `src/components/VerificationSuccessModal.tsx` | Removed defaultValue from i18n.t() |
-| `src/contexts/LanguageContext.tsx` | **NEW** - Language state management |
-| `src/navigation/AppNavigator.tsx` | Added LanguageProvider, key={language} |
-| `src/screens/SettingsScreen.tsx` | Use useLanguage() hook |
-| `src/screens/LibraryScreen.tsx` | Fixed nested navigation |
-| `src/screens/onboarding/OnboardingScreen13_Paywall.tsx` | Fixed cinematic trigger |
-| `src/screens/DashboardScreen.tsx` | Added fade-in overlay from cinematic |
-| `src/i18n/locales/ja.json` | Added missing keys |
-| `src/i18n/locales/en.json` | Added missing keys |
-| `src/i18n/locales/ko.json` | Added missing keys |
+### ⚠️ REQUIRES APP REBUILD
+`expo-camera` is a native module and **does not work in Expo Go**. You must rebuild the development client:
+
+```bash
+# iOS
+npx expo run:ios
+
+# Android
+npx expo run:android
+
+# Or with EAS
+eas build --profile development --platform ios
+eas build --profile development --platform android
+```
+
+### Edge Function Deployed
+The `isbn-lookup` Edge Function is deployed with `--no-verify-jwt` flag (no Authorization header required):
+
+```bash
+# Test command (no auth header needed)
+curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/isbn-lookup \
+  -H "Content-Type: application/json" \
+  -d '{"isbn":"9784167158057"}'
+```
 
 ---
-=======
-2. **Layout Responsiveness:**
-    - **CreateCommitmentScreen:** Removed fixed width (48%) from amount buttons. Now uses `flex: 1` with `minWidth`, handling long currency strings gracefully.
-    - **OnboardingScreen5:** Moved the rule subtext to the footer to prevent overlap with the donation card.
-    - **OnboardingScreen6:** Moved the username note (`screen6_username_note`) directly under the input field to prevent overlap with the footer button.
 
-3. **Navigation Fix:**
-    - Created `WarpTransitionScreen.tsx` and registered it in `AppNavigator.tsx` to fix the "WarpTransition not handled by any navigator" error.
+## What Didn't Work (Lessons Learned)
 
-4. **Design Change:**
-    - **CommitmentDetailScreen:** Removed "Continue this book" button to prevent goal conflicts (as requested by user).
+| Issue | Root Cause | Fix Applied |
+|-------|------------|-------------|
+| `Cannot find native module 'ExpoCamera'` | expo-camera requires native code, doesn't work in Expo Go | Must rebuild with `npx expo run:ios/android` |
+| Close button (×) not responding | Overlay View blocking touch events to CameraView | Added `pointerEvents="box-none"` to overlay and SafeAreaView, `pointerEvents="auto"` to header |
 
-5. **Standards Update:**
-    - Updated `ROADMAP.md` (Phase 3) and `CLAUDE.md` with new **Engineering Standards** for Localization, Layout, and Navigation.
->>>>>>> Stashed changes
+---
 
-## 🚀 Next Steps (for Claude Code)
+## Completed This Session
 
-1. **Test Cinematic Flow:** Verify the full onboarding → subscription → cinematic → dashboard flow works smoothly.
+| Task | Status | Notes |
+|------|--------|-------|
+| expo-camera installation | ✅ Done | `npx expo install expo-camera` |
+| isbn-lookup Edge Function | ✅ Done | `supabase/functions/isbn-lookup/index.ts` |
+| Edge Function deployment | ✅ Done | Deployed with `--no-verify-jwt` |
+| ISBN utility functions | ✅ Done | `src/utils/isbn.ts` |
+| i18n keys (ja/en/ko) | ✅ Done | `scanner.*` keys added |
+| app.json permissions | ✅ Done | expo-camera plugin + Android CAMERA permission |
+| BarcodeScannerModal component | ✅ Done | `src/components/BarcodeScannerModal.tsx` |
+| CreateCommitmentScreen integration | ✅ Done | Scan button in search bar |
+| OnboardingScreen3 integration | ✅ Done | Scan button in search bar |
+| Close button touch fix | ✅ Done | pointerEvents pattern applied |
+
+### Files Created
+| File | Description |
+|------|-------------|
+| `supabase/functions/isbn-lookup/index.ts` | Edge Function for ISBN → Google Books lookup |
+| `src/utils/isbn.ts` | ISBN validation utilities (EAN-13, ISBN-10) |
+| `src/components/BarcodeScannerModal.tsx` | Full-screen barcode scanner modal |
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `app.json` | Added expo-camera plugin + Android CAMERA permission |
+| `src/i18n/locales/ja.json` | Added scanner.* i18n keys |
+| `src/i18n/locales/en.json` | Added scanner.* i18n keys |
+| `src/i18n/locales/ko.json` | Added scanner.* i18n keys |
+| `src/screens/CreateCommitmentScreen.tsx` | Added scan button + BarcodeScannerModal |
+| `src/screens/onboarding/OnboardingScreen3_BookSelect.tsx` | Added scan button + BarcodeScannerModal |
+
+---
+
+## Immediate Next Steps
+
+1. **Rebuild App & Test Scanner** (User action required):
+   - Run `npx expo run:ios` or `npx expo run:android`
+   - Open CreateCommitmentScreen
+   - Tap barcode icon (📷) next to search bar
+   - Grant camera permission
+   - Scan a book's ISBN barcode
+   - Verify close button (×) works
+   - Verify book is auto-selected on successful scan
 
 2. **Resume Phase 3.5:** User Profile & Settings
    - 3.5.1: Create `ProfileScreen.tsx`
    - 3.5.2: Settings navigation & legal links
    - 3.5.3: Account deletion (Apple requirement)
 
-3. **Phase 1.8:** The Lifeline (Emergency Freeze) feature
+---
+
+## Feature Details
+
+### ISBN Scanner Flow
+1. User taps barcode icon next to search bar
+2. Camera opens in full-screen modal
+3. User points camera at book's ISBN barcode (EAN-13)
+4. ISBN detected → Edge Function called → Google Books API lookup
+5. On success: Book auto-selected, modal closes, continue to next screen
+6. On not found: Options to "Rescan" or "Search Manually"
+
+### Edge Function: isbn-lookup
+- **Endpoint**: `POST /functions/v1/isbn-lookup`
+- **Request**: `{ "isbn": "9784167158057" }`
+- **Response Success**: `{ "success": true, "book": { "id", "title", "authors", "thumbnail" } }`
+- **Response Not Found**: `{ "success": false, "error": "BOOK_NOT_FOUND" }`
+- **Auth**: None required (--no-verify-jwt)
 
 ---
 
-## ⚠️ Critical Context for Future Development
+## Critical Context for Future Development
+
+### Supabase Deployment Checklist
+When creating database changes or Edge Functions, ALWAYS:
+1. Create migration file → `supabase db push`
+2. Create Edge Function → `supabase functions deploy <name>`
+3. Update `database.types.ts` Insert/Update types
+4. Verify with `supabase migration list`
 
 ### Navigation Patterns
-- **Cross-tab navigation:** Always use `navigate('TabName', { screen: 'ScreenName' })`
-- **Cross-stack state:** Use AsyncStorage, not route params (stacks are replaced on auth change)
+- **Cross-tab:** `navigate('TabName', { screen: 'ScreenName' })`
+- **Cross-stack state:** Use AsyncStorage (route params lost on stack switch)
 
 ### i18n Rules
 - **NEVER** use `defaultValue` in `i18n.t()`
 - **ALWAYS** add keys to ALL 3 locale files (ja, en, ko) simultaneously
-- **Test with English** (longest text) to catch layout issues
 
-### Animation/Overlay Rules
-- Use `setTimeout` instead of `withDelay` for critical timing
-- Trigger overlays via state (`setShowX(true)`), not navigation
-- Set both `zIndex` AND `elevation` for overlays
+### Camera/Scanner Notes
+- `expo-camera` requires native rebuild (not Expo Go compatible)
+- Supports EAN-13 and EAN-8 barcode types
+- Permission request handled in component
+- ISBN validation in `src/utils/isbn.ts`
+- Use `pointerEvents="box-none"` on overlay containers for proper touch handling
 
-### Flexbox Gotchas
-- `flexWrap: 'wrap'` + `flex: 1` on children = broken height calculation
-- Elements in separate containers may overlap despite looking adjacent
+---
+
+## Supabase Project Info
+- **Project Ref:** `rnksvjjcsnwlquaynduu`
+- **Functions Dashboard:** https://supabase.com/dashboard/project/rnksvjjcsnwlquaynduu/functions

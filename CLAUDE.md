@@ -140,4 +140,38 @@
   i18n.t('celebration.title')
   ```
   If a key is missing, add it to ALL locale files (`ja.json`, `en.json`, `ko.json`) immediately.
+- **Supabase Deployment (CRITICAL):** Creating migration files or Edge Functions is NOT enough. You MUST deploy them:
+  - **Database Migrations:** After creating `supabase/migrations/*.sql`, run `supabase db push` to apply to remote database. The migration file alone does nothing.
+  - **Edge Functions:** After creating `supabase/functions/<name>/index.ts`, run `supabase functions deploy <name>` to deploy.
+  - **Migration History Mismatch:** If `supabase db push` fails with version mismatch, run `supabase migration repair --status reverted <version>` first.
+  - **Verify:** Always run `supabase migration list` to confirm migrations are applied (shows in both Local and Remote columns).
+  ```bash
+  # Complete Supabase deployment workflow:
+  supabase migration list          # Check current state
+  supabase db push                 # Apply pending migrations
+  supabase functions deploy <name> # Deploy Edge Functions
+  ```
+- **expo-camera Native Rebuild:** `expo-camera` is a native module and does NOT work in Expo Go. After installing or updating expo-camera, you MUST rebuild the development client:
+  ```bash
+  npx expo run:ios    # iOS rebuild
+  npx expo run:android # Android rebuild
+  ```
+- **CameraView Overlay Touch Handling:** When placing interactive UI (buttons, headers) over a CameraView, touch events may be blocked by overlay containers. Use this pattern:
+  ```typescript
+  // Overlay container: let touches pass through to children
+  <View style={styles.overlay} pointerEvents="box-none">
+    // SafeAreaView: also pass through
+    <SafeAreaView pointerEvents="box-none">
+      // Interactive container: explicitly receive touches
+      <View style={styles.header} pointerEvents="auto">
+        <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <X size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  </View>
+  ```
+  - `pointerEvents="box-none"`: Container ignores touches, but children can receive them
+  - `pointerEvents="auto"`: Container and children receive touches normally
+  - Always add `hitSlop` to small touch targets for better UX
 

@@ -218,6 +218,16 @@
     "slider_min_note": "* {{pages}} pages already read. You can set goals from page {{next}}.",
     "success_message": "Commitment created!\nDeadline: {{deadline}}\nPenalty: {{penalty}}"
   },
+  "scanner": {
+    "title": "Scan Barcode",
+    "permission_denied": "Camera permission is required",
+    "instruction": "Scan the ISBN barcode on the back of the book",
+    "looking_up": "Searching book info...",
+    "not_found_title": "Not Found",
+    "not_found_message": "Could not read barcode or book not found.",
+    "rescan": "Scan Again",
+    "manual_search": "Search by Title"
+  },
   "commitment_detail": {
     "title": "Commitment Details",
     "in_progress": "In Progress",
@@ -230,7 +240,14 @@
     "verify_button": "Verify Completion",
     "continue_this_book": "Continue This Book",
     "add_next_commitment": "Add Next Commitment",
-    "target_pages": "Page Goal"
+    "target_pages": "Page Goal",
+    "completed_message": "Commitment completed!",
+    "lifeline_button": "Lifeline (+7 Days)",
+    "lifeline_confirm_title": "Use Lifeline",
+    "lifeline_confirm_message": "Extend your deadline by 7 days? This can only be used once per book.",
+    "lifeline_success": "Deadline extended by 7 days",
+    "lifeline_already_used": "Lifeline already used for this book",
+    "lifeline_unavailable": "Lifeline Unavailable"
   },
   "verification": {
     "title": "Reading Verification",
@@ -368,6 +385,19 @@
     "memo_placeholder": "[Summary] Summarize this book in one sentence.\n\n[Insight] What was a key realization?\n\n[Declaration] What will you change starting tomorrow?",
     "cancel": "Cancel",
     "save": "Save"
+  },
+  "scanner": {
+    "title": "Scan Barcode",
+    "instruction": "Point camera at book's ISBN barcode",
+    "scanning": "Scanning...",
+    "looking_up": "Looking up book...",
+    "not_found_title": "Book Not Found",
+    "not_found_message": "Could not find book information for this ISBN",
+    "rescan": "Scan Again",
+    "manual_search": "Search Manually",
+    "permission_denied": "Camera access is required to scan barcodes",
+    "invalid_barcode": "Please scan a valid ISBN barcode",
+    "close": "Close"
   },
   "recommendations": {
     "books": {

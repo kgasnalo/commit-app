@@ -52,16 +52,27 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Action:** Refine micro-interactions of the celebration modal.
     - **DoD:** Premium feel with fluid animations.
 
-- [ ] **1.8 The Lifeline (Emergency Freeze) 🆕**
+- [x] **1.8 The Lifeline (Emergency Freeze) ✅**
     - **Role:** `[Fullstack Engineer]`
     - **Action:** Implement "Fairness Valve" via Edge Function.
     - **Details:** One-time freeze **per Book** (not per commitment). Logic checks `book_id` history to prevent reuse on subsequent commitments for the same book.
+    - **Implementation:**
+      - Edge Function: `supabase/functions/use-lifeline/index.ts`
+      - DB Column: `commitments.is_freeze_used` (boolean)
+      - UI: Orange "Lifeline (+7 Days)" button in CommitmentDetailScreen
+      - i18n: Keys added for ja/en/ko
     - **DoD:** User can extend deadline once per book; DB updates securely.
 
-- [ ] **1.9 Hyper Scanner (ISBN Barcode) 🆕**
+- [x] **1.9 Hyper Scanner (ISBN Barcode) ✅**
     - **Role:** `[Mobile Engineer]`
     - **Action:** Integrate Camera for barcode scanning.
-    - **Security:** Proxy Google Books API calls via Supabase to hide keys.
+    - **Security:** Proxy Google Books API calls via Supabase Edge Function (`isbn-lookup`).
+    - **Implementation:**
+      - Component: `src/components/BarcodeScannerModal.tsx`
+      - Edge Function: `supabase/functions/isbn-lookup/index.ts` (deployed with `--no-verify-jwt`)
+      - Utilities: `src/utils/isbn.ts`
+      - Integration: CreateCommitmentScreen + OnboardingScreen3
+    - **Note:** `expo-camera` requires native rebuild (not Expo Go compatible). Run `npx expo run:ios/android`.
     - **DoD:** Scan book -> Instant Commitment screen (< 2 sec).
 
 ---

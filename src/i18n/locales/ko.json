@@ -216,7 +216,17 @@
     "pages_read_so_far": "지금까지 {{pages}}페이지 읽음",
     "progress_near_max": "대단해요! 이 책을 이미 {{pages}}페이지 읽었습니다.",
     "slider_min_note": "※ 이전까지 {{pages}}페이지 읽음. {{next}}페이지부터 설정할 수 있습니다.",
-    "success_message": "커밋먼트가 생성되었습니다!\n기한: {{deadline}}\n페널티: {{penalty}}"
+    "success_message": "커밋먼트를 생성했습니다.\n기한: {{deadline}}\n페널티: {{penalty}}"
+  },
+  "scanner": {
+    "title": "바코드 스캔",
+    "permission_denied": "카메라 접근 권한이 필요합니다",
+    "instruction": "책 뒷면의 ISBN 바코드를 스캔해주세요",
+    "looking_up": "도서 정보 검색 중...",
+    "not_found_title": "찾을 수 없습니다",
+    "not_found_message": "바코드를 읽을 수 없거나 해당 도서를 찾을 수 없습니다.",
+    "rescan": "다시 스캔",
+    "manual_search": "제목으로 검색"
   },
   "commitment_detail": {
     "title": "커밋먼트 상세",
@@ -230,7 +240,14 @@
     "verify_button": "완료 확인",
     "continue_this_book": "이 책 계속 읽기",
     "add_next_commitment": "다음 커밋 추가",
-    "target_pages": "페이지 목표"
+    "target_pages": "페이지 목표",
+    "completed_message": "커밋먼트가 완료되었습니다!",
+    "lifeline_button": "라이프라인 (+7일 연장)",
+    "lifeline_confirm_title": "라이프라인 사용",
+    "lifeline_confirm_message": "기한을 7일 연장하시겠습니까? 이 기능은 이 책당 1회만 사용할 수 있습니다.",
+    "lifeline_success": "기한이 7일 연장되었습니다",
+    "lifeline_already_used": "이 책에서는 이미 라이프라인을 사용했습니다",
+    "lifeline_unavailable": "라이프라인 사용 불가"
   },
   "verification": {
     "title": "독서 확인",
@@ -366,6 +383,19 @@
     "memo_placeholder": "【요약】이 책을 한 문장으로 요약하면?\n\n【깨달음】가장 인상 깊었던 배움은?\n\n【선언】내일부터 무엇을 바꾸겠습니까?",
     "cancel": "취소",
     "save": "저장"
+  },
+  "scanner": {
+    "title": "바코드 스캔",
+    "instruction": "책의 ISBN 바코드에 카메라를 맞춰주세요",
+    "scanning": "스캔 중...",
+    "looking_up": "책 정보 조회 중...",
+    "not_found_title": "책을 찾을 수 없음",
+    "not_found_message": "이 ISBN의 책 정보를 찾을 수 없습니다",
+    "rescan": "다시 스캔",
+    "manual_search": "직접 검색",
+    "permission_denied": "바코드 스캔을 위해 카메라 접근이 필요합니다",
+    "invalid_barcode": "유효한 ISBN 바코드를 스캔해주세요",
+    "close": "닫기"
   },
   "recommendations": {
     "books": {

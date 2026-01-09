@@ -10,7 +10,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { ScanBarcode } from 'lucide-react-native';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
+import BarcodeScannerModal from '../../components/BarcodeScannerModal';
 import { colors, typography, borderRadius, spacing } from '../../theme';
 import i18n from '../../i18n';
 import { GOOGLE_API_KEY } from '../../config/env';
@@ -32,6 +34,7 @@ export default function OnboardingScreen3({ navigation, route }: any) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const searchBooks = async () => {
     if (!query.trim()) return;
@@ -75,7 +78,24 @@ export default function OnboardingScreen3({ navigation, route }: any) {
           onSubmitEditing={searchBooks}
           returnKeyType="search"
         />
+        <TouchableOpacity
+          style={styles.scanButton}
+          onPress={() => setShowScanner(true)}
+        >
+          <ScanBarcode size={20} color={colors.text.muted} />
+        </TouchableOpacity>
       </View>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={showScanner}
+        onClose={() => setShowScanner(false)}
+        onBookFound={(book) => {
+          handleSelectBook(book);
+          setShowScanner(false);
+        }}
+        onManualSearch={() => setShowScanner(false)}
+      />
 
       {loading ? (
         <ActivityIndicator color={colors.accent.primary} style={styles.loader} />
@@ -131,6 +151,10 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
     color: colors.text.primary,
     fontSize: typography.fontSize.body,
+  },
+  scanButton: {
+    padding: spacing.sm,
+    marginLeft: spacing.xs,
   },
   loader: {
     marginTop: spacing.xl,

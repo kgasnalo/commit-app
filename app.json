@@ -28,7 +28,8 @@
       "edgeToEdgeEnabled": true,
       "package": "com.kgxxx.commitapp",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -40,6 +41,12 @@
         {
           "photosPermission": "読了確認のために写真へのアクセスが必要です",
           "cameraPermission": "読了確認のためにカメラへのアクセスが必要です"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ISBNバーコードをスキャンするためにカメラへのアクセスが必要です"
         }
       ]
     ],

@@ -79,6 +79,7 @@ export interface Database {
           pledge_amount: number
           currency: string
           target_pages: number
+          is_freeze_used: boolean
           created_at: string
           updated_at: string | null
         }
@@ -91,6 +92,7 @@ export interface Database {
           pledge_amount: number
           currency?: string
           target_pages?: number
+          is_freeze_used?: boolean
           created_at?: string
           updated_at?: string | null
         }
@@ -103,6 +105,7 @@ export interface Database {
           pledge_amount?: number
           currency?: string
           target_pages?: number
+          is_freeze_used?: boolean
           created_at?: string
           updated_at?: string | null
         }
