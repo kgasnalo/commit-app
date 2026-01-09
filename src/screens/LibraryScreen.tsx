@@ -256,7 +256,7 @@ export default function LibraryScreen() {
         <Text style={styles.emptySubtitle}>{i18n.t('library.empty_subtitle')}</Text>
         <TouchableOpacity
           style={styles.emptyButton}
-          onPress={() => (navigation as any).navigate('CreateCommitment')}
+          onPress={() => (navigation as any).navigate('HomeTab', { screen: 'CreateCommitment' })}
         >
           <Text style={styles.emptyButtonText}>{i18n.t('library.empty_button')}</Text>
         </TouchableOpacity>
