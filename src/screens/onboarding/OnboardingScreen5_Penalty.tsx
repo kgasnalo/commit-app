@@ -112,7 +112,7 @@ export default function OnboardingScreen5({ navigation, route }: any) {
         subtitle={i18n.t('onboarding.screen5_subtitle')}
         footer={
           <View style={styles.footerContainer}>
-            {/* Donation Info Card */}
+            {/* Donation Info Card - Now includes rule text */}
             <View style={styles.donationCard}>
               <View style={styles.donationIconContainer}>
                 <Ionicons name="heart" size={18} color="#FF6B6B" />
@@ -128,6 +128,15 @@ export default function OnboardingScreen5({ navigation, route }: any) {
                   minimumFontScale={0.8}
                 >
                   Room to Read
+                </Text>
+                {/* Rule text integrated into card */}
+                <Text
+                  style={styles.ruleText}
+                  numberOfLines={0}
+                >
+                  {i18n.t('onboarding.screen5_rule_text_line1')}
+                  {'\n'}
+                  {i18n.t('onboarding.screen5_rule_text_line2')}
                 </Text>
               </View>
             </View>
@@ -169,7 +178,7 @@ export default function OnboardingScreen5({ navigation, route }: any) {
           </View>
         </View>
 
-        {/* Haptic Resistance Slider */}
+        {/* Haptic Resistance Slider - Contains: Slider Bar → Labels → Amount Display */}
         <View style={styles.sliderContainer}>
           <HapticResistanceSlider
             presets={amounts}
@@ -178,26 +187,6 @@ export default function OnboardingScreen5({ navigation, route }: any) {
             onValueChange={handleAmountChange}
             onIntensityChange={handleIntensityChange}
           />
-        </View>
-
-        {/* Rule Confirmation Text - Placed in body after slider to prevent overlap */}
-        <View style={styles.ruleTextContainer}>
-          <Text
-            style={styles.ruleText}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {i18n.t('onboarding.screen5_rule_text_line1')}
-          </Text>
-          <Text
-            style={styles.ruleText}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {i18n.t('onboarding.screen5_rule_text_line2')}
-          </Text>
         </View>
 
       </OnboardingLayout>
@@ -250,26 +239,18 @@ const styles = StyleSheet.create({
   // Slider Section
   sliderContainer: {
     marginTop: GRID, // 8
-    marginBottom: GRID * 4, // 32 - Added more spacing to prevent overlap with footer
   },
 
-  // Rule Text Section - Two lines with proper spacing
-  ruleTextContainer: {
-    alignItems: 'center',
-    gap: 2, // Tight line spacing
-    marginTop: GRID * 2, // 16 - Space above from slider labels
-    paddingHorizontal: GRID * 2, // 16 - Add horizontal padding for longer text
-  },
+  // Rule Text - Now inside donation card
   ruleText: {
     color: 'rgba(255, 255, 255, 0.45)',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '400',
-    textAlign: 'center',
-    lineHeight: 20,
-    flexShrink: 1, // Allow text to shrink for EN/KO
+    lineHeight: 18,
+    marginTop: GRID, // 8
   },
 
-  // Footer Section - Tighter gap between rule text and card
+  // Footer Section
   footerContainer: {
     gap: GRID * 1.5, // 12
   },
