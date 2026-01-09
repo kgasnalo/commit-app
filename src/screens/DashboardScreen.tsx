@@ -10,6 +10,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useFocusEffect } from '@react-navigation/native';
@@ -63,8 +71,40 @@ export default function DashboardScreen({ navigation }: any) {
   const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
   const [currentLocale, setCurrentLocale] = useState(i18n.locale);
 
+  // Cinematic fade-in from black (after 007-style reveal)
+  const [showFadeOverlay, setShowFadeOverlay] = useState(false);
+  const fadeOverlayOpacity = useSharedValue(1);
+
+  const fadeOverlayStyle = useAnimatedStyle(() => ({
+    opacity: fadeOverlayOpacity.value,
+  }));
+
   useEffect(() => {
     fetchCommitments();
+
+    // Check if we're coming from the cinematic reveal
+    const checkFadeIn = async () => {
+      const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
+      if (shouldFade === 'true') {
+        await AsyncStorage.removeItem('showDashboardFadeIn');
+        setShowFadeOverlay(true);
+        fadeOverlayOpacity.value = 1;
+
+        // Delay before starting fade out (let the screen settle)
+        setTimeout(() => {
+          fadeOverlayOpacity.value = withTiming(0, {
+            duration: 800,
+            easing: Easing.out(Easing.cubic),
+          });
+        }, 200);
+
+        // Hide overlay after animation completes
+        setTimeout(() => {
+          setShowFadeOverlay(false);
+        }, 1200);
+      }
+    };
+    checkFadeIn();
   }, []);
 
   // Update locale when screen is focused to reflect language changes
@@ -313,6 +353,11 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      {/* Cinematic fade-in overlay (from 007-style reveal) */}
+      {showFadeOverlay && (
+        <Animated.View style={[styles.fadeOverlay, fadeOverlayStyle]} pointerEvents="none" />
+      )}
     </SafeAreaView>
   );
 }
@@ -476,5 +521,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  fadeOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#000000',
+    zIndex: 9999,
+    elevation: 9999,
   },
 });
