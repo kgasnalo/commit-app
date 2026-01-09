@@ -216,17 +216,19 @@ export default function BarcodeScannerModal({
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
       <View style={styles.container}>
-        {/* Camera View */}
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          facing="back"
-          barcodeScannerSettings={{
-            barcodeTypes: ['ean13', 'ean8'],
-          }}
-          onBarcodeScanned={
-            scannerState === 'scanning' ? handleBarcodeScanned : undefined
-          }
-        />
+        {/* Camera View - wrapped in View with pointerEvents="none" to prevent touch capture */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            barcodeScannerSettings={{
+              barcodeTypes: ['ean13', 'ean8'],
+            }}
+            onBarcodeScanned={
+              scannerState === 'scanning' ? handleBarcodeScanned : undefined
+            }
+          />
+        </View>
 
         {/* Overlay */}
         <View style={styles.overlay} pointerEvents="box-none">
@@ -323,7 +325,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
   },
   headerSafeArea: {
