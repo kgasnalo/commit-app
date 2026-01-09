@@ -81,8 +81,10 @@ export default function OnboardingScreen3({ navigation, route }: any) {
         <TouchableOpacity
           style={styles.scanButton}
           onPress={() => setShowScanner(true)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.7}
         >
-          <ScanBarcode size={20} color={colors.text.muted} />
+          <ScanBarcode size={24} color={colors.text.primary} />
         </TouchableOpacity>
       </View>
 
