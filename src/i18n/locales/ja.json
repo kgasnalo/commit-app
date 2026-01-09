@@ -215,7 +215,8 @@
     "loading_book_data": "書籍データを読み込み中...",
     "pages_read_so_far": "これまでに{{pages}}ページ読了",
     "progress_near_max": "すごい！この本はすでに{{pages}}ページ読みました。",
-    "slider_min_note": "※ 前回までに{{pages}}ページ読了済み。{{next}}ページ目から設定できます。"
+    "slider_min_note": "※ 前回までに{{pages}}ページ読了済み。{{next}}ページ目から設定できます。",
+    "success_message": "コミットメントを作成しました。\n期限: {{deadline}}\nペナルティ: {{penalty}}"
   },
   "commitment_detail": {
     "title": "コミットメント詳細",

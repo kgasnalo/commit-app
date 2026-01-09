@@ -215,7 +215,8 @@
     "loading_book_data": "책 데이터 로딩 중...",
     "pages_read_so_far": "지금까지 {{pages}}페이지 읽음",
     "progress_near_max": "대단해요! 이 책을 이미 {{pages}}페이지 읽었습니다.",
-    "slider_min_note": "※ 이전까지 {{pages}}페이지 읽음. {{next}}페이지부터 설정할 수 있습니다."
+    "slider_min_note": "※ 이전까지 {{pages}}페이지 읽음. {{next}}페이지부터 설정할 수 있습니다.",
+    "success_message": "커밋먼트가 생성되었습니다!\n기한: {{deadline}}\n페널티: {{penalty}}"
   },
   "commitment_detail": {
     "title": "커밋먼트 상세",
