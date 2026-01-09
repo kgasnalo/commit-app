@@ -12,6 +12,7 @@ import {
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, ScanBarcode, BookX, RefreshCw, Search } from 'lucide-react-native';
+import { TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -234,23 +235,26 @@ export default function BarcodeScannerModal({
         <View style={styles.overlay} pointerEvents="box-none">
           {/* Header */}
           <SafeAreaView edges={['top']} style={styles.headerSafeArea} pointerEvents="box-none">
-            <View style={styles.header} pointerEvents="auto">
-              <TouchableOpacity
-                onPress={onClose}
+            <View style={styles.header} pointerEvents="box-none">
+              <GHTouchableOpacity
+                onPress={() => {
+                  console.log('Close button pressed');
+                  onClose();
+                }}
                 style={styles.closeButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                activeOpacity={0.7}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                activeOpacity={0.6}
               >
                 <X size={24} color="#fff" />
-              </TouchableOpacity>
+              </GHTouchableOpacity>
               <Text style={styles.title}>{i18n.t('scanner.title')}</Text>
               <View style={styles.closeButton} />
             </View>
           </SafeAreaView>
 
           {/* Scan Area */}
-          <View style={styles.scanAreaContainer}>
-            <View style={styles.scanArea}>
+          <View style={styles.scanAreaContainer} pointerEvents="box-none">
+            <View style={styles.scanArea} pointerEvents="box-none">
               {/* Corner indicators */}
               <View style={[styles.corner, styles.cornerTopLeft]} />
               <View style={[styles.corner, styles.cornerTopRight]} />
@@ -348,6 +352,8 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1000,
+    elevation: 1000,
   },
   title: {
     fontSize: 18,
