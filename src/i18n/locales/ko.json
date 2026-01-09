@@ -289,7 +289,10 @@
     "username": "사용자명",
     "email": "이메일",
     "member_since": "가입일",
-    "edit_username": "사용자명 수정"
+    "edit_username": "사용자명 수정",
+    "enter_new_username": "새 사용자명 입력",
+    "username_updated": "사용자명이 업데이트되었습니다",
+    "username_update_error": "사용자명 업데이트에 실패했습니다"
   },
   "common": {
     "ok": "확인",

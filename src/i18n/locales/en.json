@@ -289,7 +289,10 @@
     "username": "Username",
     "email": "Email",
     "member_since": "Member since",
-    "edit_username": "Edit Username"
+    "edit_username": "Edit Username",
+    "enter_new_username": "Enter new username",
+    "username_updated": "Username updated successfully",
+    "username_update_error": "Failed to update username"
   },
   "common": {
     "ok": "OK",

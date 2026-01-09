@@ -289,7 +289,10 @@
     "username": "ユーザーネーム",
     "email": "メールアドレス",
     "member_since": "メンバー登録日",
-    "edit_username": "ユーザーネームを編集"
+    "edit_username": "ユーザーネームを編集",
+    "enter_new_username": "新しいユーザーネームを入力",
+    "username_updated": "ユーザーネームを更新しました",
+    "username_update_error": "ユーザーネームの更新に失敗しました"
   },
   "common": {
     "ok": "OK",
