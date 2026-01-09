@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,22 +10,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import i18n, { LANGUAGES, setLanguage, loadLanguage } from '../i18n';
+import i18n, { LANGUAGES } from '../i18n';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function SettingsScreen({ navigation }: any) {
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('ja');
-
-  useEffect(() => {
-    // Load saved language on mount
-    loadLanguage().then(locale => {
-      setCurrentLanguage(locale);
-    });
-  }, []);
+  const { language: currentLanguage, setLanguage } = useLanguage();
 
   const handleLanguageChange = async (languageCode: string) => {
     await setLanguage(languageCode);
-    setCurrentLanguage(languageCode);
     setLanguageModalVisible(false);
   };
 
