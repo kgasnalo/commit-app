@@ -327,9 +327,12 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
+    zIndex: 10,
+    elevation: 10,
   },
   headerSafeArea: {
-    zIndex: 10,
+    zIndex: 100,
+    elevation: 100,
   },
   header: {
     flexDirection: 'row',
@@ -337,6 +340,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    zIndex: 100,
+    elevation: 100,
   },
   closeButton: {
     width: 44,
