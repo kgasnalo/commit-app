@@ -285,19 +285,7 @@ export default function HapticResistanceSlider({
 
   return (
     <View style={styles.container}>
-      {/* Current Amount Display */}
-      <View style={styles.amountDisplayContainer}>
-        <Animated.Text
-          style={[styles.amountDisplay]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
-        >
-          {selectedValue !== null ? formatAmount(selectedValue) : '---'}
-        </Animated.Text>
-      </View>
-
-      {/* Slider Track */}
+      {/* Slider Track - Now at the top */}
       <View style={styles.trackContainer}>
         <View style={styles.track}>
           {/* Glow effect */}
@@ -315,7 +303,7 @@ export default function HapticResistanceSlider({
         </View>
       </View>
 
-      {/* Preset Labels - Flexbox layout for even distribution */}
+      {/* Preset Labels - Below slider */}
       <View style={styles.labelsContainer}>
         {presets.map((preset, index) => {
           const isSelected = selectedValue === preset.value;
@@ -339,6 +327,18 @@ export default function HapticResistanceSlider({
           );
         })}
       </View>
+
+      {/* Selected Amount Display - Below labels */}
+      <View style={styles.amountDisplayContainer}>
+        <Animated.Text
+          style={[styles.amountDisplay]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {selectedValue !== null ? formatAmount(selectedValue) : '---'}
+        </Animated.Text>
+      </View>
     </View>
   );
 }
@@ -347,10 +347,11 @@ const styles = StyleSheet.create({
   container: {
     width: TRACK_WIDTH,
     alignSelf: 'center',
-    paddingVertical: 16,
+    paddingTop: 8,
   },
   amountDisplayContainer: {
     alignItems: 'center',
+    marginTop: 16,
     marginBottom: 24,
   },
   amountDisplay: {
@@ -414,8 +415,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 24, // Added spacing to prevent overlap with footer content
+    marginTop: 12,
     paddingHorizontal: 0,
   },
   presetLabel: {
