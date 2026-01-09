@@ -87,3 +87,13 @@
     ```
   - **Text Wrapping:** Use `numberOfLines={0}` for dynamic text that varies significantly across languages. Avoid `numberOfLines={2}` with `adjustsFontSizeToFit` for long English sentences—they will break layout.
   - **Always test layouts with the longest expected language (typically English).**
+- **flexWrap + flex: 1 Height Calculation Bug:** When using `flexWrap: 'wrap'` on a container, do NOT use `flex: 1` on child elements. The combination causes incorrect height calculation, making subsequent elements overlap.
+  - **Problem:** `flex: 1` + `minWidth: '45%'` in a `flexWrap` container → child heights not calculated correctly → text below overlaps buttons
+  - **Solution:** Use explicit `width: '48%'` (or similar) instead of `flex: 1` for wrapped children:
+    ```typescript
+    // BAD - causes overlap
+    amountButton: { flex: 1, minWidth: '45%', ... }
+
+    // GOOD - proper height calculation
+    amountButton: { width: '48%', ... }
+    ```
