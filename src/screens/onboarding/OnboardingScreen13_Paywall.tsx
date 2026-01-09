@@ -139,17 +139,11 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         }
       }
 
-      // 5. Success (Warp Speed Transition)
+      // 5. Success (Cinematic COMMIT Reveal)
       await AsyncStorage.removeItem('onboardingData');
 
-      // Start warp speed transition
-      navigation.navigate('WarpTransition', {
-        onComplete: () => {
-          // This callback is called after the warp animation finishes
-          // Update auth state in AppNavigator to switch stacks
-          triggerAuthRefresh(); 
-        }
-      });
+      // Start cinematic reveal animation
+      setShowWarpTransition(true);
 
     } catch (error: unknown) {
       console.error('Subscription error:', error);
@@ -159,8 +153,10 @@ export default function OnboardingScreen13({ navigation, route }: any) {
     }
   };
 
-  // ワープ遷移完了時のコールバック
-  const handleWarpComplete = useCallback(() => {
+  // シネマティック遷移完了時のコールバック
+  const handleWarpComplete = useCallback(async () => {
+    // Dashboard側でフェードインするためのフラグを設定
+    await AsyncStorage.setItem('showDashboardFadeIn', 'true');
     // AppNavigatorに認証状態の再チェックを通知
     // これによりisSubscribedがtrueに更新され、MainTabsスタックに切り替わる
     triggerAuthRefresh();
