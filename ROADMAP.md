@@ -88,7 +88,18 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **2.3.1 Screen 12 (The Plan):** Blueprint drawing animation (`BlueprintCard.tsx`).
 - [x] **2.3.2 Screen 13 (The Paywall):** Slide-to-Commit interaction (`SlideToCommit.tsx`).
 - [x] **2.3.3 Screen 13→Dashboard (The Transition):** "007-Style" Cinematic Reveal (`CinematicCommitReveal.tsx`).
-    - Blackout → "COMMIT" text reveal (Futura-Bold) → Slow zoom (1.0→1.05) → Dashboard.
+    - **Timeline:** Blackout (400ms) → Silence (500ms) → "COMMIT" fade-in (800ms) → Slow zoom 1.0→1.05 (2500ms) → Fade-out (500ms) → Dashboard fade-in (800ms).
+    - **Typography:** Futura-Bold (iOS) / sans-serif-black (Android), letterSpacing: 4, pure white (#FFFFFF).
+    - **Trigger:** `setShowWarpTransition(true)` in `OnboardingScreen13_Paywall.tsx` (NOT navigation).
+    - **Dashboard Integration:** `DashboardScreen.tsx` reads `showDashboardFadeIn` AsyncStorage flag and fades in from black.
+
+### Phase 2.4: Internationalization & UX Polish ✅ 🆕
+- [x] **2.4.1 Language Instant Switching:** Settings language change immediately reflects across all screens.
+    - `LanguageContext` (`src/contexts/LanguageContext.tsx`) manages language state.
+    - `NavigationContainer` uses `key={language}` to force full remount on language change.
+    - `SettingsScreen` uses `useLanguage()` hook.
+- [x] **2.4.2 i18n Translation Sync:** All locale files (ja/en/ko) synchronized with missing keys.
+- [x] **2.4.3 Cross-Tab Navigation Fix:** LibraryScreen → CreateCommitment uses proper nested navigation.
 
 ---
 
