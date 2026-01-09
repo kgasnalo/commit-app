@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -13,6 +12,7 @@ import {
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, ScanBarcode, BookX, RefreshCw, Search } from 'lucide-react-native';
+import { TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -236,16 +236,17 @@ export default function BarcodeScannerModal({
           {/* Header */}
           <SafeAreaView edges={['top']} style={styles.headerSafeArea} pointerEvents="box-none">
             <View style={styles.header} pointerEvents="box-none">
-              <Pressable
-                onPress={onClose}
-                style={({ pressed }) => [
-                  styles.closeButton,
-                  pressed && styles.closeButtonPressed,
-                ]}
+              <GHTouchableOpacity
+                onPress={() => {
+                  console.log('Close button pressed');
+                  onClose();
+                }}
+                style={styles.closeButton}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                activeOpacity={0.6}
               >
                 <X size={24} color="#fff" />
-              </Pressable>
+              </GHTouchableOpacity>
               <Text style={styles.title}>{i18n.t('scanner.title')}</Text>
               <View style={styles.closeButton} />
             </View>
@@ -353,9 +354,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1000,
     elevation: 1000,
-  },
-  closeButtonPressed: {
-    opacity: 0.6,
   },
   title: {
     fontSize: 18,
