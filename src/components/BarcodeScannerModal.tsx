@@ -4,6 +4,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -234,23 +235,25 @@ export default function BarcodeScannerModal({
         <View style={styles.overlay} pointerEvents="box-none">
           {/* Header */}
           <SafeAreaView edges={['top']} style={styles.headerSafeArea} pointerEvents="box-none">
-            <View style={styles.header} pointerEvents="auto">
-              <TouchableOpacity
+            <View style={styles.header} pointerEvents="box-none">
+              <Pressable
                 onPress={onClose}
-                style={styles.closeButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                activeOpacity={0.7}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && styles.closeButtonPressed,
+                ]}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               >
                 <X size={24} color="#fff" />
-              </TouchableOpacity>
+              </Pressable>
               <Text style={styles.title}>{i18n.t('scanner.title')}</Text>
               <View style={styles.closeButton} />
             </View>
           </SafeAreaView>
 
           {/* Scan Area */}
-          <View style={styles.scanAreaContainer}>
-            <View style={styles.scanArea}>
+          <View style={styles.scanAreaContainer} pointerEvents="box-none">
+            <View style={styles.scanArea} pointerEvents="box-none">
               {/* Corner indicators */}
               <View style={[styles.corner, styles.cornerTopLeft]} />
               <View style={[styles.corner, styles.cornerTopRight]} />
@@ -348,6 +351,11 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1000,
+    elevation: 1000,
+  },
+  closeButtonPressed: {
+    opacity: 0.6,
   },
   title: {
     fontSize: 18,
