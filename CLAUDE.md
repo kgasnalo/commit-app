@@ -97,3 +97,43 @@
     // GOOD - proper height calculation
     amountButton: { width: '48%', ... }
     ```
+- **Nested Navigator Navigation:** When navigating from one tab (e.g., LibraryTab) to a screen in another tab's stack (e.g., CreateCommitment in HomeTab), use nested navigation syntax:
+  ```typescript
+  // BAD - screen not found error
+  navigation.navigate('CreateCommitment')
+
+  // GOOD - navigate to tab first, then screen
+  navigation.navigate('HomeTab', { screen: 'CreateCommitment' })
+  ```
+- **Language Instant Switching:** Use `LanguageContext` (`src/contexts/LanguageContext.tsx`) to manage language state. The `NavigationContainer` has `key={language}` which forces full remount when language changes. Components that need to react to language changes should use `useLanguage()` hook.
+- **Cinematic Reveal Trigger:** The `CinematicCommitReveal` component must be triggered by setting state, NOT by navigation:
+  ```typescript
+  // BAD - navigates to non-existent screen, cinematic never shows
+  navigation.navigate('WarpTransition', {...})
+
+  // GOOD - actually triggers the cinematic overlay
+  setShowWarpTransition(true);
+  ```
+- **Cross-Stack State Passing:** When passing state between navigation stacks (e.g., Onboarding → MainTabs after auth), route params are lost because stacks are completely replaced. Use AsyncStorage:
+  ```typescript
+  // Before stack switch (in OnboardingScreen13)
+  await AsyncStorage.setItem('showDashboardFadeIn', 'true');
+  triggerAuthRefresh(); // This replaces the entire navigation stack
+
+  // After stack switch (in DashboardScreen)
+  const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
+  if (shouldFade === 'true') {
+    await AsyncStorage.removeItem('showDashboardFadeIn');
+    // Start fade-in animation
+  }
+  ```
+- **i18n defaultValue Anti-Pattern:** NEVER use `defaultValue` in `i18n.t()` calls. It causes translations to be bypassed:
+  ```typescript
+  // BAD - shows English even when locale is Japanese
+  i18n.t('celebration.title', { defaultValue: 'Commitment Achieved!' })
+
+  // GOOD - uses proper translation from locale files
+  i18n.t('celebration.title')
+  ```
+  If a key is missing, add it to ALL locale files (`ja.json`, `en.json`, `ko.json`) immediately.
+
