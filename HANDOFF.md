@@ -9,6 +9,7 @@ This session addressed several UI/UX issues and implemented critical features in
 
 ## ✅ Completed Tasks
 
+<<<<<<< Updated upstream
 ### 1. OnboardingScreen5 Slider Layout Overlap Fix
 **Problem:** Amount labels (¥0, ¥1,000...) and explanation text overlapped, especially severe in English.
 **Root Cause:** Related elements were in separate Flexbox containers (`body` vs `footer`).
@@ -74,6 +75,21 @@ This session addressed several UI/UX issues and implemented critical features in
 | `src/i18n/locales/ko.json` | Added missing keys |
 
 ---
+=======
+2. **Layout Responsiveness:**
+    - **CreateCommitmentScreen:** Removed fixed width (48%) from amount buttons. Now uses `flex: 1` with `minWidth`, handling long currency strings gracefully.
+    - **OnboardingScreen5:** Moved the rule subtext to the footer to prevent overlap with the donation card.
+    - **OnboardingScreen6:** Moved the username note (`screen6_username_note`) directly under the input field to prevent overlap with the footer button.
+
+3. **Navigation Fix:**
+    - Created `WarpTransitionScreen.tsx` and registered it in `AppNavigator.tsx` to fix the "WarpTransition not handled by any navigator" error.
+
+4. **Design Change:**
+    - **CommitmentDetailScreen:** Removed "Continue this book" button to prevent goal conflicts (as requested by user).
+
+5. **Standards Update:**
+    - Updated `ROADMAP.md` (Phase 3) and `CLAUDE.md` with new **Engineering Standards** for Localization, Layout, and Navigation.
+>>>>>>> Stashed changes
 
 ## 🚀 Next Steps (for Claude Code)
 

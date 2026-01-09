@@ -44,6 +44,7 @@ import OnboardingScreen10 from '../screens/onboarding/OnboardingScreen10_Authori
 import OnboardingScreen11 from '../screens/onboarding/OnboardingScreen11_Testimonials';
 import OnboardingScreen12 from '../screens/onboarding/OnboardingScreen12_CustomPlan';
 import OnboardingScreen13 from '../screens/onboarding/OnboardingScreen13_Paywall';
+import WarpTransitionScreen from '../screens/onboarding/WarpTransitionScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -337,6 +338,9 @@ function AppNavigatorInner() {
               <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
               <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
               <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
+              <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
+
+              {/* Legacy auth screen (for existing users or testing) */}
 
               {/* Legacy auth screen (for existing users or testing) */}
               <Stack.Screen name="Auth" component={AuthScreen} />
@@ -351,6 +355,9 @@ function AppNavigatorInner() {
               <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
               <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
               <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
+              <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
+
+              {/* Legacy auth screen (for existing users or testing) */}
               {/* Main tabs for direct navigation after subscription */}
               <Stack.Screen name="MainTabs" component={MainTabs} />
             </>
