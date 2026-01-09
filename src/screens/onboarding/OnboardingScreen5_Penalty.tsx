@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   // Slider Section
   sliderContainer: {
     marginTop: GRID, // 8
-    marginBottom: GRID * 2, // 16 - Reduced spacing as rule text moved to footer
+    marginBottom: GRID * 4, // 32 - Added more spacing to prevent overlap with footer
   },
 
   // Rule Text Section - Two lines with proper spacing
