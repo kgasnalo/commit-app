@@ -137,11 +137,18 @@ export default function SettingsScreen({ navigation }: any) {
         />
 
         <SectionHeader title={i18n.t('settings.language')} />
-        <MenuItem 
-          icon="language-outline" 
-          label={i18n.t('settings.language')} 
-          value={getCurrentLanguageName()} 
-          onPress={() => setLanguageModalVisible(true)} 
+        <MenuItem
+          icon="language-outline"
+          label={i18n.t('settings.language')}
+          value={getCurrentLanguageName()}
+          onPress={() => setLanguageModalVisible(true)}
+        />
+
+        <SectionHeader title={i18n.t('settings.notifications')} />
+        <MenuItem
+          icon="notifications-outline"
+          label={i18n.t('notifications.settings_title')}
+          onPress={() => navigation.navigate('NotificationSettings')}
         />
 
         <SectionHeader title={i18n.t('settings.legal')} />

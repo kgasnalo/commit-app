@@ -8,25 +8,38 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('Missing Authorization header')
+      return new Response(
+        JSON.stringify({ error: 'Missing Authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Create Supabase client with auth context to verify the user
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     )
 
     // Get the authenticated user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    
     if (authError || !user) {
+      console.error('Auth Error:', authError)
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', details: authError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log(`Deleting user: ${user.id}`)
 
     // Initialize Admin Client with Service Role Key to perform user deletion
     const supabaseAdmin = createClient(
@@ -34,17 +47,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // FUTURE: Check for failed payments here once Phase 7 is implemented
-    // const { data: unpaidPenalties } = await supabaseAdmin.from('penalties').select('id').eq('user_id', user.id).eq('status', 'failed')
-    // if (unpaidPenalties && unpaidPenalties.length > 0) {
-    //   return new Response(
-    //     JSON.stringify({ error: 'UNPAID_DEBT', message: 'Please settle unpaid penalties before deleting your account.' }),
-    //     { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    //   )
-    // }
-
     // Delete the user from auth.users
-    // This will typically trigger cascading deletes in other tables if foreign keys are set to ON DELETE CASCADE
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id)
     
     if (deleteError) {

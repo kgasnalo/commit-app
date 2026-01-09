@@ -160,18 +160,49 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Action:** "Contact Support" button (mailto or form link).
     - **DoD:** User can initiate a support request.
 
+**Implementation Notes (2026-01-09):**
+- **Profile:** Minimalist UI created at `src/screens/ProfileScreen.tsx`. Supports direct username editing via Supabase.
+- **Account Deletion:** Secured via Edge Function (`delete-account`). Deployed with `--no-verify-jwt` to handle client-side auth context correctly. Uses Service Role Key for irreversible user deletion.
+- **Legal/Support:** Integrated into `SettingsScreen.tsx` with external linking to Web Portal (Phase 7 prerequisite).
+- **Navigation:** Integrated into Settings stack within `AppNavigator.tsx`.
+- **Onboarding Reliability Fix:** 
+    - Replaced `upsert` with `SELECT -> INSERT` flow in `OnboardingScreen13` to avoid RLS Update permission errors for existing books.
+    - Switched from `AsyncStorage` state to direct `route.params` passing between Onboarding screens to ensure data consistency during rapid navigation/stack switches.
+
 ---
 
 ## 🔵 Phase 4: Engagement, Retention & Virality
 
 **Objective:** Integrate world-class trends to keep users engaged.
 
-- [ ] **4.1 Dynamic Pacemaker (Notifications)**
-    - **Action:** Smart local notifications ("Read X pages today").
-- [ ] **4.2 The Commitment Receipt**
-    - **Action:** Receipt-style image generation for sharing.
-- [ ] **4.3 Monk Mode**
-    - **Action:** Strict focus timer with ambient sound.
+- [x] **4.1 Dynamic Pacemaker (Smart Notifications) ✅**
+    - **Logic:** `Daily Target = Remaining Pages / Remaining Days`.
+    - **UX:** High-tier copywriting. Not generic; personalized based on progress.
+    - **Action:** Schedule local notifications via `expo-notifications`.
+    - **Implementation:**
+      - Service: `src/lib/NotificationService.ts` (singleton, pacemaker calculation)
+      - Settings UI: `src/screens/NotificationSettingsScreen.tsx`
+      - Integration: DashboardScreen auto-schedules on launch
+      - i18n: Notification copy in ja/en/ko
+    - **Note:** Requires native rebuild (`./run-ios-manual.sh`).
+
+- [x] **4.2 The Commitment Receipt (Shareable Keepsake) ✅**
+    - **Design:** High-end, international aesthetic (Minimalist/Premium). Dark mode only (#0A0A0A background).
+    - **Content:** Book Cover, Date, Duration. **NO penalty amount**. Focus on the asset gained.
+    - **Tech:** Generate image using `react-native-view-shot` + `expo-sharing`.
+    - **Timing:** Auto-generate in Success Modal + accessible from BookDetailScreen.
+    - **Implementation:**
+      - Component: `src/components/receipt/CommitmentReceipt.tsx` (1080x1920px, Instagram Story optimized)
+      - Modal: `src/components/receipt/ReceiptPreviewModal.tsx`
+      - Utils: `src/utils/shareUtils.ts`
+      - Integration: VerificationSuccessModal, BookDetailScreen
+    - **DoD:** User can share achievement certificate from completion modal or Library.
+
+- [ ] **4.3 Monk Mode (Deep Reading Timer)**
+    - **Ambience:** "Bonfire/Crackling Fire" sound loop (High quality).
+    - **Enforcement:** Simple warning toast on app backgrounding/exit.
+    - **Tracking:** Save focus duration to DB (`focus_sessions`) and reflect in user stats.
+
 - [ ] **4.4 Lock Screen Live Activity**
     - **Action:** iOS Dynamic Island widget.
 - [ ] **4.5 Advanced Animation Polish**

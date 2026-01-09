@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   Modal,
   TouchableOpacity,
   Dimensions,
-  ScrollView,
 } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Animated, {
@@ -18,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import i18n from '../i18n';
+import ReceiptPreviewModal from './receipt/ReceiptPreviewModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -28,6 +28,12 @@ interface VerificationSuccessModalProps {
   onClose: () => void;
   onContinue?: () => void;
   onSelectNewBook?: () => void;
+  // Receipt data
+  bookTitle?: string;
+  bookAuthor?: string;
+  bookCoverUrl?: string;
+  completionDate?: Date;
+  readingDays?: number;
 }
 
 export default function VerificationSuccessModal({
@@ -37,10 +43,19 @@ export default function VerificationSuccessModal({
   onClose,
   onContinue,
   onSelectNewBook,
+  bookTitle,
+  bookAuthor,
+  bookCoverUrl,
+  completionDate,
+  readingDays,
 }: VerificationSuccessModalProps) {
   const confettiRef = useRef<any>(null);
   const prevVisibleRef = useRef(false);
-  const [motivationKey, setMotivationKey] = React.useState(1);
+  const [motivationKey, setMotivationKey] = useState(1);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+
+  // Check if receipt data is available
+  const hasReceiptData = bookTitle && completionDate && readingDays !== undefined;
 
   // Animation values
   const scale = useSharedValue(0.95);
@@ -191,6 +206,19 @@ export default function VerificationSuccessModal({
             </Text>
           </View>
 
+          {/* Share Receipt Button */}
+          {hasReceiptData && (
+            <TouchableOpacity
+              style={styles.shareReceiptButton}
+              onPress={() => setShowReceiptModal(true)}
+            >
+              <Ionicons name="share-social" size={18} color="#FF4D00" />
+              <Text style={styles.shareReceiptText}>
+                {i18n.t('receipt.share_button')}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* Continue Reading Button (Primary) - Set next goal for same book */}
           {onContinue && (
             <TouchableOpacity style={styles.button} onPress={onContinue}>
@@ -217,6 +245,21 @@ export default function VerificationSuccessModal({
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {/* Receipt Preview Modal */}
+      {hasReceiptData && (
+        <ReceiptPreviewModal
+          visible={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          bookTitle={bookTitle}
+          bookAuthor={bookAuthor || i18n.t('common.unknown_author')}
+          bookCoverUrl={bookCoverUrl}
+          completionDate={completionDate}
+          readingDays={readingDays}
+          savedAmount={savedAmount}
+          currency={currency}
+        />
+      )}
     </Modal>
   );
 }
@@ -279,6 +322,23 @@ const styles = StyleSheet.create({
   savedNote: {
     fontSize: 12,
     color: '#888',
+  },
+  shareReceiptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FF4D00',
+    marginBottom: 20,
+  },
+  shareReceiptText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF4D00',
   },
   button: {
     backgroundColor: '#000',

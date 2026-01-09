@@ -31,9 +31,9 @@ export default function OnboardingScreen12({ navigation, route }: any) {
             setDeadline(parsed.deadline);
             setPledgeAmount(parsed.pledgeAmount);
             setCurrency(parsed.currency || 'JPY');
-            console.log('Onboarding data loaded from AsyncStorage');
+            console.log('Onboarding data loaded from AsyncStorage in Screen12:', parsed);
           } else {
-            console.warn('No onboarding data found in AsyncStorage');
+            console.warn('No onboarding data found in AsyncStorage in Screen12');
           }
         }
       } catch (error) {
@@ -46,8 +46,15 @@ export default function OnboardingScreen12({ navigation, route }: any) {
 
   // Navigate to next screen after animation completes
   const handleAnimationComplete = useCallback(() => {
-    navigation.navigate('Onboarding13');
-  }, [navigation]);
+    console.log('Navigating to Screen13 with:', { selectedBook, deadline, pledgeAmount });
+    navigation.navigate('Onboarding13', {
+      selectedBook,
+      deadline,
+      pledgeAmount,
+      currency,
+      targetPages: selectedBook?.volumeInfo?.pageCount || 0, // Add page count
+    });
+  }, [navigation, selectedBook, deadline, pledgeAmount, currency]);
 
   return (
     <OnboardingLayout

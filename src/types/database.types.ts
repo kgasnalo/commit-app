@@ -229,6 +229,48 @@ export interface Database {
           }
         ]
       }
+      reading_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          book_id: string | null
+          duration_seconds: number
+          completed_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          book_id?: string | null
+          duration_seconds: number
+          completed_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          book_id?: string | null
+          duration_seconds?: number
+          completed_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reading_sessions_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

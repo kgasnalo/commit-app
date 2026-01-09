@@ -29,7 +29,10 @@
       "package": "com.kgxxx.commitapp",
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM"
       ]
     },
     "web": {
@@ -47,6 +50,12 @@
         "expo-camera",
         {
           "cameraPermission": "ISBNバーコードをスキャンするためにカメラへのアクセスが必要です"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF4D00"
         }
       ]
     ],

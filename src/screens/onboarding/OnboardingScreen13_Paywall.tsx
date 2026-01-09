@@ -36,8 +36,11 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   useEffect(() => {
     const loadOnboardingData = async () => {
       try {
+        console.log('Screen13 route.params:', route.params);
+        
         // route.paramsがあればそれを使用（直接遷移の場合）
         if (route.params?.selectedBook) {
+          console.log('Using route.params data in Screen13');
           setSelectedBook(route.params.selectedBook);
           setDeadline(route.params.deadline);
           setPledgeAmount(route.params.pledgeAmount);
@@ -100,44 +103,86 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       console.log('Subscription status updated');
 
-      // コミットメント作成（selectedBookがある場合のみ）
-      if (selectedBook && deadline && pledgeAmount) {
-        // まず本をbooksテーブルに保存
+      // データソースを確定（stateよりもroute.paramsを優先、なければstate）
+      const bookToCommit = route.params?.selectedBook || selectedBook;
+      const deadlineToCommit = route.params?.deadline || deadline;
+      const pledgeToCommit = route.params?.pledgeAmount || pledgeAmount;
+      const currencyToCommit = route.params?.currency || currency;
+      const targetPagesToCommit = route.params?.targetPages || 0;
+
+      // コミットメント作成（bookToCommitがある場合のみ）
+      if (!bookToCommit || !deadlineToCommit || !pledgeToCommit) {
+        console.error('Missing commitment data:', { bookToCommit, deadlineToCommit, pledgeToCommit });
+        Alert.alert('Error', 'Commitment data is missing. Please restart onboarding.');
+        return;
+      }
+
+      console.log('Creating commitment with:', {
+         deadline: deadlineToCommit,
+         pledgeAmount: pledgeToCommit,
+         bookTitle: bookToCommit.volumeInfo?.title
+      });
+
+      let bookId: string | null = null;
+
+      // 1. まず既存の本を検索
+      const { data: existingBook, error: searchError } = await supabase
+        .from('books')
+        .select('id')
+        .eq('google_books_id', bookToCommit.id)
+        .single();
+
+      if (existingBook) {
+        bookId = existingBook.id;
+        console.log('Found existing book:', bookId);
+      } else {
+        // 2. なければ新規作成
         const bookData = {
-          google_books_id: selectedBook.id,
-          title: selectedBook.volumeInfo?.title || 'Unknown',
-          author: selectedBook.volumeInfo?.authors?.join(', ') || 'Unknown',
-          cover_url: selectedBook.volumeInfo?.imageLinks?.thumbnail || null,
+          google_books_id: bookToCommit.id,
+          title: bookToCommit.volumeInfo?.title || 'Unknown',
+          author: bookToCommit.volumeInfo?.authors?.join(', ') || 'Unknown',
+          cover_url: bookToCommit.volumeInfo?.imageLinks?.thumbnail || null,
         };
 
-        const { data: book, error: bookError } = await supabase
+        const { data: newBook, error: insertError } = await supabase
           .from('books')
-          .upsert(bookData, { onConflict: 'google_books_id' })
+          .insert(bookData)
           .select()
           .single();
 
-        if (bookError) {
-          console.error('Book insert error:', bookError);
-          // 本の保存エラーは無視して続行（後で追加できる）
-        } else if (book) {
-          // コミットメント作成
-          const { error: commitError } = await supabase
-            .from('commitments')
-            .insert({
-              user_id: user.id,
-              book_id: book.id,
-              deadline: deadline,
-              pledge_amount: pledgeAmount,
-              currency: currency,
-              status: 'pending',
-            });
-
-          if (commitError) {
-            console.error('Commitment insert error:', commitError);
-            // コミットメントエラーも無視して続行
-          }
+        if (insertError) {
+          console.error('Book insert error:', insertError);
+        } else if (newBook) {
+          bookId = newBook.id;
+          console.log('Created new book:', bookId);
         }
       }
+
+      // 3. bookIdが取得できていればコミットメント作成
+      if (bookId) {
+        const { error: commitError } = await supabase
+          .from('commitments')
+          .insert({
+            user_id: user.id,
+            book_id: bookId,
+            deadline: deadlineToCommit,
+            pledge_amount: pledgeToCommit,
+            currency: currencyToCommit,
+            status: 'pending',
+            target_pages: targetPagesToCommit,
+          });
+
+        if (commitError) {
+          console.error('Commitment insert error:', commitError);
+          throw new Error(`Commitment creation failed: ${commitError.message}`);
+        } else {
+          console.log('Commitment created successfully');
+        }
+      } else {
+        console.error('Failed to get book ID');
+        throw new Error('Failed to retrieve or create book ID');
+      }
+
 
       // 5. Success (Cinematic COMMIT Reveal)
       await AsyncStorage.removeItem('onboardingData');

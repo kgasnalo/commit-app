@@ -27,8 +27,11 @@ import VerificationScreen from '../screens/VerificationScreen';
 import CommitmentDetailScreen from '../screens/CommitmentDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
+import MonkModeScreen from '../screens/monkmode/MonkModeScreen';
+import MonkModeActiveScreen from '../screens/monkmode/MonkModeActiveScreen';
 
 // Onboarding screens
 import OnboardingScreen0 from '../screens/onboarding/OnboardingScreen0_Welcome';
@@ -73,12 +76,23 @@ function LibraryStackNavigator() {
   );
 }
 
+// Monk Mode Stack Navigator
+function MonkModeStackNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MonkMode" component={MonkModeScreen} />
+      <Stack.Screen name="MonkModeActive" component={MonkModeActiveScreen} />
+    </Stack.Navigator>
+  );
+}
+
 // Settings Stack Navigator
 function SettingsStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
     </Stack.Navigator>
   );
 }
@@ -110,6 +124,16 @@ function MainTabs() {
           tabBarLabel: i18n.t('tabs.home'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="MonkModeTab"
+        component={MonkModeStackNavigator}
+        options={{
+          tabBarLabel: i18n.t('tabs.monkmode'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="timer-outline" size={size} color={color} />
           ),
         }}
       />

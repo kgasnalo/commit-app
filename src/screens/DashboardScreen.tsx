@@ -29,6 +29,7 @@ import {
   RawCommitmentWithBook,
   CommitmentWithRange,
 } from '../lib/commitmentHelpers';
+import { NotificationService } from '../lib/NotificationService';
 
 type BookData = {
   id: string;
@@ -105,6 +106,17 @@ export default function DashboardScreen({ navigation }: any) {
       }
     };
     checkFadeIn();
+
+    // Initialize and schedule notifications (Phase 4.1 - Dynamic Pacemaker)
+    const initNotifications = async () => {
+      try {
+        await NotificationService.initialize();
+        await NotificationService.scheduleAllNotifications();
+      } catch (error) {
+        console.warn('[Dashboard] Notification initialization failed:', error);
+      }
+    };
+    initNotifications();
   }, []);
 
   // Update locale when screen is focused to reflect language changes

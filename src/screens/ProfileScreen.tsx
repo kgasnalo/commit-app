@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,26 +12,39 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Dimensions,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { BarChart } from 'react-native-chart-kit';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { colors } from '../theme/colors';
 import { Database } from '../types/database.types';
+import { useLanguage } from '../contexts/LanguageContext';
+import { MonkModeService } from '../lib/MonkModeService';
 
 type UserProfile = Database['public']['Tables']['users']['Row'];
 
+const screenWidth = Dimensions.get('window').width;
+
 export default function ProfileScreen({ navigation }: any) {
+  const { language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [totalReadingTime, setTotalReadingTime] = useState(0);
+  const [monthlyStats, setMonthlyStats] = useState<{ labels: string[]; data: number[] }>({ labels: [], data: [] });
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
 
   const fetchProfile = async () => {
     try {
@@ -47,6 +60,14 @@ export default function ProfileScreen({ navigation }: any) {
       if (error) throw error;
       setProfile(data);
       setNewUsername(data?.username || '');
+
+      // Fetch total reading time from Monk Mode sessions
+      const readingTime = await MonkModeService.getTotalReadingTime();
+      setTotalReadingTime(readingTime);
+
+      // Fetch monthly stats
+      const stats = await MonkModeService.getMonthlyStats();
+      setMonthlyStats(stats);
     } catch (error) {
       console.error('Error fetching profile:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('errors.unknown'));
@@ -86,11 +107,51 @@ export default function ProfileScreen({ navigation }: any) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : i18n.language === 'ko' ? 'ko-KR' : 'en-US', {
+    return date.toLocaleDateString(language === 'ja' ? 'ja-JP' : language === 'ko' ? 'ko-KR' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  const formatReadingTime = (totalSeconds: number): string => {
+    return MonkModeService.formatDurationString(totalSeconds, language);
+  };
+
+  // Debug function to add dummy data
+  const addDebugData = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const sessions = [];
+      const now = new Date();
+      
+      // Generate 10 random sessions over the last 6 months
+      for (let i = 0; i < 10; i++) {
+        const date = new Date(now);
+        date.setMonth(date.getMonth() - Math.floor(Math.random() * 6));
+        date.setDate(Math.floor(Math.random() * 28) + 1);
+        
+        sessions.push({
+          user_id: user.id,
+          duration_seconds: Math.floor(Math.random() * 3600) + 1800, // 30-90 minutes
+          completed_at: date.toISOString(),
+        });
+      }
+
+      const { error } = await supabase.from('reading_sessions').insert(sessions);
+      if (error) throw error;
+
+      Alert.alert('Debug', 'Test data added successfully. Refreshing...');
+      fetchProfile();
+    } catch (error) {
+      console.error('Debug error:', error);
+      Alert.alert('Error', 'Failed to add debug data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -111,7 +172,11 @@ export default function ProfileScreen({ navigation }: any) {
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             <Ionicons name="person-circle" size={80} color={colors.text.secondary} />
@@ -133,6 +198,55 @@ export default function ProfileScreen({ navigation }: any) {
               {profile ? formatDate(profile.created_at) : '---'}
             </Text>
           </View>
+
+          {totalReadingTime > 0 && (
+            <View style={styles.infoSection}>
+              <Text style={styles.label}>{i18n.t('profile.total_reading_time')}</Text>
+              <Text style={[styles.value, styles.readingTimeValue]}>
+                {formatReadingTime(totalReadingTime)}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Monthly Stats Chart */}
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>{i18n.t('profile.monthly_reading_trend') || 'Monthly Trend (Hours)'}</Text>
+          {monthlyStats.data.length > 0 && monthlyStats.data.some(d => d > 0) ? (
+            <BarChart
+              data={{
+                labels: monthlyStats.labels,
+                datasets: [{ data: monthlyStats.data }],
+              }}
+              width={screenWidth - 48} // Padding 24 * 2
+              height={220}
+              yAxisLabel=""
+              yAxisSuffix="h"
+              chartConfig={{
+                backgroundColor: colors.background.secondary,
+                backgroundGradientFrom: colors.background.secondary,
+                backgroundGradientTo: colors.background.secondary,
+                decimalPlaces: 1,
+                color: (opacity = 1) => `rgba(255, 77, 0, ${opacity})`, // Accent color
+                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                style: {
+                  borderRadius: 16,
+                },
+                barPercentage: 0.7,
+              }}
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+              }}
+              fromZero
+              showValuesOnTopOfBars
+            />
+          ) : (
+            <View style={styles.emptyChartContainer}>
+              <Ionicons name="bar-chart-outline" size={40} color={colors.text.muted} />
+              <Text style={styles.emptyChartText}>{i18n.t('monkmode.no_sessions_yet')}</Text>
+            </View>
+          )}
         </View>
 
         <TouchableOpacity 
@@ -145,7 +259,17 @@ export default function ProfileScreen({ navigation }: any) {
           <MaterialIcons name="edit" size={20} color="#fff" />
           <Text style={styles.editButtonText}>{i18n.t('profile.edit_username')}</Text>
         </TouchableOpacity>
-      </View>
+
+        {/* Debug Button */}
+        <TouchableOpacity 
+          style={styles.debugButton}
+          onPress={addDebugData}
+        >
+          <Text style={styles.debugButtonText}>🛠️ [DEBUG] Generate Test Data</Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
 
       {/* Edit Username Modal */}
       <Modal
@@ -237,8 +361,36 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   content: {
-    flex: 1,
     padding: 24,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  chartContainer: {
+    marginBottom: 24,
+    alignItems: 'center',
+    backgroundColor: colors.background.secondary,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderBottomColor: colors.border.default,
+  },
+  chartTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
+  },
+  emptyChartContainer: {
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyChartText: {
+    color: colors.text.muted,
+    fontSize: 14,
   },
   profileCard: {
     backgroundColor: colors.background.secondary,
@@ -267,6 +419,10 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontWeight: '500',
   },
+  readingTimeValue: {
+    color: colors.accent.primary,
+    fontWeight: '700',
+  },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -280,6 +436,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  debugButton: {
+    marginTop: 24,
+    padding: 12,
+    backgroundColor: '#333',
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  debugButtonText: {
+    color: '#aaa',
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   // Modal Styles
   modalOverlay: {

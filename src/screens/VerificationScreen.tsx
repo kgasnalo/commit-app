@@ -29,6 +29,12 @@ export default function VerificationScreen({ route, navigation }: any) {
   const [savedAmount, setSavedAmount] = useState(0);
   const [currency, setCurrency] = useState('JPY');
   const [bookId, setBookId] = useState<string | null>(null);
+  // Receipt data
+  const [receiptBookTitle, setReceiptBookTitle] = useState('');
+  const [receiptBookAuthor, setReceiptBookAuthor] = useState('');
+  const [receiptBookCoverUrl, setReceiptBookCoverUrl] = useState<string | undefined>();
+  const [receiptCompletionDate, setReceiptCompletionDate] = useState<Date>(new Date());
+  const [receiptReadingDays, setReceiptReadingDays] = useState(0);
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -87,10 +93,20 @@ export default function VerificationScreen({ route, navigation }: any) {
     setLoading(true);
 
     try {
-      // Fetch commitment details for the celebration modal
+      // Fetch commitment details with book info for the celebration modal and receipt
       const { data: commitmentData, error: fetchError } = await supabase
         .from('commitments')
-        .select('pledge_amount, currency, book_id')
+        .select(`
+          pledge_amount,
+          currency,
+          book_id,
+          created_at,
+          books (
+            title,
+            author,
+            cover_url
+          )
+        `)
         .eq('id', commitmentId)
         .single();
 
@@ -100,6 +116,22 @@ export default function VerificationScreen({ route, navigation }: any) {
 
       // Store book_id for continue flow
       setBookId(commitmentData.book_id);
+
+      // Calculate reading days
+      const createdAt = new Date(commitmentData.created_at);
+      const completionDate = new Date();
+      const readingDays = Math.max(
+        1,
+        Math.ceil((completionDate.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
+      );
+
+      // Set receipt data
+      const bookData = commitmentData.books as { title: string; author: string; cover_url?: string } | null;
+      setReceiptBookTitle(bookData?.title || bookTitle);
+      setReceiptBookAuthor(bookData?.author || '');
+      setReceiptBookCoverUrl(bookData?.cover_url ?? undefined);
+      setReceiptCompletionDate(completionDate);
+      setReceiptReadingDays(readingDays);
 
       // 画像をSupabase Storageにアップロード
       const fileName = `verification_${commitmentId}_${Date.now()}.jpg`;
@@ -273,6 +305,11 @@ export default function VerificationScreen({ route, navigation }: any) {
         onClose={handleModalClose}
         onContinue={bookId ? handleContinue : undefined}
         onSelectNewBook={handleSelectNewBook}
+        bookTitle={receiptBookTitle}
+        bookAuthor={receiptBookAuthor}
+        bookCoverUrl={receiptBookCoverUrl}
+        completionDate={receiptCompletionDate}
+        readingDays={receiptReadingDays}
       />
     </SafeAreaView>
   );

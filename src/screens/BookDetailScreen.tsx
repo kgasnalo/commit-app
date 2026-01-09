@@ -14,12 +14,13 @@ import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import BookDetailSkeleton from '../components/BookDetailSkeleton';
+import ReceiptPreviewModal from '../components/receipt/ReceiptPreviewModal';
 
 interface Book {
   id: string;
   title: string;
   author: string;
-  cover_image_url?: string;
+  cover_url: string | null;
   page_count?: number;
 }
 
@@ -81,6 +82,7 @@ export default function BookDetailScreen() {
   const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [editedMemo, setEditedMemo] = useState('');
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   useEffect(() => {
     loadBookDetail();
@@ -527,10 +529,38 @@ export default function BookDetailScreen() {
             <Text style={styles.memoText}>{verificationLog.memo_text}</Text>
           </View>
         )}
+
+        {/* Share Receipt Button - only for completed commitments */}
+        {isSuccess && (
+          <TouchableOpacity
+            style={styles.shareReceiptButton}
+            onPress={() => setShowReceiptModal(true)}
+          >
+            <Ionicons name="share-social" size={20} color="#FF4D00" />
+            <Text style={styles.shareReceiptText}>
+              {i18n.t('receipt.share_button')}
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       {renderTagEditModal()}
       {renderMemoEditModal()}
+
+      {/* Receipt Preview Modal */}
+      {isSuccess && (
+        <ReceiptPreviewModal
+          visible={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          bookTitle={book.title}
+          bookAuthor={book.author || i18n.t('common.unknown_author')}
+          bookCoverUrl={book.cover_url ?? undefined}
+          completionDate={commitment.updated_at ? new Date(commitment.updated_at) : new Date()}
+          readingDays={readingDays}
+          savedAmount={commitment.pledge_amount}
+          currency={commitment.currency}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -873,5 +903,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  shareReceiptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 30,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FF4D00',
+    backgroundColor: 'transparent',
+  },
+  shareReceiptText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF4D00',
   },
 });

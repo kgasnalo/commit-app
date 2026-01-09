@@ -1,29 +1,35 @@
 # Handoff: Session 2026-01-09
 
 ## Current Goal
-**Phase 3.5 "User Profile & Settings" - COMPLETED & DEPLOYED**
+**Phase 4.1 "Dynamic Pacemaker" Smart Notifications - COMPLETED ✅**
 
-All Phase 1-3.5 features are now implemented. Ready for Phase 4 or App Store preparation.
+Local push notifications for personalized reading reminders:
+1. NotificationService singleton with pacemaker calculation
+2. Daily reading target: `Remaining Pages ÷ Remaining Days`
+3. Personalized notification copy (on-track, behind, urgent, final day)
+4. Notification settings screen with time picker and **dynamic preview**
+5. Auto-schedule on app launch (DashboardScreen)
+
+**Previous: Phase 4.2 "Commitment Receipt" Premium Redesign - COMPLETED ✅**
 
 ---
 
 ## Current Critical Status
 
-### ⚠️ REQUIRES APP REBUILD (from Phase 1.9)
-`expo-camera` is a native module and **does not work in Expo Go**. You must rebuild the development client to test the barcode scanner:
+### ⚠️ REQUIRES APP REBUILD (Native Modules)
+Both `expo-camera` (Phase 1.9) and `expo-notifications` (Phase 4.1) are native modules and **do not work in Expo Go**. You must rebuild the development client:
 
 ```bash
-# iOS
-npx expo run:ios
-# or
+# iOS (Preferred)
 ./run-ios-manual.sh
 
-# Android
+# Or standard
+npx expo run:ios
 npx expo run:android
 ```
 
 ### Placeholder URLs to Replace
-The following URLs in `SettingsScreen.tsx` are placeholders and need real destinations:
+The following URLs in `SettingsScreen.tsx` need real destinations:
 - `https://commit-app.vercel.app/billing` - Payment management
 - `https://commit-app.vercel.app/terms` - Terms of Service
 - `https://commit-app.vercel.app/privacy` - Privacy Policy
@@ -40,6 +46,8 @@ The following URLs in `SettingsScreen.tsx` are placeholders and need real destin
 | `colors.border` type error | Border is object with `.default`/`.selected` | Use `colors.border.default` |
 | AlertButton `fontWeight` error | React Native AlertButton doesn't support fontWeight | Remove the property |
 | i18n `defaultValue` anti-pattern | Bypasses translations | Remove defaultValue, use key only |
+| `cover_image_url` type error | Database uses `cover_url` | Use `cover_url` in interfaces |
+| `shouldShowBanner/shouldShowList` missing | expo-notifications API change | Add both properties to notification handler |
 
 ---
 
@@ -47,35 +55,55 @@ The following URLs in `SettingsScreen.tsx` are placeholders and need real destin
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Review Gemini CLI implementation | ✅ Done | Phase 3.5 code review |
-| Fix TypeScript errors | ✅ Done | 5 errors in ProfileScreen + SettingsScreen |
-| Deploy delete-account Edge Function | ✅ Done | `supabase functions deploy delete-account` |
-| Commit & Push | ✅ Done | `cec55e6d` on main |
+| expo-notifications install | ✅ Done | SDK 54 compatible |
+| app.json notification config | ✅ Done | Plugin + Android permissions |
+| NotificationService singleton | ✅ Done | Pacemaker calculation, scheduling |
+| i18n keys (ja/en/ko) | ✅ Done | Personalized notification copy |
+| NotificationSettingsScreen | ✅ Done | Toggle + time picker |
+| Dynamic preview content | ✅ Done | Fetches active commitment book title |
+| AppNavigator integration | ✅ Done | Added to SettingsStack |
+| SettingsScreen menu item | ✅ Done | Notifications section |
+| DashboardScreen init | ✅ Done | Auto-schedule on launch |
+| ProfileScreen bug fix | ✅ Done | Fixed `i18n.language` → `useLanguage()` |
 
-### Edge Functions Deployed
-| Function | Auth Required | Status |
-|----------|---------------|--------|
-| `isbn-lookup` | No (`--no-verify-jwt`) | ✅ Deployed |
-| `use-lifeline` | Yes | ✅ Deployed |
-| `delete-account` | Yes | ✅ Deployed |
+### Files Created
+| File | Purpose |
+|------|---------|
+| `src/lib/NotificationService.ts` | Singleton service for notification scheduling |
+| `src/screens/NotificationSettingsScreen.tsx` | Settings UI with dynamic preview |
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `app.json` | Added expo-notifications plugin and Android permissions |
+| `src/navigation/AppNavigator.tsx` | Added NotificationSettingsScreen to SettingsStack |
+| `src/screens/SettingsScreen.tsx` | Added Notifications section and menu item |
+| `src/screens/DashboardScreen.tsx` | Added notification initialization on mount |
+| `src/screens/ProfileScreen.tsx` | Fixed `i18n.language` bug using `useLanguage()` hook |
+| `src/i18n/locales/ja.json` | Added notifications section with all keys |
+| `src/i18n/locales/en.json` | Added notifications section with all keys |
+| `src/i18n/locales/ko.json` | Added notifications section with all keys |
 
 ---
 
 ## Immediate Next Steps
 
-1. **Rebuild App & Test All Features**:
-   - Run `./run-ios-manual.sh` or `npx expo run:ios`
-   - Test barcode scanner (Phase 1.9)
-   - Test Profile screen (Phase 3.5)
-   - Test Settings links and account deletion
+1. **Native Rebuild Required** (expo-notifications is a native module):
+   ```bash
+   ./run-ios-manual.sh
+   ```
+   - Test notification permission flow
+   - Settings → Notifications → Toggle and time picker
+   - Verify dynamic preview shows actual book title
+   - Create commitment → Wait for scheduled notification
 
-2. **Create Web Portal (Phase 7.1)**:
+2. **Phase 4 Remaining Features**:
+   - 4.3: Monk Mode (Deep Reading Timer)
+   - 4.4: Lock Screen Live Activity
+
+3. **Or proceed to Phase 7: Web Portal**:
    - Next.js app on Vercel for payment management
-   - Replace placeholder URLs
-
-3. **Or proceed to Phase 4: Engagement**:
-   - 4.1: Dynamic Pacemaker (Notifications)
-   - 4.2: The Commitment Receipt
+   - Replace placeholder URLs in SettingsScreen
 
 ---
 
@@ -86,6 +114,8 @@ The following URLs in `SettingsScreen.tsx` are placeholders and need real destin
 ## Key File Locations
 | Feature | Files |
 |---------|-------|
+| **Smart Notifications** | `src/lib/NotificationService.ts`, `src/screens/NotificationSettingsScreen.tsx` |
+| **Commitment Receipt** | `src/components/receipt/CommitmentReceipt.tsx`, `src/components/receipt/ReceiptPreviewModal.tsx` |
 | Profile | `src/screens/ProfileScreen.tsx` |
 | Settings | `src/screens/SettingsScreen.tsx` |
 | Account Deletion | `supabase/functions/delete-account/index.ts` |

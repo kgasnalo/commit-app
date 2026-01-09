@@ -151,9 +151,11 @@
   supabase db push                 # Apply pending migrations
   supabase functions deploy <name> # Deploy Edge Functions
   ```
-- **expo-camera Native Rebuild:** `expo-camera` is a native module and does NOT work in Expo Go. After installing or updating expo-camera, you MUST rebuild the development client:
+- **Native Modules Require Rebuild:** Certain Expo packages are native modules and do NOT work in Expo Go. After installing or updating these packages, you MUST rebuild the development client:
+  - `expo-camera` (barcode scanning)
+  - `expo-notifications` (push notifications)
   ```bash
-  npx expo run:ios    # iOS rebuild
+  npx expo run:ios    # iOS rebuild (or ./run-ios-manual.sh)
   npx expo run:android # Android rebuild
   ```
 - **CameraView Overlay Touch Handling:** When placing interactive UI (buttons, headers) over a CameraView, touch events may be blocked by overlay containers. Use this pattern:
