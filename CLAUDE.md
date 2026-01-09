@@ -66,3 +66,34 @@
   content:     { position: 'absolute', ...absoluteFill, zIndex: 100, elevation: 100 }
   topLayer:    { position: 'absolute', ...absoluteFill, zIndex: 9999, elevation: 9999 }
   ```
+- **Flexbox Hierarchy & i18n Layout Overlap:** When visually adjacent elements are placed in separate Flex containers (e.g., `body` vs `footer` in OnboardingLayout), they may overlap because Flexbox calculates each container's layout independently. This issue is often invisible in Japanese (shorter text) but severe in English/Korean (2-3x longer text).
+  - **Problem Pattern:**
+    ```
+    body (flex: 1)
+      └── sliderContainer
+          └── labelsContainer (¥0, ¥1,000...)
+    footer
+      └── ruleTextContainer (explanation text) ← Separate hierarchy = overlap risk
+    ```
+  - **Solution:** Place related UI elements in the SAME parent container to ensure proper vertical flow:
+    ```
+    body (flex: 1)
+      └── sliderContainer
+          ├── labelsContainer
+          └── amountDisplay
+    footer
+      └── donationCard
+          └── ruleText (integrated) ← Same container = no overlap
+    ```
+  - **Text Wrapping:** Use `numberOfLines={0}` for dynamic text that varies significantly across languages. Avoid `numberOfLines={2}` with `adjustsFontSizeToFit` for long English sentences—they will break layout.
+  - **Always test layouts with the longest expected language (typically English).**
+- **flexWrap + flex: 1 Height Calculation Bug:** When using `flexWrap: 'wrap'` on a container, do NOT use `flex: 1` on child elements. The combination causes incorrect height calculation, making subsequent elements overlap.
+  - **Problem:** `flex: 1` + `minWidth: '45%'` in a `flexWrap` container → child heights not calculated correctly → text below overlaps buttons
+  - **Solution:** Use explicit `width: '48%'` (or similar) instead of `flex: 1` for wrapped children:
+    ```typescript
+    // BAD - causes overlap
+    amountButton: { flex: 1, minWidth: '45%', ... }
+
+    // GOOD - proper height calculation
+    amountButton: { width: '48%', ... }
+    ```
