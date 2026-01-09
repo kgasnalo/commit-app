@@ -174,4 +174,26 @@
   - `pointerEvents="box-none"`: Container ignores touches, but children can receive them
   - `pointerEvents="auto"`: Container and children receive touches normally
   - Always add `hitSlop` to small touch targets for better UX
+- **Theme Colors Structure:** The `colors` object in `src/theme/colors.ts` uses nested structure. Do NOT use flat references:
+  ```typescript
+  // BAD - these don't exist
+  colors.primary
+  colors.border
+
+  // GOOD - use nested paths
+  colors.accent.primary      // #FF4D00 (orange)
+  colors.background.primary  // #0A0A0A (dark)
+  colors.text.primary        // #FFFFFF (white)
+  colors.border.default      // #333333
+  colors.status.error        // #FF3D00
+  ```
+- **Language Detection:** Do NOT use `i18n.language` directly (property doesn't exist on I18n type). Use the `useLanguage()` hook from `LanguageContext`:
+  ```typescript
+  // BAD
+  const locale = i18n.language === 'ja' ? 'ja-JP' : 'en-US';
+
+  // GOOD
+  const { language } = useLanguage();
+  const locale = language === 'ja' ? 'ja-JP' : 'en-US';
+  ```
 
