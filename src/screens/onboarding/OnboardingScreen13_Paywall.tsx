@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
-import PrimaryButton from '../../components/onboarding/PrimaryButton';
+import SlideToCommit from '../../components/onboarding/SlideToCommit';
+import CinematicCommitReveal from '../../components/onboarding/CinematicCommitReveal';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase, triggerAuthRefresh } from '../../lib/supabase';
 import i18n from '../../i18n';
@@ -29,6 +30,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const [currency, setCurrency] = useState<string>('JPY');
   const [selectedPlan, setSelectedPlan] = useState<Plan>('yearly');
   const [loading, setLoading] = useState(false);
+  const [showWarpTransition, setShowWarpTransition] = useState(false);
 
   // オンボーディングデータを読み込む
   useEffect(() => {
@@ -70,16 +72,15 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       if (authError) {
         console.error('Auth error:', authError);
-        throw new Error('認証エラーが発生しました。再度ログインしてください。');
+        throw new Error(i18n.t('paywall.auth_error'));
       }
 
       if (!user) {
         console.error('No user found');
-        // ユーザーがいない場合、ログイン画面に戻す
         Alert.alert(
-          'セッションエラー',
-          'ログイン状態が確認できません。再度ログインしてください。',
-          [{ text: 'OK', onPress: () => navigation.navigate('Onboarding0') }]
+          i18n.t('paywall.session_error'),
+          i18n.t('paywall.session_invalid'),
+          [{ text: i18n.t('common.ok'), onPress: () => navigation.navigate('Onboarding0') }]
         );
         return;
       }
@@ -138,43 +139,48 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         }
       }
 
-      // AsyncStorageをクリーンアップ
+      // 5. Success (Warp Speed Transition)
       await AsyncStorage.removeItem('onboardingData');
-      console.log('Onboarding data cleared from AsyncStorage');
 
-      // AppNavigatorに認証状態の再チェックを通知
-      // これによりisSubscribedがtrueに更新され、MainTabsスタックに切り替わる
-      triggerAuthRefresh();
-
-      // 成功メッセージを表示
-      Alert.alert(
-        i18n.t('paywall.welcome'),
-        i18n.t('paywall.registration_complete'),
-        [{
-          text: i18n.t('common.ok'),
-          // triggerAuthRefresh()が呼ばれたことで、
-          // AppNavigatorが自動的にMainTabsスタックに切り替わる
-        }]
-      );
+      // Start warp speed transition
+      navigation.navigate('WarpTransition', {
+        onComplete: () => {
+          // This callback is called after the warp animation finishes
+          // Update auth state in AppNavigator to switch stacks
+          triggerAuthRefresh(); 
+        }
+      });
 
     } catch (error: unknown) {
       console.error('Subscription error:', error);
-      Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.subscription_failed', { defaultValue: 'サブスクリプションの開始に失敗しました' }));
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.subscription_failed'));
     } finally {
       setLoading(false);
     }
   };
 
+  // ワープ遷移完了時のコールバック
+  const handleWarpComplete = useCallback(() => {
+    // AppNavigatorに認証状態の再チェックを通知
+    // これによりisSubscribedがtrueに更新され、MainTabsスタックに切り替わる
+    triggerAuthRefresh();
+  }, []);
+
   return (
-    <OnboardingLayout
+    <>
+      <CinematicCommitReveal
+        visible={showWarpTransition}
+        onComplete={handleWarpComplete}
+      />
+      <OnboardingLayout
       currentStep={13}
       totalSteps={14}
       title={i18n.t('onboarding.screen13_title')}
       footer={
         <View>
-          <PrimaryButton
-            label={selectedPlan === 'yearly' ? i18n.t('onboarding.screen13_start_annual') : i18n.t('onboarding.screen13_monthly_note')}
-            onPress={handleSubscribe}
+          <SlideToCommit
+            label={i18n.t('onboarding.screen13_slide_to_commit')}
+            onComplete={handleSubscribe}
             loading={loading}
           />
           <View style={styles.guarantees}>
@@ -213,7 +219,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_monthly_note')}</Text>
         </TouchableOpacity>
       </View>
-    </OnboardingLayout>
+      </OnboardingLayout>
+    </>
   );
 }
 

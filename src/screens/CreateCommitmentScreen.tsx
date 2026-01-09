@@ -42,12 +42,12 @@ import { getErrorMessage } from '../utils/errorUtils';
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
 // 通貨オプション
-const CURRENCY_OPTIONS: { code: Currency; symbol: string; name: string }[] = [
-  { code: 'JPY', symbol: '¥', name: '日本円' },
-  { code: 'USD', symbol: '$', name: '米ドル' },
-  { code: 'EUR', symbol: '€', name: 'ユーロ' },
-  { code: 'GBP', symbol: '£', name: '英ポンド' },
-  { code: 'KRW', symbol: '₩', name: '韓国ウォン' },
+const CURRENCY_OPTIONS: { code: Currency; symbol: string }[] = [
+  { code: 'JPY', symbol: '¥' },
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'KRW', symbol: '₩' },
 ];
 
 // 通貨ごとの金額オプション
@@ -277,7 +277,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       if (progress.totalPagesRead >= 950) {
         setContinueInfoMessage(
           i18n.t('commitment.progress_near_max', {
-            defaultValue: 'すごい！この本はすでに{{pages}}ページ読みました。',
             pages: progress.totalPagesRead,
           })
         );
@@ -308,7 +307,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       console.error('[ContinueFlow] Error:', error);
       Alert.alert(
         i18n.t('common.error'),
-        i18n.t('errors.continue_flow_failed', { defaultValue: '書籍データの読み込みに失敗しました。' })
+        i18n.t('errors.continue_flow_failed')
       );
       // Fall back to normal flow
       setIsContinueFlow(false);
@@ -344,12 +343,12 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
   const searchBooks = async () => {
     if (!searchQuery.trim()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.search_keyword_required', { defaultValue: '検索キーワードを入力してください。' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.search_keyword_required'));
       return;
     }
 
     if (!GOOGLE_API_KEY) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.google_api_not_configured', { defaultValue: '書籍検索機能は現在利用できません。' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.google_api_not_configured'));
       return;
     }
 
@@ -363,11 +362,11 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       if (data.items && data.items.length > 0) {
         setSearchResults(data.items);
       } else {
-        Alert.alert(i18n.t('errors.no_results', { defaultValue: '検索結果なし' }), i18n.t('errors.no_books_found', { defaultValue: '該当する書籍が見つかりませんでした。' }));
+        Alert.alert(i18n.t('errors.no_results'), i18n.t('errors.no_books_found'));
         setSearchResults([]);
       }
     } catch (error: unknown) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.search_failed', { defaultValue: '書籍の検索に失敗しました。' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.search_failed'));
       console.error('Search error:', error);
     } finally {
       setSearching(false);
@@ -396,8 +395,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       // 1ヶ月以上先のチェック
       if (selectedDay > maxDate) {
         Alert.alert(
-          i18n.t('errors.deadline_error', { defaultValue: '期限エラー' }),
-          i18n.t('errors.deadline_max_one_month', { defaultValue: '期限は最大1ヶ月先までです。' }),
+          i18n.t('errors.deadline_error'),
+          i18n.t('errors.deadline_max_one_month'),
           [{ text: i18n.t('common.ok') }]
         );
         return;
@@ -409,8 +408,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       if (selectedDay < tomorrow) {
         Alert.alert(
-          i18n.t('errors.deadline_error', { defaultValue: '期限エラー' }),
-          i18n.t('errors.deadline_tomorrow_or_later', { defaultValue: '期限は明日以降を選択してください。' }),
+          i18n.t('errors.deadline_error'),
+          i18n.t('errors.deadline_tomorrow_or_later'),
           [{ text: i18n.t('common.ok') }]
         );
         return;
@@ -422,22 +421,22 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
   const handleCreateCommitment = async () => {
     if (!selectedBook) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.select_book', { defaultValue: '書籍を選択してください。' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.select_book'));
       return;
     }
 
     if (!pledgeAmount) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.select_penalty', { defaultValue: 'ペナルティ金額を選択してください。' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.select_penalty'));
       return;
     }
 
     if (!agreedToPenalty) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.agree_penalty', { defaultValue: 'ペナルティに同意してください。' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.agree_penalty'));
       return;
     }
 
     if (deadline < new Date()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.deadline_future', { defaultValue: '期限は現在より後の日付を選択してください。' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.deadline_future'));
       return;
     }
 
@@ -446,7 +445,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       Alert.alert(
         i18n.t('common.error'),
         i18n.t('errors.page_count_overlap', {
-          defaultValue: 'ページ目標は前回の読了ページ数（{{pages}}ページ）より多く設定してください。',
           pages: totalPagesRead,
         })
       );
@@ -500,7 +498,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           .insert({
             google_books_id: selectedBook.id,
             title: selectedBook.volumeInfo.title,
-            author: selectedBook.volumeInfo.authors?.join(', ') || '不明',
+            author: selectedBook.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author'),
             cover_url: coverUrl,
           })
           .select('id')
@@ -560,8 +558,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       Alert.alert(
         i18n.t('common.success'),
         i18n.t('commitment.success_message', {
-          defaultValue: `コミットメントを作成しました。\n期限: ${deadline.toLocaleDateString('ja-JP')}\nペナルティ: ${currencySymbol}${pledgeAmount.toLocaleString()}`,
-          deadline: deadline.toLocaleDateString('ja-JP'),
+          deadline: deadline.toLocaleDateString(),
           penalty: `${currencySymbol}${pledgeAmount.toLocaleString()}`
         }),
         [
@@ -575,7 +572,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       console.error('[CreateCommitment] Error:', error);
       Alert.alert(
         i18n.t('common.error'),
-        getErrorMessage(error) || i18n.t('errors.create_commitment_failed', { defaultValue: 'コミットメントの作成に失敗しました。' })
+        getErrorMessage(error) || i18n.t('errors.create_commitment_failed')
       );
     } finally {
       console.log('[CreateCommitment] Finished (setCreating(false))');
@@ -591,7 +588,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       <BookThumbnail uri={item.volumeInfo.imageLinks?.thumbnail || item.volumeInfo.imageLinks?.smallThumbnail} />
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle} numberOfLines={2}>{item.volumeInfo.title}</Text>
-        <Text style={styles.bookAuthor}>{item.volumeInfo.authors?.join(', ') || '著者不明'}</Text>
+        <Text style={styles.bookAuthor}>{item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author')}</Text>
       </View>
       <MaterialIcons name="chevron-right" size={24} color="#ccc" />
     </TouchableOpacity>
@@ -622,7 +619,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
             <View style={styles.continueLoadingContainer}>
               <ActivityIndicator color="#000" />
               <Text style={styles.continueLoadingText}>
-                {i18n.t('commitment.loading_book_data', { defaultValue: '書籍データを読み込み中...' })}
+                {i18n.t('commitment.loading_book_data')}
               </Text>
             </View>
           ) : selectedBook ? (
@@ -637,7 +634,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                 {isContinueFlow && totalPagesRead > 0 && (
                   <Text style={styles.progressInfo}>
                     {i18n.t('commitment.pages_read_so_far', {
-                      defaultValue: 'これまでに{{pages}}ページ読了',
                       pages: totalPagesRead,
                     })}
                   </Text>
@@ -734,7 +730,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           {isContinueFlow && totalPagesRead > 0 && (
             <Text style={styles.sliderMinNote}>
               {i18n.t('commitment.slider_min_note', {
-                defaultValue: '※ 前回までに{{pages}}ページ読了済み。{{next}}ページ目から設定できます。',
                 pages: totalPagesRead,
                 next: totalPagesRead + 1,
               })}
@@ -770,7 +765,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                     currency === curr.code && styles.currencyButtonTextSelected,
                   ]}
                 >
-                  {curr.symbol} {curr.code}
+                  {curr.symbol} {i18n.t(`currencies.${curr.code}`)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -1108,13 +1103,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   amountButton: {
-    width: '48%',
+    flex: 1,
+    minWidth: '45%',
     paddingVertical: 16,
     backgroundColor: '#f9f9f9',
     borderWidth: 1,
     borderColor: '#eee',
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   amountButtonSelected: {
     backgroundColor: '#000',

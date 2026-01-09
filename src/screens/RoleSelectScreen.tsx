@@ -45,28 +45,35 @@ export default function RoleSelectScreen({ navigation }: Props) {
     return <Image source={{ uri }} style={styles.bookCover} />;
   };
 
-  const renderBookItem = ({ item }: { item: Book }) => (
-    <View style={styles.bookCard}>
-      <BookThumbnail uri={item.cover_url} />
-      <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>{item.author}</Text>
+  const renderBookItem = ({ item }: { item: Book }) => {
+    // Try to get localized title/author using the ID
+    // If not found, fall back to the item's properties
+    const localizedTitle = i18n.t(`recommendations.books.${item.id}.title`, { defaultValue: item.title });
+    const localizedAuthor = i18n.t(`recommendations.books.${item.id}.author`, { defaultValue: item.author });
+
+    return (
+      <View style={styles.bookCard}>
+        <BookThumbnail uri={item.cover_url} />
+        <View style={styles.bookInfo}>
+          <Text style={styles.bookTitle} numberOfLines={2}>{localizedTitle}</Text>
+          <Text style={styles.bookAuthor}>{localizedAuthor}</Text>
+          <TouchableOpacity
+            style={styles.amazonButton}
+            onPress={() => openAmazon(item.amazon_link)}
+          >
+            <Text style={styles.amazonButtonText}>{i18n.t('book_search.buy_on_amazon')}</Text>
+            <Feather name="external-link" color="#666" size={14} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
-          style={styles.amazonButton}
-          onPress={() => openAmazon(item.amazon_link)}
+          style={styles.selectBookButton}
+          onPress={() => handleBookSelect(item)}
         >
-          <Text style={styles.amazonButtonText}>{i18n.t('book_search.buy_on_amazon')}</Text>
-          <Feather name="external-link" color="#666" size={14} style={{ marginLeft: 4 }} />
+          <Text style={styles.selectBookButtonText}>{i18n.t('book_search.select')}</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={styles.selectBookButton}
-        onPress={() => handleBookSelect(item)}
-      >
-        <Text style={styles.selectBookButtonText}>{i18n.t('book_search.select')}</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

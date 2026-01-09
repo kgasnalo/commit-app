@@ -26,7 +26,9 @@ type Book = {
   };
 };
 
-export default function OnboardingScreen3({ navigation }: any) {
+export default function OnboardingScreen3({ navigation, route }: any) {
+  const { tsundokuCount } = route.params || {};
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,8 +54,7 @@ export default function OnboardingScreen3({ navigation }: any) {
   };
 
   const handleSelectBook = (book: Book) => {
-    // 選択した本を保存（Context or AsyncStorage）
-    navigation.navigate('Onboarding4', { selectedBook: book });
+    navigation.navigate('Onboarding4', { selectedBook: book, tsundokuCount });
   };
 
   return (
@@ -102,7 +103,7 @@ export default function OnboardingScreen3({ navigation }: any) {
                   {item.volumeInfo.title}
                 </Text>
                 <Text style={styles.bookAuthor} numberOfLines={1}>
-                  {item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author', { defaultValue: '著者不明' })}
+                  {item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text.muted} />

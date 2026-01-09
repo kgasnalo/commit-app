@@ -33,7 +33,7 @@ export default function VerificationScreen({ route, navigation }: any) {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.camera_permission', { defaultValue: 'カメラへのアクセス許可が必要です' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.camera_permission'));
       return;
     }
 
@@ -61,7 +61,7 @@ export default function VerificationScreen({ route, navigation }: any) {
   const validateMemo = () => {
     if (memo.length < MIN_MEMO_LENGTH) {
       Alert.alert(
-        i18n.t('errors.memo_too_short', { defaultValue: 'メモが短すぎます' }),
+        i18n.t('errors.memo_too_short'),
         i18n.t('errors.memo_length_requirement', {
           defaultValue: `読書から得た学びを${MIN_MEMO_LENGTH}文字以上で記入してください。\n現在: ${memo.length}文字`,
           length: MIN_MEMO_LENGTH,
@@ -76,7 +76,7 @@ export default function VerificationScreen({ route, navigation }: any) {
 
   const submitVerification = async () => {
     if (!image) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.photo_required', { defaultValue: '本の最終ページの写真を撮影してください' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.photo_required'));
       return;
     }
 
@@ -153,7 +153,7 @@ export default function VerificationScreen({ route, navigation }: any) {
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Verification error:', error);
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.verification_failed', { defaultValue: '読了確認の保存に失敗しました' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.verification_failed'));
     } finally {
       setLoading(false);
     }
@@ -206,7 +206,7 @@ export default function VerificationScreen({ route, navigation }: any) {
                 onPress={takePhoto}
               >
                 <Ionicons name="camera" size={20} color="#fff" />
-                <Text style={styles.retakeText}>{i18n.t('verification.retake', { defaultValue: '撮り直す' })}</Text>
+                <Text style={styles.retakeText}>{i18n.t('verification.retake')}</Text>
               </TouchableOpacity>
             </View>
           ) : (

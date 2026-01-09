@@ -125,7 +125,7 @@ function AnimatedOrb({
     );
   }, []);
 
-  // Derive color from current Act
+  // Derive color from current Act (v3 style - no dependency array needed)
   const orbColor = useDerivedValue(() => {
     const act1Color = ACT_THEMES.act1.orbColors[orbConfig.colorIndex];
     const act2Color = ACT_THEMES.act2.orbColors[orbConfig.colorIndex];
@@ -137,16 +137,16 @@ function AnimatedOrb({
       [0, 0.5, 1],
       [act1Color, act2Color, act3Color]
     );
-  }, [colorProgress]);
+  });
 
   // Create derived values for Skia - avoid reading .value during render
-  const cx = useDerivedValue(() => x.value, [x]);
-  const cy = useDerivedValue(() => y.value, [y]);
+  const cx = useDerivedValue(() => x.value);
+  const cy = useDerivedValue(() => y.value);
 
   // Derive gradient colors to avoid reading .value during render
   const gradientColors = useDerivedValue((): string[] => {
     return [orbColor.value, 'transparent'];
-  }, [orbColor]);
+  });
 
   return (
     <Circle cx={cx} cy={cy} r={orbConfig.radius} opacity={0.6}>
@@ -180,14 +180,14 @@ export default function LivingBackground() {
     });
   }, [currentAct]);
 
-  // Derive background color
+  // Derive background color (v3 style - no dependency array needed)
   const backgroundColor = useDerivedValue(() => {
     return interpolateColor(
       colorProgress.value,
       [0, 0.5, 1],
       [ACT_THEMES.act1.primary, ACT_THEMES.act2.primary, ACT_THEMES.act3.primary]
     );
-  }, [colorProgress]);
+  });
 
   // Animated background style
   const backgroundStyle = useAnimatedStyle(() => ({

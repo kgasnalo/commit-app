@@ -235,7 +235,7 @@ export default function BookDetailScreen() {
       setShowMemoModal(false);
     } catch (error) {
       console.error('Error updating memo:', error);
-      alert('メモの更新に失敗しました');
+      alert(i18n.t('bookDetail.memo_update_failed'));
     }
   }
 
@@ -366,7 +366,7 @@ export default function BookDetailScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>メモを編集</Text>
+              <Text style={styles.modalTitle}>{i18n.t('bookDetail.edit_memo_title')}</Text>
               <TouchableOpacity onPress={() => setShowMemoModal(false)}>
                 <Ionicons name="close" size={24} color="#FFFFFF" />
               </TouchableOpacity>
@@ -376,7 +376,7 @@ export default function BookDetailScreen() {
               style={styles.memoInput}
               value={editedMemo}
               onChangeText={setEditedMemo}
-              placeholder="【要約】この本を一言でまとめると？&#10;&#10;【気づき】最も印象に残った学びは？&#10;&#10;【宣言】明日から何を変える？"
+              placeholder={i18n.t('bookDetail.memo_placeholder')}
               placeholderTextColor="#666666"
               multiline
               numberOfLines={6}
@@ -388,13 +388,13 @@ export default function BookDetailScreen() {
                 style={styles.cancelButton}
                 onPress={() => setShowMemoModal(false)}
               >
-                <Text style={styles.cancelButtonText}>キャンセル</Text>
+                <Text style={styles.cancelButtonText}>{i18n.t('bookDetail.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={updateMemo}
               >
-                <Text style={styles.saveButtonText}>保存</Text>
+                <Text style={styles.saveButtonText}>{i18n.t('bookDetail.save')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -521,7 +521,7 @@ export default function BookDetailScreen() {
                   setShowMemoModal(true);
                 }}
               >
-                <Text style={styles.editButton}>編集</Text>
+                <Text style={styles.editButton}>{i18n.t('library.edit')}</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.memoText}>{verificationLog.memo_text}</Text>

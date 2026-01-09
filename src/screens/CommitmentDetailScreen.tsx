@@ -79,7 +79,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
       console.error('[CommitmentDetailScreen] Fetch error:', error);
       Alert.alert(
         i18n.t('common.error'),
-        i18n.t('errors.fetch_commitment_failed', { defaultValue: 'コミットメント情報の取得に失敗しました。' }),
+        i18n.t('errors.fetch_commitment_failed'),
         [{ text: i18n.t('common.ok'), onPress: () => navigation.goBack() }]
       );
     } finally {
@@ -132,7 +132,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         </View>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#ccc" />
-          <Text style={styles.errorText}>{i18n.t('errors.commitment_not_found', { defaultValue: 'コミットメントが見つかりません' })}</Text>
+          <Text style={styles.errorText}>{i18n.t('errors.commitment_not_found')}</Text>
           <TouchableOpacity
             style={styles.errorButton}
             onPress={() => navigation.goBack()}
@@ -195,10 +195,10 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
             <MaterialIcons name="menu-book" size={24} color="#2196F3" />
             <View style={styles.targetPagesInfo}>
               <Text style={styles.targetPagesLabel}>
-                {i18n.t('commitment_detail.target_pages', { defaultValue: 'ページ目標' })}
+                {i18n.t('commitment_detail.target_pages')}
               </Text>
               <Text style={styles.targetPagesValue}>
-                {commitment.target_pages.toLocaleString()} {i18n.t('commitment.pages', { defaultValue: 'ページ' })}
+                {commitment.target_pages.toLocaleString()} {i18n.t('commitment.pages')}
               </Text>
             </View>
           </View>
@@ -264,32 +264,9 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
           {commitment.status === 'completed' && (
             <View style={styles.completedMessage}>
               <Ionicons name="checkmark-circle" size={48} color="#4caf50" />
-              <Text style={styles.completedText}>{i18n.t('commitment_detail.completed_message', { defaultValue: '読了完了しました！' })}</Text>
+              <Text style={styles.completedText}>{i18n.t('commitment_detail.completed_message')}</Text>
             </View>
           )}
-
-          {/* Continue button - ALWAYS shown. Uses secondary style when pending to not compete with Verify button. */}
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              commitment.status === 'pending' && styles.continueButtonSecondary
-            ]}
-            onPress={() => navigation.navigate('CreateCommitment', {
-              bookId: commitment.book.id,
-            })}
-          >
-            <MaterialIcons
-              name="auto-stories"
-              size={24}
-              color={commitment.status === 'pending' ? "#000" : "#fff"}
-            />
-            <Text style={[
-              styles.continueButtonText,
-              commitment.status === 'pending' && styles.continueButtonTextSecondary
-            ]}>
-              {i18n.t('commitment_detail.continue_this_book', { defaultValue: 'この本を続ける' })}
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -486,28 +463,6 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     gap: 12,
-  },
-  continueButton: {
-    flexDirection: 'row',
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  continueButtonSecondary: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  continueButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  continueButtonTextSecondary: {
-    color: '#000',
   },
   targetPagesCard: {
     flexDirection: 'row',

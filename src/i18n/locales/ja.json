@@ -1,11 +1,64 @@
 {
+  "auth": {
+    "subtitle": "規律を資産に変える",
+    "email_label": "メールアドレス",
+    "password_label": "パスワード",
+    "create_account": "アカウント作成",
+    "login": "ログイン",
+    "have_account": "既にアカウントをお持ちの方はこちら",
+    "new_user": "新規登録はこちら",
+    "or": "または",
+    "google_login": "Googleでログイン",
+    "error_empty_fields": "メールアドレスとパスワードを入力してください。",
+    "error_signup": "サインアップエラー",
+    "success_email_sent": "確認メールを送信しました。",
+    "error_login": "ログインエラー",
+    "error_google": "Google Sign Inエラー",
+    "error_auth": "認証エラー"
+  },
+  "subscription": {
+    "title": "規律への投資",
+    "description": "COMMITを利用するには、月額プランへの加入が必要です。この投資が、あなたの規律を資産に変える第一歩となります。",
+    "plan_monthly": "月額プラン",
+    "price": "{{price}}/月",
+    "feature_unlimited": "無制限のコミットメント作成",
+    "feature_ai": "AIによる実行証明",
+    "feature_archive": "規律のアーカイブ化",
+    "start_button": "サブスクリプションを開始する",
+    "footer_note": "いつでも解約可能です。決済はStripeを通じて安全に行われます。",
+    "success_message": "サブスクリプションが開始されました。",
+    "success_alert_title": "成功",
+    "success_alert_message": "サブスクリプションが開始されました。",
+    "error_alert_title": "エラー",
+    "plan_period": " / 月",
+    "cancel_note": "※いつでも解約可能です。決済はStripeを通じて安全に行われます。"
+  },
+  "blueprint": {
+    "book_label": "読む本",
+    "deadline_label": "期限",
+    "pledge_label": "コミット金額",
+    "not_selected": "未選択",
+    "pledge_note": "達成できなかった場合のみ"
+  },
+  "currencies": {
+    "JPY": "日本円",
+    "USD": "米ドル",
+    "EUR": "ユーロ",
+    "GBP": "英ポンド",
+    "KRW": "韓国ウォン"
+  },
   "welcome": {
     "title": "読めなかったら、\n子どもの学びに変わる。",
     "subtitle": "締切と覚悟で、読み切る仕組みを作ろう。\n失敗しても、誰かの未来になる。",
     "donation_info": "読了できなかった場合の覚悟金は\nRoom to Read（子どもの教育支援）に届けられます",
     "start": "始める",
     "already_have_account": "すでにアカウントをお持ちの方",
-    "select_language": "言語を選択"
+    "select_language": "言語を選択",
+    "kinetic_line1": "知識は、読み切ってこそ",
+    "kinetic_asset": "資産",
+    "kinetic_suffix": "になる。",
+    "kinetic_subtitle": "買った本を、飾りで終わらせない。",
+    "slide_to_begin": "スライドして始める"
   },
   "onboarding": {
     "screen1_title": "積読、何冊ある？",
@@ -14,6 +67,8 @@
     "screen1_option2": "4〜10冊",
     "screen1_option3": "11〜30冊",
     "screen1_option4": "31冊以上",
+    "screen1_wheel_suffix": "冊",
+    "screen1_100_plus": "100冊以上",
     "screen2_title": "最後に本を読み切ったのは？",
     "screen2_option1": "1週間以内",
     "screen2_option2": "1ヶ月以内",
@@ -31,7 +86,11 @@
     "screen5_subtitle": "読み切れなかったら、いくら届ける？",
     "screen5_select_currency": "通貨を選択",
     "screen5_select_amount": "金額を選択",
-    "screen5_donation_info": "本を届ける活動に寄付されます",
+    "screen5_slider_hint": "スライドして金額を設定",
+    "screen5_rule_text_line1": "期限までに読み切れなかった場合、",
+    "screen5_rule_text_line2": "この金額は寄付されます",
+    "screen5_donation_label": "寄付先",
+    "screen5_donation_info": "寄付先：Room to Read（子どもの教育支援）",
     "screen6_title": "COMMITに参加する",
     "screen6_subtitle": "同じ志を持つ読書家たちのコミュニティへ。",
     "screen6_username": "ユーザーネーム",
@@ -44,6 +103,13 @@
     "screen6_username_note": "ユーザーネームは後から変更できます",
     "screen7_title": "読まなかった1冊は、手に入らなかった1つの武器。",
     "screen7_subtitle": "知識は複利で効く。1年後、差がつく。",
+    "screen7_intro": "あなたが失いつつあるもの",
+    "screen7_no_turning_back": "アカウント登録完了。ここからは引き返せません。",
+    "screen7_money_at_risk": "リスクにさらされている金額",
+    "screen7_hours_wasted": "積読に費やした時間",
+    "screen7_books_unfinished": "未読の本",
+    "screen7_gone_forever": "今日で、終わりにしよう。",
+    "screen7_but_not_yet": "読み切れない自分は、もう卒業。このCOMMITで、新しい読書体験を。",
     "screen8_title": "気合いに頼った人の読了率、23%。",
     "screen8_stat1_value": "23%",
     "screen8_stat1_label": "気合いのみ",
@@ -87,6 +153,8 @@
     "screen13_start_annual": "年額プランで始める",
     "screen13_cancel_note": "いつでもキャンセル可能",
     "screen13_donation_note": "覚悟金は全額、教育支援に寄付",
+    "screen13_slide_to_commit": "スライドして契約",
+    "warp_welcome": "COMMITへようこそ",
     "next": "次へ"
   },
   "dashboard": {
@@ -112,7 +180,10 @@
   "paywall": {
     "for_serious": "本気の人向け",
     "welcome": "ようこそ！",
-    "registration_complete": "COMMITへの登録が完了しました。"
+    "registration_complete": "COMMITへの登録が完了しました。",
+    "auth_error": "認証エラーが発生しました。再度ログインしてください。",
+    "session_error": "セッションエラー",
+    "session_invalid": "ログイン状態が確認できません。再度ログインしてください。"
   },
   "book_search": {
     "title": "本を追加",
@@ -170,7 +241,8 @@
     "memo_instruction": "インプットを定着させるために、以下の3点を意識して書き出してみましょう。",
     "memo_placeholder": "【要約】この本を一言でまとめると？\n\n【気づき】最も印象に残った学びは？\n\n【宣言】明日から何を変える？",
     "char_count": "文字以上",
-    "submit": "読了を確認する"
+    "submit": "読了を確認する",
+    "retake": "撮り直す"
   },
   "settings": {
     "title": "設定",
@@ -184,7 +256,8 @@
     "logout_confirm_title": "ログアウト",
     "logout_confirm_message": "ログアウトしますか？",
     "logout_error": "ログアウトに失敗しました。もう一度お試しください。",
-    "delete_account": "アカウント削除"
+    "delete_account": "アカウント削除",
+    "default_language": "日本語"
   },
   "common": {
     "ok": "OK",
@@ -193,14 +266,39 @@
     "success": "成功",
     "loading": "読み込み中...",
     "save": "保存",
-    "back": "戻る"
+    "back": "戻る",
+    "unknown_author": "著者不明",
+    "coming_soon": "準備中"
   },
   "errors": {
     "network": "ネットワークエラーが発生しました",
     "auth": "認証エラーが発生しました。再度ログインしてください。",
     "unknown": "エラーが発生しました",
     "continue_flow_failed": "書籍データの読み込みに失敗しました。",
-    "page_count_overlap": "ページ目標は前回の読了ページ数（{{pages}}ページ）より多く設定してください。"
+    "page_count_overlap": "ページ目標は前回の読了ページ数（{{pages}}ページ）より多く設定してください。",
+    "fill_all_fields": "全ての項目を入力してください",
+    "password_length": "パスワードは6文字以上で入力してください",
+    "account_creation": "アカウント作成に失敗しました",
+    "oauth_coming_soon": "{{provider}}ログインは準備中です",
+    "deadline_error": "期限エラー",
+    "deadline_tomorrow_or_later": "期限は明日以降を選択してください。",
+    "deadline_max_one_month": "期限は最大1ヶ月先までです。",
+    "deadline_future": "期限は現在より後の日付を選択してください。",
+    "search_keyword_required": "検索キーワードを入力してください。",
+    "google_api_not_configured": "書籍検索機能は現在利用できません。",
+    "no_results": "検索結果なし",
+    "no_books_found": "該当する書籍が見つかりませんでした。",
+    "search_failed": "書籍の検索に失敗しました。",
+    "select_book": "書籍を選択してください。",
+    "select_penalty": "ペナルティ金額を選択してください。",
+    "agree_penalty": "ペナルティに同意してください。",
+    "camera_permission": "カメラへのアクセス許可が必要です",
+    "memo_too_short": "メモが短すぎます",
+    "photo_required": "本の最終ページの写真を撮影してください",
+    "verification_failed": "読了確認の保存に失敗しました",
+    "subscription_failed": "サブスクリプションの開始に失敗しました",
+    "commitment_not_found": "コミットメントが見つかりません",
+    "fetch_commitment_failed": "コミットメント情報の取得に失敗しました。"
   },
   "tabs": {
     "home": "ホーム",
@@ -262,6 +360,28 @@
     "loading": "書籍詳細を読み込み中...",
     "error_title": "読み込み失敗",
     "error_message": "書籍詳細を読み込めませんでした。再度お試しください。",
-    "retry": "再試行"
+    "retry": "再試行",
+    "edit_memo": "メモを編集",
+    "memo_update_failed": "メモの更新に失敗しました",
+    "edit_memo_title": "メモを編集",
+    "memo_placeholder": "【要約】この本を一言でまとめると？\n\n【気づき】最も印象に残った学びは？\n\n【宣言】明日から何を変える？",
+    "cancel": "キャンセル",
+    "save": "保存"
+  },
+  "recommendations": {
+    "books": {
+      "1": { "title": "HARD THINGS", "author": "ベン・ホロウィッツ" },
+      "2": { "title": "ゼロ・トゥ・ワン", "author": "ピーター・ティール" },
+      "3": { "title": "原則", "author": "レイ・ダリオ" },
+      "4": { "title": "ワーク・ルールズ！", "author": "ラズロ・ボック" },
+      "5": { "title": "NETFLIXの最強人事戦略", "author": "パティ・マッコード" },
+      "6": { "title": "マインドセット", "author": "キャロル・S・ドゥエック" },
+      "7": { "title": "HIGH OUTPUT MANAGEMENT", "author": "アンドリュー・S・グローブ" },
+      "8": { "title": "マネジメント", "author": "P.F.ドラッカー" },
+      "9": { "title": "リーダーの仮面", "author": "安藤広大" },
+      "10": { "title": "達人プログラマー", "author": "Andrew Hunt" },
+      "11": { "title": "Clean Code", "author": "Robert C. Martin" },
+      "12": { "title": "リファクタリング", "author": "Martin Fowler" }
+    }
   }
 }

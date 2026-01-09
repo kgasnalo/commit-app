@@ -10,7 +10,7 @@ import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
 
 export default function OnboardingScreen6({ navigation, route }: any) {
-  const { selectedBook, deadline, pledgeAmount, currency = 'JPY' } = route.params;
+  const { selectedBook, deadline, pledgeAmount, currency = 'JPY', tsundokuCount } = route.params || {};
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,13 +18,13 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   const handleEmailSignup = async () => {
     if (!username.trim() || !email.trim() || !password.trim()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.fill_all_fields', { defaultValue: '全ての項目を入力してください' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.fill_all_fields'));
       return;
     }
 
     // パスワードの長さチェック
     if (password.length < 6) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.password_length', { defaultValue: 'パスワードは6文字以上で入力してください' }));
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.password_length'));
       return;
     }
 
@@ -39,6 +39,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         deadline,
         pledgeAmount,
         currency,
+        tsundokuCount,
       }));
       console.log('Onboarding data saved to AsyncStorage');
 
@@ -77,12 +78,14 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           selectedBook,
           deadline,
           pledgeAmount,
+          currency,
+          tsundokuCount,
           userId: data.user.id,
         });
       }
     } catch (error: unknown) {
       console.error('Signup flow error:', error);
-      Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.account_creation', { defaultValue: 'アカウント作成に失敗しました' }));
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.account_creation'));
     } finally {
       setLoading(false);
     }
@@ -90,7 +93,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     // OAuth実装（後で追加）
-    Alert.alert(i18n.t('common.coming_soon', { defaultValue: '準備中' }), i18n.t('errors.oauth_coming_soon', { defaultValue: `${provider}ログインは準備中です` }));
+    Alert.alert(i18n.t('common.coming_soon'), i18n.t('errors.oauth_coming_soon', { provider }));
   };
 
   return (
@@ -119,6 +122,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
             placeholderTextColor={colors.text.muted}
             autoCapitalize="none"
           />
+          <Text style={styles.inputNote}>{i18n.t('onboarding.screen6_username_note')}</Text>
         </View>
 
         <View style={styles.inputContainer}>
@@ -170,8 +174,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_apple')}</Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.note}>{i18n.t('onboarding.screen6_username_note')}</Text>
     </OnboardingLayout>
   );
 }
@@ -197,6 +199,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     color: colors.text.primary,
     fontSize: typography.fontSize.body,
+  },
+  inputNote: {
+    color: colors.text.muted,
+    fontSize: typography.fontSize.caption,
+    marginTop: 4,
   },
   divider: {
     flexDirection: 'row',

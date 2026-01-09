@@ -28,13 +28,27 @@ const UI_SOUNDS: Record<string, number | null> = {
   toast: null,      // Toast popup sound
 };
 
+// Shepard Tone audio files for penalty slider (Phase 2.2.1)
+// To add Shepard tone files:
+// 1. Generate looping Shepard tone audio files at different intensities
+// 2. Add to src/assets/audio/
+// 3. Uncomment the require() statements below
+const SHEPARD_TONES: Record<string, number | null> = {
+  low: null,    // require('../assets/audio/shepard_tone_low.mp3')
+  mid: null,    // require('../assets/audio/shepard_tone_mid.mp3')
+  high: null,   // require('../assets/audio/shepard_tone_high.mp3')
+};
+
 class SoundManagerClass {
   private currentAmbient: Audio.Sound | null = null;
   private uiSounds: Map<string, Audio.Sound> = new Map();
+  private shepardSounds: Map<string, Audio.Sound> = new Map();
   private isInitialized = false;
   private isMuted = false;
   private ambientVolume = 0.3;
   private uiVolume = 0.5;
+  private shepardVolume = 0.25;
+  private isShepardPlaying = false;
 
   /**
    * Initialize audio system and preload sounds
@@ -141,6 +155,96 @@ class SoundManagerClass {
   async stopAll(): Promise<void> {
     if (this.currentAmbient) {
       await this.currentAmbient.stopAsync();
+    }
+    await this.stopShepardTone();
+  }
+
+  // ============================================
+  // SHEPARD TONE (Phase 2.2.1)
+  // ============================================
+
+  /**
+   * Play Shepard tone based on intensity (0-1)
+   * Placeholder implementation - actual audio files to be added later
+   * @param intensity - Value from 0 (low) to 1 (high)
+   */
+  async playShepardTone(intensity: number): Promise<void> {
+    if (!this.isInitialized || this.isMuted) return;
+
+    // Clamp intensity between 0 and 1
+    const clampedIntensity = Math.max(0, Math.min(1, intensity));
+
+    // Determine which tone to play based on intensity
+    let toneName: string;
+    if (clampedIntensity < 0.33) {
+      toneName = 'low';
+    } else if (clampedIntensity < 0.66) {
+      toneName = 'mid';
+    } else {
+      toneName = 'high';
+    }
+
+    const toneSource = SHEPARD_TONES[toneName];
+    if (toneSource === null) {
+      // Placeholder: No audio file yet
+      // When audio files are added, this will load and play the appropriate tone
+      console.log(`[SoundManager] Shepard tone placeholder: ${toneName} (intensity: ${clampedIntensity.toFixed(2)})`);
+      return;
+    }
+
+    // Future implementation: Load and play tone with volume mapped to intensity
+    try {
+      const sound = this.shepardSounds.get(toneName);
+      if (sound) {
+        const volume = this.shepardVolume * (0.5 + clampedIntensity * 0.5);
+        await sound.setVolumeAsync(volume);
+        if (!this.isShepardPlaying) {
+          await sound.playAsync();
+          this.isShepardPlaying = true;
+        }
+      }
+    } catch (error) {
+      console.warn('[SoundManager] Failed to play Shepard tone:', error);
+    }
+  }
+
+  /**
+   * Stop Shepard tone playback
+   */
+  async stopShepardTone(): Promise<void> {
+    if (!this.isShepardPlaying) return;
+
+    try {
+      for (const sound of this.shepardSounds.values()) {
+        await sound.stopAsync();
+      }
+      this.isShepardPlaying = false;
+      console.log('[SoundManager] Shepard tone stopped');
+    } catch (error) {
+      console.warn('[SoundManager] Failed to stop Shepard tone:', error);
+    }
+  }
+
+  /**
+   * Update Shepard tone intensity without restarting
+   * @param intensity - Value from 0 (low) to 1 (high)
+   */
+  async updateShepardIntensity(intensity: number): Promise<void> {
+    if (!this.isInitialized || this.isMuted || !this.isShepardPlaying) return;
+
+    const clampedIntensity = Math.max(0, Math.min(1, intensity));
+
+    // Placeholder: Volume adjustment based on intensity
+    // When implemented, this will crossfade between different tone files
+    // or adjust playback parameters
+    const targetVolume = this.shepardVolume * (0.5 + clampedIntensity * 0.5);
+
+    try {
+      for (const sound of this.shepardSounds.values()) {
+        await sound.setVolumeAsync(targetVolume);
+      }
+    } catch (error) {
+      console.warn('[SoundManager] Failed to update Shepard intensity:', error);
     }
   }
 

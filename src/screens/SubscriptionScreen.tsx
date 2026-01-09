@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { getErrorMessage } from '../utils/errorUtils';
+import i18n from '../i18n';
 
 export default function SubscriptionScreen({ onComplete }: { onComplete: () => void }) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -45,11 +46,16 @@ export default function SubscriptionScreen({ onComplete }: { onComplete: () => v
 
       if (error) throw error;
 
-      Alert.alert('成功', 'サブスクリプションが開始されました。', [
-        { text: 'OK', onPress: onComplete }
-      ]);
+      Alert.alert(
+        i18n.t('subscription.success_alert_title'),
+        i18n.t('subscription.success_alert_message'),
+        [{ text: i18n.t('common.ok'), onPress: onComplete }]
+      );
     } catch (error: unknown) {
-      Alert.alert('エラー', getErrorMessage(error));
+      Alert.alert(
+        i18n.t('common.error'),
+        getErrorMessage(error)
+      );
     } finally {
       setLoading(false);
     }
@@ -62,26 +68,29 @@ export default function SubscriptionScreen({ onComplete }: { onComplete: () => v
           <MaterialIcons name="verified-user" size={80} color="#000" />
         </View>
         
-        <Text style={styles.title}>規律への投資</Text>
+        <Text style={styles.title}>{i18n.t('subscription.title')}</Text>
         <Text style={styles.description}>
-          COMMITを利用するには、月額プランへの加入が必要です。この投資が、あなたの規律を資産に変える第一歩となります。
+          {i18n.t('subscription.description')}
         </Text>
 
         <View style={styles.planCard}>
-          <Text style={styles.planName}>月額プラン</Text>
-          <Text style={styles.planPrice}>¥980<Text style={styles.planPeriod}> / 月</Text></Text>
+          <Text style={styles.planName}>{i18n.t('subscription.plan_monthly')}</Text>
+          <Text style={styles.planPrice}>
+            {i18n.t('subscription.price', { price: '¥980' }).replace('/month', '').replace('/月', '')}
+            <Text style={styles.planPeriod}>{i18n.t('subscription.plan_period')}</Text>
+          </Text>
           <View style={styles.features}>
             <View style={styles.featureItem}>
               <MaterialIcons name="check" size={20} color="#000" />
-              <Text style={styles.featureText}>無制限のコミットメント作成</Text>
+              <Text style={styles.featureText}>{i18n.t('subscription.feature_unlimited')}</Text>
             </View>
             <View style={styles.featureItem}>
               <MaterialIcons name="check" size={20} color="#000" />
-              <Text style={styles.featureText}>AIによる実行証明</Text>
+              <Text style={styles.featureText}>{i18n.t('subscription.feature_ai')}</Text>
             </View>
             <View style={styles.featureItem}>
               <MaterialIcons name="check" size={20} color="#000" />
-              <Text style={styles.featureText}>規律のアーカイブ化</Text>
+              <Text style={styles.featureText}>{i18n.t('subscription.feature_archive')}</Text>
             </View>
           </View>
         </View>
@@ -94,12 +103,12 @@ export default function SubscriptionScreen({ onComplete }: { onComplete: () => v
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.subscribeButtonText}>サブスクリプションを開始する</Text>
+            <Text style={styles.subscribeButtonText}>{i18n.t('subscription.start_button')}</Text>
           )}
         </TouchableOpacity>
         
         <Text style={styles.footerText}>
-          ※いつでも解約可能です。決済はStripeを通じて安全に行われます。
+          {i18n.t('subscription.cancel_note')}
         </Text>
       </View>
     </SafeAreaView>

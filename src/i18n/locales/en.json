@@ -1,11 +1,64 @@
 {
+  "auth": {
+    "subtitle": "Turn discipline into assets",
+    "email_label": "Email",
+    "password_label": "Password",
+    "create_account": "Create Account",
+    "login": "Log In",
+    "have_account": "Already have an account? Log in here",
+    "new_user": "New user? Sign up here",
+    "or": "or",
+    "google_login": "Sign in with Google",
+    "error_empty_fields": "Please enter both email and password.",
+    "error_signup": "Sign Up Error",
+    "success_email_sent": "Confirmation email sent.",
+    "error_login": "Login Error",
+    "error_google": "Google Sign In Error",
+    "error_auth": "Authentication Error"
+  },
+  "subscription": {
+    "title": "Investing in Discipline",
+    "description": "A subscription is required to use COMMIT. This investment is the first step to turning your discipline into assets.",
+    "plan_monthly": "Monthly Plan",
+    "price": "{{price}}/month",
+    "feature_unlimited": "Unlimited commitment creation",
+    "feature_ai": "AI-powered completion verification",
+    "feature_archive": "Discipline archive",
+    "start_button": "Start Subscription",
+    "footer_note": "Cancel anytime. Payment is securely processed through Stripe.",
+    "success_message": "Subscription started successfully.",
+    "success_alert_title": "Success",
+    "success_alert_message": "Subscription started successfully.",
+    "error_alert_title": "Error",
+    "plan_period": " / month",
+    "cancel_note": "* Cancel anytime. Secure payment via Stripe."
+  },
+  "blueprint": {
+    "book_label": "Book to read",
+    "deadline_label": "Deadline",
+    "pledge_label": "Pledge amount",
+    "not_selected": "Not selected",
+    "pledge_note": "Only if you fail to complete"
+  },
+  "currencies": {
+    "JPY": "Japanese Yen",
+    "USD": "US Dollar",
+    "EUR": "Euro",
+    "GBP": "British Pound",
+    "KRW": "Korean Won"
+  },
   "welcome": {
     "title": "If you don't finish,\nit becomes a child's learning.",
     "subtitle": "Create a system to finish reading with deadlines and commitment.\nEven if you fail, it becomes someone's future.",
     "donation_info": "Unfinished commitment funds are donated to\nRoom to Read (children's education support)",
     "start": "Get Started",
     "already_have_account": "Already have an account?",
-    "select_language": "Select Language"
+    "select_language": "Select Language",
+    "kinetic_line1": "Knowledge becomes",
+    "kinetic_asset": "an asset",
+    "kinetic_suffix": " only when finished.",
+    "kinetic_subtitle": "Don't let bought books become decoration.",
+    "slide_to_begin": "Slide to Begin"
   },
   "onboarding": {
     "screen1_title": "How many unread books?",
@@ -14,6 +67,8 @@
     "screen1_option2": "4-10 books",
     "screen1_option3": "11-30 books",
     "screen1_option4": "31+ books",
+    "screen1_wheel_suffix": "books",
+    "screen1_100_plus": "100+",
     "screen2_title": "When did you last finish a book?",
     "screen2_option1": "Within a week",
     "screen2_option2": "Within a month",
@@ -31,7 +86,11 @@
     "screen5_subtitle": "How much will you donate if you don't finish?",
     "screen5_select_currency": "Select Currency",
     "screen5_select_amount": "Select Amount",
-    "screen5_donation_info": "Donated to book delivery activities",
+    "screen5_slider_hint": "Slide to set amount",
+    "screen5_rule_text_line1": "If you don't finish reading by the deadline,",
+    "screen5_rule_text_line2": "this amount will be donated",
+    "screen5_donation_label": "Donation to",
+    "screen5_donation_info": "Donation to: Room to Read (Supporting children's education)",
     "screen6_title": "Join COMMIT",
     "screen6_subtitle": "Join a community of readers with the same goals.",
     "screen6_username": "Username",
@@ -44,6 +103,13 @@
     "screen6_username_note": "Username can be changed later",
     "screen7_title": "The book you didn't read was one weapon you didn't obtain.",
     "screen7_subtitle": "Knowledge compounds. In one year, the difference shows.",
+    "screen7_intro": "What you're about to lose",
+    "screen7_no_turning_back": "Account created. There is no turning back.",
+    "screen7_money_at_risk": "Money at risk",
+    "screen7_hours_wasted": "Hours wasted on unread books",
+    "screen7_books_unfinished": "Books left unfinished",
+    "screen7_gone_forever": "Let's end this today.",
+    "screen7_but_not_yet": "Graduating from being unable to finish. A new reading experience with this COMMIT.",
     "screen8_title": "Completion rate for those who relied on willpower: 23%.",
     "screen8_stat1_value": "23%",
     "screen8_stat1_label": "Willpower only",
@@ -87,6 +153,8 @@
     "screen13_start_annual": "Start with Annual Plan",
     "screen13_cancel_note": "Cancel anytime",
     "screen13_donation_note": "All pledge money goes to education support",
+    "screen13_slide_to_commit": "Slide to Commit",
+    "warp_welcome": "Welcome to COMMIT",
     "next": "Next"
   },
   "dashboard": {
@@ -112,7 +180,10 @@
   "paywall": {
     "for_serious": "For serious readers",
     "welcome": "Welcome!",
-    "registration_complete": "Registration complete."
+    "registration_complete": "Registration complete.",
+    "auth_error": "An authentication error occurred. Please log in again.",
+    "session_error": "Session Error",
+    "session_invalid": "Unable to verify login status. Please log in again."
   },
   "book_search": {
     "title": "Add Book",
@@ -170,7 +241,8 @@
     "memo_instruction": "To solidify your learning, reflect on these 3 points:",
     "memo_placeholder": "[Summary] Summarize this book in one sentence.\n\n[Insight] What was a key realization?\n\n[Declaration] What will you change starting tomorrow?",
     "char_count": "characters min",
-    "submit": "Confirm Completion"
+    "submit": "Confirm Completion",
+    "retake": "Retake Photo"
   },
   "settings": {
     "title": "Settings",
@@ -184,7 +256,8 @@
     "logout_confirm_title": "Log Out",
     "logout_confirm_message": "Are you sure you want to log out?",
     "logout_error": "Failed to log out. Please try again.",
-    "delete_account": "Delete Account"
+    "delete_account": "Delete Account",
+    "default_language": "Japanese"
   },
   "common": {
     "ok": "OK",
@@ -193,14 +266,39 @@
     "success": "Success",
     "loading": "Loading...",
     "save": "Save",
-    "back": "Back"
+    "back": "Back",
+    "unknown_author": "Unknown Author",
+    "coming_soon": "Coming Soon"
   },
   "errors": {
     "network": "Network error occurred",
     "auth": "Authentication error. Please log in again.",
     "unknown": "An error occurred",
     "continue_flow_failed": "Failed to load book data.",
-    "page_count_overlap": "Page goal must be greater than previously read pages ({{pages}} pages)."
+    "page_count_overlap": "Page goal must be greater than previously read pages ({{pages}} pages).",
+    "fill_all_fields": "Please fill in all fields",
+    "password_length": "Password must be at least 6 characters",
+    "account_creation": "Failed to create account",
+    "oauth_coming_soon": "{{provider}} login coming soon",
+    "deadline_error": "Deadline Error",
+    "deadline_tomorrow_or_later": "Deadline must be tomorrow or later.",
+    "deadline_max_one_month": "Deadline must be within 1 month.",
+    "deadline_future": "Please select a future date.",
+    "search_keyword_required": "Please enter a search keyword.",
+    "google_api_not_configured": "Book search is currently unavailable.",
+    "no_results": "No results",
+    "no_books_found": "No books found matching your query.",
+    "search_failed": "Failed to search books.",
+    "select_book": "Please select a book.",
+    "select_penalty": "Please select a penalty amount.",
+    "agree_penalty": "Please agree to the penalty terms.",
+    "camera_permission": "Camera permission is required",
+    "memo_too_short": "Memo is too short",
+    "photo_required": "Please take a photo of the last page",
+    "verification_failed": "Failed to save verification",
+    "subscription_failed": "Failed to start subscription",
+    "commitment_not_found": "Commitment not found",
+    "fetch_commitment_failed": "Failed to fetch commitment info."
   },
   "tabs": {
     "home": "Home",
@@ -257,6 +355,28 @@
     "loading": "Loading book details...",
     "error_title": "Failed to load",
     "error_message": "Could not load book details. Please try again.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "edit_memo": "Edit Memo",
+    "memo_update_failed": "Failed to update memo",
+    "edit_memo_title": "Edit Memo",
+    "memo_placeholder": "[Summary] Summarize this book in one sentence.\n\n[Insight] What was a key realization?\n\n[Declaration] What will you change starting tomorrow?",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "recommendations": {
+    "books": {
+      "1": { "title": "The Hard Thing About Hard Things", "author": "Ben Horowitz" },
+      "2": { "title": "Zero to One", "author": "Peter Thiel" },
+      "3": { "title": "Principles", "author": "Ray Dalio" },
+      "4": { "title": "Work Rules!", "author": "Laszlo Bock" },
+      "5": { "title": "Powerful", "author": "Patty McCord" },
+      "6": { "title": "Mindset", "author": "Carol S. Dweck" },
+      "7": { "title": "High Output Management", "author": "Andrew S. Grove" },
+      "8": { "title": "Management", "author": "Peter F. Drucker" },
+      "9": { "title": "Leader no Kamen (The Mask of Leader)", "author": "Kodai Ando" },
+      "10": { "title": "The Pragmatic Programmer", "author": "Andrew Hunt" },
+      "11": { "title": "Clean Code", "author": "Robert C. Martin" },
+      "12": { "title": "Refactoring", "author": "Martin Fowler" }
+    }
   }
 }

@@ -31,7 +31,7 @@ export default function SettingsScreen({ navigation }: any) {
 
   const getCurrentLanguageName = () => {
     const lang = LANGUAGES.find(l => l.code === currentLanguage);
-    return lang?.name || '日本語';
+    return lang?.name || i18n.t('settings.default_language');
   };
 
   const handleLogout = async () => {

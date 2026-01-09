@@ -6,13 +6,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { getErrorMessage } from '../utils/errorUtils';
+import i18n from '../i18n';
 
 // WebBrowserの結果を適切に処理するために必要
 WebBrowser.maybeCompleteAuthSession();
 
 export default function AuthScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(__DEV__ ? 'test@example.com' : '');
+  const [password, setPassword] = useState(__DEV__ ? 'password123' : '');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -24,7 +25,7 @@ export default function AuthScreen({ navigation }: any) {
 
   async function handleAuth() {
     if (!email || !password) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください。');
+      Alert.alert(i18n.t('common.error'), i18n.t('auth.error_empty_fields'));
       return;
     }
 
@@ -36,7 +37,7 @@ export default function AuthScreen({ navigation }: any) {
       });
 
       if (error) {
-        Alert.alert('サインアップエラー', error.message);
+        Alert.alert(i18n.t('auth.error_signup'), error.message);
       } else if (data.user && data.user.email) {
         // usersテーブルにレコードを作成
         const { error: insertError } = await supabase
@@ -50,7 +51,7 @@ export default function AuthScreen({ navigation }: any) {
         if (insertError) {
           console.error('Failed to create user record:', insertError);
         }
-        Alert.alert('成功', '確認メールを送信しました。');
+        Alert.alert(i18n.t('common.success'), i18n.t('auth.success_email_sent'));
       }
     } else {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -59,7 +60,7 @@ export default function AuthScreen({ navigation }: any) {
       });
 
       if (error) {
-        Alert.alert('ログインエラー', error.message);
+        Alert.alert(i18n.t('auth.error_login'), error.message);
       } else if (data.user) {
         // ログイン時にusersテーブルのレコードが存在するか確認
         const { data: userData, error: checkError } = await supabase
@@ -96,7 +97,7 @@ export default function AuthScreen({ navigation }: any) {
       });
 
       if (error) {
-        Alert.alert('Google Sign Inエラー', error.message);
+        Alert.alert(i18n.t('auth.error_google'), error.message);
         return;
       }
 
@@ -120,7 +121,7 @@ export default function AuthScreen({ navigation }: any) {
             });
 
             if (sessionError) {
-              Alert.alert('認証エラー', sessionError.message);
+              Alert.alert(i18n.t('auth.error_auth'), sessionError.message);
             } else if (sessionData.user) {
               // usersテーブルにレコードが存在するか確認
               const { data: userData, error: checkError } = await supabase
@@ -144,7 +145,7 @@ export default function AuthScreen({ navigation }: any) {
         }
       }
     } catch (error: unknown) {
-      Alert.alert('エラー', getErrorMessage(error));
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -162,11 +163,11 @@ export default function AuthScreen({ navigation }: any) {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>COMMIT</Text>
-          <Text style={styles.subtitle}>規律を資産に変える</Text>
+          <Text style={styles.subtitle}>{i18n.t('auth.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>メールアドレス</Text>
+          <Text style={styles.label}>{i18n.t('auth.email_label')}</Text>
           <TextInput
             style={styles.input}
             placeholder="email@example.com"
@@ -176,7 +177,7 @@ export default function AuthScreen({ navigation }: any) {
             keyboardType="email-address"
           />
 
-          <Text style={styles.label}>パスワード</Text>
+          <Text style={styles.label}>{i18n.t('auth.password_label')}</Text>
           <TextInput
             style={styles.input}
             placeholder="••••••••"
@@ -194,7 +195,7 @@ export default function AuthScreen({ navigation }: any) {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.authButtonText}>
-                {isSignUp ? 'アカウント作成' : 'ログイン'}
+                {isSignUp ? i18n.t('auth.create_account') : i18n.t('auth.login')}
               </Text>
             )}
           </TouchableOpacity>
@@ -204,14 +205,14 @@ export default function AuthScreen({ navigation }: any) {
             onPress={() => setIsSignUp(!isSignUp)}
           >
             <Text style={styles.switchButtonText}>
-              {isSignUp ? '既にアカウントをお持ちの方はこちら' : '新規登録はこちら'}
+              {isSignUp ? i18n.t('auth.have_account') : i18n.t('auth.new_user')}
             </Text>
           </TouchableOpacity>
 
           {/* または セパレーター */}
           <View style={styles.separatorContainer}>
             <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>または</Text>
+            <Text style={styles.separatorText}>{i18n.t('auth.or')}</Text>
             <View style={styles.separatorLine} />
           </View>
 
@@ -222,7 +223,7 @@ export default function AuthScreen({ navigation }: any) {
             disabled={loading}
           >
             <MaterialIcons name="login" size={20} color="#4285F4" />
-            <Text style={styles.googleButtonText}>Googleでログイン</Text>
+            <Text style={styles.googleButtonText}>{i18n.t('auth.google_login')}</Text>
           </TouchableOpacity>
         </View>
       </View>

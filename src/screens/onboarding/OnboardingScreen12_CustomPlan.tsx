@@ -1,19 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
-import PrimaryButton from '../../components/onboarding/PrimaryButton';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import BlueprintCard from '../../components/onboarding/BlueprintCard';
+import { spacing } from '../../theme';
 import i18n from '../../i18n';
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  JPY: '¥',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  KRW: '₩',
-};
 
 export default function OnboardingScreen12({ navigation, route }: any) {
   const [selectedBook, setSelectedBook] = useState<any>(null);
@@ -53,10 +44,10 @@ export default function OnboardingScreen12({ navigation, route }: any) {
     loadOnboardingData();
   }, [route.params]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getMonth() + 1}月${date.getDate()}日`;
-  };
+  // Navigate to next screen after animation completes
+  const handleAnimationComplete = useCallback(() => {
+    navigation.navigate('Onboarding13');
+  }, [navigation]);
 
   return (
     <OnboardingLayout
@@ -64,84 +55,24 @@ export default function OnboardingScreen12({ navigation, route }: any) {
       totalSteps={14}
       title={i18n.t('onboarding.screen12_title')}
       subtitle={i18n.t('onboarding.screen12_subtitle')}
-      footer={
-        <PrimaryButton
-          label={i18n.t('onboarding.screen12_activate')}
-          onPress={() => navigation.navigate('Onboarding13')}
-        />
-      }
     >
-      <View style={styles.commitCard}>
-        <View style={styles.commitItem}>
-          <Ionicons name="book" size={24} color={colors.accent.primary} />
-          <View style={styles.commitContent}>
-            <Text style={styles.commitLabel}>{i18n.t('onboarding.screen12_book_label')}</Text>
-            <Text style={styles.commitValue} numberOfLines={2}>
-              {selectedBook?.volumeInfo?.title || i18n.t('onboarding.screen12_not_selected')}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.commitItem}>
-          <Ionicons name="time" size={24} color={colors.accent.primary} />
-          <View style={styles.commitContent}>
-            <Text style={styles.commitLabel}>{i18n.t('onboarding.screen12_deadline_label')}</Text>
-            <Text style={styles.commitValue}>{formatDate(deadline)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.commitItem}>
-          <Ionicons name="heart" size={24} color={colors.accent.primary} />
-          <View style={styles.commitContent}>
-            <Text style={styles.commitLabel}>{i18n.t('onboarding.screen12_pledge_label')}</Text>
-            <Text style={styles.commitValue}>
-              {CURRENCY_SYMBOLS[currency] || '¥'}{pledgeAmount?.toLocaleString()}
-            </Text>
-            <Text style={styles.commitNote}>{i18n.t('onboarding.screen12_pledge_note')}</Text>
-          </View>
-        </View>
+      <View style={styles.container}>
+        <BlueprintCard
+          bookTitle={selectedBook?.volumeInfo?.title || i18n.t('onboarding.screen12_not_selected')}
+          deadline={deadline}
+          pledgeAmount={pledgeAmount}
+          currency={currency}
+          onAnimationComplete={handleAnimationComplete}
+        />
       </View>
     </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  commitCard: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.lg,
-  },
-  commitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  commitContent: {
+  container: {
     flex: 1,
-    marginLeft: spacing.md,
-  },
-  commitLabel: {
-    color: colors.text.secondary,
-    fontSize: typography.fontSize.caption,
-    marginBottom: 4,
-  },
-  commitValue: {
-    color: colors.text.primary,
-    fontSize: typography.fontSize.body,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  commitNote: {
-    color: colors.text.muted,
-    fontSize: typography.fontSize.caption,
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border.default,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
 });

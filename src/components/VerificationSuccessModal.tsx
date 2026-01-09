@@ -21,14 +21,6 @@ import i18n from '../i18n';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Completion messages for retention flow (Japanese fallback)
-const COMPLETION_MESSAGES = [
-  "多くの人が「途中」でやめてしまう中、\nあなたは最後までやり切りました。\nこの流れのまま、次の1冊を選びにいきましょう。",
-  "忙しい中でも、学ぶ時間を確保できたこと自体が成果です。\nこの積み重ねが、数ヶ月後に大きな差になります。\n次の一冊で、流れを止めずにいきましょう。",
-  "この1冊から得た知識は、あなたの中に確かに蓄積されました。\n学びは、次の行動によって価値に変わります。\n余韻が残っている今のうちに、次の1冊を選んでみましょう。",
-  "この1冊は、あなたの判断力と視座を確実に引き上げました。\nインプットは、使ってこそ資産になります。\nさらなる知識強化のために、次の一冊を今ここで選びましょう。",
-];
-
 interface VerificationSuccessModalProps {
   visible: boolean;
   savedAmount: number;
@@ -56,11 +48,11 @@ export default function VerificationSuccessModal({
   const amountScale = useSharedValue(1);
   const [displayAmount, setDisplayAmount] = React.useState(0);
 
-  // Pick a new random completion message each time modal opens
+  // Pick a new random completion message index (0 to 3) each time modal opens
   useEffect(() => {
     if (visible && !prevVisibleRef.current) {
-      // Modal just became visible - pick new random message index
-      const randomIndex = Math.floor(Math.random() * COMPLETION_MESSAGES.length);
+      // Modal just became visible - pick new random message index (4 messages available)
+      const randomIndex = Math.floor(Math.random() * 4);
       setMotivationKey(randomIndex);
     }
     prevVisibleRef.current = visible;
@@ -68,11 +60,8 @@ export default function VerificationSuccessModal({
 
   // Get the completion message (stable during visibility)
   const completionMessage = useMemo(() => {
-    // Try i18n first, fallback to hardcoded Japanese messages
-    const i18nMessage = i18n.t(`celebration.completion_${motivationKey + 1}`, {
-      defaultValue: ''
-    });
-    return i18nMessage || COMPLETION_MESSAGES[motivationKey] || COMPLETION_MESSAGES[0];
+    // Keys are 1-based (celebration.completion_1 to celebration.completion_4)
+    return i18n.t(`celebration.completion_${motivationKey + 1}`);
   }, [motivationKey]);
 
   const getCurrencySymbol = (curr: string) => {
@@ -206,7 +195,7 @@ export default function VerificationSuccessModal({
           {onContinue && (
             <TouchableOpacity style={styles.button} onPress={onContinue}>
               <Text style={styles.buttonText}>
-                {i18n.t('celebration.continue_reading', { defaultValue: '次の目標を立てる' })}
+                {i18n.t('celebration.continue_reading', { defaultValue: 'Set Next Goal' })}
               </Text>
             </TouchableOpacity>
           )}
@@ -215,7 +204,7 @@ export default function VerificationSuccessModal({
           {onSelectNewBook && (
             <TouchableOpacity style={styles.outlineButton} onPress={onSelectNewBook}>
               <Text style={styles.outlineButtonText}>
-                {i18n.t('celebration.select_new_book', { defaultValue: '次の1冊を選ぶ' })}
+                {i18n.t('celebration.select_new_book', { defaultValue: 'Choose Next Book' })}
               </Text>
             </TouchableOpacity>
           )}

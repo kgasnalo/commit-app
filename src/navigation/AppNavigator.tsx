@@ -300,9 +300,11 @@ export default function AppNavigator() {
   if (isLoading) {
     return (
       <View style={loadingStyles.container}>
-        <Text style={loadingStyles.title}>COMMIT</Text>
-        <Text style={loadingStyles.subtitle}>規律を資産に変える</Text>
-        <ActivityIndicator size="large" color={colors.accent.primary} style={loadingStyles.spinner} />
+        <ActivityIndicator size="large" color="#000" />
+        <View style={loadingStyles.textContainer}>
+          <Text style={loadingStyles.title}>COMMIT</Text>
+          <Text style={loadingStyles.subtitle}>{i18n.t('auth.subtitle')}</Text>
+        </View>
       </View>
     );
   }
@@ -364,6 +366,10 @@ const loadingStyles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  textContainer: {
+    alignItems: 'center',
+    marginTop: 16,
   },
   title: {
     fontSize: 40,

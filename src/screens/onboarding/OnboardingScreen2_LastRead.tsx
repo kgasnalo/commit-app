@@ -11,9 +11,11 @@ const getOptions = () => [
   { id: 'year+', labelKey: 'onboarding.screen2_option4' },
 ];
 
-export default function OnboardingScreen2({ navigation }: any) {
+export default function OnboardingScreen2({ navigation, route }: any) {
+  const { tsundokuCount } = route.params || {};
+
   const handleSelect = (optionId: string) => {
-    navigation.navigate('Onboarding3');
+    navigation.navigate('Onboarding3', { tsundokuCount });
   };
 
   return (
