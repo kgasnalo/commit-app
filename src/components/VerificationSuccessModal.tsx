@@ -163,17 +163,17 @@ export default function VerificationSuccessModal({
           </View>
 
           {/* Title */}
-          <Text 
+          <Text
             style={styles.title}
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            {i18n.t('celebration.title', { defaultValue: 'Commitment Achieved!' })}
+            {i18n.t('celebration.title')}
           </Text>
 
           {/* Subtitle */}
           <Text style={styles.subtitle}>
-            {i18n.t('celebration.subtitle', { defaultValue: 'You kept your promise!' })}
+            {i18n.t('celebration.subtitle')}
           </Text>
 
           {/* Completion Message */}
@@ -187,7 +187,7 @@ export default function VerificationSuccessModal({
               {getCurrencySymbol(currency)}{displayAmount.toLocaleString()}
             </Animated.Text>
             <Text style={styles.savedNote}>
-              {i18n.t('celebration.saved_note', { defaultValue: 'The pledged amount stays in your pocket.' })}
+              {i18n.t('celebration.saved_note')}
             </Text>
           </View>
 
@@ -195,7 +195,7 @@ export default function VerificationSuccessModal({
           {onContinue && (
             <TouchableOpacity style={styles.button} onPress={onContinue}>
               <Text style={styles.buttonText}>
-                {i18n.t('celebration.continue_reading', { defaultValue: 'Set Next Goal' })}
+                {i18n.t('celebration.continue_reading')}
               </Text>
             </TouchableOpacity>
           )}
@@ -204,7 +204,7 @@ export default function VerificationSuccessModal({
           {onSelectNewBook && (
             <TouchableOpacity style={styles.outlineButton} onPress={onSelectNewBook}>
               <Text style={styles.outlineButtonText}>
-                {i18n.t('celebration.select_new_book', { defaultValue: 'Choose Next Book' })}
+                {i18n.t('celebration.select_new_book')}
               </Text>
             </TouchableOpacity>
           )}
@@ -212,7 +212,7 @@ export default function VerificationSuccessModal({
           {/* Finish for now (Text Link) */}
           <TouchableOpacity style={styles.textLinkButton} onPress={onClose}>
             <Text style={styles.textLinkText}>
-              {i18n.t('celebration.finish_for_now', { defaultValue: 'Finish for now' })}
+              {i18n.t('celebration.finish_for_now')}
             </Text>
           </TouchableOpacity>
         </Animated.View>

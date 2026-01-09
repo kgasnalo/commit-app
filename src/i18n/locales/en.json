@@ -313,13 +313,18 @@
     "saved_note": "The pledged amount stays in your pocket.",
     "return_button": "Return to Dashboard",
     "continue_button": "Continue Reading",
+    "continue_reading": "Set Next Goal",
     "select_new_book": "Choose Another Book",
-    "finish_for_now": "Mark book as finished",
+    "finish_for_now": "Done for Now",
     "motivation_1": "While many give up halfway, you pushed through to the end. Keep this momentum going with your next book.",
     "motivation_2": "This book has become 'usable knowledge,' not just information. While the learning is still fresh, take the next step.",
     "motivation_3": "Finding time to learn despite being busy is an achievement in itself. This consistency will make a big difference in months.",
     "motivation_4": "The knowledge from this book is now part of you. Learning becomes valuable through your next action.",
-    "motivation_5": "This book has upgraded your judgment and thinking. Accelerate further with your next read."
+    "motivation_5": "This book has upgraded your judgment and thinking. Accelerate further with your next read.",
+    "completion_1": "While many give up halfway, you pushed through to the end.\nKeep this momentum going—\nlet's pick your next book.",
+    "completion_2": "Finding time to learn despite being busy is an achievement in itself.\nThis consistency will make a big difference in months.\nDon't lose the momentum—choose your next book.",
+    "completion_3": "The knowledge from this book is now part of you.\nLearning becomes valuable through your next action.\nWhile it's still fresh, let's pick your next read.",
+    "completion_4": "This book has upgraded your judgment and perspective.\nInput becomes an asset only when you use it.\nTo strengthen your knowledge further, choose your next book now."
   },
   "library": {
     "title": "Library",
