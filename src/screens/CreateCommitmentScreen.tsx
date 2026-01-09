@@ -1100,11 +1100,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 24, // Increased spacing to prevent overlap with text below
   },
   amountButton: {
-    flex: 1,
-    minWidth: '45%',
+    width: '48%', // Fixed width instead of flex: 1 to ensure proper height calculation with flexWrap
     paddingVertical: 16,
     backgroundColor: '#f9f9f9',
     borderWidth: 1,
@@ -1130,13 +1129,14 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: '500',
     textAlign: 'center',
+    marginTop: 8, // Added top margin for spacing from amount buttons
     marginBottom: 12,
   },
   penaltyNote: {
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 20, // Increased for better spacing before checkbox
   },
   pageCountNote: {
     fontSize: 14,
