@@ -215,7 +215,8 @@
     "loading_book_data": "Loading book data...",
     "pages_read_so_far": "{{pages}} pages read so far",
     "progress_near_max": "Amazing! You've already read {{pages}} pages of this book.",
-    "slider_min_note": "* {{pages}} pages already read. You can set goals from page {{next}}."
+    "slider_min_note": "* {{pages}} pages already read. You can set goals from page {{next}}.",
+    "success_message": "Commitment created!\nDeadline: {{deadline}}\nPenalty: {{penalty}}"
   },
   "commitment_detail": {
     "title": "Commitment Details",
