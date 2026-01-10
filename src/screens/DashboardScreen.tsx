@@ -256,33 +256,56 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D0B09" />
+      <StatusBar barStyle="light-content" backgroundColor="#080604" />
 
-      {/* Deep Orange-Brown Background - 参考デザインの深いオレンジ世界 */}
+      {/* Rich Multi-Source Lighting Background */}
       <View style={styles.ambientGlowContainer} pointerEvents="none">
-        {/* Base: Deep brown gradient */}
+        {/* Layer 1: Base vertical gradient (#1A1008 → #080604) */}
         <LinearGradient
-          colors={[
-            'rgba(40, 25, 15, 0.9)',     // 深いオレンジブラウン（上部）
-            'rgba(25, 18, 12, 0.95)',
-            'rgba(13, 11, 9, 1)',        // ベース暖色ダーク
-          ]}
-          locations={[0, 0.4, 1]}
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        {/* Overlay: Strong orange glow from top */}
+
+        {/* Layer 2: Ambient diffused light from top-left (霧の中の拡散光) */}
+        {/* Primary radial-like glow - centered at ~10% x, 25% y */}
         <LinearGradient
           colors={[
-            'rgba(255, 107, 53, 0.25)',  // 強いオレンジグロー
-            'rgba(255, 140, 80, 0.12)',
-            'rgba(255, 107, 53, 0.05)',
+            'rgba(255, 160, 120, 0.18)',  // 彩度を抑えた薄いオレンジ
+            'rgba(255, 160, 120, 0.10)',
+            'rgba(255, 160, 120, 0.04)',
             'transparent',
           ]}
-          locations={[0, 0.15, 0.4, 0.7]}
+          locations={[0, 0.25, 0.5, 0.8]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Layer 3: Secondary diffuse spread (wider, softer) */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 180, 140, 0.08)',
+            'rgba(255, 160, 120, 0.04)',
+            'transparent',
+          ]}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 0.1, y: 0.15 }}
+          end={{ x: 1, y: 0.6 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Layer 4: Subtle warm wash across top */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 140, 100, 0.06)',
+            'transparent',
+          ]}
+          locations={[0, 0.5]}
           start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.8 }}
+          end={{ x: 0.5, y: 0.4 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -452,7 +475,7 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0B09', // 暖色系ダーク（参考デザイン）
+    backgroundColor: '#080604', // リッチな深いダーク
   },
   ambientGlowContainer: {
     position: 'absolute',
