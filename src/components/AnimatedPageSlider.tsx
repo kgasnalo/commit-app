@@ -50,17 +50,22 @@ export default function AnimatedPageSlider({
     progress.value = normalizedProgress;
   }, [value, minValue, maxValue, TRACK_WIDTH]);
 
+  // Haptic feedback wrappers (must use runOnJS from worklet)
+  const hapticLight = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const hapticMedium = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const hapticHeavy = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
   // Throttled haptic feedback
   const triggerHaptic = (newValue: number) => {
     const milestones = [100, 250, 500, 750, 1000];
 
-    if (Math.abs(newValue - lastHapticValue.current) >= 10) { // More frequent clicks for tactical feel
+    if (Math.abs(newValue - lastHapticValue.current) >= 10) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       lastHapticValue.current = newValue;
     }
 
     if (milestones.includes(newValue) && !milestones.includes(lastHapticValue.current)) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); // Heavy click on milestones
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
 
     onValueChange(newValue);
@@ -70,8 +75,8 @@ export default function AnimatedPageSlider({
   const panGesture = Gesture.Pan()
     .onBegin(() => {
       isActive.value = true;
-      scale.value = withSpring(1.1, { damping: 10, stiffness: 300 }); // Less expansion
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      scale.value = withSpring(1.1, { damping: 10, stiffness: 300 });
+      runOnJS(hapticMedium)();
     })
     .onUpdate((event) => {
       const startX = ((value - minValue) / (maxValue - minValue)) * TRACK_WIDTH;
@@ -88,7 +93,7 @@ export default function AnimatedPageSlider({
     .onEnd(() => {
       isActive.value = false;
       scale.value = withSpring(1, { damping: 15, stiffness: 200 });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(hapticLight)();
     });
 
   // Animated styles
