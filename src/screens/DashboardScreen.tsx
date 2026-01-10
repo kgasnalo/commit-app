@@ -253,18 +253,20 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#050505" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D0B09" />
 
-      {/* Ambient Background Glow */}
+      {/* Ambient Background Glow - 参考デザインの暖色グロー */}
       <View style={styles.ambientGlowContainer} pointerEvents="none">
         <LinearGradient
           colors={[
-            'rgba(255, 107, 53, 0.08)',
+            'rgba(255, 107, 53, 0.15)', // より強いオレンジ
+            'rgba(255, 140, 80, 0.08)',
             'rgba(255, 107, 53, 0.03)',
             'transparent',
           ]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.6 }}
+          locations={[0, 0.2, 0.5, 1]}
+          start={{ x: 0.3, y: 0 }}
+          end={{ x: 0.7, y: 0.8 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -301,12 +303,13 @@ export default function DashboardScreen({ navigation }: any) {
       >
         {/* Stats Grid: Reference Design Style */}
         <View style={styles.statsGrid}>
-          {/* Main Pool - Large Tile */}
+          {/* Main Pool - Large Tile with orange top border */}
           <GlassTile
             variant="sunken"
             glow={Object.values(poolByCurrency).some(v => v > 0) ? 'ambient' : 'none'}
             padding="lg"
             borderRadius={24}
+            topBorder="orange"
             style={styles.mainStatTile}
           >
             <Text style={styles.statLabel}>{i18n.t('dashboard.donation_pool')}</Text>
@@ -319,6 +322,7 @@ export default function DashboardScreen({ navigation }: any) {
               variant="sunken"
               padding="md"
               borderRadius={20}
+              topBorder="white"
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>{activeCommitmentsCount}</Text>
@@ -329,6 +333,7 @@ export default function DashboardScreen({ navigation }: any) {
               variant="sunken"
               padding="md"
               borderRadius={20}
+              topBorder="white"
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>{completedCount}</Text>
@@ -341,6 +346,7 @@ export default function DashboardScreen({ navigation }: any) {
               variant="sunken"
               padding="md"
               borderRadius={20}
+              topBorder="white"
               style={styles.smallStatTile}
             >
               <Text style={[styles.smallStatValue, failedCount > 0 && styles.dangerValue]}>
@@ -353,6 +359,7 @@ export default function DashboardScreen({ navigation }: any) {
               variant="sunken"
               padding="md"
               borderRadius={20}
+              topBorder="white"
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>
@@ -421,14 +428,14 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
+    backgroundColor: '#0D0B09', // 暖色系ダーク（参考デザイン）
   },
   ambientGlowContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: SCREEN_WIDTH * 0.8,
+    height: SCREEN_WIDTH * 1.0, // 拡大
     zIndex: 0,
   },
   header: {
