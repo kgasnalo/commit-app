@@ -10,6 +10,7 @@ import {
   Image,
   ScrollView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -23,6 +24,8 @@ import Animated, {
   SharedValue,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import {
@@ -473,11 +476,32 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Titan Background */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Ambient light from top-left */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.12)',
+            'rgba(255, 160, 120, 0.05)',
+            'transparent',
+          ]}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          <Ionicons name="arrow-back" size={24} color="#FAFAFA" />
         </TouchableOpacity>
-        <MicroLabel style={styles.title}>{i18n.t('commitment.create_title')}</MicroLabel>
+        <Text style={styles.title}>{i18n.t('commitment.create_title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -718,7 +742,15 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#080604',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 1.5,
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',
@@ -726,17 +758,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
-    backgroundColor: colors.background.secondary,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 1,
   },
   title: {
-    fontSize: 12,
-    letterSpacing: 2,
-    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   contentWrapper: {
     flex: 1,
+    zIndex: 1,
   },
   scrollView: {
     flex: 1,
@@ -746,257 +780,304 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   section: {
-    marginTop: 32,
+    marginTop: 28,
     marginBottom: 8,
   },
   sectionTitle: {
     marginBottom: 16,
-    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255, 160, 120, 0.6)',
+    letterSpacing: 1.5,
   },
+  // Deep Optical Glass search container
   searchContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
-    height: 48,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: 2,
-    paddingHorizontal: 16,
+    height: 52,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    paddingHorizontal: 18,
     fontSize: 14,
-    color: colors.text.primary,
-    backgroundColor: colors.background.card,
-    fontFamily: typography.fontFamily.monospace,
+    color: '#FAFAFA',
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    fontWeight: '500',
   },
   scanButton: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: 2,
-    backgroundColor: colors.background.card,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
   },
   searchButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: colors.signal.active,
-    borderRadius: 2,
+    width: 52,
+    height: 52,
+    backgroundColor: '#FF6B35',
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    // Orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
   },
   searchResults: {
     marginTop: 12,
   },
+  // Glassmorphism book item
   bookItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: 2,
-    marginBottom: 8,
-    backgroundColor: colors.background.card,
+    padding: 14,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
+    marginBottom: 10,
+    backgroundColor: 'rgba(26, 23, 20, 0.7)',
   },
   bookCover: {
-    width: 40,
-    height: 60,
-    borderRadius: 0,
-    backgroundColor: '#333',
+    width: 44,
+    height: 66,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   placeholder: {
-    width: 40,
-    height: 60,
-    borderRadius: 0,
-    backgroundColor: '#333',
+    width: 44,
+    height: 66,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bookInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 14,
   },
   bookTitle: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.heading,
-    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FAFAFA',
   },
   bookAuthor: {
-    fontSize: 12,
-    color: colors.text.muted,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.45)',
     marginTop: 4,
   },
+  // Selected book - glassmorphism with orange accent
   selectedBookCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 18,
     borderWidth: 1,
-    borderColor: colors.signal.active, // Red border for target
-    borderRadius: 2,
-    backgroundColor: 'rgba(255, 51, 51, 0.05)',
+    borderColor: 'rgba(255, 107, 53, 0.3)',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 107, 53, 0.08)',
+    // Subtle orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
   },
   selectedBookCover: {
-    width: 60,
-    height: 90,
-    borderRadius: 0,
-    backgroundColor: '#333',
-    borderWidth: 1,
-    borderColor: '#444',
+    width: 64,
+    height: 96,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   placeholderLarge: {
-    width: 60,
-    height: 90,
-    borderRadius: 0,
-    backgroundColor: '#333',
+    width: 64,
+    height: 96,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#444',
   },
   selectedBookInfo: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 18,
   },
   selectedBookTitle: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.heading,
-    color: colors.text.primary,
-    letterSpacing: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FAFAFA',
+    lineHeight: 22,
   },
   selectedBookAuthor: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.monospace,
-    color: colors.text.secondary,
-    marginTop: 4,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.5)',
+    marginTop: 6,
   },
   closeButton: {
     padding: 8,
   },
+  // Date button - glassmorphism
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: 2,
-    backgroundColor: colors.background.card,
-    gap: 12,
+    padding: 18,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    gap: 14,
   },
   subsectionTitle: {
     fontSize: 10,
-    color: colors.text.muted,
-    marginBottom: 8,
-    marginTop: 8,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.35)',
+    marginBottom: 10,
+    marginTop: 12,
+    letterSpacing: 1,
   },
+  // Currency buttons - glassmorphism pills
   currencyButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 20,
   },
   currencyButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.background.card,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: 2,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(26, 23, 20, 0.7)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
   },
   currencyButtonSelected: {
-    backgroundColor: colors.signal.active,
-    borderColor: colors.signal.active,
+    backgroundColor: '#FF6B35',
+    borderColor: '#FF6B35',
+    // Glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
   },
   currencyButtonText: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.monospace,
-    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   currencyButtonTextSelected: {
-    color: '#000',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
+  // Amount buttons - larger glassmorphism tiles
   amountButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
     marginBottom: 24,
   },
   amountButton: {
-    width: '48%',
-    paddingVertical: 16,
-    backgroundColor: colors.background.card,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: 2,
+    width: '47%',
+    paddingVertical: 20,
+    backgroundColor: 'rgba(26, 23, 20, 0.7)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   amountButtonSelected: {
-    backgroundColor: colors.signal.active,
-    borderColor: colors.signal.active,
+    backgroundColor: '#FF6B35',
+    borderColor: '#FF6B35',
+    // Glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8,
   },
+  // Checkbox - orange accent
   checkbox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
+    gap: 14,
+    marginTop: 12,
   },
   checkboxBox: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    borderColor: colors.text.muted,
-    borderRadius: 2,
+    width: 26,
+    height: 26,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.tertiary,
+    backgroundColor: 'rgba(26, 23, 20, 0.6)',
   },
   checkboxBoxChecked: {
-    backgroundColor: colors.signal.active,
-    borderColor: colors.signal.active,
+    backgroundColor: '#FF6B35',
+    borderColor: '#FF6B35',
+    // Glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
   },
   checkboxLabel: {
     flex: 1,
-    fontSize: 12,
-    fontFamily: typography.fontFamily.monospace,
-    color: colors.text.secondary,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.5)',
+    lineHeight: 18,
   },
+  // Piano Black create button with orange glow
   createButton: {
-    backgroundColor: colors.signal.active,
-    height: 56,
-    borderRadius: 2,
+    backgroundColor: '#1A1714',
+    height: 58,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 28,
     marginBottom: 40,
-    borderWidth: 1,
-    borderColor: colors.signal.active,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    // Strong orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   createButtonDisabled: {
-    backgroundColor: colors.background.tertiary,
-    borderColor: colors.border.subtle,
-    opacity: 0.5,
+    backgroundColor: 'rgba(26, 23, 20, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   createButtonText: {
-    color: '#000',
+    color: '#FAFAFA',
     fontSize: 16,
-    fontFamily: typography.fontFamily.heading,
-    letterSpacing: 2,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   continueLoadingContainer: {
-    padding: 20,
+    padding: 24,
     alignItems: 'center',
   },
   continueLoadingText: {
-    marginTop: 12,
-    color: colors.text.muted,
+    marginTop: 14,
+    fontSize: 12,
+    color: 'rgba(255, 160, 120, 0.5)',
+    letterSpacing: 1,
   },
   progressInfo: {
-    fontSize: 10,
-    fontFamily: typography.fontFamily.monospace,
-    color: colors.signal.success,
-    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#4CAF50',
+    marginTop: 6,
   },
 });

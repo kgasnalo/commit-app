@@ -14,13 +14,17 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import i18n from '../../i18n';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { supabase } from '../../lib/supabase';
 import { MonkModeService, SessionSummary } from '../../lib/MonkModeService';
 import DurationSlider from '../../components/monkmode/DurationSlider';
@@ -132,6 +136,27 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Titan Background */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Ambient light from top-left */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.15)',
+            'rgba(255, 160, 120, 0.06)',
+            'transparent',
+          ]}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -140,7 +165,7 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
-            <Ionicons name="leaf" size={32} color={colors.accent.primary} />
+            <Ionicons name="leaf" size={32} color="#FF6B35" />
           </View>
           <Text style={styles.title}>{i18n.t('monkmode.title')}</Text>
           <Text style={styles.subtitle}>{i18n.t('monkmode.subtitle')}</Text>
@@ -229,7 +254,15 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#080604',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 1.2,
+    zIndex: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -238,6 +271,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    zIndex: 1,
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -248,89 +282,112 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.background.secondary,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(255, 107, 53, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 107, 53, 0.25)',
+    // Orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: colors.text.primary,
+    fontWeight: '800',
+    color: '#FAFAFA',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
   },
+  // Glassmorphism stats card
   statsCard: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
     marginBottom: 32,
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
+    // Subtle shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
   statsLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: colors.text.secondary,
+    color: 'rgba(255, 160, 120, 0.6)',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
+    letterSpacing: 1.5,
+    marginBottom: 10,
   },
   statsValue: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '700',
-    color: colors.accent.primary,
+    color: '#FF6B35',
+    // Glow effect
+    textShadowColor: 'rgba(255, 107, 53, 0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
   },
   sectionContainer: {
     marginBottom: 24,
   },
   sectionLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: colors.text.secondary,
+    color: 'rgba(255, 255, 255, 0.4)',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     marginBottom: 16,
   },
+  // Glassmorphism sessions container
   recentSessionsContainer: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 12,
+    backgroundColor: 'rgba(26, 23, 20, 0.7)',
+    borderRadius: 16,
     padding: 4,
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   sessionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
   },
   sessionLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   sessionTime: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: '#FAFAFA',
   },
   sessionBook: {
     fontSize: 13,
-    color: colors.text.secondary,
+    color: 'rgba(255, 255, 255, 0.45)',
     flex: 1,
     textAlign: 'right',
     marginLeft: 16,
   },
+  // Bottom button container with gradient fade
   buttonContainer: {
     position: 'absolute',
     bottom: 0,
@@ -338,26 +395,31 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 24,
     paddingBottom: 32,
-    paddingTop: 16,
-    backgroundColor: colors.background.primary,
+    paddingTop: 24,
+    backgroundColor: 'transparent',
   },
+  // Piano Black button with orange glow
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent.primary,
+    backgroundColor: '#1A1714',
     paddingVertical: 18,
     borderRadius: 16,
     gap: 10,
-    shadowColor: colors.accent.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    // Strong orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   startButtonText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FAFAFA',
+    letterSpacing: 0.5,
   },
 });

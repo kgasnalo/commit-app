@@ -52,12 +52,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 240, // Constrain width to fit inside the timer ring (280px)
   },
+  // Luxury gauge-style glowing digits
   time: {
     fontSize: 64,
     fontWeight: '200',
-    color: colors.text.primary,
+    color: '#FAFAFA',
     letterSpacing: 2,
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
+    // Strong glow effect like luxury car gauge
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
   },
 });
