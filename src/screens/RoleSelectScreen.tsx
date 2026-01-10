@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Linking, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Linking, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { RECOMMENDED_BOOKS } from '../constants/recommendations';
 import { Role, Book } from '../types';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import i18n from '../i18n';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ROLES: Role[] = ['Founder', 'HR', 'Manager', 'Specialist'];
 
 interface Props {
@@ -77,33 +80,66 @@ export default function RoleSelectScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Titan Background */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Ambient light from top-left */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.15)',
+            'rgba(255, 160, 120, 0.06)',
+            'transparent',
+          ]}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       <View style={styles.topHeader}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} color="#000" />
+          <MaterialIcons name="arrow-back" size={24} color="#FAFAFA" />
         </TouchableOpacity>
         <Text style={styles.topHeaderTitle}>{i18n.t('book_search.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>COMMIT</Text>
           <Text style={styles.subtitle}>{i18n.t('book_search.subtitle')}</Text>
         </View>
 
         <View style={styles.content}>
-          {/* メインCTA: 読みたい本を検索 */}
+          {/* メインCTA: Deep Optical Glass スタイル */}
           <TouchableOpacity
             style={styles.searchCTA}
             onPress={handleSearchPress}
+            activeOpacity={0.8}
           >
+            <LinearGradient
+              colors={[
+                'rgba(255, 255, 255, 0.08)',
+                'rgba(255, 255, 255, 0.03)',
+                'transparent',
+              ]}
+              locations={[0, 0.4, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0.7, y: 0.7 }}
+              style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+            />
             <View style={styles.searchCTAIcon}>
-              <Ionicons name="search" size={32} color="#fff" />
+              <Ionicons name="search" size={28} color="#FFFFFF" />
             </View>
             <View style={styles.searchCTAContent}>
               <Text style={styles.searchCTATitle}>{i18n.t('book_search.search_title')}</Text>
               <Text style={styles.searchCTASubtitle}>{i18n.t('book_search.search_subtitle')}</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={32} color="#000" />
+            <MaterialIcons name="chevron-right" size={28} color="rgba(255, 255, 255, 0.5)" />
           </TouchableOpacity>
 
           {/* 区切り線 */}
@@ -115,13 +151,13 @@ export default function RoleSelectScreen({ navigation }: Props) {
             onPress={() => setShowRecommendations(!showRecommendations)}
           >
             <View style={styles.recommendationToggleLeft}>
-              <Ionicons name="bulb-outline" size={24} color="#666" />
+              <Ionicons name="bulb-outline" size={24} color="rgba(255, 160, 120, 0.8)" />
               <Text style={styles.recommendationToggleText}>{i18n.t('book_search.recommended')}</Text>
             </View>
             <MaterialIcons
               name={showRecommendations ? "expand-less" : "expand-more"}
               size={24}
-              color="#666"
+              color="rgba(255, 255, 255, 0.4)"
             />
           </TouchableOpacity>
 
@@ -171,7 +207,15 @@ export default function RoleSelectScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#080604',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 1.2,
+    zIndex: 0,
   },
   topHeader: {
     flexDirection: 'row',
@@ -179,71 +223,93 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 1,
   },
   topHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.7)',
+    letterSpacing: 0.5,
   },
   scrollView: {
     flex: 1,
+    zIndex: 1,
   },
   header: {
     padding: 24,
-    paddingTop: 40,
+    paddingTop: 32,
   },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '800',
-    letterSpacing: 2,
-    color: '#000',
+    letterSpacing: 4,
+    color: '#FAFAFA',
+    // Subtle glow
+    textShadowColor: 'rgba(255, 160, 120, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-    letterSpacing: 1,
+    fontSize: 13,
+    color: 'rgba(255, 160, 120, 0.6)',
+    marginTop: 8,
+    letterSpacing: 1.5,
   },
   content: {
     paddingHorizontal: 24,
     paddingBottom: 40,
   },
+  // Deep Optical Glass 検索バー
   searchCTA: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#000',
+    padding: 20,
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    borderRadius: 20,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 32,
+    overflow: 'hidden',
+    // Subtle shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
   searchCTAIcon: {
-    width: 56,
-    height: 56,
-    backgroundColor: '#000',
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    backgroundColor: '#FF6B35',
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    // Orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
   },
   searchCTAContent: {
     flex: 1,
   },
   searchCTATitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: '#FAFAFA',
     marginBottom: 4,
   },
   searchCTASubtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.45)',
   },
   divider: {
     height: 1,
-    backgroundColor: '#eee',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     marginVertical: 24,
   },
   recommendationToggle: {
@@ -258,16 +324,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   recommendationToggleText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 15,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   recommendationSection: {
     marginTop: 16,
   },
   rolePrompt: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.4)',
     marginBottom: 16,
   },
   roleGrid: {
@@ -276,25 +342,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   roleButton: {
-    flex: 1,
-    minWidth: '45%',
+    width: '47%',
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eee',
-    backgroundColor: '#f9f9f9',
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(26, 23, 20, 0.6)',
     alignItems: 'center',
   },
   roleButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#000',
+    color: '#FAFAFA',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     marginBottom: 16,
-    color: '#000',
+    color: '#FAFAFA',
   },
   selectionHeader: {
     flexDirection: 'row',
@@ -303,47 +368,47 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   changeRoleText: {
-    fontSize: 14,
-    color: '#666',
-    textDecorationLine: 'underline',
+    fontSize: 13,
+    color: 'rgba(255, 160, 120, 0.7)',
   },
   bookList: {
-    gap: 16,
+    gap: 12,
   },
   bookCard: {
     flexDirection: 'row',
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eee',
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(26, 23, 20, 0.7)',
     alignItems: 'center',
   },
   bookCover: {
-    width: 60,
-    height: 90,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    width: 56,
+    height: 84,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   placeholder: {
-    width: 60,
-    height: 90,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    width: 56,
+    height: 84,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bookInfo: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 14,
   },
   bookTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FAFAFA',
   },
   bookAuthor: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.45)',
     marginTop: 2,
   },
   amazonButton: {
@@ -352,18 +417,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   amazonButtonText: {
-    fontSize: 12,
-    color: '#666',
-    textDecorationLine: 'underline',
+    fontSize: 11,
+    color: 'rgba(255, 160, 120, 0.6)',
   },
   selectBookButton: {
-    backgroundColor: '#000',
-    paddingHorizontal: 16,
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 16,
+    // Glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   selectBookButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },

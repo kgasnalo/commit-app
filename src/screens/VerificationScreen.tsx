@@ -9,13 +9,17 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import VerificationSuccessModal from '../components/VerificationSuccessModal';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const MIN_MEMO_LENGTH = 100;
 
@@ -214,18 +218,38 @@ export default function VerificationScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Titan Background */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.12)',
+            'rgba(255, 160, 120, 0.04)',
+            'transparent',
+          ]}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} color="#000" />
+          <MaterialIcons name="arrow-back" size={24} color="#FAFAFA" />
         </TouchableOpacity>
         <Text style={styles.title}>{i18n.t('verification.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.bookTitle}>{bookTitle}</Text>
 
-        {/* 写真撮影セクション */}
+        {/* 写真撮影セクション - Glassmorphism タイル */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{i18n.t('verification.photo_section')}</Text>
           <Text style={styles.sectionDesc}>{i18n.t('verification.photo_instruction')}</Text>
@@ -244,33 +268,52 @@ export default function VerificationScreen({ route, navigation }: any) {
           ) : (
             <View style={styles.photoButtons}>
               <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                <Ionicons name="camera" size={32} color="#000" />
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.06)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0.7, y: 0.7 }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                />
+                <View style={styles.cameraIconGlow}>
+                  <Ionicons name="camera" size={28} color="#FF6B35" />
+                </View>
                 <Text style={styles.photoButtonText}>{i18n.t('verification.take_photo')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-                <Ionicons name="images" size={32} color="#000" />
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.06)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0.7, y: 0.7 }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                />
+                <View style={styles.cameraIconGlow}>
+                  <Ionicons name="images" size={28} color="#FF6B35" />
+                </View>
                 <Text style={styles.photoButtonText}>{i18n.t('verification.choose_photo')}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {/* メモセクション */}
+        {/* メモセクション - Liquid Black Metal スタイル */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{i18n.t('verification.memo_section')}</Text>
           <Text style={styles.sectionDesc}>
             {i18n.t('verification.memo_instruction')}
           </Text>
 
-          <TextInput
-            style={styles.memoInput}
-            value={memo}
-            onChangeText={setMemo}
-            placeholder={i18n.t('verification.memo_placeholder')}
-            multiline
-            numberOfLines={8}
-            textAlignVertical="top"
-          />
+          <View style={styles.memoContainer}>
+            <TextInput
+              style={styles.memoInput}
+              value={memo}
+              onChangeText={setMemo}
+              placeholder={i18n.t('verification.memo_placeholder')}
+              placeholderTextColor="rgba(200, 160, 120, 0.3)"
+              multiline
+              numberOfLines={8}
+              textAlignVertical="top"
+            />
+          </View>
 
           <Text style={[
             styles.charCount,
@@ -280,7 +323,7 @@ export default function VerificationScreen({ route, navigation }: any) {
           </Text>
         </View>
 
-        {/* 送信ボタン */}
+        {/* 送信ボタン - Piano Black */}
         <TouchableOpacity
           style={[
             styles.submitButton,
@@ -288,6 +331,7 @@ export default function VerificationScreen({ route, navigation }: any) {
           ]}
           onPress={submitVerification}
           disabled={loading || !image || memo.length < MIN_MEMO_LENGTH}
+          activeOpacity={0.8}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -318,7 +362,15 @@ export default function VerificationScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#080604',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 1.5,
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',
@@ -326,61 +378,93 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.7)',
+    letterSpacing: 0.5,
   },
   content: {
     padding: 20,
+    zIndex: 1,
   },
   bookTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    marginBottom: 24,
+    marginBottom: 28,
+    color: '#FAFAFA',
+    // Subtle glow
+    textShadowColor: 'rgba(255, 160, 120, 0.15)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   section: {
     marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 6,
+    color: '#FAFAFA',
   },
   sectionDesc: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.45)',
+    marginBottom: 16,
+    lineHeight: 20,
   },
   photoButtons: {
     flexDirection: 'row',
     gap: 12,
   },
+  // Glassmorphism タイル（破線ボーダーなし）
   photoButton: {
     flex: 1,
     aspectRatio: 1,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
+    backgroundColor: 'rgba(26, 23, 20, 0.7)',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#eee',
-    borderStyle: 'dashed',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden',
+    // Subtle shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cameraIconGlow: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 6,
   },
   photoButtonText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#666',
+    marginTop: 12,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   imageContainer: {
     position: 'relative',
   },
   previewImage: {
     width: '100%',
-    height: 300,
-    borderRadius: 12,
+    height: 280,
+    borderRadius: 16,
   },
   retakeButton: {
     position: 'absolute',
@@ -388,45 +472,71 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
   },
   retakeText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Liquid Black Metal スタイル
+  memoContainer: {
+    backgroundColor: 'rgba(10, 8, 6, 0.9)',
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    // Inset shadow effect (凹み感)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 2,
   },
   memoInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    minHeight: 200,
+    padding: 18,
+    fontSize: 15,
+    minHeight: 180,
+    color: '#FAFAFA',
+    lineHeight: 24,
   },
   charCount: {
     textAlign: 'right',
-    marginTop: 8,
-    fontSize: 14,
-    color: '#999',
+    marginTop: 10,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.35)',
   },
   charCountValid: {
-    color: '#4caf50',
+    color: '#FF6B35',
   },
+  // Piano Black ボタン
   submitButton: {
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: '#1A1714',
+    paddingVertical: 18,
+    borderRadius: 14,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 20,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    // Glossy highlight
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
   },
   submitButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: 'rgba(26, 23, 20, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    shadowOpacity: 0,
   },
   submitButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#FAFAFA',
+    fontSize: 17,
     fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

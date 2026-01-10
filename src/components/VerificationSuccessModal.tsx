@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Animated, {
   useSharedValue,
@@ -160,6 +161,7 @@ export default function VerificationSuccessModal({
       statusBarTranslucent
     >
       <View style={styles.overlay}>
+        {/* Confetti with warm colors */}
         <ConfettiCannon
           ref={confettiRef}
           count={200}
@@ -168,13 +170,30 @@ export default function VerificationSuccessModal({
           fadeOut
           fallSpeed={3000}
           explosionSpeed={350}
-          colors={['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181', '#aa96da']}
+          colors={['#FF6B35', '#FFB347', '#FFD700', '#FF8C42', '#FFA07A', '#E8A87C']}
         />
 
         <Animated.View style={[styles.content, containerStyle]}>
-          {/* Success Icon */}
+          {/* Thick Glass Block グラデーション */}
+          <LinearGradient
+            colors={['rgba(32, 28, 24, 0.98)', 'rgba(20, 18, 16, 0.99)', 'rgba(12, 10, 8, 1)']}
+            locations={[0, 0.5, 1]}
+            style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+          />
+          {/* 上部の柔らかいライト */}
+          <LinearGradient
+            colors={['rgba(255, 160, 120, 0.1)', 'transparent']}
+            locations={[0, 0.5]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 0.5 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+          />
+
+          {/* Success Icon - Blood Orange Glow */}
           <View style={styles.iconContainer}>
-            <Ionicons name="checkmark-circle" size={80} color="#4caf50" />
+            <View style={styles.iconGlow}>
+              <Ionicons name="checkmark" size={48} color="#FF6B35" />
+            </View>
           </View>
 
           {/* Title */}
@@ -196,11 +215,16 @@ export default function VerificationSuccessModal({
             {completionMessage}
           </Text>
 
-          {/* Reward Display */}
+          {/* Reward Display - Giant Glowing Numbers */}
           <View style={styles.savedContainer}>
-            <Animated.Text style={[styles.savedAmount, amountStyle]}>
-              {getCurrencySymbol(currency)}{displayAmount.toLocaleString()}
-            </Animated.Text>
+            <View style={styles.amountRow}>
+              <Animated.Text style={[styles.currencySymbol, amountStyle]}>
+                {getCurrencySymbol(currency)}
+              </Animated.Text>
+              <Animated.Text style={[styles.savedAmount, amountStyle]}>
+                {displayAmount.toLocaleString()}
+              </Animated.Text>
+            </View>
             <Text style={styles.savedNote}>
               {i18n.t('celebration.saved_note')}
             </Text>
@@ -211,26 +235,33 @@ export default function VerificationSuccessModal({
             <TouchableOpacity
               style={styles.shareReceiptButton}
               onPress={() => setShowReceiptModal(true)}
+              activeOpacity={0.7}
             >
-              <Ionicons name="share-social" size={18} color="#FF4D00" />
+              <Ionicons name="share-social" size={16} color="#FF6B35" />
               <Text style={styles.shareReceiptText}>
                 {i18n.t('receipt.share_button')}
               </Text>
             </TouchableOpacity>
           )}
 
-          {/* Continue Reading Button (Primary) - Set next goal for same book */}
+          {/* Continue Reading Button (Primary) - Piano Black */}
           {onContinue && (
-            <TouchableOpacity style={styles.button} onPress={onContinue}>
+            <TouchableOpacity style={styles.button} onPress={onContinue} activeOpacity={0.8}>
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.08)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[StyleSheet.absoluteFill, { borderRadius: 14 }]}
+              />
               <Text style={styles.buttonText}>
                 {i18n.t('celebration.continue_reading')}
               </Text>
             </TouchableOpacity>
           )}
 
-          {/* Select Next Book Button (Secondary) - Choose a new book */}
+          {/* Select Next Book Button (Secondary) */}
           {onSelectNewBook && (
-            <TouchableOpacity style={styles.outlineButton} onPress={onSelectNewBook}>
+            <TouchableOpacity style={styles.outlineButton} onPress={onSelectNewBook} activeOpacity={0.7}>
               <Text style={styles.outlineButtonText}>
                 {i18n.t('celebration.select_new_book')}
               </Text>
@@ -267,61 +298,106 @@ export default function VerificationSuccessModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   content: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 32,
     alignItems: 'center',
     marginHorizontal: 24,
-    maxWidth: 340,
+    maxWidth: 360,
     width: '100%',
+    overflow: 'hidden',
+    // Glass block shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.6,
+    shadowRadius: 40,
+    elevation: 20,
   },
   iconContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  // Blood Orange Glow アイコン
+  iconGlow: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 107, 53, 0.3)',
+    // Strong glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 10,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '900',
-    color: '#000',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FAFAFA',
     textAlign: 'center',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
     marginBottom: 8,
   },
   motivationText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: 'rgba(255, 255, 255, 0.35)',
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 20,
     marginVertical: 12,
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
   },
+  // 報酬表示 - Giant Glowing Numbers
   savedContainer: {
-    backgroundColor: '#e8f5e9',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 107, 53, 0.08)',
+    borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     width: '100%',
-    marginBottom: 28,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 53, 0.2)',
+  },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+  },
+  currencySymbol: {
+    fontSize: 32,
+    fontWeight: '500',
+    color: 'rgba(255, 107, 53, 0.7)',
+    marginRight: 4,
+    // Subtle glow
+    textShadowColor: 'rgba(255, 107, 53, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   savedAmount: {
-    fontSize: 42,
+    fontSize: 52,
     fontWeight: '800',
-    color: '#4caf50',
-    marginBottom: 8,
+    color: '#FF6B35',
+    // Strong glow
+    textShadowColor: 'rgba(255, 107, 53, 0.5)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 20,
   },
   savedNote: {
     fontSize: 12,
-    color: '#888',
+    color: 'rgba(255, 255, 255, 0.4)',
   },
   shareReceiptButton: {
     flexDirection: 'row',
@@ -329,44 +405,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#FF4D00',
+    borderColor: 'rgba(255, 107, 53, 0.4)',
     marginBottom: 20,
+    backgroundColor: 'rgba(255, 107, 53, 0.08)',
   },
   shareReceiptText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#FF4D00',
+    color: '#FF6B35',
   },
+  // Piano Black ボタン
   button: {
-    backgroundColor: '#000',
-    paddingVertical: 16,
+    backgroundColor: '#1A1714',
+    paddingVertical: 18,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 14,
     width: '100%',
     marginBottom: 12,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    // Orange glow on press
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#FAFAFA',
+    fontSize: 17,
     fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   outlineButton: {
     backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#000',
-    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 14,
     width: '100%',
     marginBottom: 12,
   },
   outlineButtonText: {
-    color: '#000',
-    fontSize: 16,
+    color: '#FAFAFA',
+    fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -376,10 +464,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   textLinkText: {
-    color: '#666',
-    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
-    textDecorationLine: 'underline',
   },
 });
