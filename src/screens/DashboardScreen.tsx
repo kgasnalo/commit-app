@@ -8,8 +8,10 @@ import {
   RefreshControl,
   ActivityIndicator,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, {
@@ -31,11 +33,14 @@ import {
 } from '../lib/commitmentHelpers';
 import { NotificationService } from '../lib/NotificationService';
 import { colors, typography, spacing, shadows } from '../theme';
+import { titanColors, titanTypography } from '../theme/titan';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { GlassTile } from '../components/titan/GlassTile';
 import { MetricDisplay } from '../components/titan/MetricDisplay';
 import { StatusIndicator } from '../components/titan/StatusIndicator';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type BookData = {
   id: string;
@@ -233,16 +238,43 @@ export default function DashboardScreen({ navigation }: any) {
     );
   }
 
+  // Calculate stats for grid display
+  const activeCommitmentsCount = groupedCommitments.filter(g => g.activeCount > 0).length;
+  const completedCount = commitments.filter(c => c.status === 'completed').length;
+  const failedCount = commitments.filter(c => c.status === 'defaulted').length;
+
+  const totalPool = Object.entries(poolByCurrency)
+    .filter(([_, amount]) => amount > 0)
+    .map(([currency, amount]) => {
+      const symbol = CURRENCY_SYMBOLS[currency] || currency;
+      return `${symbol}${amount.toLocaleString()}`;
+    })
+    .join(' + ') || '¥0';
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background.primary} />
-      
+      <StatusBar barStyle="light-content" backgroundColor="#050505" />
+
+      {/* Ambient Background Glow */}
+      <View style={styles.ambientGlowContainer} pointerEvents="none">
+        <LinearGradient
+          colors={[
+            'rgba(255, 107, 53, 0.08)',
+            'rgba(255, 107, 53, 0.03)',
+            'transparent',
+          ]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.6 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       {/* Header: Executive Cockpit Style */}
       <View style={styles.header}>
         <View>
           <StatusIndicator
-            status={groupedCommitments.filter(g => g.activeCount > 0).length > 0 ? 'active' : 'dormant'}
-            label={groupedCommitments.filter(g => g.activeCount > 0).length > 0
+            status={activeCommitmentsCount > 0 ? 'active' : 'dormant'}
+            label={activeCommitmentsCount > 0
               ? i18n.t('dashboard.status_active')
               : i18n.t('dashboard.status_dormant')}
           />
@@ -259,53 +291,83 @@ export default function DashboardScreen({ navigation }: any) {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
             tintColor={colors.text.muted}
           />
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats: Glass Tile Panel */}
-        <GlassTile
-          variant="elevated"
-          glow={Object.values(poolByCurrency).some(v => v > 0) ? 'gold' : 'none'}
-          padding="lg"
-          style={styles.statsPanel}
-        >
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <MetricDisplay
-                label={i18n.t('dashboard.donation_pool')}
-                value={Object.entries(poolByCurrency)
-                  .filter(([_, amount]) => amount > 0)
-                  .map(([currency, amount]) => {
-                    const symbol = CURRENCY_SYMBOLS[currency] || currency;
-                    return `${symbol}${amount.toLocaleString()}`;
-                  })
-                  .join(' + ') || '¥0'}
-                size="medium"
-                color={colors.text.primary}
-              />
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statCard}>
-              <MetricDisplay
-                label={i18n.t('dashboard.total_donated')}
-                value={Object.entries(donatedByCurrency)
-                  .filter(([_, amount]) => amount > 0)
-                  .map(([currency, amount]) => {
-                    const symbol = CURRENCY_SYMBOLS[currency] || currency;
-                    return `${symbol}${amount.toLocaleString()}`;
-                  })
-                  .join(' + ') || '¥0'}
-                size="medium"
-                color={colors.text.muted}
-              />
-            </View>
+        {/* Stats Grid: Reference Design Style */}
+        <View style={styles.statsGrid}>
+          {/* Main Pool - Large Tile */}
+          <GlassTile
+            variant="sunken"
+            glow={Object.values(poolByCurrency).some(v => v > 0) ? 'ambient' : 'none'}
+            padding="lg"
+            borderRadius={24}
+            style={styles.mainStatTile}
+          >
+            <Text style={styles.statLabel}>{i18n.t('dashboard.donation_pool')}</Text>
+            <Text style={styles.mainStatValue}>{totalPool}</Text>
+          </GlassTile>
+
+          {/* Secondary Stats - Grid */}
+          <View style={styles.secondaryStatsRow}>
+            <GlassTile
+              variant="sunken"
+              padding="md"
+              borderRadius={20}
+              style={styles.smallStatTile}
+            >
+              <Text style={styles.smallStatValue}>{activeCommitmentsCount}</Text>
+              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.active_short') || 'Active'}</Text>
+            </GlassTile>
+
+            <GlassTile
+              variant="sunken"
+              padding="md"
+              borderRadius={20}
+              style={styles.smallStatTile}
+            >
+              <Text style={styles.smallStatValue}>{completedCount}</Text>
+              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.completed_short') || 'Done'}</Text>
+            </GlassTile>
           </View>
-        </GlassTile>
+
+          <View style={styles.secondaryStatsRow}>
+            <GlassTile
+              variant="sunken"
+              padding="md"
+              borderRadius={20}
+              style={styles.smallStatTile}
+            >
+              <Text style={[styles.smallStatValue, failedCount > 0 && styles.dangerValue]}>
+                {failedCount}
+              </Text>
+              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.failed_short') || 'Failed'}</Text>
+            </GlassTile>
+
+            <GlassTile
+              variant="sunken"
+              padding="md"
+              borderRadius={20}
+              style={styles.smallStatTile}
+            >
+              <Text style={styles.smallStatValue}>
+                {Object.entries(donatedByCurrency)
+                  .filter(([_, amount]) => amount > 0)
+                  .map(([currency, amount]) => {
+                    const symbol = CURRENCY_SYMBOLS[currency] || currency;
+                    return `${symbol}${Math.floor(amount / 1000)}k`;
+                  })
+                  .join('+') || '¥0'}
+              </Text>
+              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.donated_short') || 'Donated'}</Text>
+            </GlassTile>
+          </View>
+        </View>
 
         {/* Active Commitments */}
         <View style={styles.section}>
@@ -359,58 +421,103 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#050505',
+  },
+  ambientGlowContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 0.8,
+    zIndex: 0,
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    zIndex: 1,
   },
   userName: {
-    fontSize: 24,
-    color: colors.text.primary,
+    fontSize: 26,
+    color: '#FAFAFA',
     fontWeight: '300',
     marginTop: 8,
+    letterSpacing: -0.5,
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.background.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.glassSubtle,
   },
   content: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingBottom: 40,
+    zIndex: 1,
   },
-  statsPanel: {
+
+  // Stats Grid - Reference Design Style
+  statsGrid: {
     marginBottom: 32,
+    gap: 12,
   },
-  statsRow: {
+  mainStatTile: {
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  mainStatValue: {
+    fontSize: 42,
+    color: '#FAFAFA',
+    fontWeight: '200',
+    letterSpacing: -1,
+    fontVariant: ['tabular-nums'],
+  },
+  secondaryStatsRow: {
     flexDirection: 'row',
+    gap: 12,
+  },
+  smallStatTile: {
+    flex: 1,
+    minHeight: 90,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  statCard: {
-    flex: 1,
-    alignItems: 'flex-start',
+  smallStatValue: {
+    fontSize: 32,
+    color: '#FAFAFA',
+    fontWeight: '200',
+    letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'],
+    marginBottom: 4,
   },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.border.subtle,
-    marginHorizontal: 16,
+  smallStatLabel: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
+  dangerValue: {
+    color: '#FF6B6B',
+  },
+
   section: {
-    marginBottom: 40,
+    marginBottom: 32,
   },
   sectionTitle: {
     marginBottom: 16,
-    color: colors.text.muted,
+    color: 'rgba(255, 255, 255, 0.4)',
   },
   initialLoadingContainer: {
     flex: 1,
@@ -422,42 +529,42 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 14,
-    color: colors.text.secondary,
+    color: 'rgba(255, 255, 255, 0.5)',
     marginBottom: 20,
   },
   emptyButton: {
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: colors.background.card,
-    ...shadows.glassSubtle,
+    paddingVertical: 14,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
   },
   emptyButtonText: {
-    color: colors.text.primary, 
+    color: '#FF6B35',
     fontSize: 14,
+    fontWeight: '500',
   },
   historyRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border.subtle,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   historyInfo: {
     flex: 1,
   },
   historyTitle: {
-      color: colors.text.secondary,
-      fontSize: 14,
-      marginBottom: 4,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    marginBottom: 4,
   },
   historyDate: {
-      color: colors.text.muted,
-      fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 12,
   },
   historyAmount: {
-      fontSize: 14,
+    fontSize: 14,
   },
   fadeOverlay: {
     position: 'absolute',
