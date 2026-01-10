@@ -9,6 +9,7 @@ interface GlassTileProps {
   glow?: 'none' | 'gold' | 'ruby' | 'ambient';
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: number;
+  slashLight?: boolean; // 斜めの光沢エフェクト
   style?: ViewStyle;
 }
 
@@ -26,6 +27,7 @@ export function GlassTile({
   glow = 'none',
   padding = 'md',
   borderRadius = 20,
+  slashLight = true, // デフォルトでオン
   style,
 }: GlassTileProps) {
   // Sunken style creates the "deep glass" effect from the reference
@@ -103,6 +105,24 @@ export function GlassTile({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[styles.topEdge, { borderTopLeftRadius: borderRadius, borderTopRightRadius: borderRadius }]}
+          pointerEvents="none"
+        />
+      )}
+
+      {/* Slash Light - 斜めの光沢エフェクト (参考デザインの特徴) */}
+      {slashLight && (
+        <LinearGradient
+          colors={[
+            'transparent',
+            'rgba(255, 255, 255, 0.03)',
+            'rgba(255, 255, 255, 0.08)',
+            'rgba(255, 255, 255, 0.03)',
+            'transparent',
+          ]}
+          locations={[0, 0.35, 0.5, 0.65, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[StyleSheet.absoluteFill, { borderRadius }]}
           pointerEvents="none"
         />
       )}
