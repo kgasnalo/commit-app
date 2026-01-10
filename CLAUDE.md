@@ -189,6 +189,56 @@
   colors.border.default      // #333333
   colors.status.error        // #FF3D00
   ```
+- **Titan Design System (Phase 4.9):** For dark UI screens (MonkMode, CreateCommitment, CommitmentDetail, Receipt), use this unified luxury design pattern:
+  ```typescript
+  // Titan Background - Warm dark gradient with ambient lighting
+  <View style={styles.backgroundContainer} pointerEvents="none">
+    <LinearGradient
+      colors={['#1A1008', '#100A06', '#080604']}
+      locations={[0, 0.5, 1]}
+      style={StyleSheet.absoluteFill}
+    />
+    <LinearGradient
+      colors={['rgba(255, 160, 120, 0.15)', 'rgba(255, 160, 120, 0.06)', 'transparent']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.8, y: 0.7 }}
+      style={StyleSheet.absoluteFill}
+    />
+  </View>
+
+  // Glassmorphism card
+  glassmorphismCard: {
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+  }
+
+  // Piano Black button with orange glow
+  pianoBlackButton: {
+    backgroundColor: '#1A1714',
+    borderRadius: 32,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  }
+
+  // Luxury gauge text glow
+  luxuryGaugeText: {
+    fontSize: 48,
+    fontWeight: '200',
+    color: '#FAFAFA',
+    textShadowColor: 'rgba(255, 255, 255, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
+  }
+
+  // Orange accent color: #FF6B35
+  ```
 - **Language Detection:** Do NOT use `i18n.language` directly (property doesn't exist on I18n type). Use the `useLanguage()` hook from `LanguageContext`:
   ```typescript
   // BAD

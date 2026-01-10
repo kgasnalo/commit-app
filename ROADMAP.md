@@ -249,7 +249,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - **States:** 消灯（Dark Brown #0F0A06） vs 点灯（Glowing Orange #FF6B35）。アクティブな日はガラスの内側から光が漏れ出すような表現。
     - **DoD:** カレンダーを見ている感覚を排除し、ダッシュボードの「ステータスランプ」を確認するような体験を提供。
 
-- [ ] **4.9 The Titan Design Overhaul (Liquid Metal & Dark Glass Aesthetic) 🆕**
+- [x] **4.9 The Titan Design Overhaul (Liquid Metal & Dark Glass Aesthetic) ✅**
     - **Role:** `[Creative Director & UI Architect]`
     - **Action:** Execute a complete visual rebranding to unify the app under a "Hardcore Luxury & Ambient Flow" identity.
     - **Details:**
@@ -264,9 +264,19 @@ Each task is atomic, role-specific, and has a clear definition of done.
           - **Alert:** クリムゾン・ルビー（深みのある赤）。
           - **Light:** ガラスの反射を表現するソフトな白のグラデーション。
         - **UI Component Overhaul:**
-            - **Activity Log:** 「アンビエント・ステータス・ストリップ」。ソフトライト・インジケーターが埋め込まれたシームレスなガラスパネル。
-            - **Panels:** 「厚みのあるガラスタイル」。内側のシャドウとドロップシャドウで、背景に置かれた重厚なガラスブロックをシミュレート。
-    - **DoD:** アプリを起動した瞬間、高級車のエンジンスターターを押した時のような「高揚感」と「静寂」をユーザーが感じる。境界線がない（No Borders）哲学と「濡れた」黒・茶の質感が実装されている。
+            - **Activity Log:** "Ambient Status Strip". Seamless glass panel with embedded soft-light indicators (not punched holes).
+            - **Panels (Risk/Missions):** "Thick Glass Tiles". Remove borders. Use inner shadows and drop shadows to simulate heavy glass blocks resting on the background.
+            - **Interaction:** "Haptic Luxury". Heavy, mechanical feedback paired with "lighting up" animations (slow fade-in/out like incandescent bulbs).
+    - **Implementation (2026-01-10):**
+        - **Titan Background:** `LinearGradient` with `['#1A1008', '#100A06', '#080604']` + top-left ambient glow `rgba(255, 160, 120, 0.15)`
+        - **Glassmorphism:** `backgroundColor: 'rgba(26, 23, 20, 0.8)'`, `borderColor: 'rgba(255, 255, 255, 0.1)'`
+        - **Piano Black Buttons:** `backgroundColor: '#1A1714'`, `shadowColor: '#FF6B35'` (orange glow)
+        - **Orange Accent:** `#FF6B35` for highlights, checkmarks, labels
+        - **Text Glow:** `textShadowColor` with `textShadowRadius` for luxury gauge effect
+        - **Screens Updated:** MonkModeScreen, MonkModeActiveScreen, CreateCommitmentScreen, CommitmentDetailScreen
+        - **Components Updated:** DurationSlider, TimerDisplay, CommitmentReceipt, ReceiptPreviewModal
+        - **Commits:** `1d7f5fe`, `77db970`, `46fbf09`, `0624b75`, `d5656f3`
+    - **DoD:** The app feels like a physical instrument cluster of a hypercar. "Wet" black textures, optical depth, and "No Borders" philosophy are implemented. ✅
 
 ---
 
