@@ -165,6 +165,14 @@ export const titanShadows = {
     shadowRadius: 8,
     elevation: 6,
   },
+  // Sunken glass - heavy shadow for "pressed in" effect
+  sunkenGlass: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   // Glow effects for active/warning states
   goldGlow: {
     shadowColor: '#C5A059',
@@ -179,5 +187,13 @@ export const titanShadows = {
     shadowOpacity: 0.4,
     shadowRadius: 20,
     elevation: 0,
+  },
+  // Ambient orange glow (reference design style)
+  ambientGlow: {
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 8,
   },
 };

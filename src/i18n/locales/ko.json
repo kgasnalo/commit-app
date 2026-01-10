@@ -182,7 +182,13 @@
     "create_new": "커밋먼트 만들기",
     "failed_history": "기록",
     "status_active": "활성",
-    "status_dormant": "휴면"
+    "status_dormant": "휴면",
+    "active_short": "진행 중",
+    "completed_short": "완료",
+    "failed_short": "실패",
+    "donated_short": "기부됨",
+    "activity_log": "활동",
+    "days_suffix": "일"
   },
   "paywall": {
     "for_serious": "진지한 독자를 위해",

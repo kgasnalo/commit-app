@@ -13,7 +13,6 @@ import { CommitmentWithRange } from '../lib/commitmentHelpers';
 import { colors, typography, shadows } from '../theme';
 import { titanColors, titanShadows } from '../theme/titan';
 import { MicroLabel } from './titan/MicroLabel';
-import { TacticalText } from './titan/TacticalText';
 
 interface CommitmentCardProps {
   commitment: CommitmentWithRange;
@@ -76,56 +75,54 @@ export default function CommitmentCard({
           isUrgent && styles.cardUrgent,
         ]}
       >
-        {/* Glass highlight gradient */}
+        {/* Sunken glass gradient - darker at top-left */}
         <LinearGradient
           colors={[
-            titanColors.background.glassHighlight,
-            'transparent',
-            'transparent',
+            'rgba(0, 0, 0, 0.35)',
+            'rgba(0, 0, 0, 0.1)',
+            '#0C0C0C',
+            'rgba(255, 255, 255, 0.02)',
           ]}
-          locations={[0, 0.3, 1]}
+          locations={[0, 0.15, 0.5, 1]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
+          end={{ x: 0.3, y: 1 }}
           style={[StyleSheet.absoluteFill, styles.glassOverlay]}
           pointerEvents="none"
         />
         <View style={styles.cardContent}>
           <View style={styles.mainInfo}>
-            <View style={styles.headerRow}>
-              <Text style={styles.bookTitle} numberOfLines={1}>
-                {commitment.book.title}
-              </Text>
-              {commitment.status === 'completed' && (
-                <Ionicons name="checkmark-circle" size={16} color={colors.signal.success} />
-              )}
-            </View>
+            <Text style={styles.bookTitle} numberOfLines={1}>
+              {commitment.book.title}
+            </Text>
 
             <View style={styles.metaRow}>
               {showPageRange && (
-                <TacticalText size={13} color={colors.text.secondary}>
+                <Text style={styles.pageRange}>
                   P.{commitment.startPage}-{commitment.endPage}
-                </TacticalText>
+                </Text>
               )}
               {activeCount > 1 && (
-                <MicroLabel style={styles.linkedBadge}>+{activeCount - 1} LINKED</MicroLabel>
+                <View style={styles.linkedBadge}>
+                  <Text style={styles.linkedBadgeText}>+{activeCount - 1}</Text>
+                </View>
               )}
             </View>
           </View>
 
           <View style={styles.sideInfo}>
-            <View style={styles.pledgeContainer}>
-              <TacticalText size={16} weight="bold" color={isUrgent ? colors.signal.danger : colors.text.primary}>
-                {commitment.currency === 'JPY' ? '¥' : commitment.currency}
-                {commitment.pledge_amount.toLocaleString()}
-              </TacticalText>
-            </View>
+            <Text style={[styles.pledgeValue, isUrgent && styles.urgentText]}>
+              {commitment.currency === 'JPY' ? '¥' : commitment.currency}
+              {commitment.pledge_amount.toLocaleString()}
+            </Text>
 
             {commitment.status === 'pending' && (
-              <View style={styles.timerContainer}>
-                <MicroLabel color={isUrgent ? colors.signal.danger : colors.text.muted}>
-                  {countdown.expired ? 'EXPIRED' : `${countdown.days}D ${countdown.hours}H`}
-                </MicroLabel>
-              </View>
+              <Text style={[styles.countdown, isUrgent && styles.urgentText]}>
+                {countdown.expired ? 'EXPIRED' : `${countdown.days}D ${countdown.hours}H`}
+              </Text>
+            )}
+
+            {commitment.status === 'completed' && (
+              <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
             )}
           </View>
         </View>
@@ -136,29 +133,29 @@ export default function CommitmentCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: titanColors.background.card,
-    borderRadius: 16,
+    backgroundColor: '#0C0C0C',
+    borderRadius: 20,
     marginBottom: 12,
     overflow: 'hidden',
-    // Glass shadow
+    // Subtle shadow for depth
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 4,
   },
   cardUrgent: {
-    // Ruby glow for urgent cards
-    shadowColor: titanColors.signal.danger,
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
+    // Red ambient glow for urgent cards
+    shadowColor: '#FF6B6B',
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
   },
   glassOverlay: {
-    borderRadius: 16,
+    borderRadius: 20,
   },
   cardContent: {
     flexDirection: 'row',
-    padding: 16,
+    padding: 18,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -166,40 +163,52 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    gap: 8,
-  },
   bookTitle: {
-    fontFamily: typography.fontFamily.body,
-    fontWeight: '500',
     fontSize: 16,
-    color: colors.text.primary,
-    flexShrink: 1,
+    fontWeight: '500',
+    color: '#FAFAFA',
+    marginBottom: 6,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+  pageRange: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontVariant: ['tabular-nums'],
+  },
   linkedBadge: {
-    fontSize: 10,
-    color: colors.signal.info,
-    backgroundColor: 'rgba(74, 144, 226, 0.1)',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 4,
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  linkedBadgeText: {
+    fontSize: 11,
+    color: '#FF6B35',
+    fontWeight: '600',
   },
   sideInfo: {
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  pledgeContainer: {
-    marginBottom: 2,
+  pledgeValue: {
+    fontSize: 18,
+    fontWeight: '300',
+    color: '#FAFAFA',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
   },
-  timerContainer: {
-    marginTop: 2,
+  countdown: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontWeight: '500',
+    marginTop: 4,
+    letterSpacing: 0.3,
+  },
+  urgentText: {
+    color: '#FF6B6B',
   },
 });

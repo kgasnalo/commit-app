@@ -182,7 +182,13 @@
     "create_new": "Create Commitment",
     "failed_history": "History",
     "status_active": "ACTIVE",
-    "status_dormant": "DORMANT"
+    "status_dormant": "DORMANT",
+    "active_short": "Active",
+    "completed_short": "Done",
+    "failed_short": "Failed",
+    "donated_short": "Donated",
+    "activity_log": "ACTIVITY",
+    "days_suffix": "D"
   },
   "paywall": {
     "for_serious": "For serious readers",
