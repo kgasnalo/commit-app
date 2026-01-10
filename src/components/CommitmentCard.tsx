@@ -89,6 +89,28 @@ export default function CommitmentCard({
           style={[StyleSheet.absoluteFill, styles.glassOverlay]}
           pointerEvents="none"
         />
+
+        {/* Slash Light - 斜めの光沢エフェクト */}
+        <LinearGradient
+          colors={[
+            'transparent',
+            'rgba(255, 255, 255, 0.02)',
+            'rgba(255, 255, 255, 0.06)',
+            'rgba(255, 255, 255, 0.02)',
+            'transparent',
+          ]}
+          locations={[0, 0.35, 0.5, 0.65, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[StyleSheet.absoluteFill, styles.glassOverlay]}
+          pointerEvents="none"
+        />
+
+        {/* Arrow indicator (参考デザインの特徴) */}
+        <View style={styles.arrowIndicator}>
+          <Ionicons name="arrow-forward" size={14} color="rgba(255, 255, 255, 0.3)" />
+        </View>
+
         <View style={styles.cardContent}>
           <View style={styles.mainInfo}>
             <Text style={styles.bookTitle} numberOfLines={1}>
@@ -152,6 +174,17 @@ const styles = StyleSheet.create({
   },
   glassOverlay: {
     borderRadius: 20,
+  },
+  arrowIndicator: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardContent: {
     flexDirection: 'row',

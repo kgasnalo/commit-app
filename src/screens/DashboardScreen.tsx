@@ -284,7 +284,7 @@ export default function DashboardScreen({ navigation }: any) {
           style={styles.addButton}
           onPress={() => navigation.navigate('RoleSelect')}
         >
-          <Ionicons name="add" size={24} color={colors.text.primary} />
+          <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -451,9 +451,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#FF6B35', // オレンジ塗りつぶし（参考デザイン）
     justifyContent: 'center',
     alignItems: 'center',
+    // オレンジグロー
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   content: {
     paddingHorizontal: 20,
