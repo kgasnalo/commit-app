@@ -72,16 +72,23 @@ export default function CommitmentReceipt({
 
   return (
     <View style={styles.container}>
-      {/* Subtle noise texture overlay (simulated with gradient pattern) */}
+      {/* Warm dark gradient base */}
+      <LinearGradient
+        colors={['#1A1008', '#100A06', '#080604']}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      {/* Subtle noise texture overlay */}
       <View style={styles.noiseOverlay} />
 
-      {/* Diagonal brushed metal hairline gradient (45-degree) */}
+      {/* Diagonal warm brushed metal effect */}
       <LinearGradient
         colors={[
           'transparent',
-          'rgba(255,255,255,0.015)',
+          'rgba(255, 160, 120, 0.02)',
           'transparent',
-          'rgba(255,255,255,0.02)',
+          'rgba(255, 160, 120, 0.015)',
           'transparent',
         ]}
         locations={[0, 0.25, 0.5, 0.75, 1]}
@@ -90,10 +97,12 @@ export default function CommitmentReceipt({
         style={styles.brushedMetalDiagonal}
       />
 
-      {/* Metallic sheen from top */}
+      {/* Warm ambient glow from top-left */}
       <LinearGradient
-        colors={['rgba(255,255,255,0.04)', 'rgba(255,255,255,0)', 'rgba(255,255,255,0.01)']}
-        locations={[0, 0.35, 1]}
+        colors={['rgba(255, 160, 120, 0.08)', 'rgba(255, 160, 120, 0.02)', 'transparent']}
+        locations={[0, 0.4, 0.8]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.7, y: 0.6 }}
         style={styles.metallicSheen}
       />
 
@@ -136,7 +145,7 @@ export default function CommitmentReceipt({
         {/* Value Retained Section - Golden ratio spacing */}
         <View style={styles.valueSection}>
           <View style={styles.valueLabelRow}>
-            <Ionicons name="checkmark-circle" size={18} color="#00E676" />
+            <Ionicons name="checkmark-circle" size={18} color="#FF6B35" />
             <Text style={styles.valueLabel}>
               {i18n.t('receipt.value_retained')}
             </Text>
@@ -175,16 +184,16 @@ const styles = StyleSheet.create({
   container: {
     width: RECEIPT_WIDTH,
     height: RECEIPT_HEIGHT,
-    backgroundColor: '#030303',
-    borderRadius: 14,
+    backgroundColor: '#080604',
+    borderRadius: 20,
     borderWidth: 0.5,
-    borderColor: '#333333',
+    borderColor: 'rgba(255, 160, 120, 0.15)',
     overflow: 'hidden',
-    // Precision-cut metal edge effect
-    shadowColor: '#000',
+    // Deep shadow with subtle warm glow
+    shadowColor: '#FF6B35',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
     elevation: 12,
   },
   noiseOverlay: {
@@ -193,8 +202,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    opacity: 0.03,
-    backgroundColor: '#888888',
+    opacity: 0.02,
+    backgroundColor: '#A08060',
   },
   brushedMetalDiagonal: {
     position: 'absolute',
@@ -208,7 +217,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: '45%',
+    height: '50%',
   },
   contentWrapper: {
     flex: 1,
@@ -225,33 +234,35 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     letterSpacing: 8,
-    textShadowColor: 'rgba(255,255,255,0.06)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 0,
+    // Subtle warm glow
+    textShadowColor: 'rgba(255, 160, 120, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   logoUnderline: {
     marginTop: 8,
     width: 32,
     height: 1,
-    backgroundColor: '#444444',
+    backgroundColor: 'rgba(255, 160, 120, 0.3)',
   },
   divider: {
     width: '80%',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: 'rgba(255, 160, 120, 0.15)',
   },
   coverContainer: {
     width: COVER_WIDTH,
     height: COVER_HEIGHT,
-    borderRadius: 4,
+    borderRadius: 8,
     overflow: 'hidden',
     marginBottom: BASE_UNIT * PHI, // ~13px
+    // Cover shadow with warm tint
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
-    shadowRadius: 12,
+    shadowRadius: 16,
     elevation: 12,
   },
   coverImage: {
@@ -261,16 +272,16 @@ const styles = StyleSheet.create({
   coverFallback: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#0A0A0A',
+    backgroundColor: 'rgba(26, 23, 20, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0.5,
-    borderColor: '#2A2A2A',
+    borderColor: 'rgba(255, 160, 120, 0.2)',
   },
   coverFallbackText: {
     fontSize: 48,
     fontWeight: '700',
-    color: '#333333',
+    color: 'rgba(255, 160, 120, 0.3)',
     fontFamily: MONO_FONT,
   },
   bookInfoContainer: {
@@ -282,16 +293,13 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     textAlign: 'center',
     lineHeight: 24,
-    textShadowColor: 'rgba(255,255,255,0.04)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 0,
   },
   bookAuthor: {
     fontSize: 12,
-    color: '#666666',
+    color: 'rgba(255, 255, 255, 0.45)',
     textAlign: 'center',
     letterSpacing: 0.5,
   },
@@ -305,52 +313,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  // Orange glow label
   valueLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#00E676',
+    color: '#FF6B35',
     letterSpacing: 3,
-    textShadowColor: 'rgba(0,230,118,0.15)',
+    textShadowColor: 'rgba(255, 107, 53, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 4,
   },
+  // Giant glowing amount
   valueAmount: {
-    fontSize: 38,
+    fontSize: 40,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#FAFAFA',
     fontFamily: MONO_FONT,
     letterSpacing: 1,
-    marginTop: BASE_UNIT / 2, // Golden ratio: smaller gap above amount
-    textShadowColor: 'rgba(255,255,255,0.08)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 1,
+    marginTop: BASE_UNIT / 2,
+    // Strong glow
+    textShadowColor: 'rgba(255, 255, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 24,
+    gap: 28,
     marginTop: BASE_UNIT * PHI, // ~13px
   },
   detailItem: {
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   detailDivider: {
     width: 1,
     height: 28,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: 'rgba(255, 160, 120, 0.2)',
   },
   detailLabel: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#555555',
+    color: 'rgba(255, 160, 120, 0.5)',
     letterSpacing: 2,
   },
   detailValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#AAAAAA',
+    color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: MONO_FONT,
     letterSpacing: 1,
   },
@@ -360,7 +371,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 10,
-    color: '#3A3A3A',
+    color: 'rgba(255, 160, 120, 0.3)',
     letterSpacing: 1.5,
   },
 });

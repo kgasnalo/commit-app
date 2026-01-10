@@ -13,8 +13,10 @@ import {
   TouchableOpacity,
   Alert,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,6 +27,8 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 import i18n from '../../i18n';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useMonkModeTimer } from '../../hooks/useMonkModeTimer';
@@ -167,6 +171,27 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
+      {/* Titan Background */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#0C0A08', '#080604']}
+          locations={[0, 0.4, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Centered ambient glow for timer focus */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.08)',
+            'rgba(255, 160, 120, 0.03)',
+            'transparent',
+          ]}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0.5, y: 0.3 }}
+          end={{ x: 0.5, y: 0.8 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       {/* Entry overlay */}
       <Animated.View style={[styles.overlay, overlayStyle]} pointerEvents="none" />
 
@@ -200,8 +225,8 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
                 progress={progress}
                 size={280}
                 strokeWidth={6}
-                backgroundColor={colors.background.tertiary}
-                progressColor={colors.accent.primary}
+                backgroundColor="rgba(26, 23, 20, 0.8)"
+                progressColor="#FF6B35"
               />
               <View style={styles.timerDisplayOverlay}>
                 <TimerDisplay
@@ -270,7 +295,15 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#080604',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -279,6 +312,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    zIndex: 1,
   },
   safeArea: {
     flex: 1,
@@ -299,20 +333,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
+  // Glassmorphism book title badge
   bookTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.secondary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginBottom: 32,
-    gap: 8,
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginBottom: 36,
+    gap: 10,
     maxWidth: '80%',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   bookTitle: {
     fontSize: 14,
-    color: colors.text.secondary,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '500',
   },
   timerRingContainer: {
     position: 'relative',
@@ -327,54 +365,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pausedText: {
-    fontSize: 14,
-    color: colors.text.muted,
+    fontSize: 13,
+    color: 'rgba(255, 160, 120, 0.6)',
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginTop: 8,
+    fontWeight: '600',
   },
   activeTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginTop: 32,
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.4)',
+    marginTop: 36,
     textTransform: 'uppercase',
-    letterSpacing: 3,
+    letterSpacing: 4,
   },
   controlsContainer: {
     paddingBottom: 48,
     paddingHorizontal: 24,
     alignItems: 'center',
   },
+  // Piano Black control button with orange glow
   controlButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    borderRadius: 30,
+    backgroundColor: '#1A1714',
+    paddingVertical: 18,
+    paddingHorizontal: 48,
+    borderRadius: 32,
     gap: 12,
-    shadowColor: colors.accent.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    // Strong orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   controlButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#FAFAFA',
+    letterSpacing: 0.5,
   },
   retireButton: {
-    marginTop: 24,
+    marginTop: 28,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
   retireButtonText: {
-    fontSize: 14,
-    color: colors.text.muted,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.35)',
     fontWeight: '500',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
 });

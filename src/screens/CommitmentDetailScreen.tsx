@@ -8,15 +8,19 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type BookData = {
   id: string;
@@ -219,12 +223,33 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Titan Background */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Ambient light from top-left */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.12)',
+            'rgba(255, 160, 120, 0.05)',
+            'transparent',
+          ]}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          <Ionicons name="arrow-back" size={24} color="#FAFAFA" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{i18n.t('commitment_detail.title')}</Text>
-        <View style={styles.backButton} /> 
+        <View style={styles.backButton} />
       </View>
 
       <ScrollView
@@ -363,185 +388,257 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#080604',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_WIDTH * 1.5,
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 1,
   },
   backButton: {
-      width: 40,
-      alignItems: 'flex-start',
+    width: 40,
+    alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.7)',
+    letterSpacing: 0.5,
   },
   scrollView: {
     flex: 1,
+    zIndex: 1,
   },
   contentContainer: {
     padding: 24,
     paddingBottom: 40,
   },
+  // Glassmorphism book header
   bookHeader: {
-      flexDirection: 'row',
-      marginBottom: 40,
+    flexDirection: 'row',
+    marginBottom: 36,
+    backgroundColor: 'rgba(26, 23, 20, 0.7)',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   bookCoverContainer: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   bookCover: {
-    width: 90,
-    height: 135,
-    borderRadius: 4,
+    width: 80,
+    height: 120,
+    borderRadius: 8,
   },
   bookCoverPlaceholder: {
-    width: 90,
-    height: 135,
-    borderRadius: 4,
-    backgroundColor: colors.background.tertiary,
+    width: 80,
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bookInfo: {
     flex: 1,
-    marginLeft: 24,
+    marginLeft: 20,
     justifyContent: 'center',
   },
   bookTitle: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: colors.text.primary,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FAFAFA',
     marginBottom: 8,
-    lineHeight: 26,
+    lineHeight: 24,
   },
   bookAuthor: {
     fontSize: 14,
-    color: colors.text.secondary,
-    marginBottom: 16,
+    color: 'rgba(255, 255, 255, 0.5)',
+    marginBottom: 14,
   },
   statusChip: {
-      alignSelf: 'flex-start',
-      backgroundColor: colors.background.tertiary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 100,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 107, 53, 0.3)',
   },
   statusChipCompleted: {
-      backgroundColor: colors.signal.success,
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    borderColor: 'rgba(76, 175, 80, 0.4)',
   },
   statusChipFailed: {
-      backgroundColor: 'rgba(128, 0, 0, 0.2)',
+    backgroundColor: 'rgba(255, 107, 107, 0.15)',
+    borderColor: 'rgba(255, 107, 107, 0.3)',
   },
   statusChipText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FF6B35',
+    letterSpacing: 0.5,
   },
+  // Data section - glassmorphism rows
   dataSection: {
-      marginBottom: 40,
+    marginBottom: 32,
+    backgroundColor: 'rgba(26, 23, 20, 0.6)',
+    borderRadius: 16,
+    padding: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   dataRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border.subtle,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
+  // Chronograph countdown section
   countdownSection: {
     alignItems: 'center',
-    marginBottom: 40,
-    backgroundColor: colors.background.card,
-    padding: 24,
-    borderRadius: 8,
+    marginBottom: 36,
+    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    padding: 32,
+    borderRadius: 24,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    // Subtle inner glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 4,
   },
   countdownNumbers: {
     flexDirection: 'row',
-    gap: 40,
+    gap: 48,
   },
   countdownItem: {
     alignItems: 'center',
   },
+  // Giant glowing chronograph numbers
   countdownValue: {
-    fontSize: 32,
-    fontWeight: '300',
-    color: colors.text.primary,
+    fontSize: 48,
+    fontWeight: '200',
+    color: '#FAFAFA',
+    letterSpacing: -1,
+    // Luxury gauge glow
+    textShadowColor: 'rgba(255, 255, 255, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
   },
   countdownUnit: {
-    fontSize: 12,
-    color: colors.text.muted,
-    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255, 160, 120, 0.5)',
+    marginTop: 8,
+    letterSpacing: 2,
   },
   urgentText: {
-    color: colors.signal.danger,
-    fontWeight: '500',
+    color: '#FF6B6B',
+    // Urgent red glow
+    textShadowColor: 'rgba(255, 107, 107, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
   },
   expiredText: {
-    fontSize: 24,
-    color: colors.signal.danger,
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#FF6B6B',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(255, 107, 107, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   actionButtonsContainer: {
-    gap: 16,
+    gap: 14,
   },
+  // Piano Black verify button with orange glow
   verifyButton: {
-    backgroundColor: colors.text.primary, // White button
-    paddingVertical: 16,
-    borderRadius: 8,
+    backgroundColor: '#1A1714',
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    // Strong orange glow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   verifyButtonText: {
-    color: '#000',
+    color: '#FAFAFA',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
+  // Outline secondary button
   secondaryButton: {
     backgroundColor: 'transparent',
     paddingVertical: 16,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.bright,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   secondaryButtonDisabled: {
-      borderColor: colors.border.subtle,
-      opacity: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    opacity: 0.4,
   },
   secondaryButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
+    color: '#FAFAFA',
+    fontSize: 15,
+    fontWeight: '600',
   },
   secondaryButtonTextDisabled: {
-      color: colors.text.muted,
+    color: 'rgba(255, 255, 255, 0.4)',
   },
   completedMessage: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 20,
-    backgroundColor: 'rgba(197, 160, 89, 0.1)',
-    borderRadius: 8,
+    gap: 14,
+    paddingVertical: 24,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
   },
   completedText: {
     fontSize: 16,
-    color: colors.signal.success,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
   centerContent: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
-      color: colors.text.muted,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 15,
   },
 });
