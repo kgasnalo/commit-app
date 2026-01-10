@@ -229,47 +229,40 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [ ] **4.5 Advanced Animation Polish**
     - **Role:** `[Animation Specialist]`
     - **Action:** Refine all micro-interactions based on beta feedback.
+    - **Details:**
+        - **Haptic Luxury:** ボタン押下時に「高級車の物理スイッチ」のような重みのある振動（Haptic Feedback）を実装。
+        - **Ambient Transition:** 画面遷移やカード表示に、白熱電球のようなゆっくりとしたフェードイン/アウト（Slow Fade）と、光源が広がるようなアニメーションを適用。
 
 - [ ] **4.6 Reading DNA (Identity Analysis) 🆕**
     - **Role:** `[Data Viz Specialist]`
     - **Action:** Visualize user's reading habits to build identity.
     - **Details:**
-        - **Metrics:** Speed (pages/hour), Time of Day (Night owl vs Early bird), Genre breakdown.
-        - **UI:** "Spotify Wrapped" style cards in Profile.
-    - **DoD:** User can view their "Reader Type" and stats.
-
-- [ ] **4.7 The Hall of Fame (Netflix-style Library) 🆕**
-    - **Role:** `[UI/UX Designer]`
-    - **Action:** Transform the boring book list into a cinematic "Streaming Service" UI.
-    - **Details:**
-        - **Hero Section:** Display the most recently completed book with a large, blurred cover background (billboard style).
-        - **Horizontal Lists:** Group books into horizontally scrollable categories (e.g., "Recently Completed," "High Stakes (¥5000+)," "Speed Runs").
-        - **Interaction:** Tapping a book opens a bottom sheet with details/stats instead of a full screen push (keeping context).
-    - **DoD:** A "Watch History" style library that makes users feel like they are curating their own premium content.
+        - **Visual Style:** 統計データを単なるグラフではなく、**「ハイエンド車のテレメトリー画面」**のように表現。
+        - **UI:** 厚みのある磨りガラス（Thick Glass）カード内に、発光するデータラインを配置。
+    - **DoD:** ユーザーが自分の「Reader Type」を、高級ブランドのカスタマイズ履歴を確認するような「特別感」に感じられる。
 
 - [ ] **4.8 The Activity Matrix (Daily Habit HUD) 🆕**
     - **Role:** `[UI/UX Designer]`
     - **Action:** Add a "Github-style" contribution graph to the Home Header to visualize consistency.
     - **Details:**
-        - **Design:** A horizontal stream of small blocks (not a calendar).
-        - **States:** Dark Grey (Inactive) vs Glowing Red/White (Active).
-        - **Interaction:** Blocks light up with a "Click" sound and haptic feedback upon daily goal completion.
-        - **Location:** Home Screen Header (Dashboard).
-    - **DoD:** User can see their 30-day streak status at a glance without feeling like they are looking at a calendar.
+        - **Design:** GitHubのブロック形式を脱却し、**「埋め込み式のソフトライト・インジケーター」**を採用。
+        - **States:** 消灯（Dark Brown #0F0A06） vs 点灯（Glowing Orange #FF6B35）。アクティブな日はガラスの内側から光が漏れ出すような表現。
+    - **DoD:** カレンダーを見ている感覚を排除し、ダッシュボードの「ステータスランプ」を確認するような体験を提供。
 
 - [x] **4.9 The Titan Design Overhaul (Liquid Metal & Dark Glass Aesthetic) ✅**
     - **Role:** `[Creative Director & UI Architect]`
-    - **Action:** Execute a complete visual rebranding to unify the app under a "Hardcore Luxury" identity inspired by automotive digital cockpits (e.g., Mercedes MBUX, Porsche).
+    - **Action:** Execute a complete visual rebranding to unify the app under a "Hardcore Luxury & Ambient Flow" identity.
     - **Details:**
-        - **Core Concept:** "The Executive Cockpit". Move away from "Military/Spy Gadget" to "Luxury Asset Interface".
-        - **Materials:** Replace flat borders with **"Liquid Black Metal"** and **"Deep Optical Glass"**. Use high-contrast highlights and deep shadows (Bevels) to create physical thickness without 1px borders.
+        - **Core Concept:** "The Executive Cockpit & Light Sanctuary".
+        - **Materials:** 「No Borders（枠線なし）」思想。境界符号（¥）は数字の80%サイズに落とし、ウェイトも一段階細くして「情報のヒエラルキー」を構築。境界線の代わりに、ハイコントラストなハイライトと深いシャドウ（Bevels）を使用して、1pxの線を使わずに物理的な厚みを表現。
         - **Typography (Automotive Spec):**
-            - **Data/Numbers:** Use elegant, geometric sans-serifs (DIN, Inter, or Helvetica Neue). Large, thin weights for metrics (Speedometer style). No "Stencil" or "Typewriter" fonts.
-            - **Labels:** Minimalist and crisp. High legibility with premium tracking.
+            - **Data/Numbers:** エレガントなジオメトリック・サンセリフ（DIN, Inter, Helvetica Neue）。メトリクスにはスピードメーターのような大きく細いウェイトを使用。
+            - **Labels:** ミニマルで鮮明。プレミアムなトラッキング（字間）を適用。
         - **Color Palette:**
-          - **Base:** Obsidian Black (#050505) & Piano Black (High Gloss).
-            - **Alert:** Crimson Ruby (Deep, rich red with ambient glow). Avoid "Cyber Neon".
-            - **Light:** Soft white ambient gradients for glass reflections.
+          - **Base:** リッチダークオレンジブラウン（#1A1008）からディープダーク（#080604）へのグラデーション。
+          - **Primary Glow:** ブラッドオレンジ（#FF6B35）のアンビエント発光。
+          - **Alert:** クリムゾン・ルビー（深みのある赤）。
+          - **Light:** ガラスの反射を表現するソフトな白のグラデーション。
         - **UI Component Overhaul:**
             - **Activity Log:** "Ambient Status Strip". Seamless glass panel with embedded soft-light indicators (not punched holes).
             - **Panels (Risk/Missions):** "Thick Glass Tiles". Remove borders. Use inner shadows and drop shadows to simulate heavy glass blocks resting on the background.
