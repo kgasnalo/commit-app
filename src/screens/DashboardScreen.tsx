@@ -277,7 +277,7 @@ export default function DashboardScreen({ navigation }: any) {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <MetricDisplay
-                label={i18n.t('dashboard.pledged_amount')}
+                label={i18n.t('dashboard.donation_pool')}
                 value={Object.entries(poolByCurrency)
                   .filter(([_, amount]) => amount > 0)
                   .map(([currency, amount]) => {
@@ -292,7 +292,7 @@ export default function DashboardScreen({ navigation }: any) {
             <View style={styles.statDivider} />
             <View style={styles.statCard}>
               <MetricDisplay
-                label={i18n.t('dashboard.failed_amount')}
+                label={i18n.t('dashboard.total_donated')}
                 value={Object.entries(donatedByCurrency)
                   .filter(([_, amount]) => amount > 0)
                   .map(([currency, amount]) => {
