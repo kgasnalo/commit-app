@@ -5,12 +5,13 @@ import { titanColors, titanShadows } from '../../theme/titan';
 
 interface GlassTileProps {
   children: React.ReactNode;
-  variant?: 'default' | 'elevated' | 'subtle' | 'sunken';
+  variant?: 'default' | 'elevated' | 'subtle' | 'sunken' | 'glowing';
   glow?: 'none' | 'gold' | 'ruby' | 'ambient';
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: number;
-  slashLight?: boolean; // 斜めの光沢エフェクト
-  topBorder?: 'none' | 'orange' | 'white'; // 上部ボーダー（参考デザイン）
+  slashLight?: boolean;
+  topBorder?: 'none' | 'orange' | 'white';
+  innerGlow?: 'none' | 'orange' | 'strong'; // 内側からの発光
   style?: ViewStyle;
 }
 
@@ -29,11 +30,12 @@ export function GlassTile({
   padding = 'md',
   borderRadius = 20,
   slashLight = true,
-  topBorder = 'none', // 参考デザインの上部ボーダー
+  topBorder = 'none',
+  innerGlow = 'none',
   style,
 }: GlassTileProps) {
-  // Sunken style creates the "deep glass" effect from the reference
   const isSunken = variant === 'sunken';
+  const isGlowing = variant === 'glowing';
 
   const shadowStyle = (() => {
     switch (variant) {
@@ -41,6 +43,14 @@ export function GlassTile({
         return titanShadows.glass;
       case 'sunken':
         return titanShadows.sunkenGlass;
+      case 'glowing':
+        return {
+          shadowColor: '#FF6B35',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.4,
+          shadowRadius: 24,
+          elevation: 12,
+        };
       case 'subtle':
         return titanShadows.glassSubtle;
       default:
@@ -57,46 +67,89 @@ export function GlassTile({
 
   // Gradient colors based on variant
   const getGradientColors = (): string[] => {
-    if (isSunken) {
-      // Sunken glass: darker at top-left, lighter reflection at bottom
+    if (isGlowing) {
+      // 発光グラス: 背景からオレンジが透過
       return [
-        'rgba(0, 0, 0, 0.4)',      // Dark inner shadow
-        'rgba(0, 0, 0, 0.1)',      // Mid transition
-        titanColors.background.card,
-        'rgba(255, 255, 255, 0.02)', // Subtle bottom reflection
+        'rgba(255, 107, 53, 0.15)',   // オレンジグロー（上）
+        'rgba(255, 107, 53, 0.08)',
+        'rgba(26, 23, 20, 0.95)',      // 半透明ダーク
+        'rgba(26, 23, 20, 0.98)',
       ];
     }
-    // Default: top highlight
+    if (isSunken) {
+      return [
+        'rgba(0, 0, 0, 0.4)',
+        'rgba(0, 0, 0, 0.1)',
+        titanColors.background.card,
+        'rgba(255, 255, 255, 0.02)',
+      ];
+    }
     return [
-      'rgba(255, 255, 255, 0.12)',  // Strong top highlight
-      'rgba(255, 255, 255, 0.04)',  // Fade
+      'rgba(255, 255, 255, 0.12)',
+      'rgba(255, 255, 255, 0.04)',
       'transparent',
       'transparent',
     ];
   };
+
+  // Inner glow gradient (発光効果)
+  const getInnerGlowColors = (): string[] | null => {
+    if (innerGlow === 'strong') {
+      return [
+        'rgba(255, 107, 53, 0.25)',
+        'rgba(255, 107, 53, 0.12)',
+        'transparent',
+        'transparent',
+      ];
+    }
+    if (innerGlow === 'orange') {
+      return [
+        'rgba(255, 107, 53, 0.12)',
+        'rgba(255, 107, 53, 0.05)',
+        'transparent',
+        'transparent',
+      ];
+    }
+    return null;
+  };
+
+  const innerGlowColors = getInnerGlowColors();
 
   return (
     <View
       style={[
         styles.container,
         isSunken && styles.sunkenContainer,
+        isGlowing && styles.glowingContainer,
         shadowStyle,
         glowStyle,
         { borderRadius },
         style,
       ]}
     >
-      {/* Sunken inner shadow gradient */}
+      {/* Base gradient */}
       <LinearGradient
         colors={getGradientColors()}
-        locations={isSunken ? [0, 0.15, 0.5, 1] : [0, 0.15, 0.4, 1]}
+        locations={isGlowing ? [0, 0.2, 0.6, 1] : isSunken ? [0, 0.15, 0.5, 1] : [0, 0.15, 0.4, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.3, y: 1 }}
         style={[StyleSheet.absoluteFill, { borderRadius }]}
         pointerEvents="none"
       />
 
-      {/* Top Border - 参考デザインの上部ハイライト */}
+      {/* Inner Glow - 内側からの発光 */}
+      {innerGlowColors && (
+        <LinearGradient
+          colors={innerGlowColors}
+          locations={[0, 0.3, 0.6, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={[StyleSheet.absoluteFill, { borderRadius }]}
+          pointerEvents="none"
+        />
+      )}
+
+      {/* Top Border */}
       {topBorder !== 'none' && (
         <View
           style={[
@@ -112,7 +165,7 @@ export function GlassTile({
       )}
 
       {/* Top edge highlight line */}
-      {!isSunken && topBorder === 'none' && (
+      {!isSunken && !isGlowing && topBorder === 'none' && (
         <LinearGradient
           colors={[
             'rgba(255, 255, 255, 0.1)',
@@ -126,7 +179,7 @@ export function GlassTile({
         />
       )}
 
-      {/* Slash Light - 斜めの光沢エフェクト (参考デザインの特徴) */}
+      {/* Slash Light */}
       {slashLight && (
         <LinearGradient
           colors={[
@@ -154,11 +207,14 @@ export function GlassTile({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: titanColors.background.card, // 暖色系 #1A1714
+    backgroundColor: titanColors.background.card,
     overflow: 'hidden',
   },
   sunkenContainer: {
     backgroundColor: titanColors.background.tertiary,
+  },
+  glowingContainer: {
+    backgroundColor: 'rgba(26, 23, 20, 0.85)', // 半透明で発光が透過
   },
   topBorder: {
     position: 'absolute',
@@ -174,9 +230,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: 1,
   },
-  content: {
-    // Content wrapper for padding
-  },
+  content: {},
 });
 
 export default GlassTile;

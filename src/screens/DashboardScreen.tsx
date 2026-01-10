@@ -255,18 +255,31 @@ export default function DashboardScreen({ navigation }: any) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0B09" />
 
-      {/* Ambient Background Glow - 参考デザインの暖色グロー */}
+      {/* Deep Orange-Brown Background - 参考デザインの深いオレンジ世界 */}
       <View style={styles.ambientGlowContainer} pointerEvents="none">
+        {/* Base: Deep brown gradient */}
         <LinearGradient
           colors={[
-            'rgba(255, 107, 53, 0.15)', // より強いオレンジ
-            'rgba(255, 140, 80, 0.08)',
-            'rgba(255, 107, 53, 0.03)',
+            'rgba(40, 25, 15, 0.9)',     // 深いオレンジブラウン（上部）
+            'rgba(25, 18, 12, 0.95)',
+            'rgba(13, 11, 9, 1)',        // ベース暖色ダーク
+          ]}
+          locations={[0, 0.4, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Overlay: Strong orange glow from top */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 107, 53, 0.25)',  // 強いオレンジグロー
+            'rgba(255, 140, 80, 0.12)',
+            'rgba(255, 107, 53, 0.05)',
             'transparent',
           ]}
-          locations={[0, 0.2, 0.5, 1]}
-          start={{ x: 0.3, y: 0 }}
-          end={{ x: 0.7, y: 0.8 }}
+          locations={[0, 0.15, 0.4, 0.7]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.8 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -303,12 +316,12 @@ export default function DashboardScreen({ navigation }: any) {
       >
         {/* Stats Grid: Reference Design Style */}
         <View style={styles.statsGrid}>
-          {/* Main Pool - Large Tile with orange top border */}
+          {/* Main Pool - Glowing Tile (最強調) */}
           <GlassTile
-            variant="sunken"
-            glow={Object.values(poolByCurrency).some(v => v > 0) ? 'ambient' : 'none'}
-            padding="lg"
-            borderRadius={24}
+            variant="glowing"
+            innerGlow="strong"
+            padding="xl"
+            borderRadius={28}
             topBorder="orange"
             style={styles.mainStatTile}
           >
@@ -316,13 +329,14 @@ export default function DashboardScreen({ navigation }: any) {
             <Text style={styles.mainStatValue}>{totalPool}</Text>
           </GlassTile>
 
-          {/* Secondary Stats - Grid */}
+          {/* Secondary Stats - Grid (控えめな発光) */}
           <View style={styles.secondaryStatsRow}>
             <GlassTile
-              variant="sunken"
+              variant="default"
+              innerGlow="orange"
               padding="md"
               borderRadius={20}
-              topBorder="white"
+              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>{activeCommitmentsCount}</Text>
@@ -330,10 +344,11 @@ export default function DashboardScreen({ navigation }: any) {
             </GlassTile>
 
             <GlassTile
-              variant="sunken"
+              variant="default"
+              innerGlow="orange"
               padding="md"
               borderRadius={20}
-              topBorder="white"
+              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>{completedCount}</Text>
@@ -343,10 +358,11 @@ export default function DashboardScreen({ navigation }: any) {
 
           <View style={styles.secondaryStatsRow}>
             <GlassTile
-              variant="sunken"
+              variant="default"
+              innerGlow="orange"
               padding="md"
               borderRadius={20}
-              topBorder="white"
+              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={[styles.smallStatValue, failedCount > 0 && styles.dangerValue]}>
@@ -356,10 +372,11 @@ export default function DashboardScreen({ navigation }: any) {
             </GlassTile>
 
             <GlassTile
-              variant="sunken"
+              variant="default"
+              innerGlow="orange"
               padding="md"
               borderRadius={20}
-              topBorder="white"
+              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>
@@ -480,22 +497,27 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   mainStatTile: {
-    minHeight: 100,
+    minHeight: 120,
     justifyContent: 'center',
   },
   statLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.45)',
     fontWeight: '500',
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    letterSpacing: 0.8,
+    marginBottom: 12,
+    textTransform: 'uppercase',
   },
   mainStatValue: {
-    fontSize: 42,
-    color: '#FAFAFA',
-    fontWeight: '200',
-    letterSpacing: -1,
+    fontSize: 56,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    letterSpacing: -1.5,
     fontVariant: ['tabular-nums'],
+    // 数字に微妙なグロー効果
+    textShadowColor: 'rgba(255, 107, 53, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   secondaryStatsRow: {
     flexDirection: 'row',
