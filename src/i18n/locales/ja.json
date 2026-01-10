@@ -186,7 +186,9 @@
     "active_short": "進行中",
     "completed_short": "完了",
     "failed_short": "失敗",
-    "donated_short": "寄付済"
+    "donated_short": "寄付済",
+    "activity_log": "アクティビティ",
+    "days_suffix": "日"
   },
   "paywall": {
     "for_serious": "本気の人向け",

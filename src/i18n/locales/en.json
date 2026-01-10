@@ -186,7 +186,9 @@
     "active_short": "Active",
     "completed_short": "Done",
     "failed_short": "Failed",
-    "donated_short": "Donated"
+    "donated_short": "Donated",
+    "activity_log": "ACTIVITY",
+    "days_suffix": "D"
   },
   "paywall": {
     "for_serious": "For serious readers",

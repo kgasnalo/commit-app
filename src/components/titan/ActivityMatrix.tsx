@@ -1,50 +1,124 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { colors } from '../../theme';
-import { TacticalText } from './TacticalText';
+import React, { useMemo } from 'react';
+import { View, StyleSheet, Pressable } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { MicroLabel } from './MicroLabel';
+import i18n from '../../i18n';
+
+// Activity level colors (Titan orange palette)
+const LEVEL_COLORS = [
+  '#1A1A1A',                    // 0: inactive (dark grey)
+  'rgba(255, 107, 53, 0.35)',   // 1: low activity
+  'rgba(255, 107, 53, 0.65)',   // 2: medium activity
+  '#FF6B35',                    // 3: high activity
+];
+
+export interface ActivityDay {
+  date: string;
+  level: 0 | 1 | 2 | 3;
+  isToday?: boolean;
+}
 
 interface ActivityMatrixProps {
-  // In a real implementation, this would take an array of activity levels (0-4)
-  // For now, we simulate a "live" pattern
-  data?: number[]; 
+  data?: ActivityDay[];
+  days?: number;
+  onDayPress?: (day: ActivityDay) => void;
+}
+
+// Individual block with tap animation
+function ActivityBlock({
+  level,
+  isToday,
+  onPress,
+}: {
+  level: number;
+  isToday?: boolean;
+  onPress?: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scale.value = withSequence(
+      withSpring(1.2, { damping: 10, stiffness: 400 }),
+      withSpring(1.0, { damping: 15 })
+    );
+    onPress?.();
+  };
+
+  return (
+    <Pressable onPress={handlePress}>
+      <Animated.View
+        style={[
+          styles.block,
+          { backgroundColor: LEVEL_COLORS[level] || LEVEL_COLORS[0] },
+          level >= 2 && styles.blockGlow,
+          isToday && styles.todayBlock,
+          animatedStyle,
+        ]}
+      />
+    </Pressable>
+  );
 }
 
 /**
  * ActivityMatrix
- * 
- * A GitHub-style contribution graph adapted for the Titan aesthetic.
- * Visualizes consistency and "System Activity".
+ *
+ * GitHub-style contribution heatmap with Titan orange aesthetic.
+ * Reference: Report sales screen heatmap from design spec.
  */
-export const ActivityMatrix: React.FC<ActivityMatrixProps> = ({ data }) => {
-  // Generate a fixed grid of 5 rows x 14 columns (last 2 weeks approx)
-  // or a single row strip. Let's do a single horizontal strip for the header.
-  // 20 blocks representing the last 20 days.
-  
-  const blocks = Array.from({ length: 24 }).map((_, i) => {
-    // Mock data generation: Make some blocks active (red) and others dormant (dark)
-    // Randomize for visual effect in prototype
-    const intensity = Math.random() > 0.6 ? (Math.random() > 0.8 ? 2 : 1) : 0;
-    return intensity;
-  });
+export const ActivityMatrix: React.FC<ActivityMatrixProps> = ({
+  data,
+  days = 30,
+  onDayPress,
+}) => {
+  // Generate display data
+  const displayData = useMemo(() => {
+    if (data && data.length > 0) {
+      return data.slice(-days);
+    }
+
+    // Mock data for prototype
+    return Array.from({ length: days }).map((_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (days - 1 - i));
+      const random = Math.random();
+      const level = random > 0.7 ? 3 : random > 0.5 ? 2 : random > 0.3 ? 1 : 0;
+      return {
+        date: date.toISOString().split('T')[0],
+        level: level as 0 | 1 | 2 | 3,
+        isToday: i === days - 1,
+      };
+    });
+  }, [data, days]);
 
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <MicroLabel style={styles.label}>ACTIVITY LOG</MicroLabel>
-        <TacticalText size={10} color={colors.text.secondary}>T-30D</TacticalText>
+        <MicroLabel style={styles.label}>
+          {i18n.t('dashboard.activity_log') || 'ACTIVITY'}
+        </MicroLabel>
+        <MicroLabel style={styles.duration}>
+          {days}{i18n.t('dashboard.days_suffix') || 'D'}
+        </MicroLabel>
       </View>
-      
+
       <View style={styles.grid}>
-        {blocks.map((level, index) => (
-          <View 
-            key={index} 
-            style={[
-              styles.block,
-              level === 0 && styles.blockDormant,
-              level === 1 && styles.blockActive,
-              level === 2 && styles.blockIntense,
-            ]} 
+        {displayData.map((day, index) => (
+          <ActivityBlock
+            key={day.date || index}
+            level={day.level}
+            isToday={day.isToday}
+            onPress={() => onDayPress?.(day)}
           />
         ))}
       </View>
@@ -55,43 +129,41 @@ export const ActivityMatrix: React.FC<ActivityMatrixProps> = ({ data }) => {
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingHorizontal: 4,
+    alignItems: 'center',
+    marginBottom: 10,
   },
   label: {
-    opacity: 0.7,
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+  duration: {
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 10,
   },
   grid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: 4,
   },
   block: {
-    height: 12,
-    flex: 1, // Distribute width evenly
-    borderRadius: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 4,
   },
-  blockDormant: {
-    backgroundColor: colors.background.tertiary,
-  },
-  blockActive: {
-    backgroundColor: colors.signal.active, // Neon Red
-    opacity: 0.5,
-  },
-  blockIntense: {
-    backgroundColor: colors.signal.active, // Neon Red
-    opacity: 1.0,
-    shadowColor: colors.signal.active,
+  blockGlow: {
+    shadowColor: '#FF6B35',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    shadowOpacity: 0.6,
     shadowRadius: 4,
-    // Android elevation doesn't support color well, but we add it anyway
     elevation: 2,
   },
+  todayBlock: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
 });
+
+export default ActivityMatrix;
