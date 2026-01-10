@@ -1,21 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import i18n from '../i18n';
 import { CommitmentWithRange } from '../lib/commitmentHelpers';
+import { colors, typography, shadows } from '../theme';
+import { titanColors, titanShadows } from '../theme/titan';
+import { MicroLabel } from './titan/MicroLabel';
+import { TacticalText } from './titan/TacticalText';
 
 interface CommitmentCardProps {
   commitment: CommitmentWithRange;
   activeCount: number;
   onPress: () => void;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function CommitmentCard({
   commitment,
@@ -29,11 +33,16 @@ export default function CommitmentCard({
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(0.98, { damping: 20, stiffness: 200 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(1, { damping: 20, stiffness: 200 });
+  };
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onPress();
   };
 
   const getCountdown = (deadline: string) => {
@@ -50,243 +59,147 @@ export default function CommitmentCard({
   };
 
   const countdown = getCountdown(commitment.deadline);
-  const isUrgent = countdown.days <= 3 && !countdown.expired && commitment.status === 'pending';
+  // Red warning only if < 2 days
+  const isUrgent = countdown.days <= 1 && !countdown.expired && commitment.status === 'pending';
   const showPageRange = commitment.startPage > 0 && commitment.endPage > 0;
-  const showPartBadge = commitment.commitmentIndex > 1;
-  const showActiveCountBadge = activeCount > 1;
-  const hasStackEffect = activeCount > 1;
 
   return (
-    <View style={hasStackEffect ? styles.stackContainer : undefined}>
-      {/* Stack effect: background layers */}
-      {hasStackEffect && (
-        <>
-          {activeCount >= 3 && (
-            <View style={[styles.stackLayer, styles.stackLayer3]} />
-          )}
-          <View style={[styles.stackLayer, styles.stackLayer2]} />
-        </>
-      )}
-      <AnimatedPressable
+    <Pressable
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Animated.View
         style={[
           styles.card,
-          isUrgent && styles.urgentCard,
-          hasStackEffect && styles.cardWithStack,
           animatedStyle,
+          isUrgent && styles.cardUrgent,
         ]}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
       >
-      <View style={styles.cardHeader}>
-        <Text style={styles.bookTitle} numberOfLines={1}>
-          {commitment.book.title}
-        </Text>
-        <View
-          style={[
-            styles.statusBadge,
-            commitment.status === 'completed' && styles.completedBadge,
-            commitment.status === 'defaulted' && styles.defaultedBadge,
+        {/* Glass highlight gradient */}
+        <LinearGradient
+          colors={[
+            titanColors.background.glassHighlight,
+            'transparent',
+            'transparent',
           ]}
-        >
-          <Text style={styles.statusText}>
-            {commitment.status === 'pending'
-              ? i18n.t('dashboard.in_progress')
-              : commitment.status === 'completed'
-              ? i18n.t('dashboard.completed')
-              : i18n.t('dashboard.failed')}
-          </Text>
-        </View>
-      </View>
-
-      {showPageRange && (
-        <Text style={styles.pageRange}>
-          {i18n.t('dashboard.page_range', {
-            start: commitment.startPage.toLocaleString(),
-            end: commitment.endPage.toLocaleString(),
-            defaultValue: `Target: pp. ${commitment.startPage} - ${commitment.endPage}`,
-          })}
-        </Text>
-      )}
-
-      {(showPartBadge || showActiveCountBadge) && (
-        <View style={styles.badgeRow}>
-          {showPartBadge && (
-            <View style={styles.partBadge}>
-              <Text style={styles.partBadgeText}>
-                {i18n.t('dashboard.continuation_part', {
-                  part: commitment.commitmentIndex,
-                  defaultValue: `Part ${commitment.commitmentIndex}`,
-                })}
+          locations={[0, 0.3, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[StyleSheet.absoluteFill, styles.glassOverlay]}
+          pointerEvents="none"
+        />
+        <View style={styles.cardContent}>
+          <View style={styles.mainInfo}>
+            <View style={styles.headerRow}>
+              <Text style={styles.bookTitle} numberOfLines={1}>
+                {commitment.book.title}
               </Text>
+              {commitment.status === 'completed' && (
+                <Ionicons name="checkmark-circle" size={16} color={colors.signal.success} />
+              )}
             </View>
-          )}
-          {showActiveCountBadge && (
-            <View style={styles.activeCountBadge}>
-              <Text style={styles.activeCountText}>
-                {i18n.t('dashboard.active_goals', {
-                  count: activeCount,
-                  defaultValue: `${activeCount} goals`,
-                })}
-              </Text>
+
+            <View style={styles.metaRow}>
+              {showPageRange && (
+                <TacticalText size={13} color={colors.text.secondary}>
+                  P.{commitment.startPage}-{commitment.endPage}
+                </TacticalText>
+              )}
+              {activeCount > 1 && (
+                <MicroLabel style={styles.linkedBadge}>+{activeCount - 1} LINKED</MicroLabel>
+              )}
             </View>
-          )}
-        </View>
-      )}
+          </View>
 
-      {commitment.status === 'pending' && (
-        <View style={styles.countdown}>
-          <Ionicons
-            name="time-outline"
-            size={20}
-            color={isUrgent ? '#ff6b6b' : '#666'}
-          />
-          <Text style={[styles.countdownText, isUrgent && styles.urgentText]}>
-            {countdown.expired
-              ? i18n.t('dashboard.failed')
-              : `${i18n.t('dashboard.remaining')} ${countdown.days}${i18n.t(
-                  'dashboard.days'
-                )} ${countdown.hours}${i18n.t('dashboard.hours')}`}
-          </Text>
-        </View>
-      )}
+          <View style={styles.sideInfo}>
+            <View style={styles.pledgeContainer}>
+              <TacticalText size={16} weight="bold" color={isUrgent ? colors.signal.danger : colors.text.primary}>
+                {commitment.currency === 'JPY' ? '¥' : commitment.currency}
+                {commitment.pledge_amount.toLocaleString()}
+              </TacticalText>
+            </View>
 
-      <Text style={styles.pledgeAmount}>
-        {i18n.t('dashboard.penalty')}: {commitment.currency === 'JPY' ? '\u00a5' : commitment.currency}
-        {commitment.pledge_amount.toLocaleString()}
-      </Text>
-      </AnimatedPressable>
-    </View>
+            {commitment.status === 'pending' && (
+              <View style={styles.timerContainer}>
+                <MicroLabel color={isUrgent ? colors.signal.danger : colors.text.muted}>
+                  {countdown.expired ? 'EXPIRED' : `${countdown.days}D ${countdown.hours}H`}
+                </MicroLabel>
+              </View>
+            )}
+          </View>
+        </View>
+      </Animated.View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  stackContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  stackLayer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  stackLayer2: {
-    transform: [{ translateX: 4 }, { translateY: 4 }],
-    backgroundColor: '#f5f5f5',
-  },
-  stackLayer3: {
-    transform: [{ translateX: 8 }, { translateY: 8 }],
-    backgroundColor: '#fafafa',
-  },
   card: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: titanColors.background.card,
+    borderRadius: 16,
     marginBottom: 12,
+    overflow: 'hidden',
+    // Glass shadow
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  cardWithStack: {
-    marginBottom: 0,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+  cardUrgent: {
+    // Ruby glow for urgent cards
+    shadowColor: titanColors.signal.danger,
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
   },
-  urgentCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#ff6b6b',
+  glassOverlay: {
+    borderRadius: 16,
   },
-  cardHeader: {
+  cardContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    padding: 16,
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+  },
+  mainInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 8,
   },
   bookTitle: {
+    fontFamily: typography.fontFamily.body,
+    fontWeight: '500',
     fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 8,
+    color: colors.text.primary,
+    flexShrink: 1,
   },
-  statusBadge: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  completedBadge: {
-    backgroundColor: '#e8f5e9',
-  },
-  defaultedBadge: {
-    backgroundColor: '#ffebee',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  pageRange: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  badgeRow: {
+  metaRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
   },
-  partBadge: {
-    backgroundColor: '#f3e5f5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  linkedBadge: {
+    fontSize: 10,
+    color: colors.signal.info,
+    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
     borderRadius: 4,
   },
-  partBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#7b1fa2',
+  sideInfo: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
-  activeCountBadge: {
-    backgroundColor: '#e65100',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+  pledgeContainer: {
+    marginBottom: 2,
   },
-  activeCountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  countdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 8,
-  },
-  countdownText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  urgentText: {
-    color: '#ff6b6b',
-    fontWeight: '600',
-  },
-  pledgeAmount: {
-    fontSize: 14,
-    color: '#666',
+  timerContainer: {
+    marginTop: 2,
   },
 });

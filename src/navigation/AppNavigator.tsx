@@ -2,15 +2,15 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
-import { colors } from '../theme/colors';
 import i18n from '../i18n';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
+import { colors, typography } from '../theme';
 
 // 統一された認証状態型
 type AuthState =
@@ -107,23 +107,29 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0A0A0A',
-          borderTopColor: '#1A1A1A',
-          height: 85,
-          paddingBottom: 30,
-          paddingTop: 10,
+          backgroundColor: colors.background.primary, // Titan Black
+          borderTopColor: '#222', // Subtle separator
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          paddingTop: 8,
         },
-        tabBarActiveTintColor: '#FF4D00',
-        tabBarInactiveTintColor: '#666666',
+        tabBarActiveTintColor: colors.signal.active, // Neon Red
+        tabBarInactiveTintColor: colors.text.muted, // Dark Grey
+        tabBarLabelStyle: {
+          fontFamily: typography.fontFamily.heading,
+          fontSize: 10,
+          letterSpacing: 0.5,
+          marginTop: 2,
+        },
       }}
     >
       <Tab.Screen
         name="HomeTab"
         component={HomeStackNavigator}
         options={{
-          tabBarLabel: i18n.t('tabs.home'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarLabel: 'MISSION',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "planet" : "planet-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -131,9 +137,9 @@ function MainTabs() {
         name="MonkModeTab"
         component={MonkModeStackNavigator}
         options={{
-          tabBarLabel: i18n.t('tabs.monkmode'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="timer-outline" size={size} color={color} />
+          tabBarLabel: 'FOCUS',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "timer" : "timer-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -141,9 +147,9 @@ function MainTabs() {
         name="LibraryTab"
         component={LibraryStackNavigator}
         options={{
-          tabBarLabel: i18n.t('tabs.library'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="library" size={size} color={color} />
+          tabBarLabel: 'ARCHIVE',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "albums" : "albums-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -151,9 +157,9 @@ function MainTabs() {
         name="SettingsTab"
         component={SettingsStackNavigator}
         options={{
-          tabBarLabel: i18n.t('tabs.settings'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
+          tabBarLabel: 'SYSTEM',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "construct" : "construct-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -334,10 +340,10 @@ function AppNavigatorInner() {
   if (isLoading) {
     return (
       <View style={loadingStyles.container}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color={colors.signal.active} />
         <View style={loadingStyles.textContainer}>
           <Text style={loadingStyles.title}>COMMIT</Text>
-          <Text style={loadingStyles.subtitle}>{i18n.t('auth.subtitle')}</Text>
+          <Text style={loadingStyles.subtitle}>SYSTEM INITIALIZING...</Text>
         </View>
       </View>
     );
@@ -421,13 +427,14 @@ const loadingStyles = StyleSheet.create({
     marginTop: 16,
   },
   title: {
+    fontFamily: typography.fontFamily.heading,
     fontSize: 40,
     fontWeight: '800',
     letterSpacing: 4,
     color: colors.text.primary,
   },
   subtitle: {
-    fontSize: 14,
+    ...typography.microCaps,
     color: colors.text.secondary,
     marginTop: 8,
     letterSpacing: 2,

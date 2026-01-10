@@ -13,7 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScanBarcode } from 'lucide-react-native';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
-import { colors, typography, borderRadius, spacing } from '../../theme';
+import { colors, typography } from '../../theme';
+import { TacticalText } from '../../components/titan/TacticalText';
+import { MicroLabel } from '../../components/titan/MicroLabel';
 import i18n from '../../i18n';
 import { GOOGLE_API_KEY } from '../../config/env';
 
@@ -64,14 +66,13 @@ export default function OnboardingScreen3({ navigation, route }: any) {
     <OnboardingLayout
       currentStep={3}
       totalSteps={14}
-      title={i18n.t('onboarding.screen3_title')}
-      subtitle={i18n.t('onboarding.screen3_subtitle')}
+      title="TARGET IDENTIFICATION"
+      subtitle="Select the first book to secure."
     >
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={colors.text.muted} />
         <TextInput
           style={styles.searchInput}
-          placeholder={i18n.t('onboarding.screen3_search_placeholder')}
+          placeholder="ENTER TITLE / AUTHOR / ISBN"
           placeholderTextColor={colors.text.muted}
           value={query}
           onChangeText={setQuery}
@@ -81,10 +82,16 @@ export default function OnboardingScreen3({ navigation, route }: any) {
         <TouchableOpacity
           style={styles.scanButton}
           onPress={() => setShowScanner(true)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.7}
         >
-          <ScanBarcode size={24} color={colors.text.primary} />
+          <ScanBarcode size={20} color={colors.signal.active} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.searchButton}
+          onPress={searchBooks}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="search" size={20} color="#000" />
         </TouchableOpacity>
       </View>
 
@@ -100,11 +107,15 @@ export default function OnboardingScreen3({ navigation, route }: any) {
       />
 
       {loading ? (
-        <ActivityIndicator color={colors.accent.primary} style={styles.loader} />
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator color={colors.signal.active} />
+          <MicroLabel style={{ marginTop: 8 }}>SEARCHING DATABASE...</MicroLabel>
+        </View>
       ) : (
         <FlatList
           data={results}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.bookItem}
@@ -122,13 +133,13 @@ export default function OnboardingScreen3({ navigation, route }: any) {
               )}
               <View style={styles.bookInfo}>
                 <Text style={styles.bookTitle} numberOfLines={2}>
-                  {item.volumeInfo.title}
+                  {item.volumeInfo.title.toUpperCase()}
                 </Text>
-                <Text style={styles.bookAuthor} numberOfLines={1}>
-                  {item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author')}
-                </Text>
+                <TacticalText size={10} color={colors.text.muted} numberOfLines={1}>
+                  {item.volumeInfo.authors?.join(', ').toUpperCase() || 'UNKNOWN AUTHOR'}
+                </TacticalText>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.text.muted} />
+              <Ionicons name="add" size={20} color={colors.signal.active} />
             </TouchableOpacity>
           )}
           showsVerticalScrollIndicator={false}
@@ -142,64 +153,82 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.tertiary,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    height: 52,
-    marginBottom: spacing.lg,
+    marginBottom: 24,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
-    marginLeft: spacing.sm,
+    height: 48,
+    backgroundColor: colors.background.card,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
+    paddingHorizontal: 16,
     color: colors.text.primary,
-    fontSize: typography.fontSize.body,
+    fontFamily: typography.fontFamily.monospace,
+    fontSize: 12,
   },
   scanButton: {
-    padding: spacing.sm,
-    marginLeft: spacing.xs,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.signal.active,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 51, 51, 0.1)',
   },
-  loader: {
-    marginTop: spacing.xl,
+  searchButton: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.signal.active,
+    borderRadius: 2,
+  },
+  loaderContainer: {
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  listContent: {
+    paddingBottom: 40,
   },
   bookItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.secondary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    backgroundColor: colors.background.card,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
+    padding: 12,
+    marginBottom: 8,
   },
   bookCover: {
-    width: 50,
-    height: 70,
-    borderRadius: borderRadius.sm,
+    width: 40,
+    height: 60,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
   },
   bookCoverPlaceholder: {
-    width: 50,
-    height: 70,
-    borderRadius: borderRadius.sm,
+    width: 40,
+    height: 60,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
     backgroundColor: colors.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bookInfo: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginLeft: 16,
   },
   bookTitle: {
     color: colors.text.primary,
-    fontSize: typography.fontSize.body,
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: typography.fontFamily.heading,
+    fontSize: 12,
     marginBottom: 4,
-  },
-  bookAuthor: {
-    color: colors.text.secondary,
-    fontSize: typography.fontSize.caption,
-  },
-  note: {
-    color: colors.text.muted,
-    fontSize: typography.fontSize.caption,
-    textAlign: 'center',
-    marginTop: spacing.md,
+    letterSpacing: 0.5,
   },
 });

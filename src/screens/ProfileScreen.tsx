@@ -21,10 +21,12 @@ import { BarChart } from 'react-native-chart-kit';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
-import { colors } from '../theme/colors';
+import { colors, typography } from '../theme';
 import { Database } from '../types/database.types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MonkModeService } from '../lib/MonkModeService';
+import { TacticalText } from '../components/titan/TacticalText';
+import { MicroLabel } from '../components/titan/MicroLabel';
 
 type UserProfile = Database['public']['Tables']['users']['Row'];
 
@@ -61,11 +63,9 @@ export default function ProfileScreen({ navigation }: any) {
       setProfile(data);
       setNewUsername(data?.username || '');
 
-      // Fetch total reading time from Monk Mode sessions
       const readingTime = await MonkModeService.getTotalReadingTime();
       setTotalReadingTime(readingTime);
 
-      // Fetch monthly stats
       const stats = await MonkModeService.getMonthlyStats();
       setMonthlyStats(stats);
     } catch (error) {
@@ -95,7 +95,6 @@ export default function ProfileScreen({ navigation }: any) {
       if (error) throw error;
 
       setProfile(prev => prev ? { ...prev, username: newUsername.trim() } : null);
-      Alert.alert(i18n.t('common.success'), i18n.t('profile.username_updated'));
       setEditModalVisible(false);
     } catch (error) {
       console.error('Error updating username:', error);
@@ -107,9 +106,9 @@ export default function ProfileScreen({ navigation }: any) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(language === 'ja' ? 'ja-JP' : language === 'ko' ? 'ko-KR' : 'en-US', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
     });
   };
@@ -118,46 +117,10 @@ export default function ProfileScreen({ navigation }: any) {
     return MonkModeService.formatDurationString(totalSeconds, language);
   };
 
-  // Debug function to add dummy data
-  const addDebugData = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const sessions = [];
-      const now = new Date();
-      
-      // Generate 10 random sessions over the last 6 months
-      for (let i = 0; i < 10; i++) {
-        const date = new Date(now);
-        date.setMonth(date.getMonth() - Math.floor(Math.random() * 6));
-        date.setDate(Math.floor(Math.random() * 28) + 1);
-        
-        sessions.push({
-          user_id: user.id,
-          duration_seconds: Math.floor(Math.random() * 3600) + 1800, // 30-90 minutes
-          completed_at: date.toISOString(),
-        });
-      }
-
-      const { error } = await supabase.from('reading_sessions').insert(sessions);
-      if (error) throw error;
-
-      Alert.alert('Debug', 'Test data added successfully. Refreshing...');
-      fetchProfile();
-    } catch (error) {
-      console.error('Debug error:', error);
-      Alert.alert('Error', 'Failed to add debug data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.accent.primary} />
+        <ActivityIndicator size="small" color={colors.text.muted} />
       </View>
     );
   }
@@ -165,11 +128,18 @@ export default function ProfileScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{i18n.t('profile.title')}</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity 
+          onPress={() => {
+            setNewUsername(profile?.username || '');
+            setEditModalVisible(true);
+          }}
+        >
+          <Text style={styles.editLink}>Edit</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -177,96 +147,68 @@ export default function ProfileScreen({ navigation }: any) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.profileCard}>
+        <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle" size={80} color={colors.text.secondary} />
+             <Ionicons name="person-circle-outline" size={80} color={colors.text.muted} />
           </View>
           
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>{i18n.t('profile.username')}</Text>
-            <Text style={styles.value}>{profile?.username || '---'}</Text>
-          </View>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>{i18n.t('profile.email')}</Text>
-            <Text style={styles.value}>{profile?.email}</Text>
-          </View>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>{i18n.t('profile.member_since')}</Text>
-            <Text style={styles.value}>
-              {profile ? formatDate(profile.created_at) : '---'}
-            </Text>
-          </View>
-
-          {totalReadingTime > 0 && (
-            <View style={styles.infoSection}>
-              <Text style={styles.label}>{i18n.t('profile.total_reading_time')}</Text>
-              <Text style={[styles.value, styles.readingTimeValue]}>
-                {formatReadingTime(totalReadingTime)}
-              </Text>
-            </View>
-          )}
+          <Text style={styles.userName}>{profile?.username || 'Guest'}</Text>
+          <Text style={styles.userEmail}>{profile?.email}</Text>
+          <Text style={styles.joinedDate}>Member since {profile ? formatDate(profile.created_at) : '-'}</Text>
         </View>
+
+        {totalReadingTime > 0 && (
+          <View style={styles.statRow}>
+             <View style={styles.statItem}>
+                 <Text style={styles.statLabel}>Total Focus</Text>
+                 <Text style={styles.statValue}>{formatReadingTime(totalReadingTime)}</Text>
+             </View>
+          </View>
+        )}
 
         {/* Monthly Stats Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>{i18n.t('profile.monthly_reading_trend') || 'Monthly Trend (Hours)'}</Text>
+          <MicroLabel style={styles.chartTitle}>ACTIVITY TREND</MicroLabel>
           {monthlyStats.data.length > 0 && monthlyStats.data.some(d => d > 0) ? (
             <BarChart
               data={{
                 labels: monthlyStats.labels,
                 datasets: [{ data: monthlyStats.data }],
               }}
-              width={screenWidth - 48} // Padding 24 * 2
+              width={screenWidth - 48}
               height={220}
               yAxisLabel=""
               yAxisSuffix="h"
               chartConfig={{
-                backgroundColor: colors.background.secondary,
-                backgroundGradientFrom: colors.background.secondary,
-                backgroundGradientTo: colors.background.secondary,
+                backgroundColor: colors.background.primary,
+                backgroundGradientFrom: colors.background.primary,
+                backgroundGradientTo: colors.background.primary,
                 decimalPlaces: 1,
-                color: (opacity = 1) => `rgba(255, 77, 0, ${opacity})`, // Accent color
-                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                color: (opacity = 1) => `rgba(197, 160, 89, ${opacity})`, // Gold color
+                labelColor: (opacity = 1) => colors.text.muted,
                 style: {
-                  borderRadius: 16,
+                  borderRadius: 0,
                 },
-                barPercentage: 0.7,
+                barPercentage: 0.6,
+                propsForBackgroundLines: {
+                    strokeDasharray: "", // solid lines
+                    stroke: colors.border.subtle,
+                    strokeWidth: 1
+                }
               }}
               style={{
                 marginVertical: 8,
-                borderRadius: 16,
+                borderRadius: 0,
               }}
               fromZero
               showValuesOnTopOfBars
             />
           ) : (
             <View style={styles.emptyChartContainer}>
-              <Ionicons name="bar-chart-outline" size={40} color={colors.text.muted} />
-              <Text style={styles.emptyChartText}>{i18n.t('monkmode.no_sessions_yet')}</Text>
+              <Text style={styles.emptyChartText}>No activity recorded yet.</Text>
             </View>
           )}
         </View>
-
-        <TouchableOpacity 
-          style={styles.editButton}
-          onPress={() => {
-            setNewUsername(profile?.username || '');
-            setEditModalVisible(true);
-          }}
-        >
-          <MaterialIcons name="edit" size={20} color="#fff" />
-          <Text style={styles.editButtonText}>{i18n.t('profile.edit_username')}</Text>
-        </TouchableOpacity>
-
-        {/* Debug Button */}
-        <TouchableOpacity 
-          style={styles.debugButton}
-          onPress={addDebugData}
-        >
-          <Text style={styles.debugButtonText}>🛠️ [DEBUG] Generate Test Data</Text>
-        </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -278,57 +220,40 @@ export default function ProfileScreen({ navigation }: any) {
         animationType="fade"
         onRequestClose={() => setEditModalVisible(false)}
       >
-        <TouchableWithoutFeedback onPress={() => setEditModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-              <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.modalKeyboardAvoiding}
-              >
-                <TouchableWithoutFeedback>
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>{i18n.t('profile.edit_username')}</Text>
-                    
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.inputLabel}>{i18n.t('profile.enter_new_username')}</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={newUsername}
-                        onChangeText={setNewUsername}
-                        placeholder={i18n.t('profile.username')}
-                        placeholderTextColor={colors.text.muted}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    </View>
+        <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setEditModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Update Profile</Text>
+            </View>
+            
+            <TextInput
+            style={styles.input}
+            value={newUsername}
+            onChangeText={setNewUsername}
+            placeholder="Username"
+            placeholderTextColor={colors.text.muted}
+            autoCorrect={false}
+            />
 
-                    <View style={styles.modalButtons}>
-                      <TouchableOpacity
-                        style={[styles.modalButton, styles.cancelButton]}
-                        onPress={() => setEditModalVisible(false)}
-                        disabled={updating}
-                      >
-                        <Text style={styles.cancelButtonText}>{i18n.t('common.cancel')}</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        style={[styles.modalButton, styles.saveButton]}
-                        onPress={handleUpdateUsername}
-                        disabled={updating}
-                      >
-                        {updating ? (
-                          <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                          <Text style={styles.saveButtonText}>{i18n.t('common.save')}</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </TouchableWithoutFeedback>
-              </KeyboardAvoidingView>
-            </TouchableWithoutFeedback>
+            <View style={styles.modalButtons}>
+                <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleUpdateUsername}
+                disabled={updating}
+                >
+                {updating ? (
+                    <ActivityIndicator size="small" color="#000" />
+                ) : (
+                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+                </TouchableOpacity>
+            </View>
           </View>
-        </TouchableWithoutFeedback>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -351,14 +276,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.default,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text.primary,
-    letterSpacing: 0.5,
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text.primary,
+  },
+  editLink: {
+      color: colors.text.secondary,
+      fontSize: 14,
   },
   content: {
     padding: 24,
@@ -366,160 +292,113 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  profileSection: {
+      alignItems: 'center',
+      marginBottom: 40,
+  },
+  avatarContainer: {
+    marginBottom: 16,
+  },
+  userName: {
+      fontSize: 24,
+      fontWeight: '300',
+      color: colors.text.primary,
+      marginBottom: 4,
+  },
+  userEmail: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginBottom: 8,
+  },
+  joinedDate: {
+      fontSize: 12,
+      color: colors.text.muted,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 40,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  statItem: {
+      alignItems: 'center',
+  },
+  statLabel: {
+      fontSize: 12,
+      color: colors.text.muted,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+  },
+  statValue: {
+      fontSize: 24,
+      fontWeight: '300',
+      color: colors.text.primary,
+  },
   chartContainer: {
     marginBottom: 24,
     alignItems: 'center',
-    backgroundColor: colors.background.secondary,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderBottomColor: colors.border.default,
   },
   chartTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: 16,
+    marginBottom: 24,
     alignSelf: 'flex-start',
+    color: colors.text.muted,
   },
   emptyChartContainer: {
     height: 180,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
   },
   emptyChartText: {
-    color: colors.text.muted,
-    fontSize: 14,
+      color: colors.text.muted,
   },
-  profileCard: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderBottomColor: colors.border.default,
-  },
-  avatarContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  infoSection: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  value: {
-    fontSize: 16,
-    color: colors.text.primary,
-    fontWeight: '500',
-  },
-  readingTimeValue: {
-    color: colors.accent.primary,
-    fontWeight: '700',
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accent.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  debugButton: {
-    marginTop: 24,
-    padding: 12,
-    backgroundColor: '#333',
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  debugButtonText: {
-    color: '#aaa',
-    fontSize: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalKeyboardAvoiding: {
-    width: '100%',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 20,
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
     padding: 24,
     width: '85%',
     maxWidth: 340,
-    borderWidth: 1,
-    borderBottomColor: colors.border.default,
+  },
+  modalHeader: {
+      alignItems: 'center',
+      marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginBottom: 8,
   },
   input: {
     backgroundColor: colors.background.tertiary,
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 16,
     fontSize: 16,
     color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    marginBottom: 24,
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: colors.background.tertiary,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
   saveButton: {
-    backgroundColor: colors.accent.primary,
-  },
-  cancelButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
+    backgroundColor: colors.text.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
   },
   saveButtonText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 16,
     fontWeight: '600',
   },

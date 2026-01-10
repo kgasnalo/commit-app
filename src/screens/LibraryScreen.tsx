@@ -8,13 +8,17 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  ImageBackground,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { fetchBookCover } from '../utils/googleBooks';
+import { colors, typography } from '../theme';
+import { TacticalText } from '../components/titan/TacticalText';
+import { MicroLabel } from '../components/titan/MicroLabel';
 
 interface Book {
   id: string;
@@ -36,70 +40,19 @@ interface Commitment {
   created_at: string;
   updated_at: string | null;
   books: Book;
-  book_tags?: {
-    tags: {
-      id: string;
-      name: string;
-      color: string;
-    };
-  }[];
 }
 
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-}
-
-type ViewMode = 'shelf' | 'grid';
-
-// Grid layout constants
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const GRID_PADDING = 20;
-const BOOK_GAP = 10;
-const BOOKS_PER_ROW = 4;
-const BOOK_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - BOOK_GAP * BOOKS_PER_ROW) / BOOKS_PER_ROW;
-const BOOK_HEIGHT = BOOK_WIDTH * 1.5;
-
-// Generate consistent color from book title
-function generateBookColor(title: string): string {
-  const colors = [
-    '#3B82F6', // Blue
-    '#10B981', // Green
-    '#8B5CF6', // Purple
-    '#F59E0B', // Amber
-    '#EF4444', // Red
-    '#EC4899', // Pink
-    '#14B8A6', // Teal
-    '#F97316', // Orange-Red
-    '#6366F1', // Indigo
-    '#FF4D00', // Orange (moved to end to reduce orange bias)
-  ];
-
-  // Improved hash function with better distribution
-  let hash = 0;
-  for (let i = 0; i < title.length; i++) {
-    const char = title.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-
-  // Use absolute value and ensure positive index
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
-}
+const HERO_HEIGHT = 400;
 
 export default function LibraryScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [completedBooks, setCompletedBooks] = useState<Commitment[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('shelf');
   const [coverUrls, setCoverUrls] = useState<{ [bookId: string]: string }>({});
   const [stats, setStats] = useState({
     totalBooks: 0,
-    monthlyPace: 0,
+    totalPledgeValue: 0,
     streak: 0,
   });
 
@@ -111,47 +64,23 @@ export default function LibraryScreen() {
 
   async function loadLibraryData() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Load completed books with tags
-      const { data: booksData, error: booksError } = await supabase
+      const { data, error } = await supabase
         .from('commitments')
-        .select(
-          `
+        .select(`
           *,
-          books (*),
-          book_tags (
-            tags (*)
-          )
-        `
-        )
+          books (*)
+        `)
         .eq('user_id', user.id)
         .eq('status', 'completed')
         .order('updated_at', { ascending: false });
 
-      if (booksError) throw booksError;
-
-      setCompletedBooks(booksData || []);
-
-      // Load user's tags
-      const { data: tagsData, error: tagsError } = await supabase
-        .from('tags')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (tagsError) throw tagsError;
-
-      setTags(tagsData || []);
-
-      // Calculate stats
-      calculateStats(booksData || []);
-
-      // Fetch cover images from Google Books API for books without covers
-      fetchMissingCovers(booksData || []);
+      if (error) throw error;
+      setCompletedBooks(data || []);
+      calculateStats(data || []);
+      fetchMissingCovers(data || []);
     } catch (error) {
       console.error('Error loading library data:', error);
     } finally {
@@ -161,573 +90,329 @@ export default function LibraryScreen() {
 
   function calculateStats(books: Commitment[]) {
     const totalBooks = books.length;
+    const totalPledgeValue = books.reduce((acc, b) => acc + b.pledge_amount, 0);
 
-    // Calculate monthly pace (books read in the last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentBooks = books.filter(
-      (book) => book.updated_at && new Date(book.updated_at) >= thirtyDaysAgo
-    );
-    const monthlyPace = recentBooks.length;
-
-    // Calculate streak (consecutive months with at least one book read)
     const monthsWithBooks = new Set(
       books.filter(book => book.updated_at).map((book) => {
         const date = new Date(book.updated_at!);
         return `${date.getFullYear()}-${date.getMonth()}`;
       })
     );
-
-    let streak = 0;
-    const now = new Date();
-    let currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    while (true) {
-      const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`;
-      if (monthsWithBooks.has(monthKey)) {
-        streak++;
-        currentMonth.setMonth(currentMonth.getMonth() - 1);
-      } else {
-        break;
-      }
-    }
-
-    setStats({
-      totalBooks,
-      monthlyPace,
-      streak,
-    });
+    setStats({ totalBooks, totalPledgeValue, streak: monthsWithBooks.size });
   }
 
   async function fetchMissingCovers(books: Commitment[]) {
     const newCoverUrls: { [bookId: string]: string } = {};
-
     for (const commitment of books) {
       const book = commitment.books;
-
-      // Skip if book already has a cover image
-      if (book.cover_url) {
-        continue;
-      }
-
-      // Fetch cover from Google Books API
+      if (book.cover_url) continue;
       const coverUrl = await fetchBookCover(book.title, book.author);
-
-      if (coverUrl) {
-        newCoverUrls[book.id] = coverUrl;
-      }
+      if (coverUrl) newCoverUrls[book.id] = coverUrl;
     }
-
-    // Update state with fetched covers
     if (Object.keys(newCoverUrls).length > 0) {
       setCoverUrls((prev) => ({ ...prev, ...newCoverUrls }));
     }
   }
 
-  function getFilteredBooks() {
-    if (!selectedTag) return completedBooks;
+  const renderHero = () => {
+    if (completedBooks.length === 0) return null;
+    const latest = completedBooks[0];
+    const coverUrl = latest.books.cover_url || coverUrls[latest.books.id];
 
-    return completedBooks.filter((commitment) => {
-      const bookTags = commitment.book_tags || [];
-      return bookTags.some((bt) => bt.tags.id === selectedTag);
-    });
-  }
-
-  function groupBooksByMonth(books: Commitment[]) {
-    const grouped: { [key: string]: Commitment[] } = {};
-
-    books.forEach((book) => {
-      const date = book.updated_at ? new Date(book.updated_at) : new Date(book.created_at);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      if (!grouped[monthKey]) {
-        grouped[monthKey] = [];
-      }
-      grouped[monthKey].push(book);
-    });
-
-    return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
-  }
-
-  function renderEmptyState() {
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="book-outline" size={64} color="#666666" />
-        <Text style={styles.emptyTitle}>{i18n.t('library.empty_title')}</Text>
-        <Text style={styles.emptySubtitle}>{i18n.t('library.empty_subtitle')}</Text>
-        <TouchableOpacity
-          style={styles.emptyButton}
-          onPress={() => (navigation as any).navigate('HomeTab', { screen: 'CreateCommitment' })}
+      <View style={styles.heroContainer}>
+        <ImageBackground
+          source={coverUrl ? { uri: coverUrl } : undefined}
+          style={[styles.heroBg, !coverUrl && { backgroundColor: colors.background.secondary }]}
+          blurRadius={30}
         >
-          <Text style={styles.emptyButtonText}>{i18n.t('library.empty_button')}</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  function renderStatsCard() {
-    return (
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{stats.totalBooks}</Text>
-          <Text style={styles.statLabel}>{i18n.t('library.total_books')}</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{stats.monthlyPace}</Text>
-          <Text style={styles.statLabel}>{i18n.t('library.monthly_pace')}</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{stats.streak}</Text>
-          <Text style={styles.statLabel}>{i18n.t('library.streak')}</Text>
-        </View>
-      </View>
-    );
-  }
-
-  function renderTagFilter() {
-    return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tagFilterContainer}
-        contentContainerStyle={styles.tagFilterContent}
-      >
-        <TouchableOpacity
-          style={[
-            styles.tagChip,
-            selectedTag === null && styles.tagChipSelected,
-          ]}
-          onPress={() => setSelectedTag(null)}
-        >
-          <Text
-            style={[
-              styles.tagChipText,
-              selectedTag === null && styles.tagChipTextSelected,
-            ]}
+          <LinearGradient
+            colors={['rgba(10,10,10,0.2)', 'rgba(10,10,10,0.8)', colors.background.primary]}
+            style={styles.heroOverlay}
           >
-            {i18n.t('library.all')}
-          </Text>
-        </TouchableOpacity>
-
-        {tags.map((tag) => (
-          <TouchableOpacity
-            key={tag.id}
-            style={[
-              styles.tagChip,
-              selectedTag === tag.id && styles.tagChipSelected,
-            ]}
-            onPress={() => setSelectedTag(tag.id)}
-          >
-            <View
-              style={[styles.tagDot, { backgroundColor: tag.color }]}
-            />
-            <Text
-              style={[
-                styles.tagChipText,
-                selectedTag === tag.id && styles.tagChipTextSelected,
-              ]}
-            >
-              {tag.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    );
-  }
-
-  function renderBookItem(commitment: Commitment) {
-    const book = commitment.books;
-    const bookColor = generateBookColor(book.title);
-    const coverUrl = book.cover_url || coverUrls[book.id];
-
-    return (
-      <TouchableOpacity
-        key={commitment.id}
-        style={viewMode === 'grid' ? styles.gridBookItem : styles.shelfBookItem}
-        onPress={() =>
-          (navigation as any).navigate('BookDetail', { commitmentId: commitment.id })
-        }
-      >
-        {viewMode === 'grid' ? (
-          <View style={styles.gridBookContent}>
-            <View style={[styles.bookCover, { backgroundColor: bookColor }]}>
-              {coverUrl ? (
-                <Image
-                  source={{ uri: coverUrl }}
-                  style={styles.bookCoverImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <Text style={styles.bookCoverText} numberOfLines={3}>
-                  {book.title}
-                </Text>
-              )}
+            <View style={styles.heroContent}>
+              <View style={styles.heroPosterContainer}>
+                {coverUrl ? (
+                  <Image source={{ uri: coverUrl }} style={styles.heroPoster} />
+                ) : (
+                  <View style={[styles.heroPoster, styles.posterPlaceholder]}>
+                    <Ionicons name="book" size={40} color={colors.text.muted} />
+                  </View>
+                )}
+              </View>
+              <View style={styles.heroInfo}>
+                <MicroLabel active style={{ marginBottom: 4 }}>HALL OF FAME</MicroLabel>
+                <Text style={styles.heroTitle} numberOfLines={2}>{latest.books.title.toUpperCase()}</Text>
+                <View style={styles.heroMeta}>
+                   <View style={styles.heroBadge}>
+                      <TacticalText size={10} color={colors.signal.success}>SECURED</TacticalText>
+                   </View>
+                   <TacticalText size={10} color={colors.text.muted} style={{ marginLeft: 8 }}>
+                      {new Date(latest.updated_at || latest.created_at).toLocaleDateString()}
+                   </TacticalText>
+                </View>
+              </View>
             </View>
-            <Text style={styles.bookTitle} numberOfLines={1}>
-              {book.title}
-            </Text>
-          </View>
-        ) : (
-          <View style={[styles.bookSpine, { backgroundColor: bookColor }]}>
-            <Text style={styles.bookSpineText} numberOfLines={1}>
-              {book.title}
-            </Text>
-            <View style={styles.pageEdge} />
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  }
-
-  function renderMonthSection([monthKey, books]: [string, Commitment[]]) {
-    const [year, month] = monthKey.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    const monthName = date.toLocaleDateString(i18n.locale, {
-      year: 'numeric',
-      month: 'long',
-    });
-
-    return (
-      <View key={monthKey} style={styles.monthSection}>
-        <Text style={styles.monthHeader}>
-          {monthName} ({books.length}
-          {i18n.t('library.books_count')})
-        </Text>
-        {viewMode === 'grid' ? (
-          <>
-            <View style={styles.gridContainer}>
-              {books.map((commitment) => renderBookItem(commitment))}
-            </View>
-            <View style={styles.shelfLine} />
-          </>
-        ) : (
-          <View style={styles.shelfRow}>
-            <View style={styles.booksContainer}>
-              {books.map((commitment) => renderBookItem(commitment))}
-            </View>
-            <View style={styles.shelfBoard} />
-          </View>
-        )}
+          </LinearGradient>
+        </ImageBackground>
       </View>
     );
-  }
+  };
+
+  const renderCategoryRow = (title: string, books: Commitment[]) => {
+    if (books.length === 0) return null;
+    return (
+      <View style={styles.categoryRow}>
+        <MicroLabel style={styles.categoryTitle}>{title}</MicroLabel>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContent}>
+          {books.map((commitment) => {
+            const coverUrl = commitment.books.cover_url || coverUrls[commitment.books.id];
+            return (
+              <TouchableOpacity
+                key={commitment.id}
+                style={styles.bookCard}
+                onPress={() => (navigation as any).navigate('BookDetail', { commitmentId: commitment.id })}
+              >
+                <View style={styles.posterContainer}>
+                  {coverUrl ? (
+                    <Image source={{ uri: coverUrl }} style={styles.poster} />
+                  ) : (
+                    <View style={styles.posterPlaceholder}>
+                       <Ionicons name="book" size={24} color={colors.text.muted} />
+                    </View>
+                  )}
+                  {commitment.pledge_amount >= 5000 && (
+                    <View style={styles.highStakesBadge}>
+                      <Ionicons name="flash" size={10} color="#000" />
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF4D00" />
+        <ActivityIndicator size="large" color={colors.signal.active} />
       </View>
     );
   }
 
-  const filteredBooks = getFilteredBooks();
-  const groupedBooks = groupBooksByMonth(filteredBooks);
+  const highStakes = completedBooks.filter(b => b.pledge_amount >= 5000);
+  const recent = completedBooks.slice(0, 10);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{i18n.t('library.title')}</Text>
-        <View style={styles.viewModeButtons}>
-          <TouchableOpacity
-            style={[
-              styles.viewModeButton,
-              viewMode === 'shelf' && styles.viewModeButtonActive,
-            ]}
-            onPress={() => setViewMode('shelf')}
-          >
-            <Ionicons
-              name="albums"
-              size={20}
-              color={viewMode === 'shelf' ? '#FF4D00' : '#666666'}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.viewModeButton,
-              viewMode === 'grid' && styles.viewModeButtonActive,
-            ]}
-            onPress={() => setViewMode('grid')}
-          >
-            <Ionicons
-              name="grid"
-              size={20}
-              color={viewMode === 'grid' ? '#FF4D00' : '#666666'}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={styles.container}>
+      <ScrollView style={styles.content} bounces={false} showsVerticalScrollIndicator={false}>
+        {completedBooks.length > 0 ? (
+          <>
+            {renderHero()}
 
-      {completedBooks.length === 0 ? (
-        renderEmptyState()
-      ) : (
-        <ScrollView style={styles.content}>
-          {renderStatsCard()}
-          {renderTagFilter()}
-          {groupedBooks.map((group) => renderMonthSection(group))}
-        </ScrollView>
-      )}
-    </SafeAreaView>
+            {/* Tactical HUD Stats */}
+            <View style={styles.statsHud}>
+              <View style={styles.statBox}>
+                <MicroLabel style={{ fontSize: 8 }}>ASSETS</MicroLabel>
+                <TacticalText size={18} weight="bold">{stats.totalBooks}</TacticalText>
+              </View>
+              <View style={styles.statBox}>
+                <MicroLabel style={{ fontSize: 8 }}>SECURED</MicroLabel>
+                <TacticalText size={18} weight="bold" color={colors.signal.success}>
+                  ¥{stats.totalPledgeValue.toLocaleString()}
+                </TacticalText>
+              </View>
+              <View style={styles.statBox}>
+                <MicroLabel style={{ fontSize: 8 }}>STREAK</MicroLabel>
+                <TacticalText size={18} weight="bold">{stats.streak}M</TacticalText>
+              </View>
+            </View>
+
+            {renderCategoryRow("HIGH STAKES MISSIONS", highStakes)}
+            {renderCategoryRow("RECENTLY SECURED", recent)}
+            
+            <View style={{ height: 100 }} />
+          </>
+        ) : (
+          <View style={styles.emptyWrapper}>
+            <View style={styles.emptyContainer}>
+              <Ionicons name="archive-outline" size={64} color={colors.text.muted} />
+              <MicroLabel style={{ marginTop: 24, fontSize: 14 }}>ARCHIVE EMPTY</MicroLabel>
+              <Text style={styles.emptySubtitle}>No completed missions found in current records.</Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => (navigation as any).navigate('HomeTab', { screen: 'RoleSelect' })}
+              >
+                <Text style={styles.emptyButtonText}>INITIATE PROTOCOL</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: colors.background.primary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0A0A0A',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1A1A1A',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  viewModeButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  viewModeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  viewModeButtonActive: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.background.primary,
   },
   content: {
     flex: 1,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 20,
-    marginHorizontal: 20,
-    marginTop: 15,
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF4D00',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#A0A0A0',
-    marginTop: 4,
-  },
-  tagFilterContainer: {
-    marginVertical: 15,
-  },
-  tagFilterContent: {
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  tagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1A1A1A',
-    marginRight: 10,
-  },
-  tagChipSelected: {
-    backgroundColor: '#FF4D00',
-  },
-  tagChipText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  tagChipTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  tagDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  monthSection: {
-    backgroundColor: '#151515',
-    marginHorizontal: 12,
-    marginBottom: 16,
-    borderRadius: 8,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  monthHeader: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 15,
-    paddingHorizontal: 20,
-  },
-  shelfRow: {
-    marginBottom: 20,
-  },
-  booksContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 6,
-    paddingBottom: 0,
-  },
-  shelfBoard: {
-    height: 12,
-    backgroundColor: '#3D322A',
-    borderTopWidth: 2,
-    borderTopColor: '#4A3C31',
-    marginTop: 0,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  shelfBookItem: {
-    marginRight: 0,
-    marginBottom: 0,
-  },
-  bookSpine: {
-    width: 35,
-    height: 130,
-    borderTopRightRadius: 2,
-    borderBottomRightRadius: 2,
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(0,0,0,0.4)',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(255,255,255,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 8,
-  },
-  pageEdge: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: '#D0D0D0',
-    borderBottomLeftRadius: 1,
-    borderBottomRightRadius: 1,
-  },
-  bookSpineText: {
-    color: '#FFFFFF',
-    fontSize: 8,
-    fontWeight: '600',
-    transform: [{ rotate: '-90deg' }],
-    width: 110,
-    textAlign: 'center',
-  },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: GRID_PADDING,
-  },
-  gridBookItem: {
-    width: BOOK_WIDTH,
-    marginRight: BOOK_GAP,
-    marginBottom: BOOK_GAP,
-  },
-  gridBookContent: {
-    alignItems: 'center',
-  },
-  bookCover: {
+  heroContainer: {
+    height: HERO_HEIGHT,
     width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 8,
-    marginBottom: 8,
-    overflow: 'hidden',
   },
-  bookCoverImage: {
+  heroBg: {
     width: '100%',
     height: '100%',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    borderRadius: 4,
   },
-  bookCoverText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
+  heroOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 20,
+    paddingBottom: 40,
   },
-  bookTitle: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    textAlign: 'center',
+  heroContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
-  emptyContainer: {
+  heroPosterContainer: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  heroPoster: {
+    width: 130,
+    height: 190,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  heroInfo: {
+    flex: 1,
+    marginLeft: 20,
+    paddingBottom: 10,
+  },
+  heroTitle: {
+    fontFamily: typography.fontFamily.heading,
+    fontSize: 26,
+    color: '#FFF',
+    marginVertical: 10,
+    letterSpacing: 1,
+    lineHeight: 32,
+  },
+  heroMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroBadge: {
+    borderWidth: 1,
+    borderColor: colors.signal.success,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  statsHud: {
+    flexDirection: 'row',
+    backgroundColor: colors.background.secondary,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border.subtle,
+    paddingVertical: 15,
+    marginVertical: 10,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#222',
+  },
+  categoryRow: {
+    marginTop: 30,
+  },
+  categoryTitle: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+    opacity: 0.6,
+    fontSize: 10,
+  },
+  categoryContent: {
+    paddingHorizontal: 15,
+  },
+  bookCard: {
+    marginHorizontal: 5,
+  },
+  posterContainer: {
+    width: 115,
+    height: 170,
+    backgroundColor: colors.background.card,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    overflow: 'hidden',
+  },
+  poster: {
+    width: '100%',
+    height: '100%',
+  },
+  posterPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    backgroundColor: colors.background.tertiary,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 20,
-    textAlign: 'center',
+  highStakesBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: colors.signal.success,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyWrapper: {
+    height: Dimensions.get('window').height - 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#A0A0A0',
-    marginTop: 10,
+    color: colors.text.muted,
     textAlign: 'center',
+    marginTop: 8,
+    fontSize: 14,
+    fontFamily: typography.fontFamily.body,
   },
   emptyButton: {
-    marginTop: 30,
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    backgroundColor: '#FF4D00',
-    borderRadius: 8,
+    marginTop: 32,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    backgroundColor: colors.signal.active,
+    borderRadius: 2,
   },
   emptyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  shelfLine: {
-    height: 2,
-    backgroundColor: '#2A2A2A',
-    marginHorizontal: 20,
-    marginTop: 15,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    fontFamily: typography.fontFamily.heading,
+    color: '#000',
+    fontSize: 14,
+    letterSpacing: 1,
   },
 });

@@ -175,7 +175,14 @@
     "no_commitments": "No active commitments",
     "add_book": "Add a book",
     "empty_encouragement": "Start your reading journey today!",
-    "history": "History"
+    "history": "History",
+    "pledged_amount": "Pledged",
+    "failed_amount": "Lost",
+    "no_active_commitments": "No active commitments",
+    "create_new": "Create Commitment",
+    "failed_history": "History",
+    "status_active": "ACTIVE",
+    "status_dormant": "DORMANT"
   },
   "paywall": {
     "for_serious": "For serious readers",
@@ -323,7 +330,12 @@
     "start_another": "Start Another Session",
     "notification_title": "Focus Session Complete",
     "notification_body": "Great job! You've completed your reading session.",
-    "notification_body_book": "Great job reading '{{book}}'!"
+    "notification_body_book": "Great job reading '{{book}}'!",
+    "live_activity_title": "Deep Reading",
+    "live_activity_subtitle_reading": "Focus session in progress",
+    "live_activity_subtitle_paused": "Paused",
+    "live_activity_completed": "Session Complete!",
+    "live_activity_ended": "Session Ended"
   },
   "notifications": {
     "settings_title": "Notification Settings",

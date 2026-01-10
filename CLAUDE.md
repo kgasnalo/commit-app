@@ -198,4 +198,47 @@
   const { language } = useLanguage();
   const locale = language === 'ja' ? 'ja-JP' : 'en-US';
   ```
+- **Reanimated SharedValue Import:** When using `SharedValue` type in TypeScript interfaces, import it directly from `react-native-reanimated`. Do NOT use `Animated.SharedValue`:
+  ```typescript
+  // BAD - namespace error "has no exported member 'SharedValue'"
+  interface Props {
+    progress: Animated.SharedValue<number>;
+  }
+
+  // GOOD - direct import
+  import { SharedValue } from 'react-native-reanimated';
+  interface Props {
+    progress: SharedValue<number>;
+  }
+  ```
+- **Screen Component Props with Route Params:** For screens that receive route params in React Navigation, use the simple `{ route, navigation }: any` pattern (matching CommitmentDetailScreen, VerificationScreen, etc.). Strict typing causes type incompatibility with `Stack.Screen`:
+  ```typescript
+  // BAD - causes "Type is not assignable to ScreenComponentType" error
+  interface MyScreenProps {
+    route: { params: { id: string } };
+    navigation: any;
+  }
+  export default function MyScreen({ route, navigation }: MyScreenProps)
+
+  // GOOD - consistent with other screens in codebase
+  export default function MyScreen({ route, navigation }: any)
+  ```
+- **Timer/Focus Screens Keep Awake:** For screens where the user expects the display to stay on (timers, focus modes, reading sessions), use `useKeepAwake()` from `expo-keep-awake`:
+  ```typescript
+  import { useKeepAwake } from 'expo-keep-awake';
+
+  export default function TimerScreen() {
+    useKeepAwake(); // Prevents screen from dimming/locking
+    // ...
+  }
+  ```
+- **PostgreSQL UUID Generation:** In Supabase migrations, use `gen_random_uuid()` (built-in to PostgreSQL 13+) instead of `uuid_generate_v4()` (requires uuid-ossp extension):
+  ```sql
+  -- BAD - requires extension that may not be enabled
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4()
+
+  -- GOOD - built-in function
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  ```
+- **Notifications Deprecation:** In `expo-notifications`, `shouldShowAlert` is deprecated. Use `shouldShowBanner: true` and `shouldShowList: true` instead for foreground notification handling.
 

@@ -10,11 +10,12 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n, { LANGUAGES } from '../i18n';
 import { useLanguage } from '../contexts/LanguageContext';
-import { colors } from '../theme/colors';
+import { colors, typography } from '../theme';
+import { MicroLabel } from '../components/titan/MicroLabel';
 
 export default function SettingsScreen({ navigation }: any) {
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
@@ -72,7 +73,6 @@ export default function SettingsScreen({ navigation }: any) {
               if (error) throw error;
 
               if (data?.success) {
-                // Deletion successful, sign out locally
                 await supabase.auth.signOut();
               } else {
                 throw new Error(data?.error || 'Failed to delete account');
@@ -100,18 +100,18 @@ export default function SettingsScreen({ navigation }: any) {
 
   const SectionHeader = ({ title }: { title: string }) => (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{title}</Text>
+      <MicroLabel color={colors.text.muted}>{title}</MicroLabel>
     </View>
   );
 
   const MenuItem = ({ icon, label, value, onPress, iconColor = colors.text.secondary, textColor = colors.text.primary }: any) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <View style={styles.menuItemLeft}>
-        <Ionicons name={icon} size={22} color={iconColor} />
+        <Ionicons name={icon} size={20} color={iconColor} />
         <Text style={[styles.menuText, { color: textColor }]}>{label}</Text>
       </View>
       <View style={styles.menuItemRight}>
-        {value && <Text style={styles.currentValue}>{value}</Text>}
+        {value && <Text style={styles.valueText}>{value}</Text>}
         <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
       </View>
     </TouchableOpacity>
@@ -133,7 +133,7 @@ export default function SettingsScreen({ navigation }: any) {
         <MenuItem 
           icon="card-outline" 
           label={i18n.t('settings.manage_payment')} 
-          onPress={() => openURL('https://commit-app.vercel.app/billing')} // Placeholder URL
+          onPress={() => openURL('https://commit-app.vercel.app/billing')} 
         />
 
         <SectionHeader title={i18n.t('settings.language')} />
@@ -172,15 +172,19 @@ export default function SettingsScreen({ navigation }: any) {
 
         <View style={styles.bottomSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color={colors.status.error} />
+            <Ionicons name="log-out-outline" size={20} color={colors.signal.danger} />
             <Text style={styles.logoutText}>{i18n.t('settings.logout')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-            <Text style={styles.deleteText}>{i18n.t('settings.delete_account')}</Text>
+            <Text style={styles.deleteText}>
+              {i18n.t('settings.delete_account')}
+            </Text>
           </TouchableOpacity>
 
-          <Text style={styles.versionText}>Version 1.0.0 (Build 20260109)</Text>
+          <Text style={styles.versionText}>
+            Version 1.0.0
+          </Text>
         </View>
       </ScrollView>
 
@@ -216,7 +220,7 @@ export default function SettingsScreen({ navigation }: any) {
                   {language.name}
                 </Text>
                 {currentLanguage === language.code && (
-                  <Ionicons name="checkmark" size={24} color={colors.accent.primary} />
+                  <Ionicons name="checkmark" size={20} color={colors.text.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -236,28 +240,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.background.secondary,
+    borderBottomColor: colors.border.subtle,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text.primary,
-    letterSpacing: 0.5,
   },
   content: {
     flex: 1,
   },
   sectionHeader: {
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 32,
     paddingBottom: 8,
-  },
-  sectionHeaderText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.text.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
   },
   menuItem: {
     flexDirection: 'row',
@@ -265,27 +261,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: colors.background.secondary,
+    borderBottomColor: colors.border.subtle,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   menuItemRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
   menuText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '400',
   },
-  currentValue: {
-    fontSize: 14,
-    color: colors.text.secondary,
+  valueText: {
+      color: colors.text.secondary,
+      fontSize: 14,
   },
   bottomSection: {
     padding: 24,
@@ -300,28 +295,24 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 12,
-    backgroundColor: colors.background.secondary,
-    borderWidth: 1,
-    borderBottomColor: colors.border.default,
+    borderRadius: 8,
+    backgroundColor: 'rgba(128, 0, 0, 0.1)', 
   },
   logoutText: {
-    color: colors.status.error,
+    color: colors.signal.danger,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   deleteButton: {
     paddingVertical: 8,
   },
   deleteText: {
-    color: colors.text.muted,
-    fontSize: 14,
-    textDecorationLine: 'underline',
+      color: colors.text.muted,
+      textDecorationLine: 'underline',
   },
   versionText: {
-    color: colors.text.muted,
-    fontSize: 12,
-    marginTop: 8,
+      color: colors.text.muted,
+      fontSize: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -330,38 +321,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 20,
+    backgroundColor: colors.background.card,
+    borderRadius: 16,
     padding: 24,
     width: '85%',
     maxWidth: 340,
-    borderWidth: 1,
-    borderBottomColor: colors.border.default,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 24,
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   languageOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 8,
     gap: 12,
     backgroundColor: colors.background.tertiary,
   },
   languageOptionSelected: {
-    backgroundColor: colors.background.tertiary,
-    borderWidth: 1,
-    borderBottomColor: colors.accent.primary,
+    backgroundColor: colors.border.bright,
   },
   languageOptionFlag: {
-    fontSize: 24,
+    fontSize: 20,
   },
   languageOptionText: {
     flex: 1,
@@ -370,7 +357,6 @@ const styles = StyleSheet.create({
   },
   languageOptionTextSelected: {
     color: colors.text.primary,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
-

@@ -7,6 +7,11 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  Image,
+  ImageBackground,
+  Dimensions,
+  StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +20,10 @@ import i18n from '../i18n';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import BookDetailSkeleton from '../components/BookDetailSkeleton';
 import ReceiptPreviewModal from '../components/receipt/ReceiptPreviewModal';
+import { colors, typography } from '../theme';
+import { TacticalText } from '../components/titan/TacticalText';
+import { MicroLabel } from '../components/titan/MicroLabel';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Book {
   id: string;
@@ -59,10 +68,10 @@ interface VerificationLog {
 }
 
 const TAG_COLORS = [
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EF4444',
+  colors.signal.active,
+  colors.signal.success,
+  colors.signal.warning,
+  colors.signal.info,
   '#8B5CF6',
   '#EC4899',
 ];
@@ -97,7 +106,6 @@ export default function BookDetailScreen() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Load commitment with book and tags
       const { data: commitmentData, error: commitmentError } = await supabase
         .from('commitments')
         .select(
@@ -118,7 +126,6 @@ export default function BookDetailScreen() {
 
       setCommitment(commitmentData);
 
-      // Load verification log
       const { data: logData, error: logError } = await supabase
         .from('verification_logs')
         .select('*')
@@ -131,7 +138,6 @@ export default function BookDetailScreen() {
         setVerificationLog(logData);
       }
 
-      // Load all user tags
       const { data: tagsData, error: tagsError } = await supabase
         .from('tags')
         .select('*')
@@ -151,32 +157,21 @@ export default function BookDetailScreen() {
 
   async function toggleTag(tagId: string) {
     if (!commitment) return;
-
     const isTagged = commitment.book_tags.some((bt) => bt.tags.id === tagId);
 
     try {
       if (isTagged) {
-        // Remove tag
         const bookTag = commitment.book_tags.find((bt) => bt.tags.id === tagId);
         if (!bookTag) return;
-
-        const { error } = await supabase
-          .from('book_tags')
-          .delete()
-          .eq('id', bookTag.id);
-
+        const { error } = await supabase.from('book_tags').delete().eq('id', bookTag.id);
         if (error) throw error;
       } else {
-        // Add tag
         const { error } = await supabase.from('book_tags').insert({
           commitment_id: commitment.id,
           tag_id: tagId,
         });
-
         if (error) throw error;
       }
-
-      // Reload data
       await loadBookDetail();
     } catch (error) {
       console.error('Error toggling tag:', error);
@@ -187,9 +182,7 @@ export default function BookDetailScreen() {
     if (!newTagName.trim()) return;
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
@@ -204,14 +197,12 @@ export default function BookDetailScreen() {
 
       if (error) throw error;
 
-      // Add the new tag to the book
       if (data && commitment) {
         await supabase.from('book_tags').insert({
           commitment_id: commitment.id,
           tag_id: data.id,
         });
       }
-
       setNewTagName('');
       setSelectedColor(TAG_COLORS[0]);
       setShowTagModal(false);
@@ -223,7 +214,6 @@ export default function BookDetailScreen() {
 
   async function updateMemo() {
     if (!verificationLog) return;
-
     try {
       const { error } = await supabase
         .from('verification_logs')
@@ -231,8 +221,6 @@ export default function BookDetailScreen() {
         .eq('id', verificationLog.id);
 
       if (error) throw error;
-
-      // Update local state
       setVerificationLog({ ...verificationLog, memo_text: editedMemo });
       setShowMemoModal(false);
     } catch (error) {
@@ -243,12 +231,10 @@ export default function BookDetailScreen() {
 
   function calculateReadingDays() {
     if (!commitment) return 0;
-
     const start = new Date(commitment.created_at);
     const end = commitment.updated_at ? new Date(commitment.updated_at) : new Date();
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
     return diffDays;
   }
 
@@ -262,13 +248,14 @@ export default function BookDetailScreen() {
         animationType="fade"
         onRequestClose={() => setShowTagModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setShowTagModal(false)}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{i18n.t('library.edit_tags')}</Text>
-              <TouchableOpacity onPress={() => setShowTagModal(false)}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
@@ -287,20 +274,10 @@ export default function BookDetailScreen() {
                       ]}
                       onPress={() => toggleTag(tag.id)}
                     >
-                      <View
-                        style={[styles.tagDot, { backgroundColor: tag.color }]}
-                      />
-                      <Text
-                        style={[
-                          styles.tagModalChipText,
-                          isSelected && styles.tagModalChipTextSelected,
-                        ]}
-                      >
+                      <View style={[styles.tagDot, { backgroundColor: tag.color }]} />
+                      <Text style={[styles.tagModalChipText, isSelected && {color: '#000'}]}>
                         {tag.name}
                       </Text>
-                      {isSelected && (
-                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -310,8 +287,8 @@ export default function BookDetailScreen() {
                 <Text style={styles.newTagTitle}>{i18n.t('library.new_tag')}</Text>
                 <TextInput
                   style={styles.newTagInput}
-                  placeholder={i18n.t('library.new_tag')}
-                  placeholderTextColor="#666666"
+                  placeholder="Tag Name"
+                  placeholderTextColor={colors.text.muted}
                   value={newTagName}
                   onChangeText={setNewTagName}
                 />
@@ -339,20 +316,13 @@ export default function BookDetailScreen() {
                   disabled={!newTagName.trim()}
                 >
                   <Text style={styles.createTagButtonText}>
-                    {i18n.t('library.add_tag')}
+                    Create Tag
                   </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
-
-            <TouchableOpacity
-              style={styles.modalSaveButton}
-              onPress={() => setShowTagModal(false)}
-            >
-              <Text style={styles.modalSaveButtonText}>{i18n.t('library.save')}</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     );
   }
@@ -365,13 +335,14 @@ export default function BookDetailScreen() {
         animationType="fade"
         onRequestClose={() => setShowMemoModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setShowMemoModal(false)}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{i18n.t('bookDetail.edit_memo_title')}</Text>
-              <TouchableOpacity onPress={() => setShowMemoModal(false)}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
             </View>
 
             <TextInput
@@ -379,19 +350,13 @@ export default function BookDetailScreen() {
               value={editedMemo}
               onChangeText={setEditedMemo}
               placeholder={i18n.t('bookDetail.memo_placeholder')}
-              placeholderTextColor="#666666"
+              placeholderTextColor={colors.text.muted}
               multiline
               numberOfLines={6}
               textAlignVertical="top"
             />
 
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowMemoModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>{i18n.t('bookDetail.cancel')}</Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={updateMemo}
@@ -400,13 +365,17 @@ export default function BookDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     );
   }
 
   if (loading) {
-    return <BookDetailSkeleton />;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color={colors.text.muted} />
+      </View>
+    );
   }
 
   if (error || !commitment) {
@@ -414,18 +383,13 @@ export default function BookDetailScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#666666" />
-          <Text style={styles.errorTitle}>{i18n.t('bookDetail.error_title')}</Text>
           <Text style={styles.errorMessage}>
             {error || i18n.t('errors.unknown')}
           </Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadBookDetail}>
-            <Text style={styles.retryButtonText}>{i18n.t('bookDetail.retry')}</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -436,112 +400,110 @@ export default function BookDetailScreen() {
   const isSuccess = commitment.status === 'completed';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content}>
-        <View style={styles.bookCoverContainer}>
-          <View style={styles.bookCover}>
-            <Text style={styles.bookCoverText} numberOfLines={5}>
-              {book.title}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.bookTitle}>{book.title}</Text>
-        <Text style={styles.bookAuthor}>{book.author}</Text>
-
-        <View style={styles.tagsContainer}>
-          {commitment.book_tags.map((bt) => (
-            <View
-              key={bt.id}
-              style={[styles.tag, { backgroundColor: bt.tags.color }]}
-            >
-              <Text style={styles.tagText}>{bt.tags.name}</Text>
-            </View>
-          ))}
-          <TouchableOpacity
-            style={styles.addTagChip}
-            onPress={() => setShowTagModal(true)}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <ScrollView style={styles.content} bounces={false}>
+        {/* Cinematic Header */}
+        <View style={styles.heroContainer}>
+          <ImageBackground
+            source={book.cover_url ? { uri: book.cover_url } : undefined}
+            style={[styles.heroBg, !book.cover_url && { backgroundColor: colors.background.secondary }]}
+            blurRadius={30}
           >
-            <Ionicons name="add" size={16} color="#FF4D00" />
-            <Text style={styles.addTagChipText}>{i18n.t('library.add_tag')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.detailsCard}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{i18n.t('library.read_date')}</Text>
-            <Text style={styles.detailValue}>
-              {commitment.updated_at ? new Date(commitment.updated_at).toLocaleDateString() : '-'}
-            </Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{i18n.t('library.deadline')}</Text>
-            <Text style={styles.detailValue}>
-              {new Date(commitment.deadline).toLocaleDateString()}
-            </Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{i18n.t('library.pledge_amount')}</Text>
-            <Text
-              style={[
-                styles.detailValue,
-                isSuccess ? styles.successText : styles.failText,
-              ]}
+            <LinearGradient
+              colors={['rgba(0,0,0,0.6)', colors.background.primary]}
+              style={styles.heroOverlay}
             >
-              {commitment.currency} {commitment.pledge_amount}{' '}
-              ({isSuccess ? i18n.t('library.success') : i18n.t('dashboard.failed')})
-            </Text>
+              <SafeAreaView edges={['top']} style={styles.safeHeader}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                  <Ionicons name="arrow-back" size={24} color="#FFF" />
+                </TouchableOpacity>
+              </SafeAreaView>
+              
+              <View style={styles.heroContent}>
+                <View style={styles.posterContainer}>
+                  {book.cover_url ? (
+                    <Image source={{ uri: book.cover_url }} style={styles.poster} />
+                  ) : (
+                    <View style={styles.posterPlaceholder}>
+                      <Ionicons name="book" size={40} color={colors.text.muted} />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.heroInfo}>
+                  <Text style={styles.heroTitle}>{book.title}</Text>
+                  <Text style={styles.heroAuthor}>{book.author}</Text>
+                  <View style={styles.tagsRow}>
+                      {commitment.book_tags.map((bt) => (
+                        <View key={bt.id} style={styles.tagBadge}>
+                          <View style={[styles.tagDot, { backgroundColor: bt.tags.color }]} />
+                          <Text style={styles.tagText}>{bt.tags.name}</Text>
+                        </View>
+                      ))}
+                      <TouchableOpacity onPress={() => setShowTagModal(true)}>
+                          <Ionicons name="add-circle" size={20} color={colors.text.secondary} />
+                      </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
+          </ImageBackground>
+        </View>
+
+        {/* Data Grid */}
+        <View style={styles.dataSection}>
+          <View style={styles.dataRow}>
+            <MicroLabel>COMPLETION DATE</MicroLabel>
+            <TacticalText>
+              {commitment.updated_at ? new Date(commitment.updated_at).toLocaleDateString() : '-'}
+            </TacticalText>
           </View>
 
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{i18n.t('library.reading_days')}</Text>
-            <Text style={styles.detailValue}>
-              {readingDays}
-              {i18n.t('library.days')}
-            </Text>
+          <View style={styles.dataRow}>
+            <MicroLabel>VALUE</MicroLabel>
+            <TacticalText color={isSuccess ? colors.signal.success : colors.signal.danger}>
+              {commitment.currency} {commitment.pledge_amount.toLocaleString()}
+            </TacticalText>
+          </View>
+
+          <View style={styles.dataRow}>
+            <MicroLabel>DURATION</MicroLabel>
+            <TacticalText>
+              {readingDays} Days
+            </TacticalText>
           </View>
         </View>
 
-        {verificationLog && (
-          <View style={styles.memoCard}>
-            <View style={styles.memoHeader}>
-              <View style={styles.memoTitleContainer}>
-                <Ionicons name="document-text" size={20} color="#FF4D00" />
-                <Text style={styles.memoTitle}>{i18n.t('library.memo')}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setEditedMemo(verificationLog.memo_text || '');
-                  setShowMemoModal(true);
-                }}
-              >
-                <Text style={styles.editButton}>{i18n.t('library.edit')}</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.memoText}>{verificationLog.memo_text}</Text>
+        {/* Memo Log */}
+        <View style={styles.memoSection}>
+          <View style={styles.memoHeader}>
+            <MicroLabel style={{ color: colors.text.muted }}>FIELD NOTES</MicroLabel>
+            <TouchableOpacity onPress={() => {
+                setEditedMemo(verificationLog?.memo_text || '');
+                setShowMemoModal(true);
+            }}>
+              <Text style={styles.editLink}>Edit</Text>
+            </TouchableOpacity>
           </View>
-        )}
+          <Text style={styles.memoText}>
+            {verificationLog?.memo_text || "No notes recorded."}
+          </Text>
+        </View>
 
-        {/* Share Receipt Button - only for completed commitments */}
+        {/* Share Receipt Button */}
         {isSuccess && (
           <TouchableOpacity
             style={styles.shareReceiptButton}
             onPress={() => setShowReceiptModal(true)}
           >
-            <Ionicons name="share-social" size={20} color="#FF4D00" />
+            <Ionicons name="share-outline" size={20} color={colors.text.primary} />
             <Text style={styles.shareReceiptText}>
-              {i18n.t('receipt.share_button')}
+              Share Certificate
             </Text>
           </TouchableOpacity>
         )}
+        
+        <View style={{ height: 40 }} />
       </ScrollView>
 
       {renderTagEditModal()}
@@ -561,14 +523,20 @@ export default function BookDetailScreen() {
           currency={commitment.currency}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: colors.background.primary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
   },
   errorContainer: {
     flex: 1,
@@ -576,213 +544,159 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginTop: 16,
-    textAlign: 'center',
-  },
   errorMessage: {
-    fontSize: 14,
-    color: '#A0A0A0',
-    marginTop: 8,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  retryButton: {
-    marginTop: 24,
-    backgroundColor: '#FF4D00',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.text.muted,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 15,
   },
+  safeHeader: {
+    paddingHorizontal: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+  },
   content: {
     flex: 1,
   },
-  bookCoverContainer: {
-    alignItems: 'center',
-    paddingVertical: 30,
+  heroContainer: {
+    height: 420,
+    width: '100%',
   },
-  bookCover: {
-    width: 150,
-    height: 225,
-    backgroundColor: '#FF4D00',
-    borderRadius: 8,
-    justifyContent: 'center',
+  heroBg: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 40,
+  },
+  heroContent: {
+    paddingHorizontal: 24,
     alignItems: 'center',
-    padding: 20,
+  },
+  posterContainer: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+    marginBottom: 24,
   },
-  bookCoverText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  poster: {
+    width: 140,
+    height: 210,
+    borderRadius: 4,
   },
-  bookTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  bookAuthor: {
-    fontSize: 16,
-    color: '#A0A0A0',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  posterPlaceholder: {
+    width: 140,
+    height: 210,
+    borderRadius: 4,
+    backgroundColor: colors.background.tertiary,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 8,
+    alignItems: 'center',
   },
-  tag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+  heroInfo: {
+    alignItems: 'center',
+  },
+  heroTitle: {
+    fontFamily: typography.fontFamily.heading,
+    fontSize: 24,
+    color: '#FFF',
+    marginBottom: 8,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  heroAuthor: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    marginBottom: 16,
+  },
+  tagsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+  },
+  tagBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+      gap: 6,
+  },
+  tagDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
   },
   tagText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+      fontSize: 12,
+      color: colors.text.primary,
   },
-  addTagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF4D00',
-    borderStyle: 'dashed',
+  dataSection: {
+    paddingHorizontal: 24,
+    marginBottom: 40,
   },
-  addTagChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FF4D00',
-    marginLeft: 4,
-  },
-  detailsCard: {
-    backgroundColor: '#1A1A1A',
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  detailRow: {
+  dataRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    borderBottomColor: colors.border.subtle,
   },
-  detailLabel: {
-    fontSize: 14,
-    color: '#A0A0A0',
-  },
-  detailValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  successText: {
-    color: '#00C853',
-  },
-  failText: {
-    color: '#EF4444',
-  },
-  memoCard: {
-    backgroundColor: '#1A1A1A',
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
+  memoSection: {
+    paddingHorizontal: 24,
+    marginBottom: 40,
   },
   memoHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  memoTitleContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-  },
-  memoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  editButton: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF4D00',
+    marginBottom: 16,
   },
   memoText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    lineHeight: 22,
+    fontSize: 15,
+    color: colors.text.primary,
+    lineHeight: 24,
+  },
+  editLink: {
+      color: colors.text.secondary,
+      fontSize: 14,
   },
   memoInput: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.background.tertiary,
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.text.primary,
     minHeight: 150,
     marginBottom: 20,
+    textAlignVertical: 'top',
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
-  },
-  cancelButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#2A2A2A',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   saveButton: {
+    backgroundColor: colors.text.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#FF4D00',
   },
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#000',
   },
   modalOverlay: {
     flex: 1,
@@ -791,81 +705,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: colors.background.card,
     borderRadius: 16,
     width: '90%',
     maxHeight: '80%',
+    padding: 24,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   modalBody: {
-    padding: 20,
   },
   tagsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   tagModalChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#2A2A2A',
-    gap: 6,
+    borderRadius: 100,
+    backgroundColor: colors.background.tertiary,
+    gap: 8,
   },
   tagModalChipSelected: {
-    backgroundColor: '#FF4D00',
+    backgroundColor: colors.text.primary,
   },
   tagModalChipText: {
     fontSize: 14,
-    color: '#FFFFFF',
-  },
-  tagModalChipTextSelected: {
-    fontWeight: '600',
-  },
-  tagDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    color: colors.text.secondary,
   },
   newTagSection: {
     borderTopWidth: 1,
-    borderTopColor: '#2A2A2A',
-    paddingTop: 20,
+    borderTopColor: colors.border.subtle,
+    paddingTop: 24,
   },
   newTagTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
+      color: colors.text.secondary,
+      marginBottom: 12,
   },
   newTagInput: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.background.tertiary,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginBottom: 12,
+    fontSize: 16,
+    color: colors.text.primary,
+    marginBottom: 16,
   },
   colorPicker: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 24,
   },
   colorOption: {
     width: 32,
@@ -878,48 +779,33 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   createTagButton: {
-    backgroundColor: '#FF4D00',
+    backgroundColor: colors.background.tertiary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
   },
   createTagButtonDisabled: {
-    backgroundColor: '#2A2A2A',
+    opacity: 0.5,
   },
   createTagButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  modalSaveButton: {
-    backgroundColor: '#FF4D00',
-    margin: 20,
-    marginTop: 0,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  modalSaveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   shareReceiptButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginHorizontal: 20,
-    marginBottom: 30,
-    paddingVertical: 14,
-    borderRadius: 12,
+    marginHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FF4D00',
-    backgroundColor: 'transparent',
+    borderColor: colors.border.subtle,
   },
   shareReceiptText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FF4D00',
+    fontWeight: '500',
+    color: colors.text.primary,
   },
 });

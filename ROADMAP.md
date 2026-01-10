@@ -198,20 +198,83 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - Integration: VerificationSuccessModal, BookDetailScreen
     - **DoD:** User can share achievement certificate from completion modal or Library.
 
-- [ ] **4.3 Monk Mode (Deep Reading Timer)**
+- [x] **4.3 Monk Mode (Deep Reading Timer) ✅**
     - **Ambience:** "Bonfire/Crackling Fire" sound loop (High quality).
     - **Enforcement:** Simple warning toast on app backgrounding/exit.
     - **Tracking:** Save focus duration to DB (`focus_sessions`) and reflect in user stats.
+    - **Implementation:**
+      - Screen: `src/screens/MonkModeScreen.tsx`
+      - Uses `useKeepAwake()` to prevent screen dimming during focus sessions
+      - Sound: `expo-av` for ambient fire sound playback
+      - AppState listener for background detection with warning toast
+      - Timer with start/pause/complete controls
+    - **DoD:** User can enter focused reading mode with ambient sound and session tracking.
 
-- [ ] **4.4 Lock Screen Live Activity**
-    - **Action:** iOS Dynamic Island widget.
+- [x] **4.4 Lock Screen Live Activity (Invasive UX) ✅**
+    - **Role:** `[Native Module Specialist]`
+    - **Action:** Implement iOS Live Activities (Dynamic Island) for Monk Mode timer.
+    - **Details:**
+        - **Package:** `expo-live-activity` (Software Mansion Labs)
+        - **Display:** Circular progress ring with remaining time on Lock Screen / Dynamic Island
+        - **States:** Running, Paused, Completed, Cancelled
+        - **Tech:** Conditional import with `Platform.OS` check for graceful Android degradation
+    - **Implementation:**
+        - Service: `src/lib/LiveActivityService.ts` (singleton, iOS-only)
+        - Hook Integration: `src/hooks/useMonkModeTimer.ts` (all timer events call LiveActivityService)
+        - i18n: 5 new keys for Live Activity text (ja/en/ko)
+        - Prebuild: Generates `LiveActivity.appex` widget extension
+    - **Note:** Requires iOS 16.2+. Icons optional (`assets/liveActivity/` folder).
+    - **DoD:** Timer progress visible on Lock Screen without unlocking the phone.
+
 - [ ] **4.5 Advanced Animation Polish**
-    - **Action:** Refine all micro-interactions.
-    - **Details:** Implement the "Hero Object" (Shared Element Transition).
-- [ ] **4.6 Reading DNA**
-    - **Action:** Visualize reading habits (Speed, Time).
-- [ ] **4.7 The Hall of Fame**
-    - **Action:** Netflix-style library for completed books.
+    - **Role:** `[Animation Specialist]`
+    - **Action:** Refine all micro-interactions based on beta feedback.
+
+- [ ] **4.6 Reading DNA (Identity Analysis) 🆕**
+    - **Role:** `[Data Viz Specialist]`
+    - **Action:** Visualize user's reading habits to build identity.
+    - **Details:**
+        - **Metrics:** Speed (pages/hour), Time of Day (Night owl vs Early bird), Genre breakdown.
+        - **UI:** "Spotify Wrapped" style cards in Profile.
+    - **DoD:** User can view their "Reader Type" and stats.
+
+- [ ] **4.7 The Hall of Fame (Netflix-style Library) 🆕**
+    - **Role:** `[UI/UX Designer]`
+    - **Action:** Transform the boring book list into a cinematic "Streaming Service" UI.
+    - **Details:**
+        - **Hero Section:** Display the most recently completed book with a large, blurred cover background (billboard style).
+        - **Horizontal Lists:** Group books into horizontally scrollable categories (e.g., "Recently Completed," "High Stakes (¥5000+)," "Speed Runs").
+        - **Interaction:** Tapping a book opens a bottom sheet with details/stats instead of a full screen push (keeping context).
+    - **DoD:** A "Watch History" style library that makes users feel like they are curating their own premium content.
+
+- [ ] **4.8 The Activity Matrix (Daily Habit HUD) 🆕**
+    - **Role:** `[UI/UX Designer]`
+    - **Action:** Add a "Github-style" contribution graph to the Home Header to visualize consistency.
+    - **Details:**
+        - **Design:** A horizontal stream of small blocks (not a calendar).
+        - **States:** Dark Grey (Inactive) vs Glowing Red/White (Active).
+        - **Interaction:** Blocks light up with a "Click" sound and haptic feedback upon daily goal completion.
+        - **Location:** Home Screen Header (Dashboard).
+    - **DoD:** User can see their 30-day streak status at a glance without feeling like they are looking at a calendar.
+
+- [ ] **4.9 The Titan Design Overhaul (Liquid Metal & Dark Glass Aesthetic) 🆕**
+    - **Role:** `[Creative Director & UI Architect]`
+    - **Action:** Execute a complete visual rebranding to unify the app under a "Hardcore Luxury" identity inspired by automotive digital cockpits (e.g., Mercedes MBUX, Porsche).
+    - **Details:**
+        - **Core Concept:** "The Executive Cockpit". Move away from "Military/Spy Gadget" to "Luxury Asset Interface".
+        - **Materials:** Replace flat borders with **"Liquid Black Metal"** and **"Deep Optical Glass"**. Use high-contrast highlights and deep shadows (Bevels) to create physical thickness without 1px borders.
+        - **Typography (Automotive Spec):**
+            - **Data/Numbers:** Use elegant, geometric sans-serifs (DIN, Inter, or Helvetica Neue). Large, thin weights for metrics (Speedometer style). No "Stencil" or "Typewriter" fonts.
+            - **Labels:** Minimalist and crisp. High legibility with premium tracking.
+        - **Color Palette:**
+          - **Base:** Obsidian Black (#050505) & Piano Black (High Gloss).
+            - **Alert:** Crimson Ruby (Deep, rich red with ambient glow). Avoid "Cyber Neon".
+            - **Light:** Soft white ambient gradients for glass reflections.
+        - **UI Component Overhaul:**
+            - **Activity Log:** "Ambient Status Strip". Seamless glass panel with embedded soft-light indicators (not punched holes).
+            - **Panels (Risk/Missions):** "Thick Glass Tiles". Remove borders. Use inner shadows and drop shadows to simulate heavy glass blocks resting on the background.
+            - **Interaction:** "Haptic Luxury". Heavy, mechanical feedback paired with "lighting up" animations (slow fade-in/out like incandescent bulbs).
+    - **DoD:** The app feels like a physical instrument cluster of a hypercar. "Wet" black textures, optical depth, and "No Borders" philosophy are implemented.
 
 ---
 

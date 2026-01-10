@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -15,7 +16,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withDelay,
   Easing,
 } from 'react-native-reanimated';
 import { supabase } from '../lib/supabase';
@@ -30,6 +30,12 @@ import {
   CommitmentWithRange,
 } from '../lib/commitmentHelpers';
 import { NotificationService } from '../lib/NotificationService';
+import { colors, typography, spacing, shadows } from '../theme';
+import { TacticalText } from '../components/titan/TacticalText';
+import { MicroLabel } from '../components/titan/MicroLabel';
+import { GlassTile } from '../components/titan/GlassTile';
+import { MetricDisplay } from '../components/titan/MetricDisplay';
+import { StatusIndicator } from '../components/titan/StatusIndicator';
 
 type BookData = {
   id: string;
@@ -71,8 +77,9 @@ export default function DashboardScreen({ navigation }: any) {
   const [poolByCurrency, setPoolByCurrency] = useState<Record<string, number>>({});
   const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
   const [currentLocale, setCurrentLocale] = useState(i18n.locale);
+  const [userName, setUserName] = useState<string>('Guest');
 
-  // Cinematic fade-in from black (after 007-style reveal)
+  // Cinematic fade-in from black
   const [showFadeOverlay, setShowFadeOverlay] = useState(false);
   const fadeOverlayOpacity = useSharedValue(1);
 
@@ -82,24 +89,20 @@ export default function DashboardScreen({ navigation }: any) {
 
   useEffect(() => {
     fetchCommitments();
+    fetchUserProfile();
 
-    // Check if we're coming from the cinematic reveal
     const checkFadeIn = async () => {
       const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
       if (shouldFade === 'true') {
         await AsyncStorage.removeItem('showDashboardFadeIn');
         setShowFadeOverlay(true);
         fadeOverlayOpacity.value = 1;
-
-        // Delay before starting fade out (let the screen settle)
         setTimeout(() => {
           fadeOverlayOpacity.value = withTiming(0, {
-            duration: 800,
+            duration: 1000,
             easing: Easing.out(Easing.cubic),
           });
         }, 200);
-
-        // Hide overlay after animation completes
         setTimeout(() => {
           setShowFadeOverlay(false);
         }, 1200);
@@ -107,7 +110,6 @@ export default function DashboardScreen({ navigation }: any) {
     };
     checkFadeIn();
 
-    // Initialize and schedule notifications (Phase 4.1 - Dynamic Pacemaker)
     const initNotifications = async () => {
       try {
         await NotificationService.initialize();
@@ -119,12 +121,25 @@ export default function DashboardScreen({ navigation }: any) {
     initNotifications();
   }, []);
 
-  // Update locale when screen is focused to reflect language changes
   useFocusEffect(
     React.useCallback(() => {
       setCurrentLocale(i18n.locale);
     }, [])
   );
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('users').select('username').eq('id', user.id).single();
+        let name = data?.username;
+        if (!name) name = user.email?.split('@')[0];
+        setUserName(name || 'Guest');
+      }
+    } catch (e) {
+      console.log('Error fetching profile:', e);
+    }
+  };
 
   const fetchCommitments = async () => {
     try {
@@ -148,7 +163,6 @@ export default function DashboardScreen({ navigation }: any) {
         .order('created_at', { ascending: true });
 
       if (data) {
-        // Transform data to ensure book is a single object (not array from Supabase join)
         const queryResults = data as CommitmentQueryResult[];
         const normalizedData: Commitment[] = queryResults.map((c) => ({
           ...c,
@@ -156,7 +170,6 @@ export default function DashboardScreen({ navigation }: any) {
         }));
         setCommitments(normalizedData);
 
-        // Calculate page ranges and group by book
         const transformedData: RawCommitmentWithBook[] = normalizedData.map((c) => ({
           ...c,
           book: c.book,
@@ -165,7 +178,6 @@ export default function DashboardScreen({ navigation }: any) {
         const grouped = groupCommitmentsByBook(withRanges);
         setGroupedCommitments(grouped);
 
-        // 通貨ごとに集計
         const pending = data.filter(c => c.status === 'pending');
         const defaulted = data.filter(c => c.status === 'defaulted');
 
@@ -197,79 +209,25 @@ export default function DashboardScreen({ navigation }: any) {
     fetchCommitments();
   };
 
-  const getCountdown = (deadline: string) => {
-    const now = new Date();
-    const end = new Date(deadline);
-    const diff = end.getTime() - now.getTime();
-
-    if (diff <= 0) return { days: 0, hours: 0, expired: true };
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-    return { days, hours, expired: false };
-  };
-
-  const renderCommitmentCard = (commitment: Commitment) => {
-    const countdown = getCountdown(commitment.deadline);
-    const isUrgent = countdown.days <= 3 && !countdown.expired;
-
-    return (
-      <TouchableOpacity
-        key={commitment.id}
-        style={[styles.card, isUrgent && styles.urgentCard]}
-        onPress={() => {
-          navigation.navigate('CommitmentDetail', { id: commitment.id });
-        }}
-      >
-        <View style={styles.cardHeader}>
-          <Text style={styles.bookTitle} numberOfLines={1}>
-            {commitment.book.title}
-          </Text>
-          <View style={[
-            styles.statusBadge,
-            commitment.status === 'completed' && styles.completedBadge,
-            commitment.status === 'defaulted' && styles.defaultedBadge,
-          ]}>
-            <Text style={styles.statusText}>
-              {commitment.status === 'pending' ? i18n.t('dashboard.in_progress') :
-               commitment.status === 'completed' ? i18n.t('dashboard.completed') : i18n.t('dashboard.failed')}
-            </Text>
+  const renderHistoryCard = (commitment: Commitment) => {
+      return (
+          <View key={commitment.id} style={styles.historyRow}>
+             <View style={styles.historyInfo}>
+                 <Text style={styles.historyTitle}>{commitment.book.title}</Text>
+                 <Text style={styles.historyDate}>{new Date(commitment.created_at).toLocaleDateString()}</Text>
+             </View>
+             <TacticalText style={styles.historyAmount} color={colors.text.muted}>
+                 -{commitment.currency === 'JPY' ? '¥' : commitment.currency}{commitment.pledge_amount.toLocaleString()}
+             </TacticalText>
           </View>
-        </View>
-
-        {commitment.status === 'pending' && (
-          <View style={styles.countdown}>
-            <Ionicons
-              name="time-outline"
-              size={20}
-              color={isUrgent ? '#ff6b6b' : '#666'}
-            />
-            <Text style={[styles.countdownText, isUrgent && styles.urgentText]}>
-              {countdown.expired
-                ? i18n.t('dashboard.failed')
-                : `${i18n.t('dashboard.remaining')} ${countdown.days}${i18n.t('dashboard.days')} ${countdown.hours}${i18n.t('dashboard.hours')}`}
-            </Text>
-          </View>
-        )}
-
-        <Text style={styles.pledgeAmount}>
-          {i18n.t('dashboard.penalty')}: {commitment.currency === 'JPY' ? '¥' : commitment.currency}
-          {commitment.pledge_amount.toLocaleString()}
-        </Text>
-      </TouchableOpacity>
-    );
+      )
   };
 
   if (initialLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{i18n.t('dashboard.title')}</Text>
-        </View>
         <View style={styles.initialLoadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
-          <Text style={styles.initialLoadingText}>{i18n.t('common.loading')}</Text>
+          <ActivityIndicator size="small" color={colors.text.muted} />
         </View>
       </SafeAreaView>
     );
@@ -277,68 +235,92 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.background.primary} />
+      
+      {/* Header: Executive Cockpit Style */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{i18n.t('dashboard.title')}</Text>
+        <View>
+          <StatusIndicator
+            status={groupedCommitments.filter(g => g.activeCount > 0).length > 0 ? 'active' : 'dormant'}
+            label={groupedCommitments.filter(g => g.activeCount > 0).length > 0
+              ? i18n.t('dashboard.status_active')
+              : i18n.t('dashboard.status_dormant')}
+          />
+          <Text style={styles.userName}>{userName}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('RoleSelect')}
+        >
+          <Ionicons name="add" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={colors.text.muted}
+          />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* 統計カード */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>{i18n.t('dashboard.donation_pool')}</Text>
-            <Text style={styles.statValue}>
-              {Object.entries(poolByCurrency)
-                .filter(([_, amount]) => amount > 0)
-                .map(([currency, amount]) => {
-                  const symbol = CURRENCY_SYMBOLS[currency] || currency;
-                  return `${symbol}${amount.toLocaleString()}`;
-                })
-                .join(' + ') || '¥0'}
-            </Text>
+        {/* Stats: Glass Tile Panel */}
+        <GlassTile
+          variant="elevated"
+          glow={Object.values(poolByCurrency).some(v => v > 0) ? 'gold' : 'none'}
+          padding="lg"
+          style={styles.statsPanel}
+        >
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <MetricDisplay
+                label={i18n.t('dashboard.pledged_amount')}
+                value={Object.entries(poolByCurrency)
+                  .filter(([_, amount]) => amount > 0)
+                  .map(([currency, amount]) => {
+                    const symbol = CURRENCY_SYMBOLS[currency] || currency;
+                    return `${symbol}${amount.toLocaleString()}`;
+                  })
+                  .join(' + ') || '¥0'}
+                size="medium"
+                color={colors.text.primary}
+              />
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statCard}>
+              <MetricDisplay
+                label={i18n.t('dashboard.failed_amount')}
+                value={Object.entries(donatedByCurrency)
+                  .filter(([_, amount]) => amount > 0)
+                  .map(([currency, amount]) => {
+                    const symbol = CURRENCY_SYMBOLS[currency] || currency;
+                    return `${symbol}${amount.toLocaleString()}`;
+                  })
+                  .join(' + ') || '¥0'}
+                size="medium"
+                color={colors.text.muted}
+              />
+            </View>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>{i18n.t('dashboard.total_donated')}</Text>
-            <Text style={styles.statValue}>
-              {Object.entries(donatedByCurrency)
-                .filter(([_, amount]) => amount > 0)
-                .map(([currency, amount]) => {
-                  const symbol = CURRENCY_SYMBOLS[currency] || currency;
-                  return `${symbol}${amount.toLocaleString()}`;
-                })
-                .join(' + ') || '¥0'}
-            </Text>
-          </View>
-        </View>
+        </GlassTile>
 
-        {/* コミットメント一覧 */}
+        {/* Active Commitments */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{i18n.t('dashboard.active_commitments')}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('RoleSelect')}>
-              <MaterialIcons name="add" size={28} color="#000" />
-            </TouchableOpacity>
-          </View>
+          <MicroLabel style={styles.sectionTitle}>{i18n.t('dashboard.active_commitments') || 'Active Commitments'}</MicroLabel>
 
           {groupedCommitments.filter(g => g.activeCount > 0).length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconContainer}>
-                <Ionicons name="book-outline" size={56} color="#ccc" />
-              </View>
-              <Text style={styles.emptyTitle}>{i18n.t('dashboard.no_commitments')}</Text>
-              <Text style={styles.emptySubtitle}>{i18n.t('dashboard.empty_encouragement')}</Text>
+            <GlassTile variant="subtle" padding="lg" style={styles.emptyState}>
+              <Text style={styles.emptySubtitle}>{i18n.t('dashboard.no_active_commitments')}</Text>
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={() => navigation.navigate('RoleSelect')}
               >
-                <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.emptyButtonText}>{i18n.t('dashboard.add_book')}</Text>
+                <Text style={styles.emptyButtonText}>{i18n.t('dashboard.create_new')}</Text>
               </TouchableOpacity>
-            </View>
+            </GlassTile>
           ) : (
             groupedCommitments
               .filter(g => g.activeCount > 0)
@@ -355,18 +337,18 @@ export default function DashboardScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* 完了・失敗した本 */}
+        {/* Failed History */}
         {commitments.filter(c => c.status === 'defaulted').length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{i18n.t('dashboard.history')}</Text>
+            <MicroLabel style={styles.sectionTitle}>{i18n.t('dashboard.failed_history') || 'History'}</MicroLabel>
             {commitments
               .filter(c => c.status === 'defaulted')
-              .map(renderCommitmentCard)}
+              .map(renderHistoryCard)}
           </View>
         )}
       </ScrollView>
 
-      {/* Cinematic fade-in overlay (from 007-style reveal) */}
+      {/* Cinematic fade-in overlay */}
       {showFadeOverlay && (
         <Animated.View style={[styles.fadeOverlay, fadeOverlayStyle]} pointerEvents="none" />
       )}
@@ -377,162 +359,105 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.background.primary,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  headerTitle: {
+  userName: {
     fontSize: 24,
-    fontWeight: '800',
+    color: colors.text.primary,
+    fontWeight: '300',
+    marginTop: 8,
+  },
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.background.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.glassSubtle,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  statsPanel: {
+    marginBottom: 32,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
+    alignItems: 'center',
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.border.subtle,
+    marginHorizontal: 16,
   },
   section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 40,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  card: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  urgentCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#ff6b6b',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  bookTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 8,
-  },
-  statusBadge: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  completedBadge: {
-    backgroundColor: '#e8f5e9',
-  },
-  defaultedBadge: {
-    backgroundColor: '#ffebee',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  countdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 8,
-  },
-  countdownText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  urgentText: {
-    color: '#ff6b6b',
-    fontWeight: '600',
-  },
-  pledgeAmount: {
-    fontSize: 14,
-    color: '#666',
+    marginBottom: 16,
+    color: colors.text.muted,
   },
   initialLoadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  initialLoadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#666',
-  },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 24,
-  },
-  emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+    color: colors.text.secondary,
+    marginBottom: 20,
   },
   emptyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: colors.background.card,
+    ...shadows.glassSubtle,
   },
   emptyButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.text.primary, 
+    fontSize: 14,
+  },
+  historyRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.subtle,
+  },
+  historyInfo: {
+    flex: 1,
+  },
+  historyTitle: {
+      color: colors.text.secondary,
+      fontSize: 14,
+      marginBottom: 4,
+  },
+  historyDate: {
+      color: colors.text.muted,
+      fontSize: 12,
+  },
+  historyAmount: {
+      fontSize: 14,
   },
   fadeOverlay: {
     position: 'absolute',
@@ -542,6 +467,5 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#000000',
     zIndex: 9999,
-    elevation: 9999,
   },
 });

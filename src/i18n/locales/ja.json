@@ -175,7 +175,14 @@
     "no_commitments": "進行中のコミットメントはありません",
     "add_book": "本を追加する",
     "empty_encouragement": "今日から読書の旅を始めましょう！",
-    "history": "履歴"
+    "history": "履歴",
+    "pledged_amount": "賭け金",
+    "failed_amount": "損失",
+    "no_active_commitments": "進行中のコミットメントはありません",
+    "create_new": "コミットメントを作成",
+    "failed_history": "履歴",
+    "status_active": "アクティブ",
+    "status_dormant": "休止中"
   },
   "paywall": {
     "for_serious": "本気の人向け",
@@ -323,7 +330,12 @@
     "start_another": "もう一度",
     "notification_title": "集中セッション完了",
     "notification_body": "お疲れ様！読書セッションが完了しました。",
-    "notification_body_book": "『{{book}}』を読み終えました！"
+    "notification_body_book": "『{{book}}』を読み終えました！",
+    "live_activity_title": "集中読書中",
+    "live_activity_subtitle_reading": "深い読書に集中中",
+    "live_activity_subtitle_paused": "一時停止中",
+    "live_activity_completed": "セッション完了！",
+    "live_activity_ended": "セッション終了"
   },
   "notifications": {
     "settings_title": "通知設定",

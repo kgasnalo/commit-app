@@ -14,6 +14,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
+import { colors, typography } from '../theme';
+import { TacticalText } from '../components/titan/TacticalText';
+import { MicroLabel } from '../components/titan/MicroLabel';
 
 type BookData = {
   id: string;
@@ -34,13 +37,11 @@ type CommitmentDetail = {
   book: BookData;
 };
 
-// Supabase join query returns book as array or single object
 type CommitmentQueryResult = Omit<CommitmentDetail, 'book'> & {
   book: BookData | BookData[];
 };
 
 export default function CommitmentDetailScreen({ route, navigation }: any) {
-  // Safe extraction of id with fallback
   const id = route?.params?.id;
   const [commitment, setCommitment] = useState<CommitmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,7 +118,6 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
     return symbols[currency] || currency;
   };
 
-  // Check if lifeline was already used for any commitment on this book
   const checkLifelineAvailability = useCallback(async (bookId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -138,7 +138,6 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
     }
   }, []);
 
-  // Handle lifeline usage
   const handleUseLifeline = async () => {
     if (!commitment) return;
 
@@ -157,7 +156,6 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
               });
 
               if (error) {
-                // Handle FunctionsHttpError
                 if (error instanceof FunctionsHttpError) {
                   const errorBody = await error.context.json();
                   throw new Error(errorBody.error || 'Unknown error');
@@ -167,7 +165,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 
               if (data?.success) {
                 Alert.alert(i18n.t('common.success'), i18n.t('commitment_detail.lifeline_success'));
-                fetchCommitment(); // Refresh commitment data
+                fetchCommitment();
                 setLifelineUsedForBook(true);
               } else if (data?.error) {
                 Alert.alert(i18n.t('common.error'), data.error);
@@ -187,7 +185,6 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
     );
   };
 
-  // Check lifeline availability when commitment is loaded
   useEffect(() => {
     if (commitment?.book?.id) {
       checkLifelineAvailability(commitment.book.id);
@@ -197,7 +194,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color={colors.text.muted} />
       </SafeAreaView>
     );
   }
@@ -207,20 +204,11 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={24} color="#000" />
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{i18n.t('common.error')}</Text>
-          <View style={{ width: 24 }} />
         </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#ccc" />
+        <View style={styles.centerContent}>
           <Text style={styles.errorText}>{i18n.t('errors.commitment_not_found')}</Text>
-          <TouchableOpacity
-            style={styles.errorButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.errorButtonText}>{i18n.t('common.back')}</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -232,11 +220,11 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{i18n.t('commitment_detail.title')}</Text>
-        <View style={{ width: 24 }} />
+        <View style={styles.backButton} /> 
       </View>
 
       <ScrollView
@@ -244,91 +232,87 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* 書籍情報 */}
-        <View style={styles.bookCard}>
-          {commitment.book.cover_url ? (
-            <Image source={{ uri: commitment.book.cover_url }} style={styles.bookCover} />
-          ) : (
-            <View style={styles.bookCoverPlaceholder}>
-              <Ionicons name="book-outline" size={40} color="#ccc" />
-            </View>
-          )}
+        {/* Book Header */}
+        <View style={styles.bookHeader}>
+          <View style={styles.bookCoverContainer}>
+              {commitment.book.cover_url ? (
+                <Image source={{ uri: commitment.book.cover_url }} style={styles.bookCover} />
+              ) : (
+                <View style={styles.bookCoverPlaceholder}>
+                  <Ionicons name="book-outline" size={40} color={colors.text.muted} />
+                </View>
+              )}
+          </View>
           <View style={styles.bookInfo}>
             <Text style={styles.bookTitle}>{commitment.book.title}</Text>
             <Text style={styles.bookAuthor}>{commitment.book.author}</Text>
-          </View>
-        </View>
-
-        {/* ステータス */}
-        <View style={[
-          styles.statusBadge,
-          commitment.status === 'completed' && styles.completedBadge,
-          commitment.status === 'defaulted' && styles.defaultedBadge,
-        ]}>
-          <Text style={styles.statusText}>
-            {commitment.status === 'pending' ? i18n.t('commitment_detail.in_progress') :
-             commitment.status === 'completed' ? i18n.t('dashboard.completed') : i18n.t('dashboard.failed')}
-          </Text>
-        </View>
-
-        {/* ページ目標 */}
-        {commitment.target_pages > 0 && (
-          <View style={styles.targetPagesCard}>
-            <MaterialIcons name="menu-book" size={24} color="#2196F3" />
-            <View style={styles.targetPagesInfo}>
-              <Text style={styles.targetPagesLabel}>
-                {i18n.t('commitment_detail.target_pages')}
-              </Text>
-              <Text style={styles.targetPagesValue}>
-                {commitment.target_pages.toLocaleString()} {i18n.t('commitment.pages')}
-              </Text>
+            <View style={[
+              styles.statusChip, 
+              commitment.status === 'completed' && styles.statusChipCompleted,
+              commitment.status === 'defaulted' && styles.statusChipFailed
+            ]}>
+                <Text style={[
+                  styles.statusChipText,
+                   commitment.status === 'completed' && { color: '#000' }
+                ]}>
+                    {commitment.status === 'pending' ? 'IN PROGRESS' : commitment.status.toUpperCase()}
+                </Text>
             </View>
           </View>
-        )}
+        </View>
 
-        {/* カウントダウン */}
+        {/* Data List */}
+        <View style={styles.dataSection}>
+            {commitment.target_pages > 0 && (
+                <View style={styles.dataRow}>
+                    <MicroLabel>{i18n.t('commitment_detail.target_pages')}</MicroLabel>
+                    <TacticalText size={16} color={colors.text.primary}>
+                        {commitment.target_pages.toLocaleString()} Pages
+                    </TacticalText>
+                </View>
+            )}
+
+            <View style={styles.dataRow}>
+                <MicroLabel>PLEDGED AMOUNT</MicroLabel>
+                <TacticalText size={16} color={colors.text.primary}>
+                     {getCurrencySymbol(commitment.currency)}{commitment.pledge_amount.toLocaleString()}
+                </TacticalText>
+            </View>
+
+            <View style={styles.dataRow}>
+                <MicroLabel>DEADLINE</MicroLabel>
+                <TacticalText size={16} color={colors.text.primary}>
+                     {new Date(commitment.deadline).toLocaleDateString()}
+                </TacticalText>
+            </View>
+        </View>
+
+        {/* Countdown */}
         {commitment.status === 'pending' && (
-          <View style={[styles.countdownCard, isUrgent && styles.urgentCard]}>
-            <Text style={styles.countdownLabel}>{i18n.t('commitment_detail.time_remaining')}</Text>
+          <View style={styles.countdownSection}>
+            <MicroLabel style={{ marginBottom: 12 }}>REMAINING TIME</MicroLabel>
             {countdown.expired ? (
-              <Text style={styles.expiredText}>{i18n.t('dashboard.failed')}</Text>
+              <Text style={styles.expiredText}>EXPIRED</Text>
             ) : (
               <View style={styles.countdownNumbers}>
                 <View style={styles.countdownItem}>
                   <Text style={[styles.countdownValue, isUrgent && styles.urgentText]}>
                     {countdown.days}
                   </Text>
-                  <Text style={styles.countdownUnit}>{i18n.t('commitment_detail.days')}</Text>
+                  <Text style={styles.countdownUnit}>DAYS</Text>
                 </View>
                 <View style={styles.countdownItem}>
                   <Text style={[styles.countdownValue, isUrgent && styles.urgentText]}>
                     {countdown.hours}
                   </Text>
-                  <Text style={styles.countdownUnit}>{i18n.t('commitment_detail.hours')}</Text>
-                </View>
-                <View style={styles.countdownItem}>
-                  <Text style={[styles.countdownValue, isUrgent && styles.urgentText]}>
-                    {countdown.minutes}
-                  </Text>
-                  <Text style={styles.countdownUnit}>{i18n.t('commitment_detail.minutes')}</Text>
+                  <Text style={styles.countdownUnit}>HOURS</Text>
                 </View>
               </View>
             )}
           </View>
         )}
 
-        {/* ペナルティ金額 */}
-        <View style={styles.penaltyCard}>
-          <Text style={styles.penaltyLabel}>{i18n.t('commitment_detail.penalty_amount')}</Text>
-          <Text style={styles.penaltyAmount}>
-            {getCurrencySymbol(commitment.currency)}{commitment.pledge_amount.toLocaleString()}
-          </Text>
-          <Text style={styles.penaltyNote}>
-            {i18n.t('commitment_detail.penalty_note')}
-          </Text>
-        </View>
-
-        {/* アクションボタン */}
+        {/* Actions */}
         <View style={styles.actionButtonsContainer}>
           {commitment.status === 'pending' && (
             <>
@@ -339,37 +323,26 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
                   bookTitle: commitment.book.title,
                 })}
               >
-                <Ionicons name="checkmark-circle" size={24} color="#fff" />
                 <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
               </TouchableOpacity>
 
-              {/* ライフラインボタン */}
               <TouchableOpacity
                 style={[
-                  styles.lifelineButton,
-                  lifelineUsedForBook && styles.lifelineButtonDisabled,
+                    styles.secondaryButton,
+                    lifelineUsedForBook && styles.secondaryButtonDisabled
                 ]}
                 onPress={handleUseLifeline}
                 disabled={lifelineUsedForBook || lifelineLoading}
               >
                 {lifelineLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={colors.text.secondary} />
                 ) : (
-                  <>
-                    <Ionicons
-                      name="time-outline"
-                      size={24}
-                      color={lifelineUsedForBook ? '#999' : '#fff'}
-                    />
-                    <Text style={[
-                      styles.lifelineButtonText,
-                      lifelineUsedForBook && styles.lifelineButtonTextDisabled,
-                    ]}>
-                      {lifelineUsedForBook
-                        ? i18n.t('commitment_detail.lifeline_unavailable')
-                        : i18n.t('commitment_detail.lifeline_button')}
-                    </Text>
-                  </>
+                  <Text style={[
+                      styles.secondaryButtonText,
+                      lifelineUsedForBook && styles.secondaryButtonTextDisabled
+                  ]}>
+                    {lifelineUsedForBook ? 'FREEZE USED' : 'USE FREEZE (+7 DAYS)'}
+                  </Text>
                 )}
               </TouchableOpacity>
             </>
@@ -377,7 +350,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 
           {commitment.status === 'completed' && (
             <View style={styles.completedMessage}>
-              <Ionicons name="checkmark-circle" size={48} color="#4caf50" />
+              <Ionicons name="checkmark-circle-outline" size={32} color={colors.signal.success} />
               <Text style={styles.completedText}>{i18n.t('commitment_detail.completed_message')}</Text>
             </View>
           )}
@@ -390,234 +363,185 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backButton: {
+      width: 40,
+      alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    color: colors.text.primary,
   },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
+    padding: 24,
     paddingBottom: 40,
   },
-  bookCard: {
-    flexDirection: 'row',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+  bookHeader: {
+      flexDirection: 'row',
+      marginBottom: 40,
+  },
+  bookCoverContainer: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
   },
   bookCover: {
-    width: 80,
-    height: 120,
-    borderRadius: 8,
+    width: 90,
+    height: 135,
+    borderRadius: 4,
   },
   bookCoverPlaceholder: {
-    width: 80,
-    height: 120,
-    borderRadius: 8,
-    backgroundColor: '#eee',
+    width: 90,
+    height: 135,
+    borderRadius: 4,
+    backgroundColor: colors.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bookInfo: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 24,
     justifyContent: 'center',
   },
   bookTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '500',
+    color: colors.text.primary,
     marginBottom: 8,
+    lineHeight: 26,
   },
   bookAuthor: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
+    marginBottom: 16,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 20,
+  statusChip: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.background.tertiary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 100,
   },
-  completedBadge: {
-    backgroundColor: '#e8f5e9',
+  statusChipCompleted: {
+      backgroundColor: colors.signal.success,
   },
-  defaultedBadge: {
-    backgroundColor: '#ffebee',
+  statusChipFailed: {
+      backgroundColor: 'rgba(128, 0, 0, 0.2)',
   },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
+  statusChipText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.text.secondary,
   },
-  countdownCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 20,
+  dataSection: {
+      marginBottom: 40,
+  },
+  dataRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.subtle,
+  },
+  countdownSection: {
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  urgentCard: {
-    backgroundColor: '#fff5f5',
-    borderWidth: 2,
-    borderColor: '#ff6b6b',
-  },
-  countdownLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    marginBottom: 40,
+    backgroundColor: colors.background.card,
+    padding: 24,
+    borderRadius: 8,
   },
   countdownNumbers: {
     flexDirection: 'row',
-    gap: 24,
+    gap: 40,
   },
   countdownItem: {
     alignItems: 'center',
   },
   countdownValue: {
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: '300',
+    color: colors.text.primary,
   },
   countdownUnit: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: colors.text.muted,
+    marginTop: 4,
   },
   urgentText: {
-    color: '#ff6b6b',
+    color: colors.signal.danger,
+    fontWeight: '500',
   },
   expiredText: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#ff6b6b',
-  },
-  penaltyCard: {
-    backgroundColor: '#fff5f5',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  penaltyLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  penaltyAmount: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#ff6b6b',
-    marginBottom: 8,
-  },
-  penaltyNote: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-  },
-  verifyButton: {
-    flexDirection: 'row',
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  verifyButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  lifelineButton: {
-    flexDirection: 'row',
-    backgroundColor: '#FF9800',
-    paddingVertical: 16,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  lifelineButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  lifelineButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  lifelineButtonTextDisabled: {
-    color: '#999',
-  },
-  completedMessage: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  completedText: {
-    marginTop: 12,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#4caf50',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  errorButton: {
-    marginTop: 24,
-    backgroundColor: '#000',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  errorButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.signal.danger,
   },
   actionButtonsContainer: {
-    gap: 12,
+    gap: 16,
   },
-  targetPagesCard: {
+  verifyButton: {
+    backgroundColor: colors.text.primary, // White button
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  verifyButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.bright,
+  },
+  secondaryButtonDisabled: {
+      borderColor: colors.border.subtle,
+      opacity: 0.5,
+  },
+  secondaryButtonText: {
+    color: colors.text.primary,
+    fontSize: 16,
+  },
+  secondaryButtonTextDisabled: {
+      color: colors.text.muted,
+  },
+  completedMessage: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e3f2fd',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+    justifyContent: 'center',
     gap: 12,
+    paddingVertical: 20,
+    backgroundColor: 'rgba(197, 160, 89, 0.1)',
+    borderRadius: 8,
   },
-  targetPagesInfo: {
-    flex: 1,
+  completedText: {
+    fontSize: 16,
+    color: colors.signal.success,
   },
-  targetPagesLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
+  centerContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
   },
-  targetPagesValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1976D2',
+  errorText: {
+      color: colors.text.muted,
   },
 });

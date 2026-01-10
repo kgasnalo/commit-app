@@ -1,23 +1,24 @@
-# Handoff: Session 2026-01-09
+# Handoff: Session 2026-01-10
 
 ## Current Goal
-**Phase 4.1 "Dynamic Pacemaker" Smart Notifications - COMPLETED ✅**
+**Phase 4.4 Lock Screen Live Activity - COMPLETED**
 
-Local push notifications for personalized reading reminders:
-1. NotificationService singleton with pacemaker calculation
-2. Daily reading target: `Remaining Pages ÷ Remaining Days`
-3. Personalized notification copy (on-track, behind, urgent, final day)
-4. Notification settings screen with time picker and **dynamic preview**
-5. Auto-schedule on app launch (DashboardScreen)
+iOS Lock Screen / Dynamic Island にMonk Modeタイマーを表示する機能:
+1. `expo-live-activity` パッケージを使用
+2. タイマー開始時にLive Activity開始
+3. 毎秒の残り時間更新
+4. 一時停止/再開状態の反映
+5. 完了/キャンセル時に終了
+6. iOS 16.2未満およびAndroidでのgraceful degradation
 
-**Previous: Phase 4.2 "Commitment Receipt" Premium Redesign - COMPLETED ✅**
+**Previous: Phase 4.3 "Monk Mode" Deep Reading Timer - COMPLETED**
 
 ---
 
 ## Current Critical Status
 
-### ⚠️ REQUIRES APP REBUILD (Native Modules)
-Both `expo-camera` (Phase 1.9) and `expo-notifications` (Phase 4.1) are native modules and **do not work in Expo Go**. You must rebuild the development client:
+### REQUIRES APP REBUILD (Native Modules)
+`expo-camera`, `expo-notifications`, `expo-keep-awake`, `expo-live-activity` are native modules and **do not work in Expo Go**. You must rebuild the development client:
 
 ```bash
 # iOS (Preferred)
@@ -41,13 +42,13 @@ The following URLs in `SettingsScreen.tsx` need real destinations:
 
 | Issue | Root Cause | Fix Applied |
 |-------|------------|-------------|
+| `Animated.SharedValue` type error | Namespace doesn't export SharedValue | Import `SharedValue` directly from `react-native-reanimated` |
+| Screen props type incompatibility | TypeScript strict typing vs React Navigation | Use `{ route, navigation }: any` pattern |
+| `uuid_generate_v4()` not found | PostgreSQL extension not enabled | Changed to `gen_random_uuid()` (built-in) |
+| Migration history mismatch | Remote versions not in local | Run `supabase migration repair --status reverted <version>` |
 | `colors.primary` TypeScript error | Theme uses nested structure | Use `colors.accent.primary` not `colors.primary` |
 | `i18n.language` not found | I18n type doesn't expose language | Use `useLanguage()` hook from LanguageContext |
-| `colors.border` type error | Border is object with `.default`/`.selected` | Use `colors.border.default` |
-| AlertButton `fontWeight` error | React Native AlertButton doesn't support fontWeight | Remove the property |
-| i18n `defaultValue` anti-pattern | Bypasses translations | Remove defaultValue, use key only |
-| `cover_image_url` type error | Database uses `cover_url` | Use `cover_url` in interfaces |
-| `shouldShowBanner/shouldShowList` missing | expo-notifications API change | Add both properties to notification handler |
+| Live Activity icons warning | Directory not created | Icons are optional, can add later to `assets/liveActivity/` |
 
 ---
 
@@ -55,53 +56,47 @@ The following URLs in `SettingsScreen.tsx` need real destinations:
 
 | Task | Status | Notes |
 |------|--------|-------|
-| expo-notifications install | ✅ Done | SDK 54 compatible |
-| app.json notification config | ✅ Done | Plugin + Android permissions |
-| NotificationService singleton | ✅ Done | Pacemaker calculation, scheduling |
-| i18n keys (ja/en/ko) | ✅ Done | Personalized notification copy |
-| NotificationSettingsScreen | ✅ Done | Toggle + time picker |
-| Dynamic preview content | ✅ Done | Fetches active commitment book title |
-| AppNavigator integration | ✅ Done | Added to SettingsStack |
-| SettingsScreen menu item | ✅ Done | Notifications section |
-| DashboardScreen init | ✅ Done | Auto-schedule on launch |
-| ProfileScreen bug fix | ✅ Done | Fixed `i18n.language` → `useLanguage()` |
+| Install expo-live-activity | Done | `npx expo install expo-live-activity` |
+| app.json plugin config | Done | Auto-added by expo install |
+| LiveActivityService.ts | Done | Singleton with iOS-only conditional import |
+| i18n keys (ja/en/ko) | Done | 5 new keys for Live Activity text |
+| useMonkModeTimer hook integration | Done | All timer events call LiveActivityService |
+| Prebuild | Done | Generated LiveActivity.appex |
+| iOS Build | Succeeded | App launches with Live Activity extension |
+| TypeCheck | Passed | (Supabase Deno files excluded) |
 
-### Files Created
+### Files Created (1 file)
 | File | Purpose |
 |------|---------|
-| `src/lib/NotificationService.ts` | Singleton service for notification scheduling |
-| `src/screens/NotificationSettingsScreen.tsx` | Settings UI with dynamic preview |
+| `src/lib/LiveActivityService.ts` | iOS Live Activity management singleton |
 
-### Files Modified
+### Files Modified (4 files)
 | File | Changes |
 |------|---------|
-| `app.json` | Added expo-notifications plugin and Android permissions |
-| `src/navigation/AppNavigator.tsx` | Added NotificationSettingsScreen to SettingsStack |
-| `src/screens/SettingsScreen.tsx` | Added Notifications section and menu item |
-| `src/screens/DashboardScreen.tsx` | Added notification initialization on mount |
-| `src/screens/ProfileScreen.tsx` | Fixed `i18n.language` bug using `useLanguage()` hook |
-| `src/i18n/locales/ja.json` | Added notifications section with all keys |
-| `src/i18n/locales/en.json` | Added notifications section with all keys |
-| `src/i18n/locales/ko.json` | Added notifications section with all keys |
+| `src/hooks/useMonkModeTimer.ts` | Added LiveActivityService integration |
+| `src/i18n/locales/ja.json` | Added Live Activity i18n keys |
+| `src/i18n/locales/en.json` | Added Live Activity i18n keys |
+| `src/i18n/locales/ko.json` | Added Live Activity i18n keys |
 
 ---
 
 ## Immediate Next Steps
 
-1. **Native Rebuild Required** (expo-notifications is a native module):
-   ```bash
-   ./run-ios-manual.sh
-   ```
-   - Test notification permission flow
-   - Settings → Notifications → Toggle and time picker
-   - Verify dynamic preview shows actual book title
-   - Create commitment → Wait for scheduled notification
+1. **Test Live Activity Feature** (requires iOS 16.2+ device):
+   - Open app → Navigate to "Focus" tab
+   - Start timer
+   - Lock device → Verify timer appears on Lock Screen
+   - Test Dynamic Island on iPhone 14 Pro+
+   - Pause/Resume → Verify "Paused" state shown
+   - Complete timer → Verify "Session Complete!" shown
+   - Cancel timer → Verify Live Activity dismissed
 
-2. **Phase 4 Remaining Features**:
-   - 4.3: Monk Mode (Deep Reading Timer)
-   - 4.4: Lock Screen Live Activity
+2. **Optional: Add Live Activity Icons**:
+   - Create `assets/liveActivity/` folder
+   - Add `book_icon.png` and `timer_icon.png` (40x40, @2x, @3x)
+   - Run `npx expo prebuild --clean` and rebuild
 
-3. **Or proceed to Phase 7: Web Portal**:
+3. **Phase 7: Web Portal**:
    - Next.js app on Vercel for payment management
    - Replace placeholder URLs in SettingsScreen
 
@@ -114,6 +109,8 @@ The following URLs in `SettingsScreen.tsx` need real destinations:
 ## Key File Locations
 | Feature | Files |
 |---------|-------|
+| **Live Activity** | `src/lib/LiveActivityService.ts` |
+| **Monk Mode** | `src/screens/monkmode/`, `src/components/monkmode/`, `src/lib/MonkModeService.ts`, `src/hooks/useMonkModeTimer.ts` |
 | **Smart Notifications** | `src/lib/NotificationService.ts`, `src/screens/NotificationSettingsScreen.tsx` |
 | **Commitment Receipt** | `src/components/receipt/CommitmentReceipt.tsx`, `src/components/receipt/ReceiptPreviewModal.tsx` |
 | Profile | `src/screens/ProfileScreen.tsx` |

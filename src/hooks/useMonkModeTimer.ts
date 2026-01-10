@@ -11,6 +11,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { NotificationService } from '../lib/NotificationService';
 import { MonkModeService, PersistedTimerState } from '../lib/MonkModeService';
+import { LiveActivityService } from '../lib/LiveActivityService';
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed';
 
@@ -88,12 +89,20 @@ export function useMonkModeTimer({
     const elapsed = totalDurationSecondsRef.current - remaining;
     progress.value = elapsed / totalDurationSecondsRef.current;
 
+    // Update Live Activity with current state
+    LiveActivityService.updateTimerActivity({
+      remainingSeconds: remaining,
+      totalSeconds: totalDurationSecondsRef.current,
+      isPaused: false,
+      bookTitle,
+    });
+
     onTick?.(remaining);
 
     if (remaining <= 0) {
       handleTimerComplete();
     }
-  }, [calculateRemainingTime, onTick]); // Removed status dependency
+  }, [calculateRemainingTime, onTick, bookTitle]); // Removed status dependency
 
   // Handle timer completion
   const handleTimerComplete = useCallback(async () => {
@@ -106,12 +115,18 @@ export function useMonkModeTimer({
       intervalRef.current = null;
     }
 
+    // Stop Live Activity with completion state
+    LiveActivityService.stopTimerActivity({
+      completed: true,
+      bookTitle,
+    });
+
     // Clear persisted state
     await MonkModeService.clearTimerState();
 
     // Call onComplete callback
     onComplete();
-  }, [onComplete]);
+  }, [onComplete, bookTitle]);
 
   // Start timer
   const start = useCallback(async () => {
@@ -124,6 +139,12 @@ export function useMonkModeTimer({
     setRemainingSeconds(totalSeconds);
     setStatus('running');
     progress.value = 0;
+
+    // Start Live Activity for Lock Screen / Dynamic Island
+    LiveActivityService.startTimerActivity({
+      durationSeconds: totalSeconds,
+      bookTitle,
+    });
 
     // Schedule completion notification
     const notificationId = await NotificationService.scheduleTimerCompletion(
@@ -163,6 +184,15 @@ export function useMonkModeTimer({
       intervalRef.current = null;
     }
 
+    // Update Live Activity to show paused state
+    const remaining = calculateRemainingTime();
+    LiveActivityService.updateTimerActivity({
+      remainingSeconds: remaining,
+      totalSeconds: totalDurationSecondsRef.current,
+      isPaused: true,
+      bookTitle,
+    });
+
     // Cancel scheduled notification
     if (notificationIdRef.current) {
       NotificationService.cancelNotification(notificationIdRef.current);
@@ -178,7 +208,7 @@ export function useMonkModeTimer({
       bookId,
       bookTitle,
     });
-  }, [status, durationMinutes, bookId, bookTitle]);
+  }, [status, durationMinutes, bookId, bookTitle, calculateRemainingTime]);
 
   // Resume timer
   const resume = useCallback(async () => {
@@ -193,6 +223,15 @@ export function useMonkModeTimer({
 
     // Reschedule notification with remaining time
     const remaining = calculateRemainingTime();
+
+    // Update Live Activity to resume countdown
+    LiveActivityService.updateTimerActivity({
+      remainingSeconds: remaining,
+      totalSeconds: totalDurationSecondsRef.current,
+      isPaused: false,
+      bookTitle,
+    });
+
     if (remaining > 0) {
       const notificationId = await NotificationService.scheduleTimerCompletion(
         remaining,
@@ -218,6 +257,12 @@ export function useMonkModeTimer({
 
   // Cancel timer
   const cancel = useCallback(async () => {
+    // Stop Live Activity
+    LiveActivityService.stopTimerActivity({
+      completed: false,
+      bookTitle,
+    });
+
     setStatus('idle');
     setRemainingSeconds(durationMinutes * 60);
     progress.value = 0;
@@ -241,7 +286,7 @@ export function useMonkModeTimer({
 
     // Clear persisted state
     await MonkModeService.clearTimerState();
-  }, [durationMinutes]);
+  }, [durationMinutes, bookTitle]);
 
   // Handle app state changes (background/foreground)
   useEffect(() => {

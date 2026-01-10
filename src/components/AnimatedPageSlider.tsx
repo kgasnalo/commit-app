@@ -5,16 +5,18 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   interpolate,
-  interpolateColor,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
+import { colors, typography } from '../theme';
+import { TacticalText } from './titan/TacticalText';
+import { MicroLabel } from './titan/MicroLabel';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SLIDER_PADDING = 40;
-const TRACK_HEIGHT = 8;
-const THUMB_SIZE = 32;
+const TRACK_HEIGHT = 4; // Thinner track for precision look
+const THUMB_SIZE = 24; // Smaller thumb
 
 interface AnimatedPageSliderProps {
   value: number;
@@ -52,13 +54,13 @@ export default function AnimatedPageSlider({
   const triggerHaptic = (newValue: number) => {
     const milestones = [100, 250, 500, 750, 1000];
 
-    if (Math.abs(newValue - lastHapticValue.current) >= 25) {
+    if (Math.abs(newValue - lastHapticValue.current) >= 10) { // More frequent clicks for tactical feel
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       lastHapticValue.current = newValue;
     }
 
     if (milestones.includes(newValue) && !milestones.includes(lastHapticValue.current)) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); // Heavy click on milestones
     }
 
     onValueChange(newValue);
@@ -68,7 +70,8 @@ export default function AnimatedPageSlider({
   const panGesture = Gesture.Pan()
     .onBegin(() => {
       isActive.value = true;
-      scale.value = withSpring(1.3, { damping: 10, stiffness: 300 });
+      scale.value = withSpring(1.1, { damping: 10, stiffness: 300 }); // Less expansion
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     })
     .onUpdate((event) => {
       const startX = ((value - minValue) / (maxValue - minValue)) * TRACK_WIDTH;
@@ -85,15 +88,12 @@ export default function AnimatedPageSlider({
     .onEnd(() => {
       isActive.value = false;
       scale.value = withSpring(1, { damping: 15, stiffness: 200 });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     });
 
   // Animated styles
   const containerStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      progress.value,
-      [0, 0.5, 1],
-      ['#FFFFFF', '#F0F0F0', '#FFE8E8']
-    ),
+    borderColor: isActive.value ? colors.signal.active : colors.border.subtle,
   }));
 
   const thumbStyle = useAnimatedStyle(() => ({
@@ -101,34 +101,37 @@ export default function AnimatedPageSlider({
       { translateX: translateX.value },
       { scale: scale.value },
     ],
+    backgroundColor: isActive.value ? colors.signal.active : colors.text.primary,
   }));
 
   const fillStyle = useAnimatedStyle(() => ({
     width: translateX.value + THUMB_SIZE / 2,
-    backgroundColor: interpolateColor(
-      progress.value,
-      [0, 0.7, 1],
-      ['#4CAF50', '#FFC107', '#F44336']
-    ),
-  }));
-
-  const textScaleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(isActive.value ? 1.2 : 1, { damping: 10, stiffness: 300 }) }],
   }));
 
   return (
     <Animated.View style={[styles.container, containerStyle]}>
       {/* Value Display */}
-      <Animated.View style={[styles.valueContainer, textScaleStyle]}>
-        <Text style={styles.valueText}>
+      <View style={styles.valueContainer}>
+        <TacticalText size={42} weight="bold" color={colors.text.primary}>
           {Math.max(minValue, Math.min(maxValue, value))}
-        </Text>
-        <Text style={styles.valueLabel}>pages</Text>
-      </Animated.View>
+        </TacticalText>
+        <MicroLabel style={{ marginTop: 8 }}>PAGES</MicroLabel>
+      </View>
 
       {/* Slider Track */}
       <View style={styles.sliderContainer}>
+        {/* Background Track with tick marks */}
         <View style={[styles.track, { width: TRACK_WIDTH + THUMB_SIZE }]}>
+           {/* Render some tick marks for tactical look */}
+           {Array.from({ length: 11 }).map((_, i) => (
+             <View 
+                key={i} 
+                style={[
+                    styles.tick, 
+                    { left: `${i * 10}%`, height: i % 5 === 0 ? 8 : 4 }
+                ]} 
+             />
+           ))}
           <Animated.View style={[styles.fill, fillStyle]} />
         </View>
 
@@ -139,8 +142,8 @@ export default function AnimatedPageSlider({
 
       {/* Labels */}
       <View style={styles.labelsContainer}>
-        <Text style={styles.label}>{minValue}</Text>
-        <Text style={styles.label}>{maxValue}</Text>
+        <TacticalText size={10} color={colors.text.muted}>{minValue}</TacticalText>
+        <TacticalText size={10} color={colors.text.muted}>{maxValue}</TacticalText>
       </View>
     </Animated.View>
   );
@@ -148,60 +151,50 @@ export default function AnimatedPageSlider({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
+    borderRadius: 2, // Sharp corners
     padding: 24,
     marginVertical: 8,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.border.subtle,
+    backgroundColor: colors.background.card,
   },
   valueContainer: {
     alignItems: 'center',
     marginBottom: 24,
   },
-  valueText: {
-    fontSize: 48,
-    fontWeight: '800',
-    color: '#000',
-  },
-  valueLabel: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 4,
-  },
   sliderContainer: {
-    height: THUMB_SIZE,
+    height: 24, // Enough for ticks
     justifyContent: 'center',
   },
   track: {
     height: TRACK_HEIGHT,
-    backgroundColor: '#E0E0E0',
-    borderRadius: TRACK_HEIGHT / 2,
-    overflow: 'hidden',
+    backgroundColor: '#333', // Dark grey track
+    borderRadius: 0,
+    overflow: 'visible', // Visible ticks
+    justifyContent: 'center',
+  },
+  tick: {
+      position: 'absolute',
+      width: 1,
+      backgroundColor: '#555',
+      top: -2,
   },
   fill: {
     height: '100%',
-    borderRadius: TRACK_HEIGHT / 2,
+    backgroundColor: colors.signal.active, // Always Neon Red
   },
   thumb: {
     position: 'absolute',
     width: THUMB_SIZE,
-    height: THUMB_SIZE,
-    borderRadius: THUMB_SIZE / 2,
-    backgroundColor: '#000',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    height: THUMB_SIZE, // Square
+    borderRadius: 0, // Sharp square
+    backgroundColor: colors.text.primary, // White square
+    borderWidth: 1,
+    borderColor: '#000',
   },
   labelsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  label: {
-    fontSize: 12,
-    color: '#999',
+    marginTop: 12,
   },
 });

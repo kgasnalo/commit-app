@@ -10,7 +10,6 @@ import {
   Image,
   ScrollView,
   Platform,
-  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -19,6 +18,7 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
+  interpolate,
   Easing,
   SharedValue,
 } from 'react-native-reanimated';
@@ -40,6 +40,9 @@ import { GOOGLE_API_KEY } from '../config/env';
 import AnimatedPageSlider from '../components/AnimatedPageSlider';
 import { getErrorMessage } from '../utils/errorUtils';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import { colors, typography } from '../theme';
+import { TacticalText } from '../components/titan/TacticalText';
+import { MicroLabel } from '../components/titan/MicroLabel';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -69,7 +72,7 @@ const getAmountTierIndex = (amount: number | null, currency: Currency): number =
   return index === -1 ? 0 : index + 1;
 };
 
-const VIGNETTE_INTENSITY = [0, 0.15, 0.25, 0.35, 0.45];
+const VIGNETTE_INTENSITY = [0, 0.3, 0.5, 0.7, 0.9]; // Darker vignette for Titan
 
 // VignetteOverlay Component
 interface VignetteOverlayProps {
@@ -86,61 +89,15 @@ const VignetteOverlay: React.FC<VignetteOverlayProps> = ({ intensity }) => {
       style={[StyleSheet.absoluteFill, animatedOpacity]}
       pointerEvents="none"
     >
-      {/* Top-left corner gradient */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.8)', 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.6, y: 0.6 }}
-        style={vignetteStyles.corner}
-      />
-      {/* Top-right corner gradient */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.8)', 'transparent']}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0.4, y: 0.6 }}
-        style={[vignetteStyles.corner, vignetteStyles.topRight]}
-      />
-      {/* Bottom-left corner gradient */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.8)', 'transparent']}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 0.6, y: 0.4 }}
-        style={[vignetteStyles.corner, vignetteStyles.bottomLeft]}
-      />
-      {/* Bottom-right corner gradient */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.8)', 'transparent']}
-        start={{ x: 1, y: 1 }}
-        end={{ x: 0.4, y: 0.4 }}
-        style={[vignetteStyles.corner, vignetteStyles.bottomRight]}
+        colors={['transparent', 'rgba(0,0,0,0.9)']}
+        start={{ x: 0.5, y: 0.3 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
       />
     </Animated.View>
   );
 };
-
-const vignetteStyles = StyleSheet.create({
-  corner: {
-    position: 'absolute',
-    width: '60%',
-    height: '40%',
-    top: 0,
-    left: 0,
-  },
-  topRight: {
-    left: undefined,
-    right: 0,
-  },
-  bottomLeft: {
-    top: undefined,
-    bottom: 0,
-  },
-  bottomRight: {
-    top: undefined,
-    bottom: 0,
-    left: undefined,
-    right: 0,
-  },
-});
 
 interface GoogleBook {
   id: string;
@@ -212,10 +169,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       // Start heartbeat pulse animation
       pulseScale.value = withRepeat(
         withSequence(
-          withTiming(1.05, { duration: 300, easing: Easing.out(Easing.ease) }),
-          withTiming(1.0, { duration: 300, easing: Easing.in(Easing.ease) }),
-          withTiming(1.03, { duration: 200, easing: Easing.out(Easing.ease) }),
-          withTiming(1.0, { duration: 400, easing: Easing.in(Easing.ease) }),
+          withTiming(1.02, { duration: 500, easing: Easing.out(Easing.ease) }),
+          withTiming(1.0, { duration: 500, easing: Easing.in(Easing.ease) }),
         ),
         -1, // Repeat indefinitely
         false // Don't reverse
@@ -229,6 +184,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   // Animated style for create button
   const createButtonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
+    shadowOpacity: interpolate(pulseScale.value, [1, 1.02], [0, 0.8]),
+    shadowRadius: interpolate(pulseScale.value, [1, 1.02], [0, 10]),
+    shadowColor: colors.signal.active,
   }));
 
   // Continue Flow initialization
@@ -267,13 +225,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       // Fetch progress data
       const progress = await getBookProgress(bookId, user.id);
-      console.log('[ContinueFlow] progress:', progress);
-      console.log('[ContinueFlow] totalPagesRead:', progress.totalPagesRead);
       setTotalPagesRead(progress.totalPagesRead);
 
       // Calculate and set slider start position
       const sliderStart = calculateSliderStartPage(progress.totalPagesRead);
-      console.log('[ContinueFlow] sliderStart:', sliderStart);
       setPageCount(sliderStart);
 
       // Show info message if near max
@@ -337,7 +292,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     if (!uri) {
       return (
         <View style={large ? styles.placeholderLarge : styles.placeholder}>
-          <Ionicons name="book-outline" size={large ? 48 : 32} color="#ccc" />
+          <Ionicons name="book-outline" size={large ? 48 : 32} color={colors.text.muted} />
         </View>
       );
     }
@@ -385,39 +340,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const selectedDay = new Date(selectedDate);
-      selectedDay.setHours(0, 0, 0, 0);
-
-      const maxDate = new Date();
-      maxDate.setMonth(maxDate.getMonth() + 1);
-      maxDate.setHours(23, 59, 59, 999);
-
-      // 1ヶ月以上先のチェック
-      if (selectedDay > maxDate) {
-        Alert.alert(
-          i18n.t('errors.deadline_error'),
-          i18n.t('errors.deadline_max_one_month'),
-          [{ text: i18n.t('common.ok') }]
-        );
-        return;
-      }
-
-      // 明日以降のチェック
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      if (selectedDay < tomorrow) {
-        Alert.alert(
-          i18n.t('errors.deadline_error'),
-          i18n.t('errors.deadline_tomorrow_or_later'),
-          [{ text: i18n.t('common.ok') }]
-        );
-        return;
-      }
-
       setDeadline(selectedDate);
     }
   };
@@ -455,43 +377,24 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     }
 
     setCreating(true);
-    console.log('[CreateCommitment] Starting commitment creation...');
 
     try {
       // 1. ユーザー情報取得
-      console.log('[CreateCommitment] Step 1: Fetching user...');
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error('[CreateCommitment] User fetch error:', userError);
-        throw userError;
-      }
-      if (!user) {
-        console.error('[CreateCommitment] No user found');
-        throw new Error('User not authenticated');
-      }
-      console.log('[CreateCommitment] User found:', user.id);
+      if (userError) throw userError;
+      if (!user) throw new Error('User not authenticated');
 
       // 2. 書籍をDBに保存（既存チェック）
-      console.log('[CreateCommitment] Step 2: Checking for existing book...');
       let bookId: string;
-      const { data: existingBook, error: existingBookError } = await supabase
+      const { data: existingBook } = await supabase
         .from('books')
         .select('id')
         .eq('google_books_id', selectedBook.id)
         .single();
 
-      if (existingBookError && existingBookError.code !== 'PGRST116') {
-        // PGRST116 = "No rows returned" which is expected if book doesn't exist
-        console.error('[CreateCommitment] Error checking existing book:', existingBookError);
-        throw existingBookError;
-      }
-
       if (existingBook) {
         bookId = existingBook.id;
-        console.log('[CreateCommitment] Existing book found:', bookId);
       } else {
-        console.log('[CreateCommitment] Step 2b: Inserting new book...');
-        // Convert empty string to null for cover_url
         const coverUrl = selectedBook.volumeInfo.imageLinks?.thumbnail
           || selectedBook.volumeInfo.imageLinks?.smallThumbnail
           || null;
@@ -507,33 +410,14 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           .select('id')
           .single();
 
-        if (bookError) {
-          console.error('[CreateCommitment] Book insert error:', bookError);
-          throw bookError;
-        }
+        if (bookError) throw bookError;
         bookId = newBook.id;
-        console.log('[CreateCommitment] New book created:', bookId);
       }
 
       // 3. コミットメント作成
-      console.log('[CreateCommitment] Step 3: Creating commitment...');
-      
-      // Calculate delta for target_pages (Quantity to read)
-      // Slider returns "Ending Page Number", but DB expects "Page Quantity" because getBookProgress sums them.
       const pagesToRead = Math.max(1, pageCount - totalPagesRead);
       
-      console.log('[CreateCommitment] Commitment data:', {
-        user_id: user.id,
-        book_id: bookId,
-        deadline: deadline.toISOString(),
-        pledge_amount: pledgeAmount,
-        currency: currency,
-        target_pages: pagesToRead,
-        start_page: totalPagesRead, // Log for debug
-        end_page: pageCount // Log for debug
-      });
-
-      const { data: commitmentData, error: commitmentError } = await supabase
+      const { error: commitmentError } = await supabase
         .from('commitments')
         .insert({
           user_id: user.id,
@@ -543,18 +427,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           pledge_amount: pledgeAmount,
           currency: currency,
           target_pages: pagesToRead,
-        })
-        .select('id')
-        .single();
+        });
 
-      if (commitmentError) {
-        console.error('[CreateCommitment] Commitment insert error:', commitmentError);
-        throw commitmentError;
-      }
-
-      console.log('[CreateCommitment] Commitment created successfully:', commitmentData?.id);
+      if (commitmentError) throw commitmentError;
       
-      // Stop loading spinner BEFORE showing the alert
       setCreating(false);
 
       const currencySymbol = CURRENCY_OPTIONS.find(c => c.code === currency)?.symbol || currency;
@@ -577,8 +453,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         i18n.t('common.error'),
         getErrorMessage(error) || i18n.t('errors.create_commitment_failed')
       );
-    } finally {
-      console.log('[CreateCommitment] Finished (setCreating(false))');
       setCreating(false);
     }
   };
@@ -593,7 +467,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         <Text style={styles.bookTitle} numberOfLines={2}>{item.volumeInfo.title}</Text>
         <Text style={styles.bookAuthor}>{item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author')}</Text>
       </View>
-      <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+      <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
     </TouchableOpacity>
   );
 
@@ -601,9 +475,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.title}>{i18n.t('commitment.create_title')}</Text>
+        <MicroLabel style={styles.title}>{i18n.t('commitment.create_title')}</MicroLabel>
         <View style={{ width: 24 }} />
       </View>
 
@@ -612,18 +486,17 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           style={styles.scrollView}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={true}
-          bounces={true}
         >
-        {/* 書籍選択セクション */}
+        {/* SECTION 1: TARGET (Book) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{i18n.t('commitment.select_book')}</Text>
+          <MicroLabel style={styles.sectionTitle}>1. TARGET ACQUISITION</MicroLabel>
 
           {loadingContinueData ? (
             <View style={styles.continueLoadingContainer}>
-              <ActivityIndicator color="#000" />
-              <Text style={styles.continueLoadingText}>
-                {i18n.t('commitment.loading_book_data')}
-              </Text>
+              <ActivityIndicator color={colors.signal.active} />
+              <MicroLabel style={styles.continueLoadingText}>
+                LOADING ASSET DATA...
+              </MicroLabel>
             </View>
           ) : selectedBook ? (
             <View style={styles.selectedBookCard}>
@@ -632,19 +505,17 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                 large
               />
               <View style={styles.selectedBookInfo}>
-                <Text style={styles.selectedBookTitle}>{selectedBook.volumeInfo.title}</Text>
-                <Text style={styles.selectedBookAuthor}>{selectedBook.volumeInfo.authors?.join(', ')}</Text>
+                <Text style={styles.selectedBookTitle}>{selectedBook.volumeInfo.title.toUpperCase()}</Text>
+                <Text style={styles.selectedBookAuthor}>{selectedBook.volumeInfo.authors?.join(', ').toUpperCase()}</Text>
                 {isContinueFlow && totalPagesRead > 0 && (
                   <Text style={styles.progressInfo}>
-                    {i18n.t('commitment.pages_read_so_far', {
-                      pages: totalPagesRead,
-                    })}
+                    PREVIOUSLY SECURED: {totalPagesRead} PGS
                   </Text>
                 )}
               </View>
               {!isContinueFlow && (
-                <TouchableOpacity onPress={() => setSelectedBook(null)}>
-                  <MaterialIcons name="close" size={24} color="#666" />
+                <TouchableOpacity onPress={() => setSelectedBook(null)} style={styles.closeButton}>
+                  <Ionicons name="close" size={20} color={colors.text.primary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -653,7 +524,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               <View style={styles.searchContainer}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder={i18n.t('commitment.search_placeholder')}
+                  placeholder="ENTER KEYWORDS / ISBN"
+                  placeholderTextColor={colors.text.muted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   onSubmitEditing={searchBooks}
@@ -662,7 +534,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                   style={styles.scanButton}
                   onPress={() => setShowScanner(true)}
                 >
-                  <ScanBarcode size={22} color="#666" />
+                  <ScanBarcode size={20} color={colors.text.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.searchButton}
@@ -670,9 +542,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                   disabled={searching}
                 >
                   {searching ? (
-                    <ActivityIndicator color="#fff" size="small" />
+                    <ActivityIndicator color="#000" size="small" />
                   ) : (
-                    <MaterialIcons name="search" size={24} color="#fff" />
+                    <Ionicons name="search" size={20} color="#000" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -688,31 +560,23 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               )}
             </>
           )}
-
-          {/* Continue Flow info message */}
-          {continueInfoMessage && (
-            <View style={styles.infoMessageContainer}>
-              <MaterialIcons name="info" size={20} color="#4CAF50" />
-              <Text style={styles.infoMessageText}>{continueInfoMessage}</Text>
-            </View>
-          )}
         </View>
 
-        {/* 期限設定セクション */}
+        {/* SECTION 2: DEADLINE */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{i18n.t('commitment.set_deadline')}</Text>
+          <MicroLabel style={styles.sectionTitle}>2. TIME LIMIT</MicroLabel>
           <TouchableOpacity
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
           >
-            <MaterialIcons name="calendar-today" size={20} color="#666" />
-            <Text style={styles.dateButtonText}>
+            <Ionicons name="calendar-outline" size={20} color={colors.signal.active} />
+            <TacticalText size={16}>
               {deadline.toLocaleDateString('ja-JP', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
               })}
-            </Text>
+            </TacticalText>
           </TouchableOpacity>
 
           {showDatePicker && (
@@ -721,40 +585,31 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               mode="date"
               display="default"
               onChange={handleDateChange}
-              minimumDate={new Date(Date.now() + 24 * 60 * 60 * 1000)} // 明日以降
-              maximumDate={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)} // 1ヶ月後
+              minimumDate={new Date(Date.now() + 24 * 60 * 60 * 1000)}
+              themeVariant="dark"
             />
           )}
         </View>
 
-        {/* ページ数目標セクション */}
+        {/* SECTION 3: SCOPE (Page Count) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{i18n.t('commitment.set_page_count')}</Text>
+          <MicroLabel style={styles.sectionTitle}>3. SCOPE (PAGES)</MicroLabel>
           <AnimatedPageSlider
             value={pageCount}
             onValueChange={setPageCount}
             minValue={isContinueFlow && totalPagesRead > 0 ? totalPagesRead + 1 : 1}
             maxValue={1000}
           />
-          {isContinueFlow && totalPagesRead > 0 && (
-            <Text style={styles.sliderMinNote}>
-              {i18n.t('commitment.slider_min_note', {
-                pages: totalPagesRead,
-                next: totalPagesRead + 1,
-              })}
-            </Text>
-          )}
-          <Text style={styles.pageCountNote}>
-            {i18n.t('commitment.page_count_note')}
-          </Text>
         </View>
 
-        {/* ペナルティ設定セクション */}
+        {/* SECTION 4: STAKE (Penalty) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{i18n.t('commitment.set_penalty')}</Text>
+          <MicroLabel style={[styles.sectionTitle, { color: colors.signal.danger }]}>
+            4. STAKE (PENALTY)
+          </MicroLabel>
 
-          {/* 通貨選択 */}
-          <Text style={styles.subsectionTitle}>{i18n.t('commitment.select_currency')}</Text>
+          {/* CURRENCY */}
+          <MicroLabel style={styles.subsectionTitle}>CURRENCY PROTOCOL</MicroLabel>
           <View style={styles.currencyButtons}>
             {CURRENCY_OPTIONS.map((curr) => (
               <TouchableOpacity
@@ -765,7 +620,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                 ]}
                 onPress={() => {
                   setCurrency(curr.code);
-                  setPledgeAmount(null); // 通貨変更時に金額選択をリセット
+                  setPledgeAmount(null);
                 }}
               >
                 <Text
@@ -774,14 +629,14 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                     currency === curr.code && styles.currencyButtonTextSelected,
                   ]}
                 >
-                  {curr.symbol} {i18n.t(`currencies.${curr.code}`)}
+                  {curr.code}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* 金額選択 */}
-          <Text style={styles.subsectionTitle}>{i18n.t('commitment.select_amount')}</Text>
+          {/* AMOUNT */}
+          <MicroLabel style={styles.subsectionTitle}>RISK LEVEL</MicroLabel>
           <View style={styles.amountButtons}>
             {AMOUNTS_BY_CURRENCY[currency].map((amount) => (
               <TouchableOpacity
@@ -792,7 +647,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                 ]}
                 onPress={() => {
                   setPledgeAmount(amount);
-                  // Haptic feedback based on amount tier
                   const tierIndex = AMOUNTS_BY_CURRENCY[currency].indexOf(amount);
                   if (tierIndex >= 2) {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -801,40 +655,30 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                   }
                 }}
               >
-                <Text
-                  style={[
-                    styles.amountButtonText,
-                    pledgeAmount === amount && styles.amountButtonTextSelected,
-                  ]}
+                <TacticalText
+                  size={18}
+                  color={pledgeAmount === amount ? '#000' : colors.text.secondary}
                 >
                   {CURRENCY_OPTIONS.find(c => c.code === currency)?.symbol}{amount.toLocaleString()}
-                </Text>
+                </TacticalText>
               </TouchableOpacity>
             ))}
           </View>
-
-          <Text style={styles.trustNote}>
-            {i18n.t('commitment.no_charge_disclaimer')}
-          </Text>
-
-          <Text style={styles.penaltyNote}>
-            {i18n.t('commitment.penalty_note')}
-          </Text>
 
           <TouchableOpacity
             style={styles.checkbox}
             onPress={() => setAgreedToPenalty(!agreedToPenalty)}
           >
             <View style={[styles.checkboxBox, agreedToPenalty && styles.checkboxBoxChecked]}>
-              {agreedToPenalty && <MaterialIcons name="check" size={18} color="#fff" />}
+              {agreedToPenalty && <Ionicons name="checkmark" size={16} color="#000" />}
             </View>
             <Text style={styles.checkboxLabel}>
-              {i18n.t('commitment.agree_terms')}
+              I ACCEPT THE CONSEQUENCES OF FAILURE.
             </Text>
           </TouchableOpacity>
         </View>
 
-          {/* 作成ボタン */}
+          {/* CREATE BUTTON */}
           <Animated.View style={createButtonAnimatedStyle}>
             <TouchableOpacity
               style={[
@@ -845,15 +689,15 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               disabled={!selectedBook || !pledgeAmount || !agreedToPenalty || creating}
             >
               {creating ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.createButtonText}>{i18n.t('commitment.create_button')}</Text>
+                <Text style={styles.createButtonText}>INITIATE MISSION</Text>
               )}
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>
 
-        {/* Vignette Overlay - darkens corners based on penalty amount */}
+        {/* Vignette Overlay */}
         <VignetteOverlay intensity={vignetteIntensity} />
       </View>
 
@@ -874,7 +718,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -883,12 +727,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border.subtle,
+    backgroundColor: colors.background.secondary,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 12,
+    letterSpacing: 2,
+    color: colors.text.primary,
   },
   contentWrapper: {
     flex: 1,
@@ -901,14 +746,12 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   section: {
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: 32,
+    marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
     marginBottom: 16,
+    color: colors.text.secondary,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -918,25 +761,29 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
     paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    fontSize: 14,
+    color: colors.text.primary,
+    backgroundColor: colors.background.card,
+    fontFamily: typography.fontFamily.monospace,
   },
   scanButton: {
-    width: 44,
+    width: 48,
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: '#eee',
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
+    backgroundColor: colors.background.card,
   },
   searchButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#000',
-    borderRadius: 8,
+    backgroundColor: colors.signal.active,
+    borderRadius: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -948,21 +795,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
     marginBottom: 8,
+    backgroundColor: colors.background.card,
   },
   bookCover: {
     width: 40,
     height: 60,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 0,
+    backgroundColor: '#333',
   },
   placeholder: {
     width: 40,
     height: 60,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 0,
+    backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -972,130 +820,74 @@ const styles = StyleSheet.create({
   },
   bookTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    fontFamily: typography.fontFamily.heading,
+    color: colors.text.primary,
   },
   bookAuthor: {
     fontSize: 12,
-    color: '#666',
+    color: colors.text.muted,
     marginTop: 4,
   },
   selectedBookCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 12,
-    backgroundColor: '#f9f9f9',
+    borderWidth: 1,
+    borderColor: colors.signal.active, // Red border for target
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 51, 51, 0.05)',
   },
   selectedBookCover: {
     width: 60,
     height: 90,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 0,
+    backgroundColor: '#333',
+    borderWidth: 1,
+    borderColor: '#444',
   },
   placeholderLarge: {
     width: 60,
     height: 90,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 0,
+    backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#444',
   },
   selectedBookInfo: {
     flex: 1,
     marginLeft: 16,
   },
   selectedBookTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 14,
+    fontFamily: typography.fontFamily.heading,
+    color: colors.text.primary,
+    letterSpacing: 1,
   },
   selectedBookAuthor: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    fontFamily: typography.fontFamily.monospace,
+    color: colors.text.secondary,
     marginTop: 4,
+  },
+  closeButton: {
+    padding: 8,
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
+    backgroundColor: colors.background.card,
     gap: 12,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    color: '#000',
-  },
-  penaltyCard: {
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#ff6b6b',
-    borderRadius: 12,
-    backgroundColor: '#fff5f5',
-    marginBottom: 16,
-  },
-  penaltyAmount: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#ff6b6b',
-    marginBottom: 8,
-  },
-  penaltyDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  checkbox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  checkboxBox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxBoxChecked: {
-    backgroundColor: '#000',
-    borderColor: '#000',
-  },
-  checkboxLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-  },
-  createButton: {
-    backgroundColor: '#000',
-    height: 56,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 40,
-  },
-  createButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
   },
   subsectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 12,
+    fontSize: 10,
+    color: colors.text.muted,
+    marginBottom: 8,
     marginTop: 8,
   },
   currencyButtons: {
@@ -1107,77 +899,91 @@ const styles = StyleSheet.create({
   currencyButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.background.card,
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
   },
   currencyButtonSelected: {
-    backgroundColor: '#000',
-    borderColor: '#000',
+    backgroundColor: colors.signal.active,
+    borderColor: colors.signal.active,
   },
   currencyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 12,
+    fontFamily: typography.fontFamily.monospace,
+    color: colors.text.secondary,
   },
   currencyButtonTextSelected: {
-    color: '#fff',
+    color: '#000',
+    fontWeight: 'bold',
   },
   amountButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 24, // Increased spacing to prevent overlap with text below
+    marginBottom: 24,
   },
   amountButton: {
-    width: '48%', // Fixed width instead of flex: 1 to ensure proper height calculation with flexWrap
+    width: '48%',
     paddingVertical: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.background.card,
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
+    borderColor: colors.border.subtle,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   amountButtonSelected: {
-    backgroundColor: '#000',
-    borderColor: '#000',
+    backgroundColor: colors.signal.active,
+    borderColor: colors.signal.active,
   },
-  amountButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#666',
-  },
-  amountButtonTextSelected: {
-    color: '#fff',
-  },
-  trustNote: {
-    fontSize: 13,
-    color: '#4CAF50',
-    fontWeight: '500',
-    textAlign: 'center',
-    marginTop: 8, // Added top margin for spacing from amount buttons
-    marginBottom: 12,
-  },
-  penaltyNote: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 20, // Increased for better spacing before checkbox
-  },
-  pageCountNote: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+  checkbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginTop: 8,
   },
-  sliderMinNote: {
+  checkboxBox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: colors.text.muted,
+    borderRadius: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.tertiary,
+  },
+  checkboxBoxChecked: {
+    backgroundColor: colors.signal.active,
+    borderColor: colors.signal.active,
+  },
+  checkboxLabel: {
+    flex: 1,
     fontSize: 12,
-    color: '#2196F3',
-    textAlign: 'center',
-    marginTop: 8,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.monospace,
+    color: colors.text.secondary,
+  },
+  createButton: {
+    backgroundColor: colors.signal.active,
+    height: 56,
+    borderRadius: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: colors.signal.active,
+  },
+  createButtonDisabled: {
+    backgroundColor: colors.background.tertiary,
+    borderColor: colors.border.subtle,
+    opacity: 0.5,
+  },
+  createButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontFamily: typography.fontFamily.heading,
+    letterSpacing: 2,
   },
   continueLoadingContainer: {
     padding: 20,
@@ -1185,27 +991,12 @@ const styles = StyleSheet.create({
   },
   continueLoadingText: {
     marginTop: 12,
-    fontSize: 14,
-    color: '#666',
+    color: colors.text.muted,
   },
   progressInfo: {
-    fontSize: 12,
-    color: '#4CAF50',
+    fontSize: 10,
+    fontFamily: typography.fontFamily.monospace,
+    color: colors.signal.success,
     marginTop: 4,
-    fontWeight: '500',
-  },
-  infoMessageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e8f5e9',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 12,
-    gap: 8,
-  },
-  infoMessageText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#2e7d32',
   },
 });

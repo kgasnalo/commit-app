@@ -175,7 +175,14 @@
     "no_commitments": "진행 중인 커밋먼트가 없습니다",
     "add_book": "책 추가하기",
     "empty_encouragement": "오늘부터 독서 여정을 시작하세요!",
-    "history": "기록"
+    "history": "기록",
+    "pledged_amount": "베팅 금액",
+    "failed_amount": "손실",
+    "no_active_commitments": "진행 중인 커밋먼트가 없습니다",
+    "create_new": "커밋먼트 만들기",
+    "failed_history": "기록",
+    "status_active": "활성",
+    "status_dormant": "휴면"
   },
   "paywall": {
     "for_serious": "진지한 독자를 위해",
@@ -322,7 +329,12 @@
     "start_another": "다시 시작",
     "notification_title": "집중 세션 완료",
     "notification_body": "수고하셨습니다! 독서 세션이 완료되었습니다.",
-    "notification_body_book": "'{{book}}' 읽기를 완료했습니다!"
+    "notification_body_book": "'{{book}}' 읽기를 완료했습니다!",
+    "live_activity_title": "집중 독서 중",
+    "live_activity_subtitle_reading": "깊은 독서에 집중 중",
+    "live_activity_subtitle_paused": "일시 중지됨",
+    "live_activity_completed": "세션 완료!",
+    "live_activity_ended": "세션 종료"
   },
   "notifications": {
     "settings_title": "알림 설정",
