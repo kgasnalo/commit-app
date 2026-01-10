@@ -9,7 +9,8 @@ interface GlassTileProps {
   glow?: 'none' | 'gold' | 'ruby' | 'ambient';
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: number;
-  slashLight?: boolean;
+  slashLight?: boolean; // deprecated: use softGlow instead
+  softGlow?: boolean; // 柔らかい環境光（左上から円形グラデーション）
   topBorder?: 'none' | 'orange' | 'white';
   innerGlow?: 'none' | 'orange' | 'strong'; // 内側からの発光
   style?: ViewStyle;
@@ -29,7 +30,8 @@ export function GlassTile({
   glow = 'none',
   padding = 'md',
   borderRadius = 20,
-  slashLight = true,
+  slashLight = false, // deprecated
+  softGlow = true, // 柔らかい環境光がデフォルト
   topBorder = 'none',
   innerGlow = 'none',
   style,
@@ -179,8 +181,39 @@ export function GlassTile({
         />
       )}
 
-      {/* Slash Light */}
-      {slashLight && (
+      {/* Soft Glow - 柔らかい環境光（左上から） */}
+      {softGlow && (
+        <>
+          {/* Primary soft glow from top-left corner */}
+          <LinearGradient
+            colors={[
+              'rgba(255, 255, 255, 0.08)',
+              'rgba(255, 255, 255, 0.03)',
+              'transparent',
+            ]}
+            locations={[0, 0.4, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.7, y: 0.7 }}
+            style={[StyleSheet.absoluteFill, { borderRadius }]}
+            pointerEvents="none"
+          />
+          {/* Secondary diffuse glow for depth */}
+          <LinearGradient
+            colors={[
+              'rgba(255, 255, 255, 0.04)',
+              'transparent',
+            ]}
+            locations={[0, 0.6]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0.5 }}
+            style={[StyleSheet.absoluteFill, { borderRadius }]}
+            pointerEvents="none"
+          />
+        </>
+      )}
+
+      {/* Legacy Slash Light (deprecated) */}
+      {slashLight && !softGlow && (
         <LinearGradient
           colors={[
             'transparent',
