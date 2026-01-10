@@ -10,6 +10,7 @@ interface GlassTileProps {
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: number;
   slashLight?: boolean; // 斜めの光沢エフェクト
+  topBorder?: 'none' | 'orange' | 'white'; // 上部ボーダー（参考デザイン）
   style?: ViewStyle;
 }
 
@@ -27,7 +28,8 @@ export function GlassTile({
   glow = 'none',
   padding = 'md',
   borderRadius = 20,
-  slashLight = true, // デフォルトでオン
+  slashLight = true,
+  topBorder = 'none', // 参考デザインの上部ボーダー
   style,
 }: GlassTileProps) {
   // Sunken style creates the "deep glass" effect from the reference
@@ -94,12 +96,27 @@ export function GlassTile({
         pointerEvents="none"
       />
 
+      {/* Top Border - 参考デザインの上部ハイライト */}
+      {topBorder !== 'none' && (
+        <View
+          style={[
+            styles.topBorder,
+            {
+              backgroundColor: topBorder === 'orange' ? '#FF6B35' : 'rgba(255, 255, 255, 0.2)',
+              borderTopLeftRadius: borderRadius,
+              borderTopRightRadius: borderRadius,
+            },
+          ]}
+          pointerEvents="none"
+        />
+      )}
+
       {/* Top edge highlight line */}
-      {!isSunken && (
+      {!isSunken && topBorder === 'none' && (
         <LinearGradient
           colors={[
-            'rgba(255, 255, 255, 0.15)',
-            'rgba(255, 255, 255, 0.05)',
+            'rgba(255, 255, 255, 0.1)',
+            'rgba(255, 255, 255, 0.03)',
             'transparent',
           ]}
           start={{ x: 0, y: 0 }}
@@ -137,11 +154,18 @@ export function GlassTile({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: titanColors.background.card,
+    backgroundColor: titanColors.background.card, // 暖色系 #1A1714
     overflow: 'hidden',
   },
   sunkenContainer: {
-    backgroundColor: '#0C0C0C', // Slightly lighter for sunken effect
+    backgroundColor: titanColors.background.tertiary,
+  },
+  topBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
   },
   topEdge: {
     position: 'absolute',

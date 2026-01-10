@@ -6,50 +6,60 @@ import { Platform } from 'react-native';
  */
 
 export const titanColors = {
-  // Base Layers (Surface) - Mercedes MBUX inspired
+  // Base Layers - 参考デザイン: 暖色系ダークブラウン
   background: {
-    primary: '#050505', // Obsidian Black (deepest layer)
-    secondary: '#0A0A0A', // Piano Black (elevated surfaces)
-    tertiary: '#111111', // Elevated surface
-    card: '#080808', // Card base (glass tile foundation)
-    overlay: 'rgba(0, 0, 0, 0.9)',
-    glass: 'rgba(255, 255, 255, 0.03)', // Glass overlay
-    glassHighlight: 'rgba(255, 255, 255, 0.08)', // Top edge highlight
+    primary: '#0D0B09', // 暖かみのあるオブシディアン
+    secondary: '#141210', // 暖かみのあるダーク
+    tertiary: '#1A1714', // カード背景
+    card: '#1A1714', // カード (暖色系)
+    cardHighlight: '#252119', // ホバー/選択時
+    overlay: 'rgba(13, 11, 9, 0.95)',
+    glass: 'rgba(255, 255, 255, 0.03)',
+    glassHighlight: 'rgba(255, 255, 255, 0.08)',
   },
 
-  // Metallic Accents (Low Saturation)
+  // アクセントカラー - オレンジメイン
+  accent: {
+    primary: '#FF6B35', // メインオレンジ
+    primaryMuted: 'rgba(255, 107, 53, 0.15)', // バッジ背景
+    secondary: '#FF8F5C', // 明るいオレンジ
+    success: '#34C759', // グリーン（Delivered等）
+    successMuted: 'rgba(52, 199, 89, 0.15)',
+  },
+
+  // メタリックアクセント（レガシー互換）
   metal: {
-    silver: '#808080', // Matte Grey
-    platinum: '#E5E4E2', // Muted White
-    gunmetal: '#2C3539', // Dark Blue Grey
-    gold: '#C5A059', // Antique Gold (Matte)
+    silver: '#808080',
+    platinum: '#E5E4E2',
+    gunmetal: '#2C3539',
+    gold: '#C5A059',
   },
 
-  // Functional Signals (Deep & Rich)
+  // シグナル
   signal: {
-    danger: '#8B1A1A', // Crimson Ruby (richer, deeper)
-    dangerGlow: 'rgba(139, 26, 26, 0.4)', // Ruby ambient glow
-    active: '#C5A059', // Gold indicates "Active/Premium"
-    activeGlow: 'rgba(197, 160, 89, 0.3)', // Gold ambient glow
-    success: '#C5A059', // Gold for success
-    warning: '#CC5500', // Burnt Orange
-    info: '#4A90E2', // Muted Blue
+    danger: '#FF6B6B',
+    dangerGlow: 'rgba(255, 107, 107, 0.3)',
+    active: '#FF6B35', // オレンジ
+    activeGlow: 'rgba(255, 107, 53, 0.3)',
+    success: '#34C759',
+    warning: '#FF9500',
+    info: '#5AC8FA',
   },
 
-  // Text & UI Elements
+  // テキスト
   text: {
-    primary: '#FAFAFA', // Pure white for metrics
-    secondary: '#8A8A8A', // Slightly muted
-    muted: '#4A4A4A', // Deep grey
-    highlight: '#FFFFFF', // 100% White
+    primary: '#FAFAFA',
+    secondary: '#9A9590', // 暖色系グレー
+    muted: '#5C5550',
+    highlight: '#FFFFFF',
   },
 
-  // Borders (Use sparingly - dividers only)
+  // ボーダー
   border: {
-    subtle: '#1F1F1F', // Very dark border (dividers only)
-    bright: '#333333', // Dividers only
-    glow: 'transparent',
-    goldGlow: 'transparent',
+    subtle: '#2A2520', // 暖色系ボーダー
+    bright: '#3D3530',
+    orange: '#FF6B35', // オレンジボーダー
+    orangeMuted: 'rgba(255, 107, 53, 0.3)',
   }
 };
 
