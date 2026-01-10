@@ -75,33 +75,44 @@ export default function CommitmentCard({
           isUrgent && styles.cardUrgent,
         ]}
       >
-        {/* Sunken glass gradient - darker at top-left */}
+        {/* Glassmorphism base - 暖色系ダーク */}
         <LinearGradient
           colors={[
-            'rgba(0, 0, 0, 0.35)',
-            'rgba(0, 0, 0, 0.1)',
-            '#0C0C0C',
-            'rgba(255, 255, 255, 0.02)',
+            'rgba(26, 23, 20, 0.9)',     // 暖かみのあるダーク
+            'rgba(26, 23, 20, 0.95)',
+            'rgba(20, 18, 16, 1)',
           ]}
-          locations={[0, 0.15, 0.5, 1]}
+          locations={[0, 0.5, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0.3, y: 1 }}
           style={[StyleSheet.absoluteFill, styles.glassOverlay]}
           pointerEvents="none"
         />
 
-        {/* Slash Light - 斜めの光沢エフェクト */}
+        {/* Soft Glow - 柔らかい環境光（左上から） */}
         <LinearGradient
           colors={[
-            'transparent',
-            'rgba(255, 255, 255, 0.02)',
             'rgba(255, 255, 255, 0.06)',
             'rgba(255, 255, 255, 0.02)',
             'transparent',
           ]}
-          locations={[0, 0.35, 0.5, 0.65, 1]}
+          locations={[0, 0.4, 1]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0.7, y: 0.7 }}
+          style={[StyleSheet.absoluteFill, styles.glassOverlay]}
+          pointerEvents="none"
+        />
+
+        {/* Inner orange glow - 控えめなオレンジ発光 */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 107, 53, 0.06)',
+            'rgba(255, 107, 53, 0.02)',
+            'transparent',
+          ]}
+          locations={[0, 0.3, 0.6]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
           style={[StyleSheet.absoluteFill, styles.glassOverlay]}
           pointerEvents="none"
         />
@@ -155,22 +166,22 @@ export default function CommitmentCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#0C0C0C',
+    backgroundColor: '#1A1714', // 暖色系ダーク
     borderRadius: 20,
     marginBottom: 12,
     overflow: 'hidden',
     // Subtle shadow for depth
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
   cardUrgent: {
     // Red ambient glow for urgent cards
     shadowColor: '#FF6B6B',
     shadowOpacity: 0.4,
-    shadowRadius: 12,
+    shadowRadius: 16,
   },
   glassOverlay: {
     borderRadius: 20,

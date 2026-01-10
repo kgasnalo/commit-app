@@ -243,13 +243,16 @@ export default function DashboardScreen({ navigation }: any) {
   const completedCount = commitments.filter(c => c.status === 'completed').length;
   const failedCount = commitments.filter(c => c.status === 'defaulted').length;
 
-  const totalPool = Object.entries(poolByCurrency)
+  // Split currency symbol and amount for typography styling
+  const poolDisplay = Object.entries(poolByCurrency)
     .filter(([_, amount]) => amount > 0)
-    .map(([currency, amount]) => {
-      const symbol = CURRENCY_SYMBOLS[currency] || currency;
-      return `${symbol}${amount.toLocaleString()}`;
-    })
-    .join(' + ') || '¥0';
+    .map(([currency, amount]) => ({
+      symbol: CURRENCY_SYMBOLS[currency] || currency,
+      amount: amount.toLocaleString(),
+    }));
+
+  const hasPool = poolDisplay.length > 0;
+  const primaryPool = hasPool ? poolDisplay[0] : { symbol: '¥', amount: '0' };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -326,17 +329,24 @@ export default function DashboardScreen({ navigation }: any) {
             style={styles.mainStatTile}
           >
             <Text style={styles.statLabel}>{i18n.t('dashboard.donation_pool')}</Text>
-            <Text style={styles.mainStatValue}>{totalPool}</Text>
+            <View style={styles.mainStatValueRow}>
+              <Text style={styles.currencySymbol}>{primaryPool.symbol}</Text>
+              <Text style={styles.mainStatValue}>{primaryPool.amount}</Text>
+              {poolDisplay.length > 1 && (
+                <Text style={styles.additionalCurrency}>
+                  {poolDisplay.slice(1).map(p => ` + ${p.symbol}${p.amount}`).join('')}
+                </Text>
+              )}
+            </View>
           </GlassTile>
 
-          {/* Secondary Stats - Grid (控えめな発光) */}
+          {/* Secondary Stats - Grid (柔らかい発光) */}
           <View style={styles.secondaryStatsRow}>
             <GlassTile
               variant="default"
               innerGlow="orange"
               padding="md"
               borderRadius={20}
-              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>{activeCommitmentsCount}</Text>
@@ -348,7 +358,6 @@ export default function DashboardScreen({ navigation }: any) {
               innerGlow="orange"
               padding="md"
               borderRadius={20}
-              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>{completedCount}</Text>
@@ -362,7 +371,6 @@ export default function DashboardScreen({ navigation }: any) {
               innerGlow="orange"
               padding="md"
               borderRadius={20}
-              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={[styles.smallStatValue, failedCount > 0 && styles.dangerValue]}>
@@ -376,7 +384,6 @@ export default function DashboardScreen({ navigation }: any) {
               innerGlow="orange"
               padding="md"
               borderRadius={20}
-              slashLight={true}
               style={styles.smallStatTile}
             >
               <Text style={styles.smallStatValue}>
@@ -472,18 +479,18 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#FF6B35', // オレンジ塗りつぶし（参考デザイン）
     justifyContent: 'center',
     alignItems: 'center',
-    // オレンジグロー
+    // 強いOuter Glow - ボタン自体が光源となる演出
     shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 12,
   },
   content: {
     paddingHorizontal: 20,
@@ -508,6 +515,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textTransform: 'uppercase',
   },
+  mainStatValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  currencySymbol: {
+    fontSize: 36, // 数字の約65%
+    color: 'rgba(255, 255, 255, 0.7)', // やや薄く
+    fontWeight: '400', // 細め
+    marginRight: 4,
+    // 微妙なグロー
+    textShadowColor: 'rgba(255, 107, 53, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
   mainStatValue: {
     fontSize: 56,
     color: '#FFFFFF',
@@ -518,6 +539,12 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(255, 107, 53, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
+  },
+  additionalCurrency: {
+    fontSize: 24,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: '400',
+    marginLeft: 8,
   },
   secondaryStatsRow: {
     flexDirection: 'row',
