@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
@@ -9,12 +11,80 @@ import { supabase } from '../../lib/supabase';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
 
+// WebBrowserの結果を適切に処理するために必要
+WebBrowser.maybeCompleteAuthSession();
+
 export default function OnboardingScreen6({ navigation, route }: any) {
   const { selectedBook, deadline, pledgeAmount, currency = 'JPY', tsundokuCount } = route.params || {};
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null);
+
+  // リダイレクトURIの設定
+  const redirectUri = makeRedirectUri({
+    scheme: 'commitapp',
+    path: 'auth/callback',
+  });
+
+  /**
+   * ユーザーレコードをusersテーブルに同期（upsert）
+   * Auth Triggerのタイミングに依存しない堅牢な実装
+   */
+  const syncUserToDatabase = async (
+    userId: string,
+    userEmail: string | undefined,
+    displayName: string | null
+  ): Promise<void> => {
+    // emailが必須フィールドなので、存在しない場合は同期をスキップ
+    if (!userEmail) {
+      console.warn('syncUserToDatabase: email is required but not provided');
+      return;
+    }
+
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // upsertで確実にレコードを作成/更新
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert(
+            {
+              id: userId,
+              email: userEmail,
+              username: displayName,
+              subscription_status: 'inactive',
+            },
+            {
+              onConflict: 'id',
+              ignoreDuplicates: false, // 既存レコードを更新
+            }
+          );
+
+        if (!upsertError) {
+          console.log(`User synced to database (attempt ${attempt})`);
+          return;
+        }
+
+        lastError = new Error(upsertError.message);
+        console.warn(`User sync attempt ${attempt} failed:`, upsertError.message);
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.warn(`User sync attempt ${attempt} exception:`, lastError.message);
+      }
+
+      // 最後の試行でなければ少し待ってリトライ
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 200 * attempt));
+      }
+    }
+
+    // 全リトライ失敗してもログだけ残して続行（後で設定可能）
+    console.error('Failed to sync user after all retries:', lastError?.message);
+  };
 
   const handleEmailSignup = async () => {
     if (!username.trim() || !email.trim() || !password.trim()) {
@@ -56,22 +126,11 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       if (data.user) {
         console.log('User created:', data.user.id);
 
-        // トリガーがpublic.usersにレコードを自動作成するので、
-        // ここではusernameをUPDATEするだけ
-        // 少し待ってからUPDATE（トリガーの完了を待つ）
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // upsertでusersテーブルにレコードを確実に同期
+        // Auth Triggerのタイミングに依存しない堅牢な実装
+        await syncUserToDatabase(data.user.id, email, username);
 
-        const { error: updateError } = await supabase
-          .from('users')
-          .update({ username: username })
-          .eq('id', data.user.id);
-
-        if (updateError) {
-          console.error('Username update error:', updateError);
-          // usernameの更新エラーは無視して続行（後で設定可能）
-        }
-
-        console.log('Username updated, navigating to next screen...');
+        console.log('User synced, navigating to next screen...');
 
         // 次の画面に遷移（認証状態は保持される）
         navigation.navigate('Onboarding7', {
@@ -91,9 +150,144 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     }
   };
 
+  /**
+   * OAuth認証後のセッション確立処理
+   * PKCE Flow（code）とImplicit Flow（access_token）の両方に対応
+   */
+  const handleOAuthCallback = async (callbackUrl: string): Promise<boolean> => {
+    // URLパラメータを解析
+    const urlObj = new URL(callbackUrl);
+    const hashParams = new URLSearchParams(urlObj.hash.slice(1));
+    const queryParams = urlObj.searchParams;
+
+    // PKCE Flow: codeパラメータをチェック
+    const code = queryParams.get('code');
+    if (code) {
+      console.log('PKCE Flow detected, exchanging code for session...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (sessionError) {
+        Alert.alert(i18n.t('common.error'), sessionError.message);
+        return false;
+      }
+
+      if (sessionData.user) {
+        await syncUserToDatabase(
+          sessionData.user.id,
+          sessionData.user.email,
+          username || sessionData.user.user_metadata?.name || null
+        );
+
+        navigation.navigate('Onboarding7', {
+          selectedBook,
+          deadline,
+          pledgeAmount,
+          currency,
+          tsundokuCount,
+          userId: sessionData.user.id,
+        });
+        return true;
+      }
+      return false;
+    }
+
+    // Implicit Flow: access_token / refresh_token をチェック
+    const access_token = hashParams.get('access_token') || queryParams.get('access_token');
+    const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+
+    if (access_token && refresh_token) {
+      console.log('Implicit Flow detected, setting session...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+
+      if (sessionError) {
+        Alert.alert(i18n.t('common.error'), sessionError.message);
+        return false;
+      }
+
+      if (sessionData.user) {
+        await syncUserToDatabase(
+          sessionData.user.id,
+          sessionData.user.email,
+          username || sessionData.user.user_metadata?.name || null
+        );
+
+        navigation.navigate('Onboarding7', {
+          selectedBook,
+          deadline,
+          pledgeAmount,
+          currency,
+          tsundokuCount,
+          userId: sessionData.user.id,
+        });
+        return true;
+      }
+    }
+
+    // エラーチェック
+    const errorDescription = queryParams.get('error_description') || hashParams.get('error_description');
+    if (errorDescription) {
+      Alert.alert(i18n.t('common.error'), errorDescription);
+      return false;
+    }
+
+    console.warn('No authentication tokens found in callback URL');
+    return false;
+  };
+
   const handleOAuth = async (provider: 'google' | 'apple') => {
-    // OAuth実装（後で追加）
-    Alert.alert(i18n.t('common.coming_soon'), i18n.t('errors.oauth_coming_soon', { provider }));
+    // Apple Sign Inは別途セットアップが必要
+    if (provider === 'apple') {
+      Alert.alert(i18n.t('common.coming_soon'), i18n.t('errors.oauth_coming_soon', { provider: 'Apple' }));
+      return;
+    }
+
+    setOauthLoading(provider);
+    try {
+      // オンボーディングデータをAsyncStorageに保存
+      await AsyncStorage.setItem('onboardingData', JSON.stringify({
+        selectedBook,
+        deadline,
+        pledgeAmount,
+        currency,
+        tsundokuCount,
+      }));
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUri,
+          // openAuthSessionAsyncがブラウザライフサイクルを管理するため、
+          // Supabaseによる自動リダイレクトをスキップ
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) {
+        Alert.alert(i18n.t('common.error'), error.message);
+        return;
+      }
+
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUri
+        );
+
+        if (result.type === 'success') {
+          await handleOAuthCallback(result.url);
+        } else if (result.type === 'cancel') {
+          // ユーザーがキャンセルした場合は何もしない
+          console.log('OAuth cancelled by user');
+        }
+      }
+    } catch (error: unknown) {
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error));
+    } finally {
+      setOauthLoading(null);
+    }
   };
 
   return (
@@ -159,19 +353,33 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
       <View style={styles.oauthButtons}>
         <TouchableOpacity
-          style={styles.oauthButton}
+          style={[styles.oauthButton, oauthLoading === 'google' && styles.oauthButtonDisabled]}
           onPress={() => handleOAuth('google')}
+          disabled={oauthLoading !== null || loading}
         >
-          <Ionicons name="logo-google" size={20} color={colors.text.primary} />
-          <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_google')}</Text>
+          {oauthLoading === 'google' ? (
+            <ActivityIndicator size="small" color={colors.text.primary} />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={20} color={colors.text.primary} />
+              <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_google')}</Text>
+            </>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.oauthButton}
+          style={[styles.oauthButton, oauthLoading === 'apple' && styles.oauthButtonDisabled]}
           onPress={() => handleOAuth('apple')}
+          disabled={oauthLoading !== null || loading}
         >
-          <Ionicons name="logo-apple" size={20} color={colors.text.primary} />
-          <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_apple')}</Text>
+          {oauthLoading === 'apple' ? (
+            <ActivityIndicator size="small" color={colors.text.primary} />
+          ) : (
+            <>
+              <Ionicons name="logo-apple" size={20} color={colors.text.primary} />
+              <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_apple')}</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </OnboardingLayout>
@@ -233,6 +441,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     height: 52,
     gap: spacing.sm,
+  },
+  oauthButtonDisabled: {
+    opacity: 0.6,
   },
   oauthButtonText: {
     color: colors.text.primary,
