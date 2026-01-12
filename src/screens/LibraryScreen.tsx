@@ -22,7 +22,7 @@ import Animated, {
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { fetchBookCover } from '../utils/googleBooks';
+import { fetchBookCover, ensureHttps } from '../utils/googleBooks';
 import { titanColors, titanTypography, titanShadows } from '../theme/titan';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -92,7 +92,7 @@ export default function LibraryScreen() {
   // Get hero book data
   const heroCommitment = completedBooks[0] || null;
   const heroCoverUrl = heroCommitment
-    ? heroCommitment.books.cover_url || coverUrls[heroCommitment.books.id]
+    ? ensureHttps(heroCommitment.books.cover_url) || ensureHttps(coverUrls[heroCommitment.books.id])
     : null;
 
   // Extract color for hero
@@ -223,7 +223,7 @@ export default function LibraryScreen() {
 
   // Netflix-style card renderer with peek effect
   const renderBookCard = useCallback(({ item, index }: { item: Commitment; index: number }) => {
-    const coverUrl = item.books.cover_url || coverUrls[item.books.id];
+    const coverUrl = ensureHttps(item.books.cover_url) || ensureHttps(coverUrls[item.books.id]);
     return (
       <CinematicBookCard
         key={item.id}

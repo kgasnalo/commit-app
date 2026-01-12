@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { titanColors, titanShadows } from '../../theme/titan';
 import { SecuredBadge } from './SecuredBadge';
+import { ensureHttps } from '../../utils/googleBooks';
 
 const CARD_WIDTH = 140;
 const CARD_HEIGHT = 210;
@@ -48,7 +49,7 @@ export function CinematicBookCard({
           {/* Book Cover */}
           {coverUrl ? (
             <Image
-              source={{ uri: coverUrl }}
+              source={{ uri: ensureHttps(coverUrl) || '' }}
               style={styles.cover}
               resizeMode="cover"
             />
