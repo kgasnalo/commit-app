@@ -355,7 +355,8 @@ export default function LibraryScreen() {
         )}
 
         {/* Glass Filter Bar - Month and Tag selection */}
-        {(monthFilters.length > 1 || allTags.length > 0) && (
+        {/* Always show when filters or tags exist (even just 1) */}
+        {(monthFilters.length >= 1 || allTags.length > 0) && (
           <View style={styles.filterBarContainer}>
             <GlassFilterBar
               filters={monthFilters}
