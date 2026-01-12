@@ -15,6 +15,9 @@ export interface Database {
           email: string
           username: string | null
           stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+          card_last_four: string | null
+          card_brand: string | null
           role: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status: 'active' | 'inactive'
           created_at: string
@@ -24,6 +27,9 @@ export interface Database {
           email: string
           username?: string | null
           stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          card_last_four?: string | null
+          card_brand?: string | null
           role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
           created_at?: string
@@ -33,6 +39,9 @@ export interface Database {
           email?: string
           username?: string | null
           stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          card_last_four?: string | null
+          card_brand?: string | null
           role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
           created_at?: string

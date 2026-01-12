@@ -10,34 +10,26 @@
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import type { OnboardingAct } from '../types/atmosphere.types';
 
-// Audio asset paths (placeholders - actual files to be added later)
-// To add audio files:
-// 1. Create src/assets/audio/ directory
-// 2. Add .mp3 files for each Act's ambient track
-// 3. Uncomment the require() statements below
-const AMBIENT_TRACKS: Record<OnboardingAct, number | null> = {
-  act1: null, // require('../assets/audio/ambient_calm.mp3')
-  act2: null, // require('../assets/audio/ambient_tension.mp3')
-  act3: null, // require('../assets/audio/ambient_hope.mp3')
+// Audio asset paths
+const AMBIENT_TRACKS: Record<OnboardingAct, number> = {
+  act1: require('../assets/audio/ambient_calm.mp3'),
+  act2: require('../assets/audio/ambient_tension.mp3'),
+  act3: require('../assets/audio/ambient_hope.mp3'),
 };
 
-const UI_SOUNDS: Record<string, number | null> = {
-  tap: null,        // Short click sound
-  slide: null,      // Slider movement
-  success: null,    // Achievement sound
-  transition: null, // Screen change whoosh
-  toast: null,      // Toast popup sound
+const UI_SOUNDS: Record<string, number> = {
+  tap: require('../assets/audio/ui_tap.mp3'),
+  slide: require('../assets/audio/ui_slide.mp3'),
+  success: require('../assets/audio/ui_success.mp3'),
+  transition: require('../assets/audio/ui_transition.mp3'),
+  toast: require('../assets/audio/ui_toast.mp3'),
 };
 
 // Shepard Tone audio files for penalty slider (Phase 2.2.1)
-// To add Shepard tone files:
-// 1. Generate looping Shepard tone audio files at different intensities
-// 2. Add to src/assets/audio/
-// 3. Uncomment the require() statements below
-const SHEPARD_TONES: Record<string, number | null> = {
-  low: null,    // require('../assets/audio/shepard_tone_low.mp3')
-  mid: null,    // require('../assets/audio/shepard_tone_mid.mp3')
-  high: null,   // require('../assets/audio/shepard_tone_high.mp3')
+const SHEPARD_TONES: Record<string, number> = {
+  low: require('../assets/audio/shepard_tone_low.mp3'),
+  mid: require('../assets/audio/shepard_tone_mid.mp3'),
+  high: require('../assets/audio/shepard_tone_high.mp3'),
 };
 
 class SoundManagerClass {
@@ -63,8 +55,9 @@ class SoundManagerClass {
         interruptionMode: 'duckOthers',
       });
 
-      // Preload UI sounds (when audio files are added)
+      // Preload all sounds
       await this.preloadUISounds();
+      await this.preloadShepardTones();
 
       this.isInitialized = true;
       console.log('[SoundManager] Initialized successfully');
@@ -78,14 +71,12 @@ class SoundManagerClass {
    */
   private async preloadUISounds(): Promise<void> {
     for (const [name, source] of Object.entries(UI_SOUNDS)) {
-      if (source !== null) {
-        try {
-          const player = createAudioPlayer(source);
-          player.volume = this.uiVolume;
-          this.uiSounds.set(name, player);
-        } catch (error) {
-          console.warn(`[SoundManager] Failed to load UI sound: ${name}`, error);
-        }
+      try {
+        const player = createAudioPlayer(source);
+        player.volume = this.uiVolume;
+        this.uiSounds.set(name, player);
+      } catch (error) {
+        console.warn(`[SoundManager] Failed to load UI sound: ${name}`, error);
       }
     }
   }
@@ -99,15 +90,6 @@ class SoundManagerClass {
     if (!this.isInitialized || this.isMuted) return;
 
     const trackSource = AMBIENT_TRACKS[act];
-    if (trackSource === null) {
-      // No audio file for this act yet - just fade out current
-      if (this.currentAmbient) {
-        await this.fadeOut(this.currentAmbient, duration);
-        this.currentAmbient.release();
-        this.currentAmbient = null;
-      }
-      return;
-    }
 
     try {
       // Fade out current ambient
@@ -162,8 +144,23 @@ class SoundManagerClass {
   // ============================================
 
   /**
+   * Initialize Shepard tone players
+   */
+  private async preloadShepardTones(): Promise<void> {
+    for (const [name, source] of Object.entries(SHEPARD_TONES)) {
+      try {
+        const player = createAudioPlayer(source);
+        player.volume = this.shepardVolume;
+        player.loop = true;
+        this.shepardSounds.set(name, player);
+      } catch (error) {
+        console.warn(`[SoundManager] Failed to load Shepard tone: ${name}`, error);
+      }
+    }
+  }
+
+  /**
    * Play Shepard tone based on intensity (0-1)
-   * Placeholder implementation - actual audio files to be added later
    * @param intensity - Value from 0 (low) to 1 (high)
    */
   async playShepardTone(intensity: number): Promise<void> {
@@ -182,15 +179,6 @@ class SoundManagerClass {
       toneName = 'high';
     }
 
-    const toneSource = SHEPARD_TONES[toneName];
-    if (toneSource === null) {
-      // Placeholder: No audio file yet
-      // When audio files are added, this will load and play the appropriate tone
-      console.log(`[SoundManager] Shepard tone placeholder: ${toneName} (intensity: ${clampedIntensity.toFixed(2)})`);
-      return;
-    }
-
-    // Future implementation: Load and play tone with volume mapped to intensity
     try {
       const player = this.shepardSounds.get(toneName);
       if (player) {
@@ -231,10 +219,6 @@ class SoundManagerClass {
     if (!this.isInitialized || this.isMuted || !this.isShepardPlaying) return;
 
     const clampedIntensity = Math.max(0, Math.min(1, intensity));
-
-    // Placeholder: Volume adjustment based on intensity
-    // When implemented, this will crossfade between different tone files
-    // or adjust playback parameters
     const targetVolume = this.shepardVolume * (0.5 + clampedIntensity * 0.5);
 
     try {

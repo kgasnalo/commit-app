@@ -20,7 +20,6 @@ type AuthState =
 
 import AuthScreen from '../screens/AuthScreen';
 import RoleSelectScreen from '../screens/RoleSelectScreen';
-import SubscriptionScreen from '../screens/SubscriptionScreen';
 import CreateCommitmentScreen from '../screens/CreateCommitmentScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import VerificationScreen from '../screens/VerificationScreen';

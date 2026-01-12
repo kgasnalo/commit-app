@@ -12,8 +12,8 @@ import i18n from '../i18n';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function AuthScreen({ navigation }: any) {
-  const [email, setEmail] = useState(__DEV__ ? 'test@example.com' : '');
-  const [password, setPassword] = useState(__DEV__ ? 'password123' : '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
