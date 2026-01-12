@@ -310,3 +310,11 @@
   );
   ```
   - **Note:** Keep one-time initializations (listeners, animations) in `useEffect`. Only move data fetching to `useFocusEffect`.
+- **Hall of Fame / Archive Design Patterns (Phase 4.7):**
+  - **Glass Panel:** Use top/left highlight edges only (0.5px), no bottom/right border. This creates a subtle 3D effect without looking like a bordered card.
+  - **Ultra-thin Typography:** Use `fontWeight: '100'` for hero titles to convey refined confidence.
+  - **Self-glow Numbers:** Add `textShadowColor: 'rgba(255, 140, 80, 0.5)'` with `textShadowRadius: 12` for luxury gauge effect on metrics.
+  - **Micro Labels:** Use `fontSize: 10` with `opacity: 0.4` for subtle metric labels.
+  - **Metallic Badge:** SecuredBadge "metallic" variant uses `backgroundColor: 'rgba(20, 20, 18, 0.95)'` with top highlight only.
+  - **Filter Bar Visibility:** When showing filter bars conditionally, use `>= 1` not `> 1` to ensure bar appears even with single item.
+- **BookDetailScreen Tag Section:** Place interactive elements (like tag add button) OUTSIDE hero containers. Elements inside `ImageBackground` with `LinearGradient` overlay may have visibility/touch issues. Move to separate section below hero for reliable visibility and interaction.

@@ -1,12 +1,16 @@
-# Handoff: Session 2026-01-10
+# Handoff: Session 2026-01-12
 
 ## Current Goal
-**Phase 4.8 Activity Matrix (Daily Habit HUD) - COMPLETED**
+**Phase 4.7 The Hall of Fame: Cinematic Archive - COMPLETED ✅**
 
-Duolingoスタイルのストリーク表示をDashboardに統合:
-- 🔥 ストリーク数バッジ（タップでプロフィールへ遷移）
-- ActivityMatrixはProfileScreenに集約（詳細表示用）
-- 設計判断: 海外アプリのベストプラクティスに準拠
+Titan Design SystemでArchive（Hall of Fame）画面を完全リファイン:
+- Netflix風横スクロールカルーセル（スナップ動作付き）
+- Notion風タグフィルタリング（カラータグピル）
+- 月別フィルタリング
+- Ultra-thin タイポグラフィ (fontWeight: '100')
+- ガラスパネル (top/left highlight edges only, 0.5px)
+- Self-glow数字エフェクト
+- Metallic SECUREDバッジ
 
 ---
 
@@ -30,12 +34,12 @@ Duolingoスタイルのストリーク表示をDashboardに統合:
 
 | Issue | Root Cause | Fix Applied |
 |-------|------------|-------------|
+| Filter bar not showing | Condition was `monthFilters.length > 1` | Changed to `>= 1` |
+| Tag section not visible in BookDetail | Tags inside heroContainer | Moved to separate section outside hero |
 | `Animated.SharedValue` type error | Namespace doesn't export | Import `SharedValue` directly |
 | Screen props type incompatibility | TypeScript strict typing | Use `{ route, navigation }: any` |
-| `uuid_generate_v4()` not found | Extension not enabled | Use `gen_random_uuid()` |
 | `colors.primary` error | Theme uses nested structure | Use `colors.accent.primary` |
 | `i18n.language` not found | I18n type issue | Use `useLanguage()` hook |
-| ActivityMatrix重複 | Dashboard + Profile両方に配置 | Duolingoパターン採用（Dashboard=ストリーク数のみ） |
 
 ---
 
@@ -43,22 +47,29 @@ Duolingoスタイルのストリーク表示をDashboardに統合:
 
 | Task | Status |
 |------|--------|
-| Streak badge (Duolingo-style) | Done |
-| Dashboard simplification | Done |
-| ActivityMatrix soft-light upgrade | Done |
-| i18n keys (streak_days) | Done |
+| HeroBillboard Titan design | Done |
+| Netflix-style carousel (FlatList + snapToInterval) | Done |
+| GlassFilterBar (Notion-style tags + month filter) | Done |
+| AutomotiveMetrics self-glow numbers | Done |
+| SecuredBadge metallic variant | Done |
+| AmbientGlow cinematic intensity | Done |
+| BookDetailScreen tag visibility fix | Done |
+| i18n keys (filterAll, add_tag) | Done |
 
-### Design Decision
-海外アプリ事例（GitHub, Duolingo, Strava）を参考:
-- **Dashboard** = アクションの場、最小限の情報（ストリーク数のみ）
-- **Profile** = 振り返りの場、詳細分析（ActivityMatrix, Reader Type等）
+### Key Design Decisions
+
+1. **Glass Panel:** Top/left highlight edges only (0.5px) - no bottom/right border
+2. **Typography:** fontWeight: '100' for hero title (ultra-thin)
+3. **Self-glow:** `textShadowColor: 'rgba(255, 140, 80, 0.5)'` for numbers
+4. **Tag Pills:** Notion-style colored dots + pill shape with colored left border
+5. **Carousel:** `snapToInterval` for smooth snap behavior
 
 ---
 
 ## Immediate Next Steps
 
 1. **Phase 4.5 Advanced Animation Polish** (if needed based on beta feedback)
-2. **Phase 4.7 The Hall of Fame** - Netflix-style Library
+2. **Phase 5: Technical Debt** - Migrate expo-av to expo-audio
 3. **Phase 7: Web Portal** (Critical for App Store compliance)
 
 ---
@@ -67,11 +78,30 @@ Duolingoスタイルのストリーク表示をDashboardに統合:
 
 | Feature | Files |
 |---------|-------|
+| Hall of Fame / Library | `src/screens/LibraryScreen.tsx` |
+| Hero Billboard | `src/components/halloffame/HeroBillboard.tsx` |
+| Automotive Metrics | `src/components/halloffame/AutomotiveMetrics.tsx` |
+| Secured Badge | `src/components/halloffame/SecuredBadge.tsx` |
+| Ambient Glow | `src/components/halloffame/AmbientGlow.tsx` |
+| Glass Filter Bar | `src/components/halloffame/GlassFilterBar.tsx` |
+| Cinematic Book Card | `src/components/halloffame/CinematicBookCard.tsx` |
+| Book Detail | `src/screens/BookDetailScreen.tsx` |
 | Dashboard | `src/screens/DashboardScreen.tsx` |
 | Profile + Reading DNA | `src/screens/ProfileScreen.tsx`, `src/components/reading-dna/` |
-| Activity Matrix | `src/components/titan/ActivityMatrix.tsx` |
 | Monk Mode | `src/screens/monkmode/`, `src/lib/MonkModeService.ts` |
 | Settings | `src/screens/SettingsScreen.tsx` |
 
 ## Supabase
 - **Project Ref:** `rnksvjjcsnwlquaynduu`
+
+---
+
+## Commits This Session
+
+| Hash | Description |
+|------|-------------|
+| `a8576da` | refactor(halloffame): Titan design refinement for Archive screen |
+| `0a688c6` | feat(archive): Netflix-style carousel and glass filter bar |
+| `243866f` | feat(archive): Notion-style tag filtering for Hall of Fame |
+| `53274e5` | fix(archive): Show filter bar when at least 1 month exists |
+| `6a311aa` | fix(bookDetail): Move tag section outside hero for better visibility |
