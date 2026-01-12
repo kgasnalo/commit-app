@@ -56,6 +56,14 @@ export function HeroBillboard({
   // Use coverUrl prop, fallback to commitment.books.cover_url for reliability
   const effectiveCoverUrl = ensureHttps(coverUrl || book.cover_url);
 
+  // Debug log
+  console.log('[HeroBillboard] Debug:', {
+    coverUrl,
+    'book.cover_url': book.cover_url,
+    effectiveCoverUrl,
+    bookTitle: book.title,
+  });
+
   // Calculate automotive metrics
   const metrics = useMemo(() => {
     const startDate = new Date(commitment.created_at);

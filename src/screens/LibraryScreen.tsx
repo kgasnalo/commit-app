@@ -95,6 +95,14 @@ export default function LibraryScreen() {
     ? ensureHttps(heroCommitment.books.cover_url || coverUrls[heroCommitment.books.id])
     : null;
 
+  // Debug log
+  console.log('[LibraryScreen] Hero Debug:', {
+    heroBookTitle: heroCommitment?.books?.title,
+    'books.cover_url': heroCommitment?.books?.cover_url,
+    'coverUrls[id]': heroCommitment ? coverUrls[heroCommitment.books.id] : null,
+    heroCoverUrl,
+  });
+
   // Extract color for hero
   const { dominantColor: heroColor } = useImageColors(heroCoverUrl);
 
