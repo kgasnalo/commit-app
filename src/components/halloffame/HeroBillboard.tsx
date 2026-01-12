@@ -6,7 +6,10 @@ import {
   TouchableOpacity,
   Platform,
   Image,
+  Dimensions,
 } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { titanColors, titanTypography } from '../../theme/titan';
@@ -117,7 +120,7 @@ export function HeroBillboard({
             <View style={styles.coverImageContainer}>
               <Image
                 source={{ uri: effectiveCoverUrl }}
-                style={StyleSheet.absoluteFill}
+                style={styles.coverImage}
                 blurRadius={Platform.OS === 'ios' ? 50 : 25}
                 resizeMode="cover"
                 onLoad={() => console.log('[HeroBillboard] Image loaded successfully:', effectiveCoverUrl)}
@@ -218,7 +221,15 @@ const styles = StyleSheet.create({
     // No overflow hidden - allow cover to extend
   },
   coverImageContainer: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: HERO_HEIGHT,
+  },
+  coverImage: {
+    width: SCREEN_WIDTH,
+    height: HERO_HEIGHT,
   },
   coverImageOverlay: {
     ...StyleSheet.absoluteFillObject,
