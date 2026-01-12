@@ -5,7 +5,7 @@ import { titanColors } from '../../theme/titan';
 
 interface AmbientGlowProps {
   color?: string;
-  intensity?: 'subtle' | 'medium' | 'strong';
+  intensity?: 'subtle' | 'medium' | 'strong' | 'cinematic';
   style?: ViewStyle;
 }
 
@@ -13,6 +13,8 @@ interface AmbientGlowProps {
  * AmbientGlow - Dynamic color gradient overlay
  * Creates a warm ambient lighting effect from the top-left
  * Used to project extracted cover colors onto the background
+ *
+ * "cinematic" mode creates a dramatic backlight effect with blur(60px)+ equivalent
  */
 export function AmbientGlow({
   color = titanColors.accent.primary,
@@ -20,10 +22,12 @@ export function AmbientGlow({
   style
 }: AmbientGlowProps) {
   // Calculate opacity based on intensity
+  // cinematic mode for dramatic backlight effect
   const opacityMap = {
     subtle: { high: 0.08, mid: 0.03, low: 0 },
     medium: { high: 0.15, mid: 0.06, low: 0 },
     strong: { high: 0.25, mid: 0.10, low: 0 },
+    cinematic: { high: 0.35, mid: 0.18, low: 0.05 }, // Dramatic backlight
   };
 
   const opacities = opacityMap[intensity];

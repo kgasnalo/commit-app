@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { titanColors, titanTypography } from '../../theme/titan';
 import i18n from '../../i18n';
 
@@ -11,8 +12,14 @@ interface AutomotiveMetricsProps {
 }
 
 /**
- * AutomotiveMetrics - Car specification style reading stats
- * Displays metrics like a luxury vehicle spec sheet
+ * AutomotiveMetrics - Precision Instrument Style
+ * Luxury car gauge / watch dial aesthetic
+ *
+ * Features:
+ * - Ultra-large thin numbers (fontWeight: 200, fontSize: 48)
+ * - Self-glow effect (orange text shadow)
+ * - Micro labels (fontSize: 10, opacity: 0.4)
+ * - Glass rod separator (gradient fade top/bottom)
  */
 export function AutomotiveMetrics({
   daysToComplete,
@@ -32,8 +39,20 @@ export function AutomotiveMetrics({
         </Text>
       </View>
 
-      {/* Divider */}
-      <View style={styles.divider} />
+      {/* Glass Rod Separator - gradient fade top/bottom */}
+      <View style={styles.separatorContainer}>
+        <LinearGradient
+          colors={[
+            'transparent',
+            'rgba(255, 255, 255, 0.2)',
+            'rgba(255, 255, 255, 0.3)',
+            'rgba(255, 255, 255, 0.2)',
+            'transparent',
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
+          style={styles.separator}
+        />
+      </View>
 
       {/* Pages Per Day */}
       <View style={[styles.metricBox, compact && styles.metricBoxCompact]}>
@@ -53,15 +72,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(26, 23, 20, 0.6)',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    // No background - glass panel handles this
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   containerCompact: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
   metricBox: {
     flex: 1,
@@ -70,33 +87,45 @@ const styles = StyleSheet.create({
   metricBoxCompact: {
     flex: 1,
   },
+  // Micro label - extremely subtle
   label: {
     fontSize: 10,
     letterSpacing: 0.5,
-    color: titanColors.text.secondary,
-    fontWeight: '500',
-    marginBottom: 6,
+    color: titanColors.text.muted,
+    fontWeight: '400',
+    marginBottom: 8,
     textTransform: 'uppercase',
+    opacity: 0.4, // Very subtle
   },
   labelCompact: {
     fontSize: 8,
     marginBottom: 4,
   },
+  // Precision instrument number with Self-Glow
   value: {
-    fontSize: 32,
-    fontWeight: '200',
-    color: titanColors.text.primary,
-    letterSpacing: -0.5,
+    fontSize: 48, // Giant gauge number
+    fontWeight: '200', // Ultra-thin
+    color: '#FAFAFA',
+    letterSpacing: -1,
     fontVariant: ['tabular-nums'],
+    // Self-glow effect - orange ambient light
+    textShadowColor: 'rgba(255, 140, 80, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   valueCompact: {
-    fontSize: 20,
+    fontSize: 24,
+    textShadowRadius: 6,
   },
-  divider: {
+  // Glass rod separator container
+  separatorContainer: {
     width: 1,
-    height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginHorizontal: 20,
+    height: 60,
+    marginHorizontal: 24,
+  },
+  separator: {
+    width: 1,
+    height: '100%',
   },
 });
 

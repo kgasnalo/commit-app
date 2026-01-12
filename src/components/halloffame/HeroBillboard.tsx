@@ -2,24 +2,19 @@ import React, { useMemo } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { titanColors, titanTypography } from '../../theme/titan';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SecuredBadge } from './SecuredBadge';
 import { AmbientGlow } from './AmbientGlow';
 import { AutomotiveMetrics } from './AutomotiveMetrics';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const HERO_HEIGHT = 480;
-const COVER_WIDTH = 160;
-const COVER_HEIGHT = 240;
+const HERO_HEIGHT = 560; // Increased height for luxury spacing
 
 interface Book {
   id: string;
@@ -94,61 +89,60 @@ export function HeroBillboard({
         onPress={onPress}
         style={styles.touchable}
       >
-        {/* Titan Background */}
+        {/* Titan Background with warm gradient */}
         <View style={styles.backgroundContainer} pointerEvents="none">
           <LinearGradient
             colors={['#1A1008', '#100A06', '#080604']}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
           />
-          {/* Dynamic Ambient Glow from cover */}
-          <AmbientGlow color={ambientColor} intensity="strong" />
+          {/* Dynamic Ambient Glow from cover - enhanced backlight */}
+          <AmbientGlow color={ambientColor} intensity="cinematic" />
         </View>
 
-        {/* Hero Content */}
+        {/* Hero Content - Vertical flow with proper spacing */}
         <View style={styles.content}>
-          {/* Book Cover with projection effect */}
-          <View style={styles.coverContainer}>
-            {coverUrl ? (
-              <Image
-                source={{ uri: coverUrl }}
-                style={styles.cover}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={[styles.cover, styles.coverPlaceholder]}>
-                <Ionicons
-                  name="book"
-                  size={48}
-                  color={titanColors.text.muted}
-                />
-              </View>
-            )}
-          </View>
-
-          {/* Book Info */}
-          <View style={styles.infoContainer}>
+          {/* Billboard Title - Movie poster style */}
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(500)}
+            style={styles.titleContainer}
+          >
             <Text style={styles.title} numberOfLines={2}>
               {book.title}
             </Text>
             <Text style={styles.author} numberOfLines={1}>
               {book.author}
             </Text>
+          </Animated.View>
 
-            {/* Badge and Date Row */}
-            <View style={styles.metaRow}>
-              <SecuredBadge size="md" variant="engraved" />
-              <Text style={styles.date}>{completionDate}</Text>
+          {/* Thick Glass Stats Panel */}
+          <Animated.View
+            entering={FadeInUp.delay(400).duration(500)}
+            style={styles.glassPanel}
+          >
+            {/* Top/Left highlight edge - simulates glass thickness */}
+            <View style={styles.glassHighlightTop} />
+            <View style={styles.glassHighlightLeft} />
+
+            {/* Blurred backdrop for glass effect */}
+            <View style={styles.glassPanelInner}>
+              <AutomotiveMetrics
+                daysToComplete={metrics.daysToComplete}
+                pagesPerDay={metrics.pagesPerDay}
+              />
+
+              {/* Badge and Date Row integrated into glass panel */}
+              <View style={styles.metaRow}>
+                <SecuredBadge size="lg" variant="metallic" />
+                <Text style={styles.date}>{completionDate}</Text>
+              </View>
             </View>
-          </View>
+          </Animated.View>
+        </View>
 
-          {/* Automotive Metrics */}
-          <View style={styles.metricsContainer}>
-            <AutomotiveMetrics
-              daysToComplete={metrics.daysToComplete}
-              pagesPerDay={metrics.pagesPerDay}
-            />
-          </View>
+        {/* Backlight Glow Effect - positioned behind cover area */}
+        <View style={styles.backlightContainer} pointerEvents="none">
+          <View style={[styles.backlight, { backgroundColor: ambientColor || '#FF6B35' }]} />
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -158,7 +152,7 @@ export function HeroBillboard({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: HERO_HEIGHT,
+    minHeight: HERO_HEIGHT,
   },
   touchable: {
     flex: 1,
@@ -173,66 +167,104 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 60,
+    justifyContent: 'center',
+    paddingTop: 80,
+    paddingBottom: 40,
     paddingHorizontal: 24,
   },
-  // Cover styling with projection effect
-  coverContainer: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.6,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  cover: {
-    width: COVER_WIDTH,
-    height: COVER_HEIGHT,
-    borderRadius: 8,
-  },
-  coverPlaceholder: {
-    backgroundColor: titanColors.background.tertiary,
-    justifyContent: 'center',
+  // Billboard Title - Movie poster typography
+  titleContainer: {
     alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  // Info styling
-  infoContainer: {
-    alignItems: 'center',
-    marginTop: 24,
+    marginBottom: 48, // Luxury vertical spacing
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '200',
+    fontSize: 28, // Larger for billboard impact
+    fontWeight: '300',
     color: titanColors.text.primary,
     textAlign: 'center',
-    letterSpacing: 0.5,
-    lineHeight: 32,
+    letterSpacing: -0.5, // Tighter tracking for heavyweight feel
+    lineHeight: 36,
+    textShadowColor: 'rgba(255, 255, 255, 0.15)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   author: {
     fontSize: 14,
     fontWeight: '400',
     color: titanColors.text.secondary,
-    marginTop: 8,
+    marginTop: 12,
+    letterSpacing: 0.5,
   },
+  // Thick Glass Panel - Physical glass block appearance
+  glassPanel: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 20,
+    overflow: 'hidden',
+    // Remove all borders - only top/left highlights
+    ...Platform.select({
+      ios: {
+        // iOS glass effect
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  glassHighlightTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 0.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  glassHighlightLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 0.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  glassPanelInner: {
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+  },
+  // Meta row inside glass panel
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    gap: 12,
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 16,
   },
   date: {
     fontSize: 12,
     color: titanColors.text.muted,
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
-  // Metrics container
-  metricsContainer: {
+  // Backlight effect - Strong bokeh behind content
+  backlightContainer: {
     position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
+    top: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: -1,
+  },
+  backlight: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    opacity: 0.4,
+    // Heavy blur simulation via shadow
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 80,
+    elevation: 0,
   },
 });
 

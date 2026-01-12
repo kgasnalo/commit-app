@@ -65,10 +65,10 @@ export function CinematicBookCard({
           {/* Gradient overlay for badge visibility */}
           <View style={styles.gradientOverlay} />
 
-          {/* SECURED Badge - positioned at bottom left */}
+          {/* SECURED Badge - positioned at bottom left with metallic effect */}
           {showBadge && (
             <View style={styles.badgeContainer}>
-              <SecuredBadge size="sm" variant="engraved" />
+              <SecuredBadge size="sm" variant="metallic" />
             </View>
           )}
         </View>
