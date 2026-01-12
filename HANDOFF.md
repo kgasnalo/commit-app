@@ -132,4 +132,5 @@ Haptic Luxury + Ambient Transition の実装:
 | `243866f` | feat(archive): Notion-style tag filtering for Hall of Fame |
 | `53274e5` | fix(archive): Show filter bar when at least 1 month exists |
 | `6a311aa` | fix(bookDetail): Move tag section outside hero for better visibility |
-| *(pending)* | feat(animation): Phase 4.5 Haptic Luxury + Ambient Transition |
+| `306fc38f` | feat(animation): Phase 4.5 Haptic Luxury + Ambient Transition |
+| `401f75fa` | fix(halloffame): Improve book cover visibility and sanitize image URLs |
