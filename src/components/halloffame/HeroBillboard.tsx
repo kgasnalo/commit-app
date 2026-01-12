@@ -123,9 +123,9 @@ export function HeroBillboard({
           {/* Dark overlay gradient for text readability - lightened */}
           <LinearGradient
             colors={[
-              'rgba(10, 8, 6, 0.2)',
-              'rgba(16, 10, 6, 0.35)',
-              'rgba(8, 6, 4, 0.5)',
+              'rgba(10, 8, 6, 0.1)',
+              'rgba(16, 10, 6, 0.25)',
+              'rgba(8, 6, 4, 0.4)',
             ]}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   coverImageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(8, 6, 4, 0.4)', // Reduced from 0.7 for better cover visibility
+    backgroundColor: 'rgba(8, 6, 4, 0.2)', // Reduced from 0.4 for better cover visibility
   },
   content: {
     flex: 1,

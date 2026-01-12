@@ -18,10 +18,17 @@ interface GoogleBooksResponse {
 /**
  * Ensure URL uses HTTPS protocol (iOS ATS requirement)
  * Database may contain old HTTP URLs that need conversion
+ * Also sanitizes Google Books URLs by removing 'edge=curl' which can break rendering
  */
 export function ensureHttps(url: string | null | undefined): string | null {
   if (!url) return null;
-  return url.replace(/^http:\/\//i, 'https://');
+  let secureUrl = url.replace(/^http:\/\//i, 'https://');
+  
+  // Remove edge=curl parameter which often causes rendering issues or blank images
+  // Example: &edge=curl -> (empty string)
+  secureUrl = secureUrl.replace(/&edge=curl/g, '');
+  
+  return secureUrl;
 }
 
 /**
