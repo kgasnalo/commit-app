@@ -337,3 +337,16 @@
   - Available methods: `feedbackLight()`, `feedbackMedium()`, `feedbackHeavy()`, `feedbackSuccess()`, `feedbackWarning()`, `feedbackError()`, `feedbackSelection()`
   - HapticsService includes 50ms throttling to prevent haptic overload
   - Only `src/lib/HapticsService.ts` should import `expo-haptics` directly
+- **expo-audio (SDK 54):** This is a native module and does NOT work in Expo Go. After installing or modifying expo-audio:
+  ```bash
+  npx expo prebuild
+  npx expo run:ios    # or ./run-ios-manual.sh
+  ```
+  - If you encounter `[Xcodeproj] Consistency issue` during build, run a clean rebuild: `rm -rf ios && npx expo prebuild`
+- **iOS Audio Mode Constraint:** When using `setAudioModeAsync` from expo-audio, `playsInSilentMode: false` combined with `interruptionMode: 'duckOthers'` causes `[Error: Impossible audio mode]`. Always use:
+  ```typescript
+  await setAudioModeAsync({
+    playsInSilentMode: true,  // REQUIRED when using duckOthers
+    interruptionMode: 'duckOthers',
+  });
+  ```

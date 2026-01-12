@@ -58,7 +58,8 @@
           "color": "#FF4D00"
         }
       ],
-      "expo-live-activity"
+      "expo-live-activity",
+      "expo-audio"
     ],
     "extra": {
       "eas": {

@@ -1,12 +1,13 @@
 /**
  * SoundManager - Audio orchestration singleton
  * Phase 2.0.3 - Audio Config
+ * Phase 5 - Migrated from expo-av to expo-audio (SDK 54)
  *
  * Handles ambient background sounds and UI feedback sounds
  * for the cinematic onboarding experience.
  */
 
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import type { OnboardingAct } from '../types/atmosphere.types';
 
 // Audio asset paths (placeholders - actual files to be added later)
@@ -40,9 +41,9 @@ const SHEPARD_TONES: Record<string, number | null> = {
 };
 
 class SoundManagerClass {
-  private currentAmbient: Audio.Sound | null = null;
-  private uiSounds: Map<string, Audio.Sound> = new Map();
-  private shepardSounds: Map<string, Audio.Sound> = new Map();
+  private currentAmbient: AudioPlayer | null = null;
+  private uiSounds: Map<string, AudioPlayer> = new Map();
+  private shepardSounds: Map<string, AudioPlayer> = new Map();
   private isInitialized = false;
   private isMuted = false;
   private ambientVolume = 0.3;
@@ -57,10 +58,9 @@ class SoundManagerClass {
     if (this.isInitialized) return;
 
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: false, // Respect device mute switch
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
+      await setAudioModeAsync({
+        playsInSilentMode: true, // Cinematic experience: play audio even in silent mode
+        interruptionMode: 'duckOthers',
       });
 
       // Preload UI sounds (when audio files are added)
@@ -80,10 +80,9 @@ class SoundManagerClass {
     for (const [name, source] of Object.entries(UI_SOUNDS)) {
       if (source !== null) {
         try {
-          const { sound } = await Audio.Sound.createAsync(source, {
-            volume: this.uiVolume,
-          });
-          this.uiSounds.set(name, sound);
+          const player = createAudioPlayer(source);
+          player.volume = this.uiVolume;
+          this.uiSounds.set(name, player);
         } catch (error) {
           console.warn(`[SoundManager] Failed to load UI sound: ${name}`, error);
         }
@@ -104,7 +103,7 @@ class SoundManagerClass {
       // No audio file for this act yet - just fade out current
       if (this.currentAmbient) {
         await this.fadeOut(this.currentAmbient, duration);
-        await this.currentAmbient.unloadAsync();
+        this.currentAmbient.release();
         this.currentAmbient = null;
       }
       return;
@@ -114,18 +113,17 @@ class SoundManagerClass {
       // Fade out current ambient
       if (this.currentAmbient) {
         await this.fadeOut(this.currentAmbient, duration / 2);
-        await this.currentAmbient.unloadAsync();
+        this.currentAmbient.release();
       }
 
-      // Load and fade in new ambient
-      const { sound } = await Audio.Sound.createAsync(trackSource, {
-        isLooping: true,
-        volume: 0,
-      });
+      // Create and fade in new ambient
+      const player = createAudioPlayer(trackSource);
+      player.loop = true;
+      player.volume = 0;
 
-      this.currentAmbient = sound;
-      await sound.playAsync();
-      await this.fadeIn(sound, this.ambientVolume, duration / 2);
+      this.currentAmbient = player;
+      player.play();
+      await this.fadeIn(player, this.ambientVolume, duration / 2);
     } catch (error) {
       console.warn(`[SoundManager] Crossfade failed for ${act}:`, error);
     }
@@ -138,11 +136,11 @@ class SoundManagerClass {
   async playUISound(soundName: keyof typeof UI_SOUNDS): Promise<void> {
     if (!this.isInitialized || this.isMuted) return;
 
-    const sound = this.uiSounds.get(soundName);
-    if (sound) {
+    const player = this.uiSounds.get(soundName);
+    if (player) {
       try {
-        await sound.setPositionAsync(0);
-        await sound.playAsync();
+        player.seekTo(0);
+        player.play();
       } catch (error) {
         console.warn(`[SoundManager] Failed to play UI sound: ${soundName}`, error);
       }
@@ -154,7 +152,7 @@ class SoundManagerClass {
    */
   async stopAll(): Promise<void> {
     if (this.currentAmbient) {
-      await this.currentAmbient.stopAsync();
+      this.currentAmbient.pause();
     }
     await this.stopShepardTone();
   }
@@ -194,12 +192,12 @@ class SoundManagerClass {
 
     // Future implementation: Load and play tone with volume mapped to intensity
     try {
-      const sound = this.shepardSounds.get(toneName);
-      if (sound) {
+      const player = this.shepardSounds.get(toneName);
+      if (player) {
         const volume = this.shepardVolume * (0.5 + clampedIntensity * 0.5);
-        await sound.setVolumeAsync(volume);
+        player.volume = volume;
         if (!this.isShepardPlaying) {
-          await sound.playAsync();
+          player.play();
           this.isShepardPlaying = true;
         }
       }
@@ -215,8 +213,8 @@ class SoundManagerClass {
     if (!this.isShepardPlaying) return;
 
     try {
-      for (const sound of this.shepardSounds.values()) {
-        await sound.stopAsync();
+      for (const player of this.shepardSounds.values()) {
+        player.pause();
       }
       this.isShepardPlaying = false;
       console.log('[SoundManager] Shepard tone stopped');
@@ -240,8 +238,8 @@ class SoundManagerClass {
     const targetVolume = this.shepardVolume * (0.5 + clampedIntensity * 0.5);
 
     try {
-      for (const sound of this.shepardSounds.values()) {
-        await sound.setVolumeAsync(targetVolume);
+      for (const player of this.shepardSounds.values()) {
+        player.volume = targetVolume;
       }
     } catch (error) {
       console.warn('[SoundManager] Failed to update Shepard intensity:', error);
@@ -254,9 +252,9 @@ class SoundManagerClass {
   setMuted(muted: boolean): void {
     this.isMuted = muted;
     if (muted && this.currentAmbient) {
-      this.currentAmbient.setVolumeAsync(0);
+      this.currentAmbient.volume = 0;
     } else if (!muted && this.currentAmbient) {
-      this.currentAmbient.setVolumeAsync(this.ambientVolume);
+      this.currentAmbient.volume = this.ambientVolume;
     }
   }
 
@@ -272,14 +270,19 @@ class SoundManagerClass {
    */
   async cleanup(): Promise<void> {
     if (this.currentAmbient) {
-      await this.currentAmbient.unloadAsync();
+      this.currentAmbient.release();
       this.currentAmbient = null;
     }
 
-    for (const sound of this.uiSounds.values()) {
-      await sound.unloadAsync();
+    for (const player of this.uiSounds.values()) {
+      player.release();
     }
     this.uiSounds.clear();
+
+    for (const player of this.shepardSounds.values()) {
+      player.release();
+    }
+    this.shepardSounds.clear();
 
     this.isInitialized = false;
     console.log('[SoundManager] Cleanup complete');
@@ -290,10 +293,10 @@ class SoundManagerClass {
   // ============================================
 
   /**
-   * Fade in a sound over duration
+   * Fade in a player over duration
    */
   private async fadeIn(
-    sound: Audio.Sound,
+    player: AudioPlayer,
     targetVolume: number,
     duration: number
   ): Promise<void> {
@@ -302,25 +305,22 @@ class SoundManagerClass {
     const volumeStep = targetVolume / steps;
 
     for (let i = 1; i <= steps; i++) {
-      await sound.setVolumeAsync(volumeStep * i);
+      player.volume = volumeStep * i;
       await this.delay(stepDuration);
     }
   }
 
   /**
-   * Fade out a sound over duration
+   * Fade out a player over duration
    */
-  private async fadeOut(sound: Audio.Sound, duration: number): Promise<void> {
-    const status = (await sound.getStatusAsync()) as AVPlaybackStatus;
-    if (!status.isLoaded) return;
-
-    const currentVolume = status.volume ?? this.ambientVolume;
+  private async fadeOut(player: AudioPlayer, duration: number): Promise<void> {
+    const currentVolume = player.volume;
     const steps = 20;
     const stepDuration = duration / steps;
     const volumeStep = currentVolume / steps;
 
     for (let i = steps - 1; i >= 0; i--) {
-      await sound.setVolumeAsync(volumeStep * i);
+      player.volume = volumeStep * i;
       await this.delay(stepDuration);
     }
   }

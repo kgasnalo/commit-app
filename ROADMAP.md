@@ -333,10 +333,19 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ---
 
-## 🛠️ Phase 5: Technical Debt & Maintenance
+## 🛠️ Phase 5: Technical Debt & Maintenance ✅
 
-- [ ] **5.1 Migrate Audio System**
+- [x] **5.1 Migrate Audio System**
     - **Action:** Update `expo-av` to `expo-audio` (SDK 54).
+    - **Implementation (2026-01-12):**
+      - Removed `expo-av` dependency
+      - Installed `expo-audio` via `npx expo install expo-audio`
+      - Rewrote `src/lib/audio.ts` (SoundManager) using new API:
+        - `createAudioPlayer()` for non-hook audio player creation
+        - `player.play()` / `player.pause()` / `player.seekTo()` methods
+        - `player.volume` / `player.loop` direct property assignment
+        - `player.release()` for memory cleanup
+        - `setAudioModeAsync()` with new signature (`interruptionMode: 'duckOthers'`)
 
 ---
 

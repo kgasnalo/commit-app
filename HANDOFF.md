@@ -1,23 +1,33 @@
 # Handoff: Session 2026-01-12
 
 ## Current Goal
-**Haptics Centralization Refactor - COMPLETED ✅**
+**Phase 5: Technical Debt - COMPLETED ✅**
 
-All haptic calls across the codebase now use HapticsService:
-- 17 files migrated from direct `expo-haptics` to `HapticsService`
-- OrangeButton uses `feedbackMedium()` (standard button)
-- Piano Black buttons use `feedbackHeavy()` only
-- Unused `expo-haptics` imports removed
+Migrated from deprecated `expo-av` to `expo-audio` (SDK 54 requirement):
+- Removed `expo-av` dependency
+- Installed `expo-audio`
+- Rewrote `src/lib/audio.ts` (SoundManager) using new API:
+  - `createAudioPlayer()` instead of `Audio.Sound.createAsync()`
+  - `player.play()` / `player.pause()` instead of async methods
+  - `player.volume` / `player.loop` properties
+  - `player.release()` for cleanup
 
 ---
 
 ## Current Critical Status
 
 ### REQUIRES APP REBUILD (Native Modules)
-`expo-camera`, `expo-notifications`, `expo-keep-awake`, `expo-live-activity` are native modules and **do not work in Expo Go**:
+The following native modules **do not work in Expo Go** and require a Development Build:
+- `expo-audio` (SDK 54 New Architecture)
+- `expo-camera`
+- `expo-notifications`
+- `expo-keep-awake`
+- `expo-live-activity`
 
 ```bash
-./run-ios-manual.sh    # Preferred
+# Rebuild command (needed after native dep changes)
+npx expo prebuild
+npx expo run:ios
 ```
 
 ### Placeholder URLs to Replace (Phase 7)
@@ -36,6 +46,9 @@ All haptic calls across the codebase now use HapticsService:
 
 | Issue | Root Cause | Fix Applied |
 |-------|------------|-------------|
+| `[Error: Cannot find native module 'ExpoAudio']` | `expo-audio` is a native module (SDK 54) | Rebuilt dev client (`npx expo prebuild` + `run:ios`) |
+| `[Xcodeproj] Consistency issue` during build | CocoaPods state corruption | `rm -rf ios` + `npx expo prebuild` (Clean Rebuild) |
+| `[Error: Impossible audio mode]` on iOS | `playsInSilentMode: false` + `duckOthers` conflict | Changed to `playsInSilentMode: true` (Standard for media apps) |
 | Filter bar not showing | Condition was `monthFilters.length > 1` | Changed to `>= 1` |
 | Tag section not visible in BookDetail | Tags inside heroContainer | Moved to separate section outside hero |
 | `Animated.SharedValue` type error | Namespace doesn't export | Import `SharedValue` directly |
@@ -47,6 +60,16 @@ All haptic calls across the codebase now use HapticsService:
 ---
 
 ## Completed This Session
+
+### Phase 5: expo-av → expo-audio Migration
+
+| Task | Status |
+|------|--------|
+| Remove `expo-av` dependency | Done |
+| Install `expo-audio` | Done |
+| Rewrite `src/lib/audio.ts` (SoundManager) | Done |
+| Fix iOS Audio Mode error (`playsInSilentMode: true`) | Done |
+| Rebuild dev client (native module) | Done |
 
 ### Haptics Centralization Refactor (17 files)
 
@@ -86,7 +109,7 @@ All haptic calls across the codebase now use HapticsService:
 
 ## Immediate Next Steps
 
-1. **Phase 5: Technical Debt** - Migrate expo-av to expo-audio
+1. **Phase 6: Release Preparation** - Final pre-launch checklist
 2. **Phase 7: Web Portal** (Critical for App Store compliance)
 
 ---
@@ -95,6 +118,7 @@ All haptic calls across the codebase now use HapticsService:
 
 | Feature | Files |
 |---------|-------|
+| **Audio (expo-audio)** | `src/lib/audio.ts` |
 | **Haptics Service** | `src/lib/HapticsService.ts` |
 | **Haptics Config** | `src/config/haptics.ts` |
 | **Ambient Transition** | `src/hooks/useAmbientTransition.ts` |
