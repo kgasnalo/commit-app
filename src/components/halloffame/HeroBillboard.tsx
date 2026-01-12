@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -89,13 +90,29 @@ export function HeroBillboard({
         onPress={onPress}
         style={styles.touchable}
       >
-        {/* Titan Background with warm gradient */}
+        {/* Background with blurred cover image (Apple Music / Netflix style) */}
         <View style={styles.backgroundContainer} pointerEvents="none">
+          {/* Blurred Cover Image Layer */}
+          {coverUrl && (
+            <ImageBackground
+              source={{ uri: coverUrl }}
+              style={StyleSheet.absoluteFill}
+              blurRadius={40}
+              resizeMode="cover"
+            />
+          )}
+
+          {/* Dark overlay gradient for text readability */}
           <LinearGradient
-            colors={['#1A1008', '#100A06', '#080604']}
+            colors={[
+              'rgba(10, 8, 6, 0.7)',
+              'rgba(16, 10, 6, 0.85)',
+              'rgba(8, 6, 4, 0.95)',
+            ]}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
           />
+
           {/* Dynamic Ambient Glow from cover - enhanced backlight */}
           <AmbientGlow color={ambientColor} intensity="cinematic" />
         </View>
