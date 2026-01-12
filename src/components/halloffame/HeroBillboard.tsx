@@ -96,24 +96,44 @@ export function HeroBillboard({
       >
         {/* Background with blurred cover image (Apple Music / Netflix style) */}
         <View style={styles.backgroundContainer} pointerEvents="none">
-          {/* Blurred Cover Image Layer */}
+          {/* Base dark gradient */}
+          <LinearGradient
+            colors={['#1A1008', '#100A06', '#080604']}
+            locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+
+          {/* Blurred Cover Image Layer - Cinematic backlight effect */}
           {effectiveCoverUrl && (
-            <Image
-              source={{ uri: effectiveCoverUrl }}
-              style={styles.backgroundImage}
-              blurRadius={Platform.OS === 'ios' ? 25 : 15}
-              resizeMode="cover"
-            />
+            <View style={styles.coverImageContainer}>
+              <Image
+                source={{ uri: effectiveCoverUrl }}
+                style={StyleSheet.absoluteFill}
+                blurRadius={Platform.OS === 'ios' ? 50 : 25}
+                resizeMode="cover"
+              />
+              {/* Opacity overlay to soften the image */}
+              <View style={styles.coverImageOverlay} />
+            </View>
           )}
 
-          {/* Dark overlay gradient for text readability - lightened for cover visibility */}
+          {/* Dark overlay gradient for text readability */}
           <LinearGradient
             colors={[
-              'rgba(10, 8, 6, 0.5)',
-              'rgba(16, 10, 6, 0.65)',
-              'rgba(8, 6, 4, 0.8)',
+              'rgba(10, 8, 6, 0.3)',
+              'rgba(16, 10, 6, 0.5)',
+              'rgba(8, 6, 4, 0.7)',
             ]}
             locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+
+          {/* Ambient warm glow from top-left */}
+          <LinearGradient
+            colors={['rgba(255, 160, 120, 0.12)', 'rgba(255, 160, 120, 0.04)', 'transparent']}
+            locations={[0, 0.4, 0.8]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.7, y: 0.6 }}
             style={StyleSheet.absoluteFill}
           />
 
@@ -184,15 +204,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    overflow: 'hidden',
   },
-  backgroundImage: {
+  coverImageContainer: {
     position: 'absolute',
-    top: -20,
-    left: -20,
-    right: -20,
-    bottom: -20,
-    width: undefined,
-    height: undefined,
+    top: -40,
+    left: -40,
+    right: -40,
+    bottom: -40,
+  },
+  coverImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(8, 6, 4, 0.7)',
   },
   content: {
     flex: 1,
@@ -248,7 +271,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 0.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   glassHighlightLeft: {
     position: 'absolute',
@@ -256,7 +279,7 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     width: 0.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   glassPanelInner: {
     paddingVertical: 24,

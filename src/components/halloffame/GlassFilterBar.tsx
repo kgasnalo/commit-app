@@ -158,11 +158,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 20,
     overflow: 'hidden',
-    // Top/Left highlight only for glass depth
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255, 255, 255, 0.12)',
-    borderLeftWidth: 0.5,
-    borderLeftColor: 'rgba(255, 255, 255, 0.08)',
+    // Removed visible borders - use subtle inner highlights instead
   },
   glassHighlightTop: {
     position: 'absolute',
