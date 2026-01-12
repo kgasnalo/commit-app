@@ -39,6 +39,7 @@ import { MicroLabel } from '../components/titan/MicroLabel';
 import { GlassTile } from '../components/titan/GlassTile';
 import { MetricDisplay } from '../components/titan/MetricDisplay';
 import { StatusIndicator } from '../components/titan/StatusIndicator';
+import { MonkModeService, StreakStats } from '../lib/MonkModeService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -83,6 +84,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
   const [currentLocale, setCurrentLocale] = useState(i18n.locale);
   const [userName, setUserName] = useState<string>('Guest');
+  const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
 
   // Cinematic fade-in from black
   const [showFadeOverlay, setShowFadeOverlay] = useState(false);
@@ -92,10 +94,25 @@ export default function DashboardScreen({ navigation }: any) {
     opacity: fadeOverlayOpacity.value,
   }));
 
-  useEffect(() => {
-    fetchCommitments();
-    fetchUserProfile();
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchCommitments();
+      fetchUserProfile();
+      fetchStreakStats();
+      setCurrentLocale(i18n.locale);
+    }, [])
+  );
 
+  const fetchStreakStats = async () => {
+    try {
+      const stats = await MonkModeService.getStreakStats();
+      setStreakStats(stats);
+    } catch (error) {
+      console.warn('[Dashboard] Failed to fetch streak stats:', error);
+    }
+  };
+
+  useEffect(() => {
     const checkFadeIn = async () => {
       const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
       if (shouldFade === 'true') {
@@ -125,12 +142,6 @@ export default function DashboardScreen({ navigation }: any) {
     };
     initNotifications();
   }, []);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      setCurrentLocale(i18n.locale);
-    }, [])
-  );
 
   const fetchUserProfile = async () => {
     try {
@@ -321,12 +332,20 @@ export default function DashboardScreen({ navigation }: any) {
           />
           <Text style={styles.userName}>{userName}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('RoleSelect')}
-        >
-          <Ionicons name="add" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => navigation.navigate('SettingsTab', { screen: 'Profile' })}
+          >
+            <Ionicons name="person-circle-outline" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation.navigate('RoleSelect')}
+          >
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -340,6 +359,19 @@ export default function DashboardScreen({ navigation }: any) {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Streak Counter - Duolingo Style */}
+        {streakStats && streakStats.currentStreak > 0 && (
+          <TouchableOpacity
+            style={styles.streakBadge}
+            onPress={() => navigation.navigate('SettingsTab', { screen: 'Profile' })}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.streakEmoji}>🔥</Text>
+            <Text style={styles.streakCount}>{streakStats.currentStreak}</Text>
+            <Text style={styles.streakLabel}>{i18n.t('dashboard.streak_days')}</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Stats Grid: Reference Design Style */}
         <View style={styles.statsGrid}>
           {/* Main Pool - Glowing Tile (最強調) */}
@@ -501,6 +533,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
     letterSpacing: -0.5,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
   addButton: {
     width: 48,
     height: 48,
@@ -519,6 +566,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
     zIndex: 1,
+  },
+
+  // Streak Badge - Duolingo Style
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 20,
+    gap: 6,
+  },
+  streakEmoji: {
+    fontSize: 18,
+  },
+  streakCount: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FF6B35',
+    fontVariant: ['tabular-nums'],
+  },
+  streakLabel: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '500',
   },
 
   // Stats Grid - Reference Design Style

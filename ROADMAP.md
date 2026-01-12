@@ -233,21 +233,48 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - **Haptic Luxury:** ボタン押下時に「高級車の物理スイッチ」のような重みのある振動（Haptic Feedback）を実装。
         - **Ambient Transition:** 画面遷移やカード表示に、白熱電球のようなゆっくりとしたフェードイン/アウト（Slow Fade）と、光源が広がるようなアニメーションを適用。
 
-- [ ] **4.6 Reading DNA (Identity Analysis) 🆕**
+- [x] **4.6 Reading DNA (Identity Analysis) ✅**
     - **Role:** `[Data Viz Specialist]`
     - **Action:** Visualize user's reading habits to build identity.
     - **Details:**
         - **Visual Style:** 統計データを単なるグラフではなく、**「ハイエンド車のテレメトリー画面」**のように表現。
         - **UI:** 厚みのある磨りガラス（Thick Glass）カード内に、発光するデータラインを配置。
-    - **DoD:** ユーザーが自分の「Reader Type」を、高級ブランドのカスタマイズ履歴を確認するような「特別感」に感じられる。
+    - **Implementation (2026-01-10):**
+        - **MonkModeService Extensions:** 4 new methods - `getHeatmapData()`, `getStreakStats()`, `detectReaderType()`, `getReadingInsights()`
+        - **Types Added:** `HeatmapDay`, `StreakStats`, `ReaderType`, `ReaderTypeResult`, `ReadingInsights`
+        - **Reader Types:** morning_reader, night_reader, sprinter, marathon_runner, weekend_warrior, streak_reader, balanced_reader
+        - **Components Created:** `src/components/reading-dna/` (ReaderTypeCard, StreakDisplay, InsightCard, ReadingDNASection)
+        - **ProfileScreen:** Integrated with Titan background + ReadingDNASection
+        - **DashboardScreen:** Added profile navigation button in header
+        - **ActivityMatrix:** Enhanced with month labels (JAN, FEB, etc.) using absolute positioning
+        - **i18n:** readingDna.* keys added to ja/en/ko locales
+    - **DoD:** ユーザーが自分の「Reader Type」を、高級ブランドのカスタマイズ履歴を確認するような「特別感」に感じられる。 ✅
 
-- [ ] **4.8 The Activity Matrix (Daily Habit HUD) 🆕**
-    - **Role:** `[UI/UX Designer]`
-    - **Action:** Add a "Github-style" contribution graph to the Home Header to visualize consistency.
+- [ ] **4.7 The Hall of Fame: Cinematic Archive 🆕**
+    - **Role:** `[Creative Director & UI/UX Designer]`
+    - **Action:** Transform the library into a premium streaming-style showcase that treats each completed book as a "Major Production".
     - **Details:**
-        - **Design:** GitHubのブロック形式を脱却し、**「埋め込み式のソフトライト・インジケーター」**を採用。
-        - **States:** 消灯（Dark Brown #0F0A06） vs 点灯（Glowing Orange #FF6B35）。アクティブな日はガラスの内側から光が漏れ出すような表現。
-    - **DoD:** カレンダーを見ている感覚を排除し、ダッシュボードの「ステータスランプ」を確認するような体験を提供。
+        - **Hero Billboard:** 最上部に「最新の完読本」を配置。表紙画像をグラスモーフィズム越しに投影し、文字は大きく、エレガントなタイポグラフィで表示。
+        - **Immersive Theming:** 選択している本に合わせて、画面背景のアンビエント光がわずかに変色（Apple MusicやNetflixのプレビュー演出）。
+        - **Automotive Metadata:** 各本の統計（読了までの日数、時速など）を、車のスペック表（0-100km加速など）のように、細いフォントと発光する数字で表示。
+        - **Card Design:**
+            - **Materials:** 1pxの枠線を廃止し、**「厚みのあるガラスブロック（Thick Glass）」**を採用。
+            - **Badge:** 「SECURED（確保済）」のバッジを、高級時計の刻印のような質感で配置。
+    - **DoD:** ユーザーがライブラリを開いた瞬間、「自分が築き上げた知の帝国」を眺めているような圧倒的な所有感を感じる。
+
+- [x] **4.8 The Activity Matrix (Daily Habit HUD) ✅**
+    - **Role:** `[UI/UX Designer]`
+    - **Action:** Add habit visualization to Dashboard with industry best practices.
+    - **Details:**
+        - **Design Decision:** 海外アプリ事例（GitHub, Duolingo, Strava）を参考に、ダッシュボードはシンプルに保ち、詳細分析はプロフィールに集約。
+        - **Dashboard:** Duolingo-style streak badge (🔥 N日連続) - タップでプロフィールへ遷移
+        - **Profile:** Full ActivityMatrix with soft-light indicators (#0F0A06 unlit → #FF6B35 lit)
+    - **Implementation (2026-01-10):**
+        - **Streak Badge:** `streakStats.currentStreak` display with tap navigation to Profile
+        - **Soft-Light Upgrade:** ActivityMatrix inner glow effect for ProfileScreen
+        - **i18n:** Added `streak_days` key (ja: 日連続, en: day streak, ko: 일 연속)
+        - **Files:** `DashboardScreen.tsx`, `ActivityMatrix.tsx`, locale files
+    - **DoD:** ダッシュボードは最小限の情報（ストリーク数のみ）、詳細はプロフィールで確認する導線を構築。 ✅
 
 - [x] **4.9 The Titan Design Overhaul (Liquid Metal & Dark Glass Aesthetic) ✅**
     - **Role:** `[Creative Director & UI Architect]`

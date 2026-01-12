@@ -187,6 +187,7 @@
     "completed_short": "완료",
     "failed_short": "실패",
     "donated_short": "기부됨",
+    "streak_days": "일 연속",
     "activity_log": "활동",
     "days_suffix": "일"
   },
@@ -307,6 +308,27 @@
     "enter_new_username": "새 사용자명 입력",
     "username_updated": "사용자명이 업데이트되었습니다",
     "username_update_error": "사용자명 업데이트에 실패했습니다"
+  },
+  "readingDna": {
+    "title": "READING DNA",
+    "reader_type_label": "당신의 독서 유형",
+    "morning_reader": "아침형 독서가",
+    "night_reader": "밤형 독서가",
+    "sprinter": "스프린터",
+    "marathon_runner": "마라톤 러너",
+    "weekend_warrior": "주말 전사",
+    "streak_reader": "연속 독서가",
+    "balanced_reader": "균형형",
+    "current_streak": "현재 연속 기록",
+    "longest_streak": "최장 기록",
+    "total_days": "총 독서 일수",
+    "days_unit": "일",
+    "peak_time": "피크 시간",
+    "avg_session": "평균 세션",
+    "vs_last_month": "지난달 대비",
+    "no_data_yet": "아직 독서 데이터가 없습니다",
+    "start_reading": "독서를 시작하여 DNA를 만들어 보세요",
+    "activity_30d": "30일 활동"
   },
   "monkmode": {
     "title": "Monk Mode",
@@ -466,6 +488,16 @@
     "memo": "메모",
     "edit": "편집",
     "recommendations_for": "추천"
+  },
+  "hallOfFame": {
+    "secured": "SECURED",
+    "daysToComplete": "완료 일수",
+    "pagesPerDay": "페이지/일",
+    "highStakes": "하이 스테이크스 미션",
+    "recentlySecured": "최근 달성",
+    "emptyTitle": "명예의 전당이 당신을 기다립니다",
+    "emptySubtitle": "첫 번째 커밋먼트를 완료하여 전설을 시작하세요",
+    "startFirst": "첫 커밋먼트 시작"
   },
   "errorBoundary": {
     "title": "문제가 발생했습니다",

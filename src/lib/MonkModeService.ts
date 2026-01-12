@@ -22,6 +22,43 @@ const STORAGE_KEYS = {
 type ReadingSession = Database['public']['Tables']['reading_sessions']['Row'];
 type ReadingSessionInsert = Database['public']['Tables']['reading_sessions']['Insert'];
 
+// Reading DNA types
+export interface HeatmapDay {
+  date: string;
+  level: 0 | 1 | 2 | 3;
+  totalSeconds: number;
+  isToday: boolean;
+}
+
+export interface StreakStats {
+  currentStreak: number;
+  longestStreak: number;
+  totalReadingDays: number;
+  lastReadingDate: string | null;
+}
+
+export type ReaderType =
+  | 'morning_reader'
+  | 'night_reader'
+  | 'sprinter'
+  | 'marathon_runner'
+  | 'weekend_warrior'
+  | 'streak_reader'
+  | 'balanced_reader';
+
+export interface ReaderTypeResult {
+  primary: ReaderType;
+  secondary?: ReaderType;
+  confidence: number;
+}
+
+export interface ReadingInsights {
+  peakHour: number;
+  avgSessionMinutes: number;
+  totalSessions: number;
+  thisMonthVsLast: number;
+}
+
 // Timer state for persistence
 export interface PersistedTimerState {
   durationMinutes: number;
@@ -316,6 +353,309 @@ class MonkModeServiceClass {
         return `${hours}h ${minutes}m`;
       }
       return `${minutes}m`;
+    }
+  }
+
+  // ========================================
+  // Reading DNA Methods (Phase 4.6)
+  // ========================================
+
+  /**
+   * Get heatmap data for the last N days
+   * Level: 0=0min, 1=1-15min, 2=16-45min, 3=46min+
+   */
+  async getHeatmapData(days: number = 30): Promise<HeatmapDay[]> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // Calculate start date
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - (days - 1));
+      startDate.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('reading_sessions')
+        .select('duration_seconds, completed_at')
+        .eq('user_id', user.id)
+        .gte('completed_at', startDate.toISOString());
+
+      if (error) {
+        console.error('[MonkModeService] Failed to get heatmap data:', error);
+        return [];
+      }
+
+      // Group by date
+      const dailyTotals = new Map<string, number>();
+      (data || []).forEach(session => {
+        const date = new Date(session.completed_at).toISOString().split('T')[0];
+        dailyTotals.set(date, (dailyTotals.get(date) || 0) + session.duration_seconds);
+      });
+
+      // Generate array for all days
+      const today = new Date().toISOString().split('T')[0];
+      const result: HeatmapDay[] = [];
+
+      for (let i = 0; i < days; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        const totalSeconds = dailyTotals.get(dateStr) || 0;
+        const totalMinutes = totalSeconds / 60;
+
+        let level: 0 | 1 | 2 | 3 = 0;
+        if (totalMinutes >= 46) level = 3;
+        else if (totalMinutes >= 16) level = 2;
+        else if (totalMinutes >= 1) level = 1;
+
+        result.push({
+          date: dateStr,
+          level,
+          totalSeconds,
+          isToday: dateStr === today,
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error('[MonkModeService] Unexpected error getting heatmap data:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get streak statistics
+   */
+  async getStreakStats(): Promise<StreakStats> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { currentStreak: 0, longestStreak: 0, totalReadingDays: 0, lastReadingDate: null };
+      }
+
+      const { data, error } = await supabase
+        .from('reading_sessions')
+        .select('completed_at')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: true });
+
+      if (error || !data || data.length === 0) {
+        return { currentStreak: 0, longestStreak: 0, totalReadingDays: 0, lastReadingDate: null };
+      }
+
+      // Get unique dates
+      const uniqueDates = [...new Set(
+        data.map(s => new Date(s.completed_at).toISOString().split('T')[0])
+      )].sort();
+
+      const totalReadingDays = uniqueDates.length;
+      const lastReadingDate = uniqueDates[uniqueDates.length - 1];
+
+      // Calculate streaks
+      let currentStreak = 0;
+      let longestStreak = 0;
+      let tempStreak = 1;
+
+      // Check if today or yesterday has activity for current streak
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const hasRecentActivity = lastReadingDate === today || lastReadingDate === yesterday;
+
+      // Calculate longest streak
+      for (let i = 1; i < uniqueDates.length; i++) {
+        const prevDate = new Date(uniqueDates[i - 1]);
+        const currDate = new Date(uniqueDates[i]);
+        const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000);
+
+        if (diffDays === 1) {
+          tempStreak++;
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak);
+          tempStreak = 1;
+        }
+      }
+      longestStreak = Math.max(longestStreak, tempStreak);
+
+      // Calculate current streak (counting backwards from most recent)
+      if (hasRecentActivity) {
+        currentStreak = 1;
+        for (let i = uniqueDates.length - 2; i >= 0; i--) {
+          const currDate = new Date(uniqueDates[i + 1]);
+          const prevDate = new Date(uniqueDates[i]);
+          const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000);
+
+          if (diffDays === 1) {
+            currentStreak++;
+          } else {
+            break;
+          }
+        }
+      }
+
+      return { currentStreak, longestStreak, totalReadingDays, lastReadingDate };
+    } catch (error) {
+      console.error('[MonkModeService] Unexpected error getting streak stats:', error);
+      return { currentStreak: 0, longestStreak: 0, totalReadingDays: 0, lastReadingDate: null };
+    }
+  }
+
+  /**
+   * Detect reader type based on reading patterns
+   */
+  async detectReaderType(): Promise<ReaderTypeResult> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { primary: 'balanced_reader', confidence: 0 };
+      }
+
+      const { data, error } = await supabase
+        .from('reading_sessions')
+        .select('duration_seconds, completed_at')
+        .eq('user_id', user.id);
+
+      if (error || !data || data.length < 3) {
+        return { primary: 'balanced_reader', confidence: data?.length ? 30 : 0 };
+      }
+
+      // Analyze patterns
+      let morningCount = 0;
+      let nightCount = 0;
+      let weekendCount = 0;
+      let totalDuration = 0;
+
+      data.forEach(session => {
+        const date = new Date(session.completed_at);
+        const hour = date.getHours();
+        const dayOfWeek = date.getDay();
+
+        // Time of day analysis
+        if (hour >= 5 && hour < 12) morningCount++;
+        else if (hour >= 19 || hour < 3) nightCount++;
+
+        // Weekend analysis
+        if (dayOfWeek === 0 || dayOfWeek === 6) weekendCount++;
+
+        totalDuration += session.duration_seconds;
+      });
+
+      const avgSessionMinutes = totalDuration / data.length / 60;
+      const weekendRatio = weekendCount / data.length;
+      const morningRatio = morningCount / data.length;
+      const nightRatio = nightCount / data.length;
+
+      // Get streak for streak_reader detection
+      const streakStats = await this.getStreakStats();
+
+      // Determine primary type
+      const scores: { type: ReaderType; score: number }[] = [];
+
+      // Morning vs Night reader
+      if (morningRatio > 0.5) {
+        scores.push({ type: 'morning_reader', score: morningRatio * 100 });
+      }
+      if (nightRatio > 0.5) {
+        scores.push({ type: 'night_reader', score: nightRatio * 100 });
+      }
+
+      // Sprinter vs Marathon runner
+      if (avgSessionMinutes < 20) {
+        scores.push({ type: 'sprinter', score: (20 - avgSessionMinutes) * 3 });
+      }
+      if (avgSessionMinutes > 45) {
+        scores.push({ type: 'marathon_runner', score: (avgSessionMinutes - 45) * 2 });
+      }
+
+      // Weekend warrior
+      if (weekendRatio > 0.6) {
+        scores.push({ type: 'weekend_warrior', score: weekendRatio * 100 });
+      }
+
+      // Streak reader
+      if (streakStats.currentStreak >= 7) {
+        scores.push({ type: 'streak_reader', score: streakStats.currentStreak * 10 });
+      }
+
+      // Sort by score
+      scores.sort((a, b) => b.score - a.score);
+
+      if (scores.length === 0) {
+        return { primary: 'balanced_reader', confidence: 50 };
+      }
+
+      const primary = scores[0].type;
+      const secondary = scores.length > 1 ? scores[1].type : undefined;
+      const confidence = Math.min(Math.round(scores[0].score), 95);
+
+      return { primary, secondary, confidence };
+    } catch (error) {
+      console.error('[MonkModeService] Unexpected error detecting reader type:', error);
+      return { primary: 'balanced_reader', confidence: 0 };
+    }
+  }
+
+  /**
+   * Get reading insights
+   */
+  async getReadingInsights(): Promise<ReadingInsights> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { peakHour: 0, avgSessionMinutes: 0, totalSessions: 0, thisMonthVsLast: 0 };
+      }
+
+      const { data, error } = await supabase
+        .from('reading_sessions')
+        .select('duration_seconds, completed_at')
+        .eq('user_id', user.id);
+
+      if (error || !data || data.length === 0) {
+        return { peakHour: 0, avgSessionMinutes: 0, totalSessions: 0, thisMonthVsLast: 0 };
+      }
+
+      // Calculate peak hour
+      const hourCounts = new Array(24).fill(0);
+      let totalDuration = 0;
+
+      data.forEach(session => {
+        const hour = new Date(session.completed_at).getHours();
+        hourCounts[hour]++;
+        totalDuration += session.duration_seconds;
+      });
+
+      const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+      const avgSessionMinutes = Math.round(totalDuration / data.length / 60);
+      const totalSessions = data.length;
+
+      // Calculate this month vs last month
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+      let thisMonthMinutes = 0;
+      let lastMonthMinutes = 0;
+
+      data.forEach(session => {
+        const date = new Date(session.completed_at);
+        if (date >= thisMonthStart) {
+          thisMonthMinutes += session.duration_seconds / 60;
+        } else if (date >= lastMonthStart && date <= lastMonthEnd) {
+          lastMonthMinutes += session.duration_seconds / 60;
+        }
+      });
+
+      let thisMonthVsLast = 0;
+      if (lastMonthMinutes > 0) {
+        thisMonthVsLast = Math.round(((thisMonthMinutes - lastMonthMinutes) / lastMonthMinutes) * 100);
+      } else if (thisMonthMinutes > 0) {
+        thisMonthVsLast = 100;
+      }
+
+      return { peakHour, avgSessionMinutes, totalSessions, thisMonthVsLast };
+    } catch (error) {
+      console.error('[MonkModeService] Unexpected error getting reading insights:', error);
+      return { peakHour: 0, avgSessionMinutes: 0, totalSessions: 0, thisMonthVsLast: 0 };
     }
   }
 }

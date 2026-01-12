@@ -103,12 +103,22 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
   };
 
   const handleStartSession = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate('MonkModeActive', {
-      durationMinutes: duration,
-      bookId: selectedBook?.id,
-      bookTitle: selectedBook?.title,
-    });
+    console.log('[MonkModeScreen] Start button pressed');
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      console.log('[MonkModeScreen] Navigating to MonkModeActive', {
+        durationMinutes: duration,
+        bookId: selectedBook?.id,
+        bookTitle: selectedBook?.title,
+      });
+      navigation.navigate('MonkModeActive', {
+        durationMinutes: duration,
+        bookId: selectedBook?.id,
+        bookTitle: selectedBook?.title,
+      });
+    } catch (error) {
+      console.error('[MonkModeScreen] Navigation failed:', error);
+    }
   };
 
   const formatTotalTime = (totalSeconds: number): string => {
@@ -397,6 +407,8 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingTop: 24,
     backgroundColor: 'transparent',
+    zIndex: 100, // Ensure button is clickable above ScrollView
+    elevation: 10,
   },
   // Piano Black button with orange glow
   startButton: {

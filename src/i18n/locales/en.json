@@ -187,6 +187,7 @@
     "completed_short": "Done",
     "failed_short": "Failed",
     "donated_short": "Donated",
+    "streak_days": "day streak",
     "activity_log": "ACTIVITY",
     "days_suffix": "D"
   },
@@ -308,6 +309,27 @@
     "enter_new_username": "Enter new username",
     "username_updated": "Username updated successfully",
     "username_update_error": "Failed to update username"
+  },
+  "readingDna": {
+    "title": "READING DNA",
+    "reader_type_label": "Your Reader Type",
+    "morning_reader": "Morning Reader",
+    "night_reader": "Night Reader",
+    "sprinter": "Sprinter",
+    "marathon_runner": "Marathon Runner",
+    "weekend_warrior": "Weekend Warrior",
+    "streak_reader": "Streak Reader",
+    "balanced_reader": "Balanced Reader",
+    "current_streak": "Current Streak",
+    "longest_streak": "Longest Streak",
+    "total_days": "Total Reading Days",
+    "days_unit": "days",
+    "peak_time": "Peak Time",
+    "avg_session": "Avg Session",
+    "vs_last_month": "vs Last Month",
+    "no_data_yet": "No reading data yet",
+    "start_reading": "Start reading to build your DNA",
+    "activity_30d": "30-Day Activity"
   },
   "monkmode": {
     "title": "Monk Mode",
@@ -469,6 +491,16 @@
     "memo": "Memo",
     "edit": "Edit",
     "recommendations_for": "Recommendations for"
+  },
+  "hallOfFame": {
+    "secured": "SECURED",
+    "daysToComplete": "Days to Complete",
+    "pagesPerDay": "Pages/Day",
+    "highStakes": "HIGH STAKES MISSIONS",
+    "recentlySecured": "RECENTLY SECURED",
+    "emptyTitle": "Your hall of fame awaits",
+    "emptySubtitle": "Complete your first commitment to begin your legacy",
+    "startFirst": "Start First Commitment"
   },
   "errorBoundary": {
     "title": "Something went wrong",

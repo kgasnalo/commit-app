@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BarChart } from 'react-native-chart-kit';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -24,9 +25,16 @@ import i18n from '../i18n';
 import { colors, typography } from '../theme';
 import { Database } from '../types/database.types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { MonkModeService } from '../lib/MonkModeService';
+import {
+  MonkModeService,
+  HeatmapDay,
+  StreakStats,
+  ReaderTypeResult,
+  ReadingInsights,
+} from '../lib/MonkModeService';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
+import { ReadingDNASection } from '../components/reading-dna';
 
 type UserProfile = Database['public']['Tables']['users']['Row'];
 
@@ -41,6 +49,13 @@ export default function ProfileScreen({ navigation }: any) {
   const [updating, setUpdating] = useState(false);
   const [totalReadingTime, setTotalReadingTime] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState<{ labels: string[]; data: number[] }>({ labels: [], data: [] });
+
+  // Reading DNA state
+  const [readerType, setReaderType] = useState<ReaderTypeResult | null>(null);
+  const [heatmapData, setHeatmapData] = useState<HeatmapDay[]>([]);
+  const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
+  const [insights, setInsights] = useState<ReadingInsights | null>(null);
+  const [dnaLoading, setDnaLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,6 +83,25 @@ export default function ProfileScreen({ navigation }: any) {
 
       const stats = await MonkModeService.getMonthlyStats();
       setMonthlyStats(stats);
+
+      // Fetch Reading DNA data
+      setDnaLoading(true);
+      try {
+        const [heatmap, streaks, type, insightsData] = await Promise.all([
+          MonkModeService.getHeatmapData(30),
+          MonkModeService.getStreakStats(),
+          MonkModeService.detectReaderType(),
+          MonkModeService.getReadingInsights(),
+        ]);
+        setHeatmapData(heatmap);
+        setStreakStats(streaks);
+        setReaderType(type);
+        setInsights(insightsData);
+      } catch (dnaError) {
+        console.error('Error fetching Reading DNA:', dnaError);
+      } finally {
+        setDnaLoading(false);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('errors.unknown'));
@@ -127,6 +161,26 @@ export default function ProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Titan Background */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.15)',
+            'rgba(255, 160, 120, 0.06)',
+            'transparent',
+          ]}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -210,6 +264,16 @@ export default function ProfileScreen({ navigation }: any) {
           )}
         </View>
 
+        {/* Reading DNA Section */}
+        {!dnaLoading && totalReadingTime > 0 && (
+          <ReadingDNASection
+            readerType={readerType}
+            heatmapData={heatmapData}
+            streakStats={streakStats}
+            insights={insights}
+          />
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -262,7 +326,15 @@ export default function ProfileScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#080604',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
   },
   loadingContainer: {
     flex: 1,

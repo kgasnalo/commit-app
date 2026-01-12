@@ -291,4 +291,22 @@
   id UUID PRIMARY KEY DEFAULT gen_random_uuid()
   ```
 - **Notifications Deprecation:** In `expo-notifications`, `shouldShowAlert` is deprecated. Use `shouldShowBanner: true` and `shouldShowList: true` instead for foreground notification handling.
+- **Data Fetching with React Navigation (CRITICAL):**
+  - **Issue:** `useEffect` only runs on initial mount. When navigating back to a screen (Stack Pop), the screen is NOT re-mounted, so `useEffect` does NOT run, causing stale data (e.g., deleted items still showing).
+  - **Solution:** Use `useFocusEffect` for data that must be fresh every time the screen is viewed.
+  ```typescript
+  import { useFocusEffect } from '@react-navigation/native';
+  
+  // BAD - Data becomes stale after navigation
+  useEffect(() => {
+    fetchData();
+  }, []);
 
+  // GOOD - Data refreshes every time screen appears
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchData();
+    }, [])
+  );
+  ```
+  - **Note:** Keep one-time initializations (listeners, animations) in `useEffect`. Only move data fetching to `useFocusEffect`.

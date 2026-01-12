@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
   Dimensions,
-  ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,9 +14,14 @@ import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { fetchBookCover } from '../utils/googleBooks';
-import { colors, typography } from '../theme';
-import { TacticalText } from '../components/titan/TacticalText';
+import { titanColors, titanTypography, titanShadows } from '../theme/titan';
 import { MicroLabel } from '../components/titan/MicroLabel';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useImageColors, extractColorsFromUrls, getCachedColor } from '../hooks/useImageColors';
+import {
+  HeroBillboard,
+  CinematicBookCard,
+} from '../components/halloffame';
 
 interface Book {
   id: string;
@@ -43,18 +46,24 @@ interface Commitment {
 }
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const HERO_HEIGHT = 400;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function LibraryScreen() {
   const navigation = useNavigation();
+  const { language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [completedBooks, setCompletedBooks] = useState<Commitment[]>([]);
   const [coverUrls, setCoverUrls] = useState<{ [bookId: string]: string }>({});
-  const [stats, setStats] = useState({
-    totalBooks: 0,
-    totalPledgeValue: 0,
-    streak: 0,
-  });
+  const [colorCache, setColorCache] = useState<Record<string, string>>({});
+
+  // Get hero book data
+  const heroCommitment = completedBooks[0] || null;
+  const heroCoverUrl = heroCommitment
+    ? heroCommitment.books.cover_url || coverUrls[heroCommitment.books.id]
+    : null;
+
+  // Extract color for hero
+  const { dominantColor: heroColor } = useImageColors(heroCoverUrl);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -79,8 +88,17 @@ export default function LibraryScreen() {
 
       if (error) throw error;
       setCompletedBooks(data || []);
-      calculateStats(data || []);
-      fetchMissingCovers(data || []);
+
+      // Fetch missing covers
+      const newCoverUrls = await fetchMissingCovers(data || []);
+      if (Object.keys(newCoverUrls).length > 0) {
+        setCoverUrls(prev => ({ ...prev, ...newCoverUrls }));
+      }
+
+      // Pre-extract colors for all books
+      const allCoverUrls = (data || []).map(c => c.books.cover_url).filter(Boolean) as string[];
+      const colors = await extractColorsFromUrls(allCoverUrls);
+      setColorCache(prev => ({ ...prev, ...colors }));
     } catch (error) {
       console.error('Error loading library data:', error);
     } finally {
@@ -88,20 +106,7 @@ export default function LibraryScreen() {
     }
   }
 
-  function calculateStats(books: Commitment[]) {
-    const totalBooks = books.length;
-    const totalPledgeValue = books.reduce((acc, b) => acc + b.pledge_amount, 0);
-
-    const monthsWithBooks = new Set(
-      books.filter(book => book.updated_at).map((book) => {
-        const date = new Date(book.updated_at!);
-        return `${date.getFullYear()}-${date.getMonth()}`;
-      })
-    );
-    setStats({ totalBooks, totalPledgeValue, streak: monthsWithBooks.size });
-  }
-
-  async function fetchMissingCovers(books: Commitment[]) {
+  async function fetchMissingCovers(books: Commitment[]): Promise<{ [bookId: string]: string }> {
     const newCoverUrls: { [bookId: string]: string } = {};
     for (const commitment of books) {
       const book = commitment.books;
@@ -109,85 +114,44 @@ export default function LibraryScreen() {
       const coverUrl = await fetchBookCover(book.title, book.author);
       if (coverUrl) newCoverUrls[book.id] = coverUrl;
     }
-    if (Object.keys(newCoverUrls).length > 0) {
-      setCoverUrls((prev) => ({ ...prev, ...newCoverUrls }));
-    }
+    return newCoverUrls;
   }
 
-  const renderHero = () => {
-    if (completedBooks.length === 0) return null;
-    const latest = completedBooks[0];
-    const coverUrl = latest.books.cover_url || coverUrls[latest.books.id];
+  // Memoized categories
+  const highStakes = useMemo(
+    () => completedBooks.filter(b => b.pledge_amount >= 5000).slice(0, 10),
+    [completedBooks]
+  );
 
-    return (
-      <View style={styles.heroContainer}>
-        <ImageBackground
-          source={coverUrl ? { uri: coverUrl } : undefined}
-          style={[styles.heroBg, !coverUrl && { backgroundColor: colors.background.secondary }]}
-          blurRadius={30}
-        >
-          <LinearGradient
-            colors={['rgba(10,10,10,0.2)', 'rgba(10,10,10,0.8)', colors.background.primary]}
-            style={styles.heroOverlay}
-          >
-            <View style={styles.heroContent}>
-              <View style={styles.heroPosterContainer}>
-                {coverUrl ? (
-                  <Image source={{ uri: coverUrl }} style={styles.heroPoster} />
-                ) : (
-                  <View style={[styles.heroPoster, styles.posterPlaceholder]}>
-                    <Ionicons name="book" size={40} color={colors.text.muted} />
-                  </View>
-                )}
-              </View>
-              <View style={styles.heroInfo}>
-                <MicroLabel active style={{ marginBottom: 4 }}>HALL OF FAME</MicroLabel>
-                <Text style={styles.heroTitle} numberOfLines={2}>{latest.books.title.toUpperCase()}</Text>
-                <View style={styles.heroMeta}>
-                   <View style={styles.heroBadge}>
-                      <TacticalText size={10} color={colors.signal.success}>SECURED</TacticalText>
-                   </View>
-                   <TacticalText size={10} color={colors.text.muted} style={{ marginLeft: 8 }}>
-                      {new Date(latest.updated_at || latest.created_at).toLocaleDateString()}
-                   </TacticalText>
-                </View>
-              </View>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
-      </View>
-    );
-  };
+  const recent = useMemo(
+    () => completedBooks.slice(1, 11), // Exclude hero (first one)
+    [completedBooks]
+  );
 
-  const renderCategoryRow = (title: string, books: Commitment[]) => {
+  const renderCategoryRow = (titleKey: string, books: Commitment[]) => {
     if (books.length === 0) return null;
     return (
       <View style={styles.categoryRow}>
-        <MicroLabel style={styles.categoryTitle}>{title}</MicroLabel>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContent}>
-          {books.map((commitment) => {
+        <MicroLabel style={styles.categoryTitle}>
+          {i18n.t(`hallOfFame.${titleKey}`)}
+        </MicroLabel>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryContent}
+        >
+          {books.map((commitment, index) => {
             const coverUrl = commitment.books.cover_url || coverUrls[commitment.books.id];
             return (
-              <TouchableOpacity
+              <CinematicBookCard
                 key={commitment.id}
-                style={styles.bookCard}
-                onPress={() => (navigation as any).navigate('BookDetail', { commitmentId: commitment.id })}
-              >
-                <View style={styles.posterContainer}>
-                  {coverUrl ? (
-                    <Image source={{ uri: coverUrl }} style={styles.poster} />
-                  ) : (
-                    <View style={styles.posterPlaceholder}>
-                       <Ionicons name="book" size={24} color={colors.text.muted} />
-                    </View>
-                  )}
-                  {commitment.pledge_amount >= 5000 && (
-                    <View style={styles.highStakesBadge}>
-                      <Ionicons name="flash" size={10} color="#000" />
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+                coverUrl={coverUrl || null}
+                onPress={() =>
+                  (navigation as any).navigate('BookDetail', { commitmentId: commitment.id })
+                }
+                showBadge={true}
+                animationDelay={index * 50}
+              />
             );
           })}
         </ScrollView>
@@ -195,62 +159,105 @@ export default function LibraryScreen() {
     );
   };
 
+  // Loading state
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.signal.active} />
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          style={StyleSheet.absoluteFill}
+        />
+        <ActivityIndicator size="large" color={titanColors.accent.primary} />
       </View>
     );
   }
 
-  const highStakes = completedBooks.filter(b => b.pledge_amount >= 5000);
-  const recent = completedBooks.slice(0, 10);
+  // Empty state
+  if (completedBooks.length === 0) {
+    return (
+      <View style={styles.container}>
+        {/* Titan Background */}
+        <View style={styles.backgroundContainer} pointerEvents="none">
+          <LinearGradient
+            colors={['#1A1008', '#100A06', '#080604']}
+            locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            colors={[
+              'rgba(255, 160, 120, 0.1)',
+              'rgba(255, 160, 120, 0.04)',
+              'transparent',
+            ]}
+            locations={[0, 0.4, 0.8]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.8, y: 0.7 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+
+        <View style={styles.emptyWrapper}>
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="trophy-outline" size={48} color={titanColors.accent.primary} />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {i18n.t('hallOfFame.emptyTitle')}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {i18n.t('hallOfFame.emptySubtitle')}
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyButton}
+              onPress={() => (navigation as any).navigate('HomeTab', { screen: 'RoleSelect' })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.emptyButtonText}>
+                {i18n.t('hallOfFame.startFirst')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content} bounces={false} showsVerticalScrollIndicator={false}>
-        {completedBooks.length > 0 ? (
-          <>
-            {renderHero()}
+      {/* Titan Background with dynamic ambient */}
+      <View style={styles.backgroundContainer} pointerEvents="none">
+        <LinearGradient
+          colors={['#1A1008', '#100A06', '#080604']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
 
-            {/* Tactical HUD Stats */}
-            <View style={styles.statsHud}>
-              <View style={styles.statBox}>
-                <MicroLabel style={{ fontSize: 8 }}>ASSETS</MicroLabel>
-                <TacticalText size={18} weight="bold">{stats.totalBooks}</TacticalText>
-              </View>
-              <View style={styles.statBox}>
-                <MicroLabel style={{ fontSize: 8 }}>SECURED</MicroLabel>
-                <TacticalText size={18} weight="bold" color={colors.signal.success}>
-                  ¥{stats.totalPledgeValue.toLocaleString()}
-                </TacticalText>
-              </View>
-              <View style={styles.statBox}>
-                <MicroLabel style={{ fontSize: 8 }}>STREAK</MicroLabel>
-                <TacticalText size={18} weight="bold">{stats.streak}M</TacticalText>
-              </View>
-            </View>
-
-            {renderCategoryRow("HIGH STAKES MISSIONS", highStakes)}
-            {renderCategoryRow("RECENTLY SECURED", recent)}
-            
-            <View style={{ height: 100 }} />
-          </>
-        ) : (
-          <View style={styles.emptyWrapper}>
-            <View style={styles.emptyContainer}>
-              <Ionicons name="archive-outline" size={64} color={colors.text.muted} />
-              <MicroLabel style={{ marginTop: 24, fontSize: 14 }}>ARCHIVE EMPTY</MicroLabel>
-              <Text style={styles.emptySubtitle}>No completed missions found in current records.</Text>
-              <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => (navigation as any).navigate('HomeTab', { screen: 'RoleSelect' })}
-              >
-                <Text style={styles.emptyButtonText}>INITIATE PROTOCOL</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      <ScrollView
+        style={styles.content}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Billboard */}
+        {heroCommitment && (
+          <HeroBillboard
+            commitment={heroCommitment}
+            coverUrl={heroCoverUrl || null}
+            ambientColor={heroColor}
+            onPress={() =>
+              (navigation as any).navigate('BookDetail', { commitmentId: heroCommitment.id })
+            }
+          />
         )}
+
+        {/* Category Rows */}
+        <View style={styles.categoriesContainer}>
+          {renderCategoryRow('highStakes', highStakes)}
+          {renderCategoryRow('recentlySecured', recent)}
+        </View>
+
+        {/* Bottom padding for tab bar */}
+        <View style={{ height: 120 }} />
       </ScrollView>
     </View>
   );
@@ -259,160 +266,86 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: titanColors.background.primary,
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
+    backgroundColor: titanColors.background.primary,
   },
   content: {
     flex: 1,
   },
-  heroContainer: {
-    height: HERO_HEIGHT,
-    width: '100%',
-  },
-  heroBg: {
-    width: '100%',
-    height: '100%',
-  },
-  heroOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 20,
-    paddingBottom: 40,
-  },
-  heroContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  heroPosterContainer: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  heroPoster: {
-    width: 130,
-    height: 190,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  heroInfo: {
-    flex: 1,
-    marginLeft: 20,
-    paddingBottom: 10,
-  },
-  heroTitle: {
-    fontFamily: typography.fontFamily.heading,
-    fontSize: 26,
-    color: '#FFF',
-    marginVertical: 10,
-    letterSpacing: 1,
-    lineHeight: 32,
-  },
-  heroMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  heroBadge: {
-    borderWidth: 1,
-    borderColor: colors.signal.success,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 2,
-  },
-  statsHud: {
-    flexDirection: 'row',
-    backgroundColor: colors.background.secondary,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border.subtle,
-    paddingVertical: 15,
-    marginVertical: 10,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#222',
+  // Category rows
+  categoriesContainer: {
+    paddingTop: 24,
   },
   categoryRow: {
-    marginTop: 30,
+    marginBottom: 32,
   },
   categoryTitle: {
-    paddingHorizontal: 20,
-    marginBottom: 15,
-    opacity: 0.6,
-    fontSize: 10,
+    paddingHorizontal: 24,
+    marginBottom: 16,
+    fontSize: 11,
+    letterSpacing: 1,
+    color: titanColors.text.secondary,
   },
   categoryContent: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 18,
   },
-  bookCard: {
-    marginHorizontal: 5,
-  },
-  posterContainer: {
-    width: 115,
-    height: 170,
-    backgroundColor: colors.background.card,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    overflow: 'hidden',
-  },
-  poster: {
-    width: '100%',
-    height: '100%',
-  },
-  posterPlaceholder: {
+  // Empty state
+  emptyWrapper: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.tertiary,
-  },
-  highStakesBadge: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: colors.signal.success,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyWrapper: {
-    height: Dimensions.get('window').height - 100,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 40,
   },
   emptyContainer: {
-    padding: 40,
     alignItems: 'center',
   },
-  emptySubtitle: {
-    color: colors.text.muted,
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    ...titanShadows.ambientGlow,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '300',
+    color: titanColors.text.primary,
     textAlign: 'center',
-    marginTop: 8,
+    marginBottom: 12,
+  },
+  emptySubtitle: {
     fontSize: 14,
-    fontFamily: typography.fontFamily.body,
+    color: titanColors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
   },
   emptyButton: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    backgroundColor: colors.signal.active,
-    borderRadius: 2,
+    backgroundColor: titanColors.accent.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    ...titanShadows.ambientGlow,
   },
   emptyButtonText: {
-    fontFamily: typography.fontFamily.heading,
-    color: '#000',
-    fontSize: 14,
-    letterSpacing: 1,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });
