@@ -56,6 +56,15 @@ export function HeroBillboard({
   // Use coverUrl prop, fallback to commitment.books.cover_url for reliability
   const effectiveCoverUrl = ensureHttps(coverUrl || book.cover_url);
 
+  // Debug: Log cover URL status
+  console.log('[HeroBillboard] Cover URL Debug:', {
+    bookTitle: book.title,
+    propCoverUrl: coverUrl,
+    bookCoverUrl: book.cover_url,
+    effectiveCoverUrl,
+    hasEffectiveUrl: !!effectiveCoverUrl,
+  });
+
   // Calculate automotive metrics
   const metrics = useMemo(() => {
     const startDate = new Date(commitment.created_at);
@@ -111,6 +120,8 @@ export function HeroBillboard({
                 style={StyleSheet.absoluteFill}
                 blurRadius={Platform.OS === 'ios' ? 50 : 25}
                 resizeMode="cover"
+                onLoad={() => console.log('[HeroBillboard] Image loaded successfully:', effectiveCoverUrl)}
+                onError={(e) => console.log('[HeroBillboard] Image load error:', e.nativeEvent.error, effectiveCoverUrl)}
               />
               {/* Opacity overlay to soften the image */}
               <View style={styles.coverImageOverlay} />
