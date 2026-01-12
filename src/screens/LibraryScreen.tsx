@@ -161,7 +161,19 @@ export default function LibraryScreen() {
       const book = commitment.books;
       if (book.cover_url) continue;
       const coverUrl = await fetchBookCover(book.title, book.author);
-      if (coverUrl) newCoverUrls[book.id] = coverUrl;
+      if (coverUrl) {
+        newCoverUrls[book.id] = coverUrl;
+        // Persist the cover URL to database so we don't need to fetch again
+        try {
+          await supabase
+            .from('books')
+            .update({ cover_url: coverUrl })
+            .eq('id', book.id);
+          console.log('Saved cover URL to database for:', book.title);
+        } catch (err) {
+          console.warn('Failed to save cover URL to database:', err);
+        }
+      }
     }
     return newCoverUrls;
   }
