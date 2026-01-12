@@ -98,17 +98,17 @@ export function HeroBillboard({
             <ImageBackground
               source={{ uri: ensureHttps(coverUrl) || '' }}
               style={StyleSheet.absoluteFill}
-              blurRadius={40}
+              blurRadius={25}
               resizeMode="cover"
             />
           )}
 
-          {/* Dark overlay gradient for text readability */}
+          {/* Dark overlay gradient for text readability - lightened for cover visibility */}
           <LinearGradient
             colors={[
-              'rgba(10, 8, 6, 0.7)',
-              'rgba(16, 10, 6, 0.85)',
-              'rgba(8, 6, 4, 0.95)',
+              'rgba(10, 8, 6, 0.5)',
+              'rgba(16, 10, 6, 0.7)',
+              'rgba(8, 6, 4, 0.85)',
             ]}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}

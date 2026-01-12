@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, Image, ImageBackground, StyleSheet, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import i18n from '../../i18n';
+import { ensureHttps } from '../../utils/googleBooks';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -70,6 +71,8 @@ export default function CommitmentReceipt({
   // Uniform English units with pluralization (1 DAY / X DAYS)
   const daysDisplay = readingDays === 1 ? '1 DAY' : `${readingDays} DAYS`;
 
+  const secureCoverUrl = ensureHttps(bookCoverUrl);
+
   return (
     <View style={styles.container}>
       {/* Warm dark gradient base */}
@@ -78,6 +81,26 @@ export default function CommitmentReceipt({
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFillObject}
       />
+
+      {/* Background book cover - subtle, blurred (Netflix style) */}
+      {secureCoverUrl && (
+        <ImageBackground
+          source={{ uri: secureCoverUrl }}
+          style={styles.backgroundCover}
+          blurRadius={30}
+          resizeMode="cover"
+        >
+          {/* Heavy dark overlay to make cover subtle */}
+          <LinearGradient
+            colors={[
+              'rgba(26, 16, 8, 0.85)',
+              'rgba(16, 10, 6, 0.9)',
+              'rgba(8, 6, 4, 0.95)',
+            ]}
+            style={StyleSheet.absoluteFill}
+          />
+        </ImageBackground>
+      )}
 
       {/* Subtle noise texture overlay */}
       <View style={styles.noiseOverlay} />
@@ -116,9 +139,9 @@ export default function CommitmentReceipt({
 
         {/* Book Cover */}
         <View style={styles.coverContainer}>
-          {bookCoverUrl ? (
+          {secureCoverUrl ? (
             <Image
-              source={{ uri: bookCoverUrl }}
+              source={{ uri: secureCoverUrl }}
               style={styles.coverImage}
               resizeMode="cover"
             />
@@ -195,6 +218,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 16,
     elevation: 12,
+  },
+  backgroundCover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   noiseOverlay: {
     position: 'absolute',
