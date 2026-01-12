@@ -59,15 +59,6 @@ export function HeroBillboard({
   // Use coverUrl prop, fallback to commitment.books.cover_url for reliability
   const effectiveCoverUrl = ensureHttps(coverUrl || book.cover_url);
 
-  // Debug: Log cover URL status
-  console.log('[HeroBillboard] Cover URL Debug:', {
-    bookTitle: book.title,
-    propCoverUrl: coverUrl,
-    bookCoverUrl: book.cover_url,
-    effectiveCoverUrl,
-    hasEffectiveUrl: !!effectiveCoverUrl,
-  });
-
   // Calculate automotive metrics
   const metrics = useMemo(() => {
     const startDate = new Date(commitment.created_at);
@@ -121,22 +112,20 @@ export function HeroBillboard({
               <Image
                 source={{ uri: effectiveCoverUrl }}
                 style={styles.coverImage}
-                blurRadius={Platform.OS === 'ios' ? 50 : 25}
+                blurRadius={Platform.OS === 'ios' ? 25 : 15}
                 resizeMode="cover"
-                onLoad={() => console.log('[HeroBillboard] Image loaded successfully:', effectiveCoverUrl)}
-                onError={(e) => console.log('[HeroBillboard] Image load error:', e.nativeEvent.error, effectiveCoverUrl)}
               />
-              {/* Opacity overlay to soften the image */}
+              {/* Light overlay to soften - reduced for visibility */}
               <View style={styles.coverImageOverlay} />
             </View>
           )}
 
-          {/* Dark overlay gradient for text readability */}
+          {/* Dark overlay gradient for text readability - lightened */}
           <LinearGradient
             colors={[
-              'rgba(10, 8, 6, 0.3)',
-              'rgba(16, 10, 6, 0.5)',
-              'rgba(8, 6, 4, 0.7)',
+              'rgba(10, 8, 6, 0.2)',
+              'rgba(16, 10, 6, 0.35)',
+              'rgba(8, 6, 4, 0.5)',
             ]}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
@@ -233,7 +222,7 @@ const styles = StyleSheet.create({
   },
   coverImageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(8, 6, 4, 0.7)',
+    backgroundColor: 'rgba(8, 6, 4, 0.4)', // Reduced from 0.7 for better cover visibility
   },
   content: {
     flex: 1,
