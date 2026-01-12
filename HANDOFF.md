@@ -1,13 +1,13 @@
 # Handoff: Session 2026-01-12
 
 ## Current Goal
-**Phase 4.5 Advanced Animation Polish - COMPLETED ✅**
+**Haptics Centralization Refactor - COMPLETED ✅**
 
-Haptic Luxury + Ambient Transition の実装:
-- HapticsService 集中管理サービス作成
-- 全主要 Piano Black ボタンに Heavy haptic + scale animation
-- PrimaryButton / SecondaryButton に haptic + scale 追加
-- useAmbientTransition hook 作成 (白熱電球風スローフェード)
+全コードベースでHapticsService経由のHaptic呼び出しに統一:
+- 17ファイルを移行 (直接 `expo-haptics` 呼び出し → `HapticsService`)
+- OrangeButton.tsx は `feedbackMedium()` を使用（標準ボタン用）
+- Piano Black ボタンのみ `feedbackHeavy()` を使用
+- 未使用の `expo-haptics` インポートを削除
 
 ---
 
@@ -134,3 +134,5 @@ Haptic Luxury + Ambient Transition の実装:
 | `6a311aa` | fix(bookDetail): Move tag section outside hero for better visibility |
 | `306fc38f` | feat(animation): Phase 4.5 Haptic Luxury + Ambient Transition |
 | `401f75fa` | fix(halloffame): Improve book cover visibility and sanitize image URLs |
+| `3df7c970` | docs: Update HANDOFF.md with Phase 4.5 completion |
+| `1c2e7b4a` | refactor: Centralize all Haptics usage through HapticsService |
