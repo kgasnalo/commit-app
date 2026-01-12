@@ -171,9 +171,17 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ---
 
-## 🔵 Phase 4: Engagement, Retention & Virality
+## 🟡 Phase 4.1: Bug Fixes & Stabilization (Current Focus)
 
-**Objective:** Integrate world-class trends to keep users engaged.
+**Objective:** Address critical visual bugs and ensure robust data handling.
+
+- [ ] **4.1.1 Emergency Fix: Book Cover HTTPS Migration (ATS Compliance) 🚨**
+    - **Role:** `[Backend/Mobile Engineer]`
+    - **Problem:** Google Books API returns `http://` URLs stored in DB, blocked by iOS ATS.
+    - **Action:** 
+        1. Run SQL migration to update all `http://` to `https://` in `books` table.
+        2. Implement fail-safe in `LibraryScreen` to auto-refetch covers on load error.
+    - **DoD:** All book covers in Library display correctly without orange placeholders.
 
 - [x] **4.1 Dynamic Pacemaker (Smart Notifications) ✅**
     - **Logic:** `Daily Target = Remaining Pages / Remaining Days`.

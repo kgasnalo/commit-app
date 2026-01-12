@@ -76,6 +76,12 @@ const TAG_COLORS = [
   '#EC4899',
 ];
 
+// Helper to force HTTPS
+const ensureHttps = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  return url.replace(/^http:\/\//i, 'https://');
+};
+
 export default function BookDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -396,6 +402,7 @@ export default function BookDetailScreen() {
   }
 
   const book = commitment.books;
+  const secureCoverUrl = ensureHttps(book.cover_url);
   const readingDays = calculateReadingDays();
   const isSuccess = commitment.status === 'completed';
 
@@ -406,8 +413,8 @@ export default function BookDetailScreen() {
         {/* Cinematic Header */}
         <View style={styles.heroContainer}>
           <ImageBackground
-            source={book.cover_url ? { uri: book.cover_url } : undefined}
-            style={[styles.heroBg, !book.cover_url && { backgroundColor: colors.background.secondary }]}
+            source={secureCoverUrl ? { uri: secureCoverUrl } : undefined}
+            style={[styles.heroBg, !secureCoverUrl && { backgroundColor: colors.background.secondary }]}
             blurRadius={30}
           >
             <LinearGradient
@@ -422,8 +429,8 @@ export default function BookDetailScreen() {
               
               <View style={styles.heroContent}>
                 <View style={styles.posterContainer}>
-                  {book.cover_url ? (
-                    <Image source={{ uri: book.cover_url }} style={styles.poster} />
+                  {secureCoverUrl ? (
+                    <Image source={{ uri: secureCoverUrl }} style={styles.poster} />
                   ) : (
                     <View style={styles.posterPlaceholder}>
                       <Ionicons name="book" size={40} color={colors.text.muted} />
@@ -524,7 +531,7 @@ export default function BookDetailScreen() {
           onClose={() => setShowReceiptModal(false)}
           bookTitle={book.title}
           bookAuthor={book.author || i18n.t('common.unknown_author')}
-          bookCoverUrl={book.cover_url ?? undefined}
+          bookCoverUrl={secureCoverUrl ?? undefined}
           completionDate={commitment.updated_at ? new Date(commitment.updated_at) : new Date()}
           readingDays={readingDays}
           savedAmount={commitment.pledge_amount}

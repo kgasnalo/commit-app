@@ -92,7 +92,7 @@ export default function LibraryScreen() {
   // Get hero book data
   const heroCommitment = completedBooks[0] || null;
   const heroCoverUrl = heroCommitment
-    ? ensureHttps(heroCommitment.books.cover_url) || ensureHttps(coverUrls[heroCommitment.books.id])
+    ? ensureHttps(heroCommitment.books.cover_url || coverUrls[heroCommitment.books.id])
     : null;
 
   // Extract color for hero
@@ -143,7 +143,9 @@ export default function LibraryScreen() {
       }
 
       // Pre-extract colors for all books
-      const allCoverUrls = (data || []).map(c => c.books.cover_url).filter(Boolean) as string[];
+      const allCoverUrls = (data || [])
+        .map(c => ensureHttps(c.books.cover_url))
+        .filter(Boolean) as string[];
       const colors = await extractColorsFromUrls(allCoverUrls);
       setColorCache(prev => ({ ...prev, ...colors }));
     } catch (error) {
@@ -223,7 +225,7 @@ export default function LibraryScreen() {
 
   // Netflix-style card renderer with peek effect
   const renderBookCard = useCallback(({ item, index }: { item: Commitment; index: number }) => {
-    const coverUrl = ensureHttps(item.books.cover_url) || ensureHttps(coverUrls[item.books.id]);
+    const coverUrl = ensureHttps(item.books.cover_url || coverUrls[item.books.id]);
     return (
       <CinematicBookCard
         key={item.id}
