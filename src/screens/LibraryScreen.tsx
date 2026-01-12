@@ -22,7 +22,7 @@ import Animated, {
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { fetchBookCover } from '../utils/googleBooks';
+import { fetchBookCover, ensureHttps } from '../utils/googleBooks';
 import { titanColors, titanTypography, titanShadows } from '../theme/titan';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -73,12 +73,6 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 const CARD_WIDTH = 140;
 const CARD_SPACING = 12;
 const CARD_SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING;
-
-// Helper to force HTTPS for iOS ATS compliance
-const ensureHttps = (url: string | null | undefined): string | null => {
-  if (!url) return null;
-  return url.replace(/^http:\/\//i, 'https://');
-};
 
 export default function LibraryScreen() {
   const navigation = useNavigation();

@@ -14,6 +14,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { SecuredBadge } from './SecuredBadge';
 import { AmbientGlow } from './AmbientGlow';
 import { AutomotiveMetrics } from './AutomotiveMetrics';
+import { ensureHttps } from '../../utils/googleBooks';
 
 const HERO_HEIGHT = 560; // Increased height for luxury spacing
 
@@ -95,7 +96,7 @@ export function HeroBillboard({
           {/* Blurred Cover Image Layer */}
           {coverUrl && (
             <ImageBackground
-              source={{ uri: coverUrl }}
+              source={{ uri: ensureHttps(coverUrl) || '' }}
               style={StyleSheet.absoluteFill}
               blurRadius={40}
               resizeMode="cover"

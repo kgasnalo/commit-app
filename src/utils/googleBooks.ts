@@ -16,6 +16,15 @@ interface GoogleBooksResponse {
 }
 
 /**
+ * Ensure URL uses HTTPS protocol (iOS ATS requirement)
+ * Database may contain old HTTP URLs that need conversion
+ */
+export function ensureHttps(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.replace(/^http:\/\//i, 'https://');
+}
+
+/**
  * Fetch book cover image URL from Google Books API
  * @param title - Book title
  * @param author - Book author (optional)

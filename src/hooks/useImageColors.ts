@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { getColors } from 'react-native-image-colors';
 import { titanColors } from '../theme/titan';
+import { ensureHttps } from '../utils/googleBooks';
 
 // Platform-specific color result types
 interface IOSColors {
@@ -54,23 +55,23 @@ export function useImageColors(imageUrl: string | null | undefined): UseImageCol
   }, []);
 
   useEffect(() => {
-    if (!imageUrl) {
+    // Ensure HTTPS for iOS ATS
+    const secureUrl = ensureHttps(imageUrl);
+
+    if (!secureUrl) {
       setDominantColor(FALLBACK_COLOR);
       return;
     }
 
     // Check cache first
-    if (colorCache[imageUrl]) {
-      setDominantColor(colorCache[imageUrl]);
+    if (colorCache[secureUrl]) {
+      setDominantColor(colorCache[secureUrl]);
       return;
     }
 
     const extractColor = async () => {
       setLoading(true);
       setError(null);
-
-      // Ensure HTTPS
-      const secureUrl = imageUrl.replace(/^http:\/\//i, 'https://');
 
       try {
         const result = await getColors(secureUrl, {
@@ -94,7 +95,7 @@ export function useImageColors(imageUrl: string | null | undefined): UseImageCol
         }
 
         // Cache the result
-        colorCache[imageUrl] = extracted;
+        colorCache[secureUrl] = extracted;
         setDominantColor(extracted);
       } catch (err) {
         if (!isMounted.current) return;
@@ -122,25 +123,26 @@ export async function extractColorsFromUrls(
   imageUrls: (string | null | undefined)[]
 ): Promise<Record<string, string>> {
   const results: Record<string, string> = {};
-  const urlsToFetch = imageUrls.filter((url): url is string => {
-    if (!url) return false;
-    if (colorCache[url]) {
-      results[url] = colorCache[url];
-      return false;
-    }
-    return true;
-  });
+
+  // Convert to secure URLs and filter
+  const secureUrls = imageUrls
+    .map(url => ensureHttps(url))
+    .filter((url): url is string => {
+      if (!url) return false;
+      if (colorCache[url]) {
+        results[url] = colorCache[url];
+        return false;
+      }
+      return true;
+    });
 
   await Promise.all(
-    urlsToFetch.map(async (url) => {
-      // Ensure HTTPS
-      const secureUrl = url.replace(/^http:\/\//i, 'https://');
-      
+    secureUrls.map(async (url) => {
       try {
-        const result = await getColors(secureUrl, {
+        const result = await getColors(url, {
           fallback: FALLBACK_COLOR,
           cache: true,
-          key: secureUrl,
+          key: url,
         });
 
         let extracted: string = FALLBACK_COLOR;
@@ -168,8 +170,9 @@ export async function extractColorsFromUrls(
  * Get cached color for an image URL (synchronous)
  */
 export function getCachedColor(imageUrl: string | null | undefined): string {
-  if (!imageUrl) return FALLBACK_COLOR;
-  return colorCache[imageUrl] || FALLBACK_COLOR;
+  const secureUrl = ensureHttps(imageUrl);
+  if (!secureUrl) return FALLBACK_COLOR;
+  return colorCache[secureUrl] || FALLBACK_COLOR;
 }
 
 /**
