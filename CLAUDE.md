@@ -324,3 +324,16 @@
   - **Metallic Badge:** SecuredBadge "metallic" variant uses `backgroundColor: 'rgba(20, 20, 18, 0.95)'` with top highlight only.
   - **Filter Bar Visibility:** When showing filter bars conditionally, use `>= 1` not `> 1` to ensure bar appears even with single item.
 - **BookDetailScreen Tag Section:** Place interactive elements (like tag add button) OUTSIDE hero containers. Elements inside `ImageBackground` with `LinearGradient` overlay may have visibility/touch issues. Move to separate section below hero for reliable visibility and interaction.
+- **Haptics Centralization:** NEVER use `expo-haptics` directly. Always use `HapticsService` from `src/lib/HapticsService.ts`:
+  ```typescript
+  // BAD - direct expo-haptics usage
+  import * as Haptics from 'expo-haptics';
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+  // GOOD - centralized service
+  import { HapticsService } from '../lib/HapticsService';
+  HapticsService.feedbackMedium();
+  ```
+  - Available methods: `feedbackLight()`, `feedbackMedium()`, `feedbackHeavy()`, `feedbackSuccess()`, `feedbackWarning()`, `feedbackError()`, `feedbackSelection()`
+  - HapticsService includes 50ms throttling to prevent haptic overload
+  - Only `src/lib/HapticsService.ts` should import `expo-haptics` directly
