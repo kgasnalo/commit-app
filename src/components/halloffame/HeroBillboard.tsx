@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  ImageBackground,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -98,10 +98,10 @@ export function HeroBillboard({
         <View style={styles.backgroundContainer} pointerEvents="none">
           {/* Blurred Cover Image Layer */}
           {effectiveCoverUrl && (
-            <ImageBackground
+            <Image
               source={{ uri: effectiveCoverUrl }}
-              style={StyleSheet.absoluteFill}
-              blurRadius={25}
+              style={styles.backgroundImage}
+              blurRadius={Platform.OS === 'ios' ? 25 : 15}
               resizeMode="cover"
             />
           )}
@@ -110,8 +110,8 @@ export function HeroBillboard({
           <LinearGradient
             colors={[
               'rgba(10, 8, 6, 0.5)',
-              'rgba(16, 10, 6, 0.7)',
-              'rgba(8, 6, 4, 0.85)',
+              'rgba(16, 10, 6, 0.65)',
+              'rgba(8, 6, 4, 0.8)',
             ]}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
@@ -184,6 +184,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: -20,
+    left: -20,
+    right: -20,
+    bottom: -20,
+    width: undefined,
+    height: undefined,
   },
   content: {
     flex: 1,
