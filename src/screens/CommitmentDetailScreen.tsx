@@ -19,6 +19,7 @@ import i18n from '../i18n';
 import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
+import { ensureHttps } from '../utils/googleBooks';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -260,8 +261,8 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         {/* Book Header */}
         <View style={styles.bookHeader}>
           <View style={styles.bookCoverContainer}>
-              {commitment.book.cover_url ? (
-                <Image source={{ uri: commitment.book.cover_url }} style={styles.bookCover} />
+              {ensureHttps(commitment.book.cover_url) ? (
+                <Image source={{ uri: ensureHttps(commitment.book.cover_url)! }} style={styles.bookCover} />
               ) : (
                 <View style={styles.bookCoverPlaceholder}>
                   <Ionicons name="book-outline" size={40} color={colors.text.muted} />

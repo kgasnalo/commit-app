@@ -42,6 +42,7 @@ import i18n from '../i18n';
 import { GOOGLE_API_KEY } from '../config/env';
 import AnimatedPageSlider from '../components/AnimatedPageSlider';
 import { getErrorMessage } from '../utils/errorUtils';
+import { ensureHttps } from '../utils/googleBooks';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
 import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
@@ -292,14 +293,15 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   }
 
   const BookThumbnail = ({ uri, large }: { uri?: string; large?: boolean }) => {
-    if (!uri) {
+    const secureUri = ensureHttps(uri);
+    if (!secureUri) {
       return (
         <View style={large ? styles.placeholderLarge : styles.placeholder}>
           <Ionicons name="book-outline" size={large ? 48 : 32} color={colors.text.muted} />
         </View>
       );
     }
-    return <Image source={{ uri }} style={large ? styles.selectedBookCover : styles.bookCover} />;
+    return <Image source={{ uri: secureUri }} style={large ? styles.selectedBookCover : styles.bookCover} />;
   };
 
   const searchBooks = async () => {

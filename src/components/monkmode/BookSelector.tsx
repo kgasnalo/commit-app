@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import i18n from '../../i18n';
+import { ensureHttps } from '../../utils/googleBooks';
 
 export interface BookOption {
   id: string | null; // null for "general reading"
@@ -63,9 +64,9 @@ export default function BookSelector({
         activeOpacity={0.7}
       >
         <View style={styles.selectedContent}>
-          {selectedBook?.coverUrl ? (
+          {ensureHttps(selectedBook?.coverUrl) ? (
             <Image
-              source={{ uri: selectedBook.coverUrl }}
+              source={{ uri: ensureHttps(selectedBook?.coverUrl)! }}
               style={styles.coverThumbnail}
             />
           ) : (
@@ -120,9 +121,9 @@ export default function BookSelector({
                       onPress={() => handleSelect(item)}
                       activeOpacity={0.7}
                     >
-                      {item.coverUrl ? (
+                      {ensureHttps(item.coverUrl) ? (
                         <Image
-                          source={{ uri: item.coverUrl }}
+                          source={{ uri: ensureHttps(item.coverUrl)! }}
                           style={styles.optionCover}
                         />
                       ) : (
