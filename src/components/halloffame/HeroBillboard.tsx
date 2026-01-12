@@ -53,6 +53,9 @@ export function HeroBillboard({
   const { language } = useLanguage();
   const book = commitment.books;
 
+  // Use coverUrl prop, fallback to commitment.books.cover_url for reliability
+  const effectiveCoverUrl = ensureHttps(coverUrl || book.cover_url);
+
   // Calculate automotive metrics
   const metrics = useMemo(() => {
     const startDate = new Date(commitment.created_at);
@@ -94,9 +97,9 @@ export function HeroBillboard({
         {/* Background with blurred cover image (Apple Music / Netflix style) */}
         <View style={styles.backgroundContainer} pointerEvents="none">
           {/* Blurred Cover Image Layer */}
-          {coverUrl && (
+          {effectiveCoverUrl && (
             <ImageBackground
-              source={{ uri: ensureHttps(coverUrl) || '' }}
+              source={{ uri: effectiveCoverUrl }}
               style={StyleSheet.absoluteFill}
               blurRadius={25}
               resizeMode="cover"
