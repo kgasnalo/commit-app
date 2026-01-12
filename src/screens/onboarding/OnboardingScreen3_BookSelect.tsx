@@ -18,6 +18,7 @@ import { TacticalText } from '../../components/titan/TacticalText';
 import { MicroLabel } from '../../components/titan/MicroLabel';
 import i18n from '../../i18n';
 import { GOOGLE_API_KEY } from '../../config/env';
+import { ensureHttps } from '../../utils/googleBooks';
 
 type Book = {
   id: string;
@@ -121,9 +122,9 @@ export default function OnboardingScreen3({ navigation, route }: any) {
               style={styles.bookItem}
               onPress={() => handleSelectBook(item)}
             >
-              {item.volumeInfo.imageLinks?.thumbnail ? (
+              {ensureHttps(item.volumeInfo.imageLinks?.thumbnail) ? (
                 <Image
-                  source={{ uri: item.volumeInfo.imageLinks.thumbnail }}
+                  source={{ uri: ensureHttps(item.volumeInfo.imageLinks?.thumbnail)! }}
                   style={styles.bookCover}
                 />
               ) : (
