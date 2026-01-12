@@ -95,9 +95,20 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   placeholder: {
-    backgroundColor: titanColors.background.tertiary,
+    backgroundColor: 'rgba(26, 23, 20, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+    // Inner glow effect - subtle ambient light
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    // Top/left highlight for glass depth
+    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
+    // Inner shadow simulation via shadow
+    shadowColor: 'rgba(255, 107, 53, 0.3)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
   },
   gradientOverlay: {
     position: 'absolute',

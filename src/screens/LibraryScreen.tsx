@@ -1,15 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolateColor,
+} from 'react-native-reanimated';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -21,6 +30,7 @@ import { useImageColors, extractColorsFromUrls, getCachedColor } from '../hooks/
 import {
   HeroBillboard,
   CinematicBookCard,
+  GlassFilterBar,
 } from '../components/halloffame';
 
 interface Book {
@@ -47,6 +57,9 @@ interface Commitment {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+const CARD_WIDTH = 140;
+const CARD_SPACING = 12;
+const CARD_SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING;
 
 export default function LibraryScreen() {
   const navigation = useNavigation();
@@ -55,6 +68,11 @@ export default function LibraryScreen() {
   const [completedBooks, setCompletedBooks] = useState<Commitment[]>([]);
   const [coverUrls, setCoverUrls] = useState<{ [bookId: string]: string }>({});
   const [colorCache, setColorCache] = useState<Record<string, string>>({});
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+
+  // Dynamic ambient color state
+  const ambientColorProgress = useSharedValue(0);
+  const currentAmbientColor = useSharedValue('#FF6B35');
 
   // Get hero book data
   const heroCommitment = completedBooks[0] || null;
@@ -117,16 +135,56 @@ export default function LibraryScreen() {
     return newCoverUrls;
   }
 
-  // Memoized categories
+  // Generate month filters from completed books
+  const monthFilters = useMemo(() => {
+    const months = new Set<string>();
+    completedBooks.forEach(book => {
+      const date = new Date(book.updated_at || book.created_at);
+      const monthKey = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+      months.add(monthKey);
+    });
+    return Array.from(months)
+      .sort((a, b) => b.localeCompare(a)) // Newest first
+      .map(month => ({ id: month, label: month }));
+  }, [completedBooks]);
+
+  // Filter books by selected month
+  const filteredBooks = useMemo(() => {
+    if (!selectedMonth) return completedBooks;
+    return completedBooks.filter(book => {
+      const date = new Date(book.updated_at || book.created_at);
+      const monthKey = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+      return monthKey === selectedMonth;
+    });
+  }, [completedBooks, selectedMonth]);
+
+  // Memoized categories (filtered)
   const highStakes = useMemo(
-    () => completedBooks.filter(b => b.pledge_amount >= 5000).slice(0, 10),
-    [completedBooks]
+    () => filteredBooks.filter(b => b.pledge_amount >= 5000).slice(0, 10),
+    [filteredBooks]
   );
 
   const recent = useMemo(
-    () => completedBooks.slice(1, 11), // Exclude hero (first one)
-    [completedBooks]
+    () => filteredBooks.slice(1, 11), // Exclude hero (first one)
+    [filteredBooks]
   );
+
+  // Netflix-style card renderer with peek effect
+  const renderBookCard = useCallback(({ item, index }: { item: Commitment; index: number }) => {
+    const coverUrl = item.books.cover_url || coverUrls[item.books.id];
+    return (
+      <CinematicBookCard
+        key={item.id}
+        coverUrl={coverUrl || null}
+        onPress={() =>
+          (navigation as any).navigate('BookDetail', { commitmentId: item.id })
+        }
+        showBadge={true}
+        animationDelay={index * 50}
+        style={{ marginRight: CARD_SPACING }}
+      />
+    );
+  }, [coverUrls, navigation]);
 
   const renderCategoryRow = (titleKey: string, books: Commitment[]) => {
     if (books.length === 0) return null;
@@ -135,26 +193,20 @@ export default function LibraryScreen() {
         <MicroLabel style={styles.categoryTitle}>
           {i18n.t(`hallOfFame.${titleKey}`)}
         </MicroLabel>
-        <ScrollView
+        <FlatList
+          data={books}
+          renderItem={renderBookCard}
+          keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryContent}
-        >
-          {books.map((commitment, index) => {
-            const coverUrl = commitment.books.cover_url || coverUrls[commitment.books.id];
-            return (
-              <CinematicBookCard
-                key={commitment.id}
-                coverUrl={coverUrl || null}
-                onPress={() =>
-                  (navigation as any).navigate('BookDetail', { commitmentId: commitment.id })
-                }
-                showBadge={true}
-                animationDelay={index * 50}
-              />
-            );
-          })}
-        </ScrollView>
+          // Netflix-style snap behavior
+          snapToInterval={CARD_SNAP_INTERVAL}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          // Peek effect - show partial card at edge
+          style={styles.categoryList}
+        />
       </View>
     );
   };
@@ -250,6 +302,17 @@ export default function LibraryScreen() {
           />
         )}
 
+        {/* Glass Filter Bar - Month selection */}
+        {monthFilters.length > 1 && (
+          <View style={styles.filterBarContainer}>
+            <GlassFilterBar
+              filters={monthFilters}
+              selectedId={selectedMonth}
+              onSelect={setSelectedMonth}
+            />
+          </View>
+        )}
+
         {/* Category Rows */}
         <View style={styles.categoriesContainer}>
           {renderCategoryRow('highStakes', highStakes)}
@@ -284,9 +347,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  // Filter bar
+  filterBarContainer: {
+    marginTop: 16,
+  },
   // Category rows
   categoriesContainer: {
-    paddingTop: 24,
+    paddingTop: 8,
   },
   categoryRow: {
     marginBottom: 32,
@@ -298,8 +365,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: titanColors.text.secondary,
   },
+  categoryList: {
+    overflow: 'visible', // Allow peek effect
+  },
   categoryContent: {
-    paddingHorizontal: 18,
+    paddingLeft: 24, // Left padding
+    paddingRight: SCREEN_WIDTH * 0.15, // Right peek space
   },
   // Empty state
   emptyWrapper: {
