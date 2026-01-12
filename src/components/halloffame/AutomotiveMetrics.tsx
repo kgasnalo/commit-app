@@ -87,15 +87,15 @@ const styles = StyleSheet.create({
   metricBoxCompact: {
     flex: 1,
   },
-  // Micro label - extremely subtle
+  // Micro label - visible but subtle
   label: {
     fontSize: 10,
     letterSpacing: 0.5,
-    color: titanColors.text.muted,
+    color: titanColors.text.secondary,
     fontWeight: '400',
     marginBottom: 8,
     textTransform: 'uppercase',
-    opacity: 0.4, // Very subtle
+    opacity: 0.8, // More visible
   },
   labelCompact: {
     fontSize: 8,
