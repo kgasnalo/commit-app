@@ -179,15 +179,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 28, // Larger for billboard impact
-    fontWeight: '300',
+    fontSize: 32, // Larger for billboard impact
+    fontWeight: '100', // Ultra-thin for refined confidence
     color: titanColors.text.primary,
     textAlign: 'center',
     letterSpacing: -0.5, // Tighter tracking for heavyweight feel
-    lineHeight: 36,
-    textShadowColor: 'rgba(255, 255, 255, 0.15)',
+    lineHeight: 40,
+    textShadowColor: 'rgba(255, 255, 255, 0.2)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 12,
   },
   author: {
     fontSize: 14,

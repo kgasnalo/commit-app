@@ -8,3 +8,4 @@ export { AmbientGlow } from './AmbientGlow';
 export { AutomotiveMetrics } from './AutomotiveMetrics';
 export { CinematicBookCard } from './CinematicBookCard';
 export { HeroBillboard } from './HeroBillboard';
+export { GlassFilterBar } from './GlassFilterBar';
