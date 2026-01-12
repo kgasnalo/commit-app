@@ -11,7 +11,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 
 interface OrangeButtonProps {
   title: string;
@@ -58,7 +58,7 @@ export function OrangeButton({
 
   const handlePress = () => {
     if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
     onPress();
   };
 

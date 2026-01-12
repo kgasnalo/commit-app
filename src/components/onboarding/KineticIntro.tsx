@@ -21,7 +21,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { SPRING_CONFIGS, TIMING_CONFIGS } from '../../config/animation';
 import i18n from '../../i18n';
 
@@ -47,11 +47,11 @@ export default function KineticIntro({ onAnimationComplete }: KineticIntroProps)
 
   // Trigger haptic feedback
   const triggerHeavyHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    HapticsService.feedbackHeavy();
   };
 
   const triggerSuccessHaptic = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    HapticsService.feedbackSuccess();
   };
 
   // Start animation sequence on mount

@@ -19,7 +19,7 @@ import Animated, {
   useDerivedValue,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { SPRING_CONFIGS, TIMING_CONFIGS, ACT_THEMES } from '../../config/animation';
 
@@ -108,19 +108,19 @@ export default function HapticResistanceSlider({
 
   // Haptic feedback functions
   const triggerLightHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    HapticsService.feedbackLight();
   }, []);
 
   const triggerMediumHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
   }, []);
 
   const triggerHeavyHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    HapticsService.feedbackHeavy();
   }, []);
 
   const triggerSelectionHaptic = useCallback(() => {
-    Haptics.selectionAsync();
+    HapticsService.feedbackSelection();
   }, []);
 
   // Progressive haptic based on current progress

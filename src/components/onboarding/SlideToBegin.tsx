@@ -21,7 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors, typography, borderRadius, spacing } from '../../theme';
 import { SPRING_CONFIGS, TIMING_CONFIGS } from '../../config/animation';
 
@@ -66,15 +66,15 @@ export default function SlideToBegin({
 
   // Haptic feedback functions
   const triggerLightHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    HapticsService.feedbackLight();
   }, []);
 
   const triggerMediumHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
   }, []);
 
   const triggerSuccessHaptic = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    HapticsService.feedbackSuccess();
   }, []);
 
   const handleComplete = useCallback(() => {

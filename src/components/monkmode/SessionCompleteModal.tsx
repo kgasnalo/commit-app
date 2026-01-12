@@ -22,7 +22,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors } from '../../theme/colors';
 import { SPRING_CONFIGS } from '../../config/animation';
 import i18n from '../../i18n';
@@ -49,7 +49,7 @@ export default function SessionCompleteModal({
   useEffect(() => {
     if (visible) {
       // Trigger success haptic
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      HapticsService.feedbackSuccess();
 
       // Phase 1: Checkmark bounces in
       checkmarkScale.value = withSpring(1, SPRING_CONFIGS.bouncy);

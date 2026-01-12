@@ -17,7 +17,7 @@ import Animated, {
   useDerivedValue,
   SharedValue,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors, typography, spacing } from '../../theme';
 import { SPRING_CONFIGS } from '../../config/animation';
 import i18n from '../../i18n';
@@ -182,11 +182,11 @@ export default function TsundokuWheelPicker({
       // Milestone haptics
       const milestones = [10, 25, 50, 75, 100];
       if (milestones.includes(newValue)) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        HapticsService.feedbackHeavy();
       } else if (Math.abs(newValue - lastHapticValue.current) >= 5) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        HapticsService.feedbackLight();
       } else {
-        Haptics.selectionAsync();
+        HapticsService.feedbackSelection();
       }
       lastHapticValue.current = newValue;
     }

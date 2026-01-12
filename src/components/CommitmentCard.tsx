@@ -7,7 +7,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../lib/HapticsService';
 import i18n from '../i18n';
 import { CommitmentWithRange } from '../lib/commitmentHelpers';
 import { colors, typography, shadows } from '../theme';
@@ -40,7 +40,7 @@ export default function CommitmentCard({
   };
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
     onPress();
   };
 

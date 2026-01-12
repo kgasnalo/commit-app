@@ -19,7 +19,7 @@ import Animated, {
   FadeIn,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { ACT_THEMES, TIMING_CONFIGS } from '../../config/animation';
 import i18n from '../../i18n';
@@ -195,11 +195,11 @@ export default function BlueprintCard({
 }: BlueprintCardProps) {
   // Haptic feedback functions
   const triggerLightHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    HapticsService.feedbackLight();
   }, []);
 
   const triggerMediumHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
   }, []);
 
   const formatDate = (dateString: string): string => {

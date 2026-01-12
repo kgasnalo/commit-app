@@ -18,7 +18,7 @@ import Animated, {
   useDerivedValue,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors } from '../../theme/colors';
 import { SPRING_CONFIGS, TIMING_CONFIGS } from '../../config/animation';
 import i18n from '../../i18n';
@@ -83,15 +83,15 @@ export default function DurationSlider({
 
   // Haptic feedback functions
   const triggerLightHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    HapticsService.feedbackLight();
   }, []);
 
   const triggerMediumHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
   }, []);
 
   const triggerHeavyHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    HapticsService.feedbackHeavy();
   }, []);
 
   const handleValueChange = useCallback(

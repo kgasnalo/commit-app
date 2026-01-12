@@ -26,7 +26,6 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-import * as Haptics from 'expo-haptics';
 import { HapticsService } from '../lib/HapticsService';
 import { HAPTIC_BUTTON_SCALES } from '../config/haptics';
 import { supabase } from '../lib/supabase';
@@ -687,9 +686,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                   setPledgeAmount(amount);
                   const tierIndex = AMOUNTS_BY_CURRENCY[currency].indexOf(amount);
                   if (tierIndex >= 2) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    HapticsService.feedbackMedium();
                   } else {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    HapticsService.feedbackLight();
                   }
                 }}
               >

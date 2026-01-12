@@ -19,7 +19,7 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 
 // ============================================
 // Timing Configuration (Total: ~3.5 seconds)
@@ -75,15 +75,15 @@ export default function CinematicCommitReveal({
 
   // Haptic feedback
   const triggerShutdownHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    HapticsService.feedbackHeavy();
   }, []);
 
   const triggerRevealHaptic = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    HapticsService.feedbackSuccess();
   }, []);
 
   const triggerGlowHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
   }, []);
 
   useEffect(() => {

@@ -22,7 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors, typography, spacing } from '../../theme';
 import { SPRING_CONFIGS, ACT_THEMES } from '../../config/animation';
 
@@ -89,18 +89,18 @@ export default function SlideToCommit({
 
     // Progressive haptic style
     if (currentProgress < 0.25) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      HapticsService.feedbackLight();
     } else if (currentProgress < 0.5) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      HapticsService.feedbackLight();
     } else if (currentProgress < 0.75) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      HapticsService.feedbackMedium();
     } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      HapticsService.feedbackHeavy();
     }
   }, []);
 
   const triggerSuccessHaptic = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    HapticsService.feedbackSuccess();
   }, []);
 
   const handleComplete = useCallback(() => {

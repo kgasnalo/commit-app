@@ -6,7 +6,7 @@ import Animated, {
   withSpring,
   withSequence,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { MicroLabel } from './MicroLabel';
 import i18n from '../../i18n';
 
@@ -69,7 +69,7 @@ function ActivityBlock({
   }));
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    HapticsService.feedbackLight();
     scale.value = withSequence(
       withSpring(1.2, { damping: 10, stiffness: 400 }),
       withSpring(1.0, { damping: 15 })

@@ -25,7 +25,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors } from '../../theme/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -125,7 +125,7 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
 
   // Handle pause/resume toggle
   const handlePauseResume = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    HapticsService.feedbackLight();
     if (status === 'running') {
       pause();
     } else if (status === 'paused') {
@@ -135,7 +135,7 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
 
   // Handle cancel with confirmation
   const handleCancel = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
 
     Alert.alert(
       i18n.t('monkmode.cancel_confirm_title'),

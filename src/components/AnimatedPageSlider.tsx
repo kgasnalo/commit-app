@@ -8,7 +8,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../lib/HapticsService';
 import { colors, typography } from '../theme';
 import { TacticalText } from './titan/TacticalText';
 import { MicroLabel } from './titan/MicroLabel';
@@ -51,21 +51,21 @@ export default function AnimatedPageSlider({
   }, [value, minValue, maxValue, TRACK_WIDTH]);
 
   // Haptic feedback wrappers (must use runOnJS from worklet)
-  const hapticLight = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  const hapticMedium = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  const hapticHeavy = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  const hapticLight = () => HapticsService.feedbackLight();
+  const hapticMedium = () => HapticsService.feedbackMedium();
+  const hapticHeavy = () => HapticsService.feedbackHeavy();
 
   // Throttled haptic feedback
   const triggerHaptic = (newValue: number) => {
     const milestones = [100, 250, 500, 750, 1000];
 
     if (Math.abs(newValue - lastHapticValue.current) >= 10) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      HapticsService.feedbackLight();
       lastHapticValue.current = newValue;
     }
 
     if (milestones.includes(newValue) && !milestones.includes(lastHapticValue.current)) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      HapticsService.feedbackHeavy();
     }
 
     onValueChange(newValue);

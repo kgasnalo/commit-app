@@ -30,7 +30,7 @@ import Animated, {
   SharedValue,
   interpolate,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import { colors } from '../../theme';
 import { ACT_THEMES } from '../../config/animation';
 
@@ -184,19 +184,19 @@ export default function WarpSpeedTransition({
 
   // Haptic feedback functions
   const triggerLightHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    HapticsService.feedbackLight();
   };
 
   const triggerMediumHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
   };
 
   const triggerHeavyHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    HapticsService.feedbackHeavy();
   };
 
   const triggerFlashHaptic = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    HapticsService.feedbackSuccess();
   };
 
   useEffect(() => {

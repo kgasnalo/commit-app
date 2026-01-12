@@ -18,7 +18,7 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../../lib/HapticsService';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import CountUpText from '../../components/onboarding/CountUpText';
@@ -89,7 +89,7 @@ export default function OnboardingScreen7({ navigation, route }: any) {
 
   // Haptic feedback for count-up completion
   const triggerCountUpHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    HapticsService.feedbackMedium();
   }, []);
 
   // Handle individual count-up completion
@@ -141,7 +141,7 @@ export default function OnboardingScreen7({ navigation, route }: any) {
   // Handle burn completion
   const handleBurnComplete = useCallback(() => {
     cardOpacity.value = withTiming(0, { duration: 150 });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    HapticsService.feedbackWarning();
     setTimeout(() => {
       setBurnPhase('complete');
     }, 150);
