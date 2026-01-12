@@ -69,11 +69,14 @@ export function useImageColors(imageUrl: string | null | undefined): UseImageCol
       setLoading(true);
       setError(null);
 
+      // Ensure HTTPS
+      const secureUrl = imageUrl.replace(/^http:\/\//i, 'https://');
+
       try {
-        const result = await getColors(imageUrl, {
+        const result = await getColors(secureUrl, {
           fallback: FALLBACK_COLOR,
           cache: true,
-          key: imageUrl,
+          key: secureUrl,
         });
 
         if (!isMounted.current) return;
@@ -130,11 +133,14 @@ export async function extractColorsFromUrls(
 
   await Promise.all(
     urlsToFetch.map(async (url) => {
+      // Ensure HTTPS
+      const secureUrl = url.replace(/^http:\/\//i, 'https://');
+      
       try {
-        const result = await getColors(url, {
+        const result = await getColors(secureUrl, {
           fallback: FALLBACK_COLOR,
           cache: true,
-          key: url,
+          key: secureUrl,
         });
 
         let extracted: string = FALLBACK_COLOR;
