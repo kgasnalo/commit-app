@@ -250,7 +250,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - **i18n:** readingDna.* keys added to ja/en/ko locales
     - **DoD:** ユーザーが自分の「Reader Type」を、高級ブランドのカスタマイズ履歴を確認するような「特別感」に感じられる。 ✅
 
-- [ ] **4.7 The Hall of Fame: Cinematic Archive 🆕**
+- [x] **4.7 The Hall of Fame: Cinematic Archive ✅**
     - **Role:** `[Creative Director & UI/UX Designer]`
     - **Action:** Transform the library into a premium streaming-style showcase that treats each completed book as a "Major Production".
     - **Details:**
@@ -260,7 +260,16 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - **Card Design:**
             - **Materials:** 1pxの枠線を廃止し、**「厚みのあるガラスブロック（Thick Glass）」**を採用。
             - **Badge:** 「SECURED（確保済）」のバッジを、高級時計の刻印のような質感で配置。
-    - **DoD:** ユーザーがライブラリを開いた瞬間、「自分が築き上げた知の帝国」を眺めているような圧倒的な所有感を感じる。
+    - **Implementation (2026-01-12):**
+        - **HeroBillboard.tsx:** Ultra-thin typography (fontWeight: '100'), glass panel with top/left highlight edges (0.5px), 40px+ vertical margin to prevent overlap
+        - **AutomotiveMetrics.tsx:** Self-glow effect on numbers (`textShadowColor: 'rgba(255, 140, 80, 0.5)'`), micro labels (fontSize: 10, opacity: 0.4)
+        - **SecuredBadge.tsx:** Added "metallic" variant with black card inscription style
+        - **AmbientGlow.tsx:** Cinematic intensity mode with blur(60px)+ ambient glow, left-top ambient lighting
+        - **GlassFilterBar.tsx (NEW):** Notion-style colored tag pills + month-based filtering
+        - **LibraryScreen.tsx:** Netflix-style horizontal carousel with `snapToInterval`, FlatList implementation
+        - **BookDetailScreen.tsx:** Tag section moved outside hero for visibility, prominent "+" button with dashed border
+        - **Commits:** `a8576da`, `0a688c6`, `243866f`, `53274e5`, `6a311aa`
+    - **DoD:** ユーザーがライブラリを開いた瞬間、「自分が築き上げた知の帝国」を眺めているような圧倒的な所有感を感じる。 ✅
 
 - [x] **4.8 The Activity Matrix (Daily Habit HUD) ✅**
     - **Role:** `[UI/UX Designer]`
