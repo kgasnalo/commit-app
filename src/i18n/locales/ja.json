@@ -500,7 +500,8 @@
     "recentlySecured": "最近の達成",
     "emptyTitle": "殿堂があなたを待っています",
     "emptySubtitle": "最初のコミットメントを完了して、伝説を始めましょう",
-    "startFirst": "最初のコミットメントを開始"
+    "startFirst": "最初のコミットメントを開始",
+    "filterAll": "すべて"
   },
   "errorBoundary": {
     "title": "エラーが発生しました",

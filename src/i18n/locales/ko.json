@@ -497,7 +497,8 @@
     "recentlySecured": "최근 달성",
     "emptyTitle": "명예의 전당이 당신을 기다립니다",
     "emptySubtitle": "첫 번째 커밋먼트를 완료하여 전설을 시작하세요",
-    "startFirst": "첫 커밋먼트 시작"
+    "startFirst": "첫 커밋먼트 시작",
+    "filterAll": "전체"
   },
   "errorBoundary": {
     "title": "문제가 발생했습니다",

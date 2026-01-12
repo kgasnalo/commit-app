@@ -500,7 +500,8 @@
     "recentlySecured": "RECENTLY SECURED",
     "emptyTitle": "Your hall of fame awaits",
     "emptySubtitle": "Complete your first commitment to begin your legacy",
-    "startFirst": "Start First Commitment"
+    "startFirst": "Start First Commitment",
+    "filterAll": "All"
   },
   "errorBoundary": {
     "title": "Something went wrong",

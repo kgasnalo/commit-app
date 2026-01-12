@@ -41,6 +41,18 @@ interface Book {
   page_count?: number;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface BookTag {
+  id: string;
+  tag_id: string;
+  tags: Tag;
+}
+
 interface Commitment {
   id: string;
   user_id: string;
@@ -53,6 +65,7 @@ interface Commitment {
   created_at: string;
   updated_at: string | null;
   books: Book;
+  book_tags: BookTag[];
 }
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -69,6 +82,8 @@ export default function LibraryScreen() {
   const [coverUrls, setCoverUrls] = useState<{ [bookId: string]: string }>({});
   const [colorCache, setColorCache] = useState<Record<string, string>>({});
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
 
   // Dynamic ambient color state
   const ambientColorProgress = useSharedValue(0);
@@ -98,7 +113,12 @@ export default function LibraryScreen() {
         .from('commitments')
         .select(`
           *,
-          books (*)
+          books (*),
+          book_tags (
+            id,
+            tag_id,
+            tags (*)
+          )
         `)
         .eq('user_id', user.id)
         .eq('status', 'completed')
@@ -106,6 +126,15 @@ export default function LibraryScreen() {
 
       if (error) throw error;
       setCompletedBooks(data || []);
+
+      // Fetch all user tags for filter bar
+      const { data: tagsData } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      setAllTags(tagsData || []);
 
       // Fetch missing covers
       const newCoverUrls = await fetchMissingCovers(data || []);
@@ -148,15 +177,38 @@ export default function LibraryScreen() {
       .map(month => ({ id: month, label: month }));
   }, [completedBooks]);
 
-  // Filter books by selected month
+  // Filter books by selected month and tags
   const filteredBooks = useMemo(() => {
-    if (!selectedMonth) return completedBooks;
-    return completedBooks.filter(book => {
-      const date = new Date(book.updated_at || book.created_at);
-      const monthKey = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
-      return monthKey === selectedMonth;
-    });
-  }, [completedBooks, selectedMonth]);
+    let result = completedBooks;
+
+    // Filter by month
+    if (selectedMonth) {
+      result = result.filter(book => {
+        const date = new Date(book.updated_at || book.created_at);
+        const monthKey = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return monthKey === selectedMonth;
+      });
+    }
+
+    // Filter by tags (AND logic - must have ALL selected tags)
+    if (selectedTags.length > 0) {
+      result = result.filter(book => {
+        const bookTagIds = book.book_tags?.map(bt => bt.tag_id) || [];
+        return selectedTags.every(tagId => bookTagIds.includes(tagId));
+      });
+    }
+
+    return result;
+  }, [completedBooks, selectedMonth, selectedTags]);
+
+  // Toggle tag selection (Notion-style multi-select)
+  const toggleTagFilter = useCallback((tagId: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  }, []);
 
   // Memoized categories (filtered)
   const highStakes = useMemo(
@@ -302,13 +354,16 @@ export default function LibraryScreen() {
           />
         )}
 
-        {/* Glass Filter Bar - Month selection */}
-        {monthFilters.length > 1 && (
+        {/* Glass Filter Bar - Month and Tag selection */}
+        {(monthFilters.length > 1 || allTags.length > 0) && (
           <View style={styles.filterBarContainer}>
             <GlassFilterBar
               filters={monthFilters}
               selectedId={selectedMonth}
               onSelect={setSelectedMonth}
+              tags={allTags}
+              selectedTags={selectedTags}
+              onToggleTag={toggleTagFilter}
             />
           </View>
         )}
