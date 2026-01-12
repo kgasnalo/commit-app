@@ -433,21 +433,29 @@ export default function BookDetailScreen() {
                 <View style={styles.heroInfo}>
                   <Text style={styles.heroTitle}>{book.title}</Text>
                   <Text style={styles.heroAuthor}>{book.author}</Text>
-                  <View style={styles.tagsRow}>
-                      {commitment.book_tags.map((bt) => (
-                        <View key={bt.id} style={styles.tagBadge}>
-                          <View style={[styles.tagDot, { backgroundColor: bt.tags.color }]} />
-                          <Text style={styles.tagText}>{bt.tags.name}</Text>
-                        </View>
-                      ))}
-                      <TouchableOpacity onPress={() => setShowTagModal(true)}>
-                          <Ionicons name="add-circle" size={20} color={colors.text.secondary} />
-                      </TouchableOpacity>
-                  </View>
                 </View>
               </View>
             </LinearGradient>
           </ImageBackground>
+        </View>
+
+        {/* Tags Section - Always visible with add button */}
+        <View style={styles.tagsSection}>
+          <View style={styles.tagsRow}>
+            {commitment.book_tags?.map((bt) => (
+              <View key={bt.id} style={styles.tagBadge}>
+                <View style={[styles.tagDot, { backgroundColor: bt.tags.color }]} />
+                <Text style={styles.tagText}>{bt.tags.name}</Text>
+              </View>
+            ))}
+            <TouchableOpacity
+              onPress={() => setShowTagModal(true)}
+              style={styles.addTagButton}
+            >
+              <Ionicons name="add-circle" size={24} color={colors.accent.primary} />
+              <Text style={styles.addTagText}>{i18n.t('library.add_tag')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Data Grid */}
@@ -641,6 +649,29 @@ const styles = StyleSheet.create({
   tagText: {
       fontSize: 12,
       color: colors.text.primary,
+  },
+  tagsSection: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+    marginBottom: 24,
+  },
+  addTagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+    borderStyle: 'dashed',
+  },
+  addTagText: {
+    fontSize: 12,
+    color: colors.accent.primary,
+    fontWeight: '500',
   },
   dataSection: {
     paddingHorizontal: 24,
