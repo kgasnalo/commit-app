@@ -7,8 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import { Ionicons } from '@expo/vector-icons';
+import { HapticsService } from '../../lib/HapticsService';
+import { HAPTIC_BUTTON_SCALES } from '../../config/haptics';
 import i18n from '../../i18n';
 import { shareImage } from '../../utils/shareUtils';
 import CommitmentReceipt, { CommitmentReceiptProps } from './CommitmentReceipt';
@@ -31,6 +38,24 @@ export default function ReceiptPreviewModal({
 }: ReceiptPreviewModalProps) {
   const receiptRef = useRef<View>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Button press scale for Piano Black luxury feel
+  const shareButtonScale = useSharedValue(1);
+
+  const shareButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: shareButtonScale.value }],
+  }));
+
+  const handleSharePressIn = () => {
+    shareButtonScale.value = withSpring(
+      HAPTIC_BUTTON_SCALES.heavy.pressed,
+      HAPTIC_BUTTON_SCALES.heavy.spring
+    );
+  };
+
+  const handleSharePressOut = () => {
+    shareButtonScale.value = withSpring(1, HAPTIC_BUTTON_SCALES.heavy.spring);
+  };
 
   const handleShare = useCallback(async () => {
     if (!receiptRef.current) return;
@@ -96,27 +121,35 @@ export default function ReceiptPreviewModal({
           </View>
 
           {/* Share Button */}
-          <TouchableOpacity
-            style={styles.shareButton}
-            onPress={handleShare}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <ActivityIndicator size="small" color="#FFFFFF" />
-                <Text style={styles.shareButtonText}>
-                  {i18n.t('receipt.generating')}
-                </Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="share-social" size={20} color="#FFFFFF" />
-                <Text style={styles.shareButtonText}>
-                  {i18n.t('receipt.share')}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <Animated.View style={shareButtonAnimatedStyle}>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={() => {
+                HapticsService.feedbackHeavy();
+                handleShare();
+              }}
+              onPressIn={handleSharePressIn}
+              onPressOut={handleSharePressOut}
+              disabled={isGenerating}
+              activeOpacity={0.9}
+            >
+              {isGenerating ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.shareButtonText}>
+                    {i18n.t('receipt.generating')}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="share-social" size={20} color="#FFFFFF" />
+                  <Text style={styles.shareButtonText}>
+                    {i18n.t('receipt.share')}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       </View>
     </Modal>

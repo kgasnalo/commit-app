@@ -41,6 +41,25 @@ export const TIMING_CONFIGS = {
 } as const;
 
 // ============================================
+// AMBIENT TIMING CONFIGURATIONS
+// Phase 4.5 - "Incandescent bulb" slow fade effect
+// ============================================
+export const AMBIENT_TIMING_CONFIGS = {
+  // "白熱電球" - warm, slow fade like an incandescent bulb warming up
+  incandescent: { duration: 700, easing: Easing.out(Easing.sin) },
+
+  // Subtle glow pulse on animation settle
+  glowPulse: { duration: 400, easing: Easing.inOut(Easing.quad) },
+
+  // Modal appearance - slower than standard
+  modalAmbient: { duration: 600, easing: Easing.out(Easing.cubic) },
+
+  // List item stagger timing
+  staggerBase: { duration: 500, easing: Easing.out(Easing.quad) },
+  staggerDelay: 80, // ms between items
+} as const;
+
+// ============================================
 // EASING CURVES
 // ============================================
 export const EASING_CURVES = {

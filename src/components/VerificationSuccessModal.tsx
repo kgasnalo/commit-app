@@ -14,9 +14,12 @@ import Animated, {
   useAnimatedStyle,
   withSequence,
   withTiming,
+  withSpring,
   Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { HapticsService } from '../lib/HapticsService';
+import { HAPTIC_BUTTON_SCALES } from '../config/haptics';
 import i18n from '../i18n';
 import ReceiptPreviewModal from './receipt/ReceiptPreviewModal';
 
@@ -63,6 +66,24 @@ export default function VerificationSuccessModal({
   const opacity = useSharedValue(0);
   const amountScale = useSharedValue(1);
   const [displayAmount, setDisplayAmount] = React.useState(0);
+
+  // Button press scale for Piano Black luxury feel
+  const continueButtonScale = useSharedValue(1);
+
+  const continueButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: continueButtonScale.value }],
+  }));
+
+  const handleContinuePressIn = () => {
+    continueButtonScale.value = withSpring(
+      HAPTIC_BUTTON_SCALES.heavy.pressed,
+      HAPTIC_BUTTON_SCALES.heavy.spring
+    );
+  };
+
+  const handleContinuePressOut = () => {
+    continueButtonScale.value = withSpring(1, HAPTIC_BUTTON_SCALES.heavy.spring);
+  };
 
   // Pick a new random completion message index (0 to 3) each time modal opens
   useEffect(() => {
@@ -246,17 +267,28 @@ export default function VerificationSuccessModal({
 
           {/* Continue Reading Button (Primary) - Piano Black */}
           {onContinue && (
-            <TouchableOpacity style={styles.button} onPress={onContinue} activeOpacity={0.8}>
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.08)', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={[StyleSheet.absoluteFill, { borderRadius: 14 }]}
-              />
-              <Text style={styles.buttonText}>
-                {i18n.t('celebration.continue_reading')}
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={continueButtonAnimatedStyle}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => {
+                  HapticsService.feedbackHeavy();
+                  onContinue();
+                }}
+                onPressIn={handleContinuePressIn}
+                onPressOut={handleContinuePressOut}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.08)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: 14 }]}
+                />
+                <Text style={styles.buttonText}>
+                  {i18n.t('celebration.continue_reading')}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           )}
 
           {/* Select Next Book Button (Secondary) */}

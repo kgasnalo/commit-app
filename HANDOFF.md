@@ -1,16 +1,13 @@
 # Handoff: Session 2026-01-12
 
 ## Current Goal
-**Phase 4.7 The Hall of Fame: Cinematic Archive - COMPLETED ✅**
+**Phase 4.5 Advanced Animation Polish - COMPLETED ✅**
 
-Titan Design SystemでArchive（Hall of Fame）画面を完全リファイン:
-- Netflix風横スクロールカルーセル（スナップ動作付き）
-- Notion風タグフィルタリング（カラータグピル）
-- 月別フィルタリング
-- Ultra-thin タイポグラフィ (fontWeight: '100')
-- ガラスパネル (top/left highlight edges only, 0.5px)
-- Self-glow数字エフェクト
-- Metallic SECUREDバッジ
+Haptic Luxury + Ambient Transition の実装:
+- HapticsService 集中管理サービス作成
+- 全主要 Piano Black ボタンに Heavy haptic + scale animation
+- PrimaryButton / SecondaryButton に haptic + scale 追加
+- useAmbientTransition hook 作成 (白熱電球風スローフェード)
 
 ---
 
@@ -40,13 +37,34 @@ Titan Design SystemでArchive（Hall of Fame）画面を完全リファイン:
 | Screen props type incompatibility | TypeScript strict typing | Use `{ route, navigation }: any` |
 | `colors.primary` error | Theme uses nested structure | Use `colors.accent.primary` |
 | `i18n.language` not found | I18n type issue | Use `useLanguage()` hook |
+| Book cover images not showing on iOS | ATS blocked http URLs + edge=curl param issue | DB migration (http->https) + `ensureHttps` util to strip `edge=curl` |
 
 ---
 
 ## Completed This Session
 
+### Phase 4.5 Advanced Animation Polish
+
 | Task | Status |
 |------|--------|
+| **HapticsService.ts** - Centralized haptic service | Done |
+| **haptics.ts** - Configuration constants | Done |
+| **AMBIENT_TIMING_CONFIGS** - Animation config | Done |
+| **PrimaryButton.tsx** - haptic + scale 0.97 | Done |
+| **SecondaryButton.tsx** - haptic + scale 0.98 | Done |
+| **CreateCommitmentScreen** - Heavy haptic | Done |
+| **MonkModeScreen** - Heavy haptic | Done |
+| **CommitmentDetailScreen** - Heavy/Medium haptic (2 buttons) | Done |
+| **VerificationSuccessModal** - Heavy haptic | Done |
+| **ReceiptPreviewModal** - Heavy haptic | Done |
+| **useAmbientTransition.ts** - Slow fade hook | Done |
+
+### Phase 4.7 Hall of Fame (Earlier)
+
+| Task | Status |
+|------|--------|
+| **Emergency Fix:** Book cover image HTTPS migration (DB) | Done |
+| **Emergency Fix:** Remove `edge=curl` from Google Books URLs | Done |
 | HeroBillboard Titan design | Done |
 | Netflix-style carousel (FlatList + snapToInterval) | Done |
 | GlassFilterBar (Notion-style tags + month filter) | Done |
@@ -58,6 +76,13 @@ Titan Design SystemでArchive（Hall of Fame）画面を完全リファイン:
 
 ### Key Design Decisions
 
+**Phase 4.5:**
+1. **HapticsService:** Singleton pattern with throttling (50ms default)
+2. **feedbackHeavy():** "高級車の物理スイッチ" feel for Piano Black buttons
+3. **HAPTIC_BUTTON_SCALES:** heavy=0.97, medium=0.97, light=0.98
+4. **AMBIENT_TIMING_CONFIGS:** incandescent=700ms with sine easing
+
+**Phase 4.7:**
 1. **Glass Panel:** Top/left highlight edges only (0.5px) - no bottom/right border
 2. **Typography:** fontWeight: '100' for hero title (ultra-thin)
 3. **Self-glow:** `textShadowColor: 'rgba(255, 140, 80, 0.5)'` for numbers
@@ -68,9 +93,8 @@ Titan Design SystemでArchive（Hall of Fame）画面を完全リファイン:
 
 ## Immediate Next Steps
 
-1. **Phase 4.5 Advanced Animation Polish** (if needed based on beta feedback)
-2. **Phase 5: Technical Debt** - Migrate expo-av to expo-audio
-3. **Phase 7: Web Portal** (Critical for App Store compliance)
+1. **Phase 5: Technical Debt** - Migrate expo-av to expo-audio
+2. **Phase 7: Web Portal** (Critical for App Store compliance)
 
 ---
 
@@ -78,6 +102,9 @@ Titan Design SystemでArchive（Hall of Fame）画面を完全リファイン:
 
 | Feature | Files |
 |---------|-------|
+| **Haptics Service** | `src/lib/HapticsService.ts` |
+| **Haptics Config** | `src/config/haptics.ts` |
+| **Ambient Transition** | `src/hooks/useAmbientTransition.ts` |
 | Hall of Fame / Library | `src/screens/LibraryScreen.tsx` |
 | Hero Billboard | `src/components/halloffame/HeroBillboard.tsx` |
 | Automotive Metrics | `src/components/halloffame/AutomotiveMetrics.tsx` |
@@ -105,3 +132,4 @@ Titan Design SystemでArchive（Hall of Fame）画面を完全リファイン:
 | `243866f` | feat(archive): Notion-style tag filtering for Hall of Fame |
 | `53274e5` | fix(archive): Show filter bar when at least 1 month exists |
 | `6a311aa` | fix(bookDetail): Move tag section outside hero for better visibility |
+| *(pending)* | feat(animation): Phase 4.5 Haptic Luxury + Ambient Transition |

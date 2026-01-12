@@ -27,6 +27,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import * as Haptics from 'expo-haptics';
+import { HapticsService } from '../lib/HapticsService';
+import { HAPTIC_BUTTON_SCALES } from '../config/haptics';
 import { supabase } from '../lib/supabase';
 import {
   getBookProgress,
@@ -155,6 +157,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   // Vignette and Pulse Animation Shared Values
   const vignetteIntensity = useSharedValue(0);
   const pulseScale = useSharedValue(1);
+  const buttonPressScale = useSharedValue(1); // Piano Black button press scale
 
   // Vignette Effect - darken corners as penalty amount increases
   useEffect(() => {
@@ -185,13 +188,22 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     }
   }, [pledgeAmount, selectedBook, agreedToPenalty]);
 
-  // Animated style for create button
+  // Animated style for create button (combines pulse + press scale)
   const createButtonAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
+    transform: [{ scale: pulseScale.value * buttonPressScale.value }],
     shadowOpacity: interpolate(pulseScale.value, [1, 1.02], [0, 0.8]),
     shadowRadius: interpolate(pulseScale.value, [1, 1.02], [0, 10]),
     shadowColor: colors.signal.active,
   }));
+
+  // Button press handlers for Piano Black luxury feel
+  const handleCreateButtonPressIn = () => {
+    buttonPressScale.value = withTiming(HAPTIC_BUTTON_SCALES.heavy.pressed, { duration: 100 });
+  };
+
+  const handleCreateButtonPressOut = () => {
+    buttonPressScale.value = withTiming(1, { duration: 100 });
+  };
 
   // Continue Flow initialization
   useEffect(() => {
@@ -711,8 +723,14 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                 styles.createButton,
                 (!selectedBook || !pledgeAmount || !agreedToPenalty) && styles.createButtonDisabled
               ]}
-              onPress={handleCreateCommitment}
+              onPress={() => {
+                HapticsService.feedbackHeavy();
+                handleCreateCommitment();
+              }}
+              onPressIn={handleCreateButtonPressIn}
+              onPressOut={handleCreateButtonPressOut}
               disabled={!selectedBook || !pledgeAmount || !agreedToPenalty || creating}
+              activeOpacity={0.9}
             >
               {creating ? (
                 <ActivityIndicator color="#000" />

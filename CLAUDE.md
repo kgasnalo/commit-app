@@ -309,7 +309,13 @@
     }, [])
   );
   ```
-  - **Note:** Keep one-time initializations (listeners, animations) in `useEffect`. Only move data fetching to `useFocusEffect`.
+  // Note: Keep one-time initializations (listeners, animations) in useEffect. Only move data fetching to useFocusEffect.
+- **Google Books API & HTTPS (CRITICAL):**
+  - **HTTPS Only:** iOS blocks `http://` resources (ATS). Always replace `http://` with `https://` for image URLs fetched from Google Books or stored in DB.
+  - **Remove edge=curl:** Google Books image URLs often contain `&edge=curl` (curled page effect). This parameter frequently causes rendering failures or blank images in React Native. ALWAYS remove it: `url.replace(/&edge=curl/g, '')`.
+- **Hero/Billboard Overlays:** When placing text over images (HeroBillboard), keep overlay opacity low to ensure the image remains visible.
+  - **Bad:** `rgba(0,0,0,0.7)` (Too dark, hides image)
+  - **Good:** `rgba(10, 8, 6, 0.1)` to `rgba(8, 6, 4, 0.4)` gradient.
 - **Hall of Fame / Archive Design Patterns (Phase 4.7):**
   - **Glass Panel:** Use top/left highlight edges only (0.5px), no bottom/right border. This creates a subtle 3D effect without looking like a bordered card.
   - **Ultra-thin Typography:** Use `fontWeight: '100'` for hero titles to convey refined confidence.

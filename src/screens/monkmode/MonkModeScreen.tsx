@@ -21,6 +21,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import { HapticsService } from '../../lib/HapticsService';
+import { HAPTIC_BUTTON_SCALES } from '../../config/haptics';
 import { colors } from '../../theme/colors';
 import i18n from '../../i18n';
 
@@ -102,10 +109,28 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
     }
   };
 
+  // Button press scale for Piano Black luxury feel
+  const buttonPressScale = useSharedValue(1);
+
+  const startButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonPressScale.value }],
+  }));
+
+  const handleStartButtonPressIn = () => {
+    buttonPressScale.value = withSpring(
+      HAPTIC_BUTTON_SCALES.heavy.pressed,
+      HAPTIC_BUTTON_SCALES.heavy.spring
+    );
+  };
+
+  const handleStartButtonPressOut = () => {
+    buttonPressScale.value = withSpring(1, HAPTIC_BUTTON_SCALES.heavy.spring);
+  };
+
   const handleStartSession = () => {
     console.log('[MonkModeScreen] Start button pressed');
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      HapticsService.feedbackHeavy();
       console.log('[MonkModeScreen] Navigating to MonkModeActive', {
         durationMinutes: duration,
         bookId: selectedBook?.id,
@@ -246,16 +271,20 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
 
       {/* Start Button - Fixed at bottom */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.startButton}
-          onPress={handleStartSession}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="play" size={24} color="#fff" />
-          <Text style={styles.startButtonText}>
-            {i18n.t('monkmode.start_session')}
-          </Text>
-        </TouchableOpacity>
+        <Animated.View style={startButtonAnimatedStyle}>
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={handleStartSession}
+            onPressIn={handleStartButtonPressIn}
+            onPressOut={handleStartButtonPressOut}
+            activeOpacity={0.9}
+          >
+            <Ionicons name="play" size={24} color="#fff" />
+            <Text style={styles.startButtonText}>
+              {i18n.t('monkmode.start_session')}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );

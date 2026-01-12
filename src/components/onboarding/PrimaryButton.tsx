@@ -1,6 +1,15 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 import { colors, typography, borderRadius } from '../../theme';
+import { HapticsService } from '../../lib/HapticsService';
+import { HAPTIC_BUTTON_SCALES } from '../../config/haptics';
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 type Props = {
   label: string;
@@ -10,19 +19,45 @@ type Props = {
 };
 
 export default function PrimaryButton({ label, onPress, disabled, loading }: Props) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    if (disabled || loading) return;
+    scale.value = withSpring(
+      HAPTIC_BUTTON_SCALES.medium.pressed,
+      HAPTIC_BUTTON_SCALES.medium.spring
+    );
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, HAPTIC_BUTTON_SCALES.medium.spring);
+  };
+
+  const handlePress = () => {
+    if (disabled || loading) return;
+    HapticsService.feedbackMedium();
+    onPress();
+  };
+
   return (
-    <TouchableOpacity
-      style={[styles.container, disabled && styles.disabled]}
-      onPress={onPress}
+    <AnimatedTouchable
+      style={[styles.container, disabled && styles.disabled, animatedStyle]}
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={disabled || loading}
-      activeOpacity={0.8}
+      activeOpacity={0.9}
     >
       {loading ? (
         <ActivityIndicator color={colors.text.primary} />
       ) : (
         <Text style={styles.label}>{label}</Text>
       )}
-    </TouchableOpacity>
+    </AnimatedTouchable>
   );
 }
 

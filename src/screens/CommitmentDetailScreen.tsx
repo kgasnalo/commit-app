@@ -14,6 +14,13 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import { HapticsService } from '../lib/HapticsService';
+import { HAPTIC_BUTTON_SCALES } from '../config/haptics';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { colors, typography } from '../theme';
@@ -52,6 +59,40 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [lifelineUsedForBook, setLifelineUsedForBook] = useState(false);
   const [lifelineLoading, setLifelineLoading] = useState(false);
+
+  // Button press scale for Piano Black luxury feel
+  const verifyButtonScale = useSharedValue(1);
+  const lifelineButtonScale = useSharedValue(1);
+
+  const verifyButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: verifyButtonScale.value }],
+  }));
+
+  const lifelineButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: lifelineButtonScale.value }],
+  }));
+
+  const handleVerifyPressIn = () => {
+    verifyButtonScale.value = withSpring(
+      HAPTIC_BUTTON_SCALES.heavy.pressed,
+      HAPTIC_BUTTON_SCALES.heavy.spring
+    );
+  };
+
+  const handleVerifyPressOut = () => {
+    verifyButtonScale.value = withSpring(1, HAPTIC_BUTTON_SCALES.heavy.spring);
+  };
+
+  const handleLifelinePressIn = () => {
+    lifelineButtonScale.value = withSpring(
+      HAPTIC_BUTTON_SCALES.medium.pressed,
+      HAPTIC_BUTTON_SCALES.medium.spring
+    );
+  };
+
+  const handleLifelinePressOut = () => {
+    lifelineButtonScale.value = withSpring(1, HAPTIC_BUTTON_SCALES.medium.spring);
+  };
 
   const fetchCommitment = useCallback(async () => {
     if (!id) {
@@ -342,35 +383,51 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         <View style={styles.actionButtonsContainer}>
           {commitment.status === 'pending' && (
             <>
-              <TouchableOpacity
-                style={styles.verifyButton}
-                onPress={() => navigation.navigate('Verification', {
-                  commitmentId: commitment.id,
-                  bookTitle: commitment.book.title,
-                })}
-              >
-                <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
-              </TouchableOpacity>
+              <Animated.View style={verifyButtonAnimatedStyle}>
+                <TouchableOpacity
+                  style={styles.verifyButton}
+                  onPress={() => {
+                    HapticsService.feedbackHeavy();
+                    navigation.navigate('Verification', {
+                      commitmentId: commitment.id,
+                      bookTitle: commitment.book.title,
+                    });
+                  }}
+                  onPressIn={handleVerifyPressIn}
+                  onPressOut={handleVerifyPressOut}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.verifyButtonText}>{i18n.t('commitment_detail.verify_button')}</Text>
+                </TouchableOpacity>
+              </Animated.View>
 
-              <TouchableOpacity
-                style={[
-                    styles.secondaryButton,
-                    lifelineUsedForBook && styles.secondaryButtonDisabled
-                ]}
-                onPress={handleUseLifeline}
-                disabled={lifelineUsedForBook || lifelineLoading}
-              >
-                {lifelineLoading ? (
-                  <ActivityIndicator size="small" color={colors.text.secondary} />
-                ) : (
-                  <Text style={[
-                      styles.secondaryButtonText,
-                      lifelineUsedForBook && styles.secondaryButtonTextDisabled
-                  ]}>
-                    {lifelineUsedForBook ? 'FREEZE USED' : 'USE FREEZE (+7 DAYS)'}
-                  </Text>
-                )}
-              </TouchableOpacity>
+              <Animated.View style={lifelineButtonAnimatedStyle}>
+                <TouchableOpacity
+                  style={[
+                      styles.secondaryButton,
+                      lifelineUsedForBook && styles.secondaryButtonDisabled
+                  ]}
+                  onPress={() => {
+                    HapticsService.feedbackMedium();
+                    handleUseLifeline();
+                  }}
+                  onPressIn={handleLifelinePressIn}
+                  onPressOut={handleLifelinePressOut}
+                  disabled={lifelineUsedForBook || lifelineLoading}
+                  activeOpacity={0.9}
+                >
+                  {lifelineLoading ? (
+                    <ActivityIndicator size="small" color={colors.text.secondary} />
+                  ) : (
+                    <Text style={[
+                        styles.secondaryButtonText,
+                        lifelineUsedForBook && styles.secondaryButtonTextDisabled
+                    ]}>
+                      {lifelineUsedForBook ? 'FREEZE USED' : 'USE FREEZE (+7 DAYS)'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
             </>
           )}
 

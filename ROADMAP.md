@@ -175,12 +175,13 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 **Objective:** Address critical visual bugs and ensure robust data handling.
 
-- [ ] **4.1.1 Emergency Fix: Book Cover HTTPS Migration (ATS Compliance) 🚨**
+- [x] **4.1.1 Emergency Fix: Book Cover HTTPS Migration (ATS Compliance) ✅**
     - **Role:** `[Backend/Mobile Engineer]`
     - **Problem:** Google Books API returns `http://` URLs stored in DB, blocked by iOS ATS.
     - **Action:** 
         1. Run SQL migration to update all `http://` to `https://` in `books` table.
         2. Implement fail-safe in `LibraryScreen` to auto-refetch covers on load error.
+        3. Removed `edge=curl` parameter to fix rendering issues.
     - **DoD:** All book covers in Library display correctly without orange placeholders.
 
 - [x] **4.1 Dynamic Pacemaker (Smart Notifications) ✅**
@@ -234,12 +235,20 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Note:** Requires iOS 16.2+. Icons optional (`assets/liveActivity/` folder).
     - **DoD:** Timer progress visible on Lock Screen without unlocking the phone.
 
-- [ ] **4.5 Advanced Animation Polish**
+- [x] **4.5 Advanced Animation Polish ✅**
     - **Role:** `[Animation Specialist]`
     - **Action:** Refine all micro-interactions based on beta feedback.
     - **Details:**
         - **Haptic Luxury:** ボタン押下時に「高級車の物理スイッチ」のような重みのある振動（Haptic Feedback）を実装。
         - **Ambient Transition:** 画面遷移やカード表示に、白熱電球のようなゆっくりとしたフェードイン/アウト（Slow Fade）と、光源が広がるようなアニメーションを適用。
+    - **Implementation (2026-01-12):**
+        - **HapticsService:** Centralized singleton at `src/lib/HapticsService.ts` with throttling (50ms)
+        - **Methods:** `feedbackLight()`, `feedbackMedium()`, `feedbackHeavy()`, `feedbackSuccess()`, `progressiveFeedback()`
+        - **HAPTIC_BUTTON_SCALES:** Configuration at `src/config/haptics.ts`
+        - **AMBIENT_TIMING_CONFIGS:** Added to `src/config/animation.ts` (incandescent: 700ms, sine easing)
+        - **useAmbientTransition:** Hook at `src/hooks/useAmbientTransition.ts`
+        - **Buttons Enhanced:** PrimaryButton, SecondaryButton, CreateCommitmentScreen, MonkModeScreen, CommitmentDetailScreen, VerificationSuccessModal, ReceiptPreviewModal
+    - **DoD:** All Piano Black buttons have Heavy haptic + scale 0.97 animation. ✅
 
 - [x] **4.6 Reading DNA (Identity Analysis) ✅**
     - **Role:** `[Data Viz Specialist]`
