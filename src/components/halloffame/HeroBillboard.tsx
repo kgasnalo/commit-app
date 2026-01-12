@@ -302,8 +302,9 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 12,
-    color: titanColors.text.muted,
+    color: titanColors.text.secondary,
     letterSpacing: 0.5,
+    opacity: 0.9, // Ensure visibility
   },
   // Backlight effect - Strong bokeh behind content
   backlightContainer: {
