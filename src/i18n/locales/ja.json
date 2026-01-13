@@ -434,7 +434,19 @@
     "verification_failed": "読了確認の保存に失敗しました",
     "subscription_failed": "サブスクリプションの開始に失敗しました",
     "commitment_not_found": "コミットメントが見つかりません",
-    "fetch_commitment_failed": "コミットメント情報の取得に失敗しました。"
+    "fetch_commitment_failed": "コミットメント情報の取得に失敗しました。",
+    "create_commitment_failed": "コミットメントの作成に失敗しました。",
+    "validation": {
+      "INVALID_AMOUNT": "金額が許容範囲外です",
+      "INVALID_CURRENCY": "サポートされていない通貨です",
+      "DEADLINE_TOO_SOON": "締め切りは24時間以上先に設定してください",
+      "DEADLINE_INVALID": "無効な締め切り日です",
+      "INVALID_PAGE_COUNT": "ページ数は1〜1000の範囲で指定してください",
+      "PAGE_COUNT_EXCEEDS_BOOK": "ページ数が本の総ページ数を超えています",
+      "MISSING_FIELDS": "必須項目が入力されていません",
+      "BOOK_CREATION_FAILED": "書籍の登録に失敗しました",
+      "COMMITMENT_CREATION_FAILED": "コミットメントの作成に失敗しました"
+    }
   },
   "tabs": {
     "home": "ホーム",

@@ -395,58 +395,42 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     setCreating(true);
 
     try {
-      // 1. ユーザー情報取得
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) throw new Error('User not authenticated');
-
-      // 2. 書籍をDBに保存（既存チェック）
-      let bookId: string;
-      const { data: existingBook } = await supabase
-        .from('books')
-        .select('id')
-        .eq('google_books_id', selectedBook.id)
-        .single();
-
-      if (existingBook) {
-        bookId = existingBook.id;
-      } else {
-        const coverUrl = selectedBook.volumeInfo.imageLinks?.thumbnail
-          || selectedBook.volumeInfo.imageLinks?.smallThumbnail
-          || null;
-
-        const { data: newBook, error: bookError } = await supabase
-          .from('books')
-          .insert({
-            google_books_id: selectedBook.id,
-            title: selectedBook.volumeInfo.title,
-            author: selectedBook.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author'),
-            cover_url: coverUrl,
-          })
-          .select('id')
-          .single();
-
-        if (bookError) throw bookError;
-        bookId = newBook.id;
-      }
-
-      // 3. コミットメント作成
+      // Calculate pages to read (delta from current progress)
       const pagesToRead = Math.max(1, pageCount - totalPagesRead);
-      
-      const { error: commitmentError } = await supabase
-        .from('commitments')
-        .insert({
-          user_id: user.id,
-          book_id: bookId,
+
+      // Get cover URL
+      const coverUrl = selectedBook.volumeInfo.imageLinks?.thumbnail
+        || selectedBook.volumeInfo.imageLinks?.smallThumbnail
+        || null;
+
+      // Call Edge Function for server-side validation and creation
+      const { data, error } = await supabase.functions.invoke('create-commitment', {
+        body: {
+          google_books_id: selectedBook.id,
+          book_title: selectedBook.volumeInfo.title,
+          book_author: selectedBook.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author'),
+          book_cover_url: coverUrl,
           deadline: deadline.toISOString(),
-          status: 'pending',
           pledge_amount: pledgeAmount,
           currency: currency,
           target_pages: pagesToRead,
-        });
+        },
+      });
 
-      if (commitmentError) throw commitmentError;
-      
+      if (error) {
+        console.error('[CreateCommitment] Edge Function error:', error);
+        throw new Error(i18n.t('errors.create_commitment_failed'));
+      }
+
+      if (!data?.success) {
+        // Handle validation errors from Edge Function
+        const errorCode = data?.error || 'UNKNOWN';
+        const errorMessage = i18n.t(`errors.validation.${errorCode}`) !== `errors.validation.${errorCode}`
+          ? i18n.t(`errors.validation.${errorCode}`)
+          : i18n.t('errors.create_commitment_failed');
+        throw new Error(errorMessage);
+      }
+
       setCreating(false);
 
       const currencySymbol = CURRENCY_OPTIONS.find(c => c.code === currency)?.symbol || currency;

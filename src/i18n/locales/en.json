@@ -434,7 +434,19 @@
     "verification_failed": "Failed to save verification",
     "subscription_failed": "Failed to start subscription",
     "commitment_not_found": "Commitment not found",
-    "fetch_commitment_failed": "Failed to fetch commitment info."
+    "fetch_commitment_failed": "Failed to fetch commitment info.",
+    "create_commitment_failed": "Failed to create commitment.",
+    "validation": {
+      "INVALID_AMOUNT": "Pledge amount is outside the allowed range",
+      "INVALID_CURRENCY": "Unsupported currency",
+      "DEADLINE_TOO_SOON": "Deadline must be at least 24 hours from now",
+      "DEADLINE_INVALID": "Invalid deadline date",
+      "INVALID_PAGE_COUNT": "Page count must be between 1 and 1000",
+      "PAGE_COUNT_EXCEEDS_BOOK": "Page count exceeds the book's total pages",
+      "MISSING_FIELDS": "Required fields are missing",
+      "BOOK_CREATION_FAILED": "Failed to register book",
+      "COMMITMENT_CREATION_FAILED": "Failed to create commitment"
+    }
   },
   "tabs": {
     "home": "Home",

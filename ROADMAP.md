@@ -252,8 +252,16 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - WITH CHECK ensures only `status = 'completed'` is allowed
       - `penalty_charges`: SELECT only for users, full access for service_role
 
-- [ ] **7.6 Server-side Validation**
-    - **Action:** Validate amounts and page counts via Google Books API.
+- [x] **7.6 Server-side Validation**
+    - **Role:** `[Security Engineer]`
+    - **Action:** Move commitment creation to Edge Function with validation.
+    - **Implementation:**
+      - `create-commitment` Edge Function with amount/deadline/page validation
+      - Google Books API page count verification (soft fail)
+      - Multi-currency amount limits (JPY: 50-50000, USD: 1-350, etc.)
+      - Deadline must be 24+ hours in future
+      - RLS INSERT policy removed (forces Edge Function usage)
+    - **DoD:** All commitment creation goes through server-side validation.
 
 - [ ] **7.7 Internal Admin Dashboard (Ops)**
     - **Role:** `[Fullstack Engineer]`

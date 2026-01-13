@@ -1,13 +1,22 @@
 # Handoff: Session 2026-01-13
 
 ## Current Goal
-**Phase 7.6: Server-side Validation (Optional)** or **Phase 8: Reliability & Ops**
+**Phase 7.7: Internal Admin Dashboard** or **Phase 8: Reliability & Ops**
 
-Phase 7.5 RLS Hardening 完了。バックエンドセキュリティ基盤が整備されました。
+Phase 7.6 Server-side Validation 完了。コミットメント作成がEdge Function経由で検証されるようになりました。
 
 ---
 
 ## Current Critical Status
+
+### Phase 7.6: Server-side Validation ✅ COMPLETE
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `create-commitment` Edge Function | ✅ | 金額・期限・ページ数のバリデーション |
+| Google Books API 検証 | ✅ | ページ数が本の総ページ数+10以下か確認（soft fail） |
+| 金額上限チェック | ✅ | JPY: 50-50000, USD: 1-350, EUR: 1-300, GBP: 1-250, KRW: 500-500000 |
+| 期限バリデーション | ✅ | 24時間以上先のみ許可 |
+| RLS INSERT 禁止 | ✅ | 認証ユーザーの直接INSERTをブロック |
 
 ### Phase 7.5: RLS Hardening ✅ COMPLETE
 | Component | Status | Notes |
@@ -24,8 +33,6 @@ Phase 7.5 RLS Hardening 完了。バックエンドセキュリティ基盤が�
 | `commitments.defaulted_at` | ✅ | 期限切れ時刻記録 |
 | `process-expired-commitments` | ✅ | Stripe off-session課金、Push通知送信 |
 | `pg_cron` jobs | ✅ | 毎時 :00 + 4時間毎リトライ |
-| Vault secrets | ✅ | `supabase_url`, `cron_secret` |
-| `CRON_SECRET` | ✅ | Edge Function認証用 |
 
 ### Phase 7.3: Push Notifications ✅ COMPLETE
 | Component | Status |
@@ -42,9 +49,6 @@ Phase 7.5 RLS Hardening 完了。バックエンドセキュリティ基盤が�
 **Problem:** Edge Function 内で `Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')` と Authorization ヘッダーの比較が一致しない。
 
 **Solution:** 専用の `CRON_SECRET` を作成し、Supabase secrets と Vault の両方に保存。
-```bash
-supabase secrets set CRON_SECRET=reaper-secret-2026-commit-app
-```
 
 ### 2. Supabase CLI に SQL 実行コマンドがない
 **Solution:** マイグレーションファイルを作成して `supabase db push` で実行。
@@ -56,15 +60,11 @@ supabase secrets set CRON_SECRET=reaper-secret-2026-commit-app
 
 ## Immediate Next Steps
 
-### Option A: Phase 7.6 - Server-side Validation (Optional)
-- Google Books API で総ページ数を検証
-- pledge_amount の上限チェック
-
-### Option B: Phase 7.7 - Internal Admin Dashboard (Ops)
+### Option A: Phase 7.7 - Internal Admin Dashboard (Ops)
 - Retool/Admin ビューで Support 用ダッシュボード
 - 手動 Refund/Complete 機能
 
-### Option C: Phase 8 - Reliability & Ops
+### Option B: Phase 8 - Reliability & Ops
 - 8.1 Sentry 統合 (Crash Monitoring)
 - 8.2 CI/CD Pipeline (GitHub Actions)
 - 8.3 Product Analytics
@@ -74,6 +74,14 @@ supabase secrets set CRON_SECRET=reaper-secret-2026-commit-app
 ---
 
 ## Key File Locations
+
+### Server-side Validation (Phase 7.6)
+| Feature | File |
+|---------|------|
+| Edge Function | `supabase/functions/create-commitment/index.ts` |
+| RLS Migration | `supabase/migrations/20260114000000_restrict_commitment_insert.sql` |
+| Client Update | `src/screens/CreateCommitmentScreen.tsx` |
+| i18n Errors | `src/i18n/locales/*.json` (errors.validation.*) |
 
 ### RLS Hardening (Phase 7.5)
 | Feature | File |
@@ -86,7 +94,6 @@ supabase secrets set CRON_SECRET=reaper-secret-2026-commit-app
 | Charge Storage | `supabase/migrations/20260113160000_create_penalty_charges.sql` |
 | Defaulted Tracking | `supabase/migrations/20260113160001_add_defaulted_at.sql` |
 | Cron Setup | `supabase/migrations/20260113170000_setup_reaper_cron_job.sql` |
-| Cron Secret Fix | `supabase/migrations/20260113170001_update_cron_secret.sql` |
 | Edge Function | `supabase/functions/process-expired-commitments/index.ts` |
 
 ### Push Notifications (Phase 7.3)
@@ -98,6 +105,21 @@ supabase secrets set CRON_SECRET=reaper-secret-2026-commit-app
 
 ### Manual Test Commands
 ```bash
+# Test create-commitment (requires USER JWT)
+curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/create-commitment \
+  -H "Authorization: Bearer <USER_JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "google_books_id": "abc123",
+    "book_title": "Test Book",
+    "book_author": "Author",
+    "book_cover_url": null,
+    "deadline": "2026-01-20T00:00:00Z",
+    "pledge_amount": 1000,
+    "currency": "JPY",
+    "target_pages": 50
+  }'
+
 # Test The Reaper
 curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/process-expired-commitments \
   -H "Authorization: Bearer reaper-secret-2026-commit-app" \
@@ -119,7 +141,7 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-not
 `users`, `books`, `commitments`, `verification_logs`, `tags`, `book_tags`, `reading_sessions`, `expo_push_tokens`, `penalty_charges`
 
 ### Edge Functions
-`use-lifeline`, `isbn-lookup`, `delete-account`, `send-push-notification`, `process-expired-commitments`
+`use-lifeline`, `isbn-lookup`, `delete-account`, `send-push-notification`, `process-expired-commitments`, `create-commitment`
 
 ### Cron Jobs (Active)
 | Job Name | Schedule | Purpose |
@@ -138,10 +160,11 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-not
 |------|---------|
 | `STRIPE_SECRET_KEY` | Stripe API認証 |
 | `CRON_SECRET` | cron認証受け入れ |
+| `GOOGLE_BOOKS_API_KEY` | Google Books API (create-commitment用) |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Commits ahead of origin: **5**
+- Latest commit: Phase 7.6 Server-side Validation
 - Ready to push: `git push origin main`

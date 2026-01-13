@@ -431,7 +431,19 @@
     "verification_failed": "완료 확인 저장에 실패했습니다",
     "subscription_failed": "구독 시작에 실패했습니다",
     "commitment_not_found": "커밋먼트를 찾을 수 없습니다",
-    "fetch_commitment_failed": "커밋먼트 정보 가져오기에 실패했습니다."
+    "fetch_commitment_failed": "커밋먼트 정보 가져오기에 실패했습니다.",
+    "create_commitment_failed": "커밋먼트 생성에 실패했습니다.",
+    "validation": {
+      "INVALID_AMOUNT": "금액이 허용 범위를 벗어났습니다",
+      "INVALID_CURRENCY": "지원되지 않는 통화입니다",
+      "DEADLINE_TOO_SOON": "마감일은 최소 24시간 이후로 설정해주세요",
+      "DEADLINE_INVALID": "유효하지 않은 마감일입니다",
+      "INVALID_PAGE_COUNT": "페이지 수는 1~1000 범위로 지정해주세요",
+      "PAGE_COUNT_EXCEEDS_BOOK": "페이지 수가 책의 총 페이지 수를 초과합니다",
+      "MISSING_FIELDS": "필수 항목이 입력되지 않았습니다",
+      "BOOK_CREATION_FAILED": "도서 등록에 실패했습니다",
+      "COMMITMENT_CREATION_FAILED": "커밋먼트 생성에 실패했습니다"
+    }
   },
   "tabs": {
     "home": "홈",
