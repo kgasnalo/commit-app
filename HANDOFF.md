@@ -1,13 +1,21 @@
 # Handoff: Session 2026-01-13
 
 ## Current Goal
-**Phase 7.5: Row Level Security (RLS) Hardening**
+**Phase 7.6: Server-side Validation (Optional)**
 
-Phase 7.4 "The Reaper" 完了。自動デッドライン強制執行システムが毎時稼働中。
+Phase 7.5 RLS Hardening 完了。commitments テーブルのセキュリティが強化されました。
 
 ---
 
 ## Current Critical Status
+
+### Phase 7.5: RLS Hardening ✅ COMPLETE
+| Component | Status | Notes |
+|-----------|--------|-------|
+| DELETE 禁止 | ✅ | commitments に DELETE ポリシーなし |
+| UPDATE 制限 | ✅ | `deadline > NOW()` かつ `status='pending'` のみ |
+| completed 限定 | ✅ | WITH CHECK で `status='completed'` のみ許可 |
+| penalty_charges RLS | ✅ | SELECT のみ、INSERT/UPDATE/DELETE は service_role のみ |
 
 ### Phase 7.4: "The Reaper" ✅ COMPLETE
 | Component | Status | Notes |
@@ -66,18 +74,22 @@ SELECT net.http_post(
 
 ## Immediate Next Steps
 
-### Phase 7.5: Row Level Security (RLS) Hardening
-1. `commitments` テーブルの DELETE 禁止ポリシー
-2. 期限切れ後の `status = 'completed'` UPDATE 禁止
-3. `penalty_charges` の監査用ポリシー確認
-
 ### Phase 7.6: Server-side Validation (Optional)
 - Google Books API で総ページ数を検証
 - pledge_amount の上限チェック
 
+### Phase 7.7: Internal Admin Dashboard (Ops)
+- Retool/Admin ビューで Support 用ダッシュボード
+- 手動 Refund/Complete 機能
+
 ---
 
 ## Key File Locations
+
+### RLS Hardening (Phase 7.5)
+| Feature | File |
+|---------|------|
+| Commitments RLS | `supabase/migrations/20260113180000_harden_commitments_rls.sql` |
 
 ### The Reaper (Phase 7.4)
 | Feature | File |
@@ -132,6 +144,7 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/process-expir
 
 | File | Change |
 |------|--------|
+| `supabase/migrations/20260113180000_harden_commitments_rls.sql` | NEW (Phase 7.5) |
 | `supabase/migrations/20260113160000_create_penalty_charges.sql` | NEW |
 | `supabase/migrations/20260113160001_add_defaulted_at.sql` | NEW |
 | `supabase/migrations/20260113160002_enable_cron_extensions.sql` | NEW |
@@ -140,4 +153,4 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/process-expir
 | `supabase/functions/process-expired-commitments/index.ts` | NEW |
 | `src/types/database.types.ts` | penalty_charges型、defaulted_at追加 |
 | `src/i18n/locales/{ja,en,ko}.json` | reaper通知メッセージ追加 |
-| `ROADMAP.md` | Phase 7.4 [x] |
+| `ROADMAP.md` | Phase 7.4, 7.5 [x] |

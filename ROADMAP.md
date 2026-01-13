@@ -242,10 +242,15 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - Vault secrets for secure cron authentication
       - Hourly + 4-hour retry cron jobs
 
-- [ ] **7.5 Row Level Security (RLS) Hardening**
+- [x] **7.5 Row Level Security (RLS) Hardening**
     - **Role:** `[Security Engineer]`
     - **Action:** Lock down commitments table.
     - **Rules:** No DELETE, No UPDATE to 'completed' if deadline passed.
+    - **Implementation:**
+      - DELETE policy intentionally omitted (users cannot delete)
+      - UPDATE restricted: `deadline > NOW()` AND `status = 'pending'`
+      - WITH CHECK ensures only `status = 'completed'` is allowed
+      - `penalty_charges`: SELECT only for users, full access for service_role
 
 - [ ] **7.6 Server-side Validation**
     - **Action:** Validate amounts and page counts via Google Books API.
