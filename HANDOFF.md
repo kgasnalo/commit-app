@@ -1,9 +1,9 @@
 # Handoff: Session 2026-01-13
 
 ## Current Goal
-**Phase 7.6: Server-side Validation (Optional)**
+**Phase 7.6: Server-side Validation (Optional)** or **Phase 8: Reliability & Ops**
 
-Phase 7.5 RLS Hardening 完了。commitments テーブルのセキュリティが強化されました。
+Phase 7.5 RLS Hardening 完了。バックエンドセキュリティ基盤が整備されました。
 
 ---
 
@@ -27,60 +27,49 @@ Phase 7.5 RLS Hardening 完了。commitments テーブルのセキュリティ�
 | Vault secrets | ✅ | `supabase_url`, `cron_secret` |
 | `CRON_SECRET` | ✅ | Edge Function認証用 |
 
-### Test Result
-```json
-{"success":true,"mode":"normal","stats":{"processed":6,"charged":0,"failed":6,"skipped":0,"errors":[]}}
-```
-6件の期限切れコミットメントを検出（支払い方法未登録のため課金は全て `failed`）
+### Phase 7.3: Push Notifications ✅ COMPLETE
+| Component | Status |
+|-----------|--------|
+| `expo_push_tokens` table | ✅ |
+| `send-push-notification` Edge Function | ✅ |
+| `NotificationService.ts` | ✅ |
 
 ---
 
 ## What Didn't Work / Lessons Learned
 
-### 1. SERVICE_ROLE_KEY timingSafeEqual 比較失敗
+### 1. SERVICE_ROLE_KEY timingSafeEqual 比較失敗 (Phase 7.4)
 **Problem:** Edge Function 内で `Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')` と Authorization ヘッダーの比較が一致しない。
 
-**Root Cause:** Supabase が自動注入する SERVICE_ROLE_KEY と Dashboard から取得したキーの比較で、何らかの理由で timingSafeEqual が false を返す。
-
-**Solution:** 専用の `CRON_SECRET` を作成し、Supabase secrets と Vault の両方に保存。cron job は Vault から取得した `cron_secret` を使用。
+**Solution:** 専用の `CRON_SECRET` を作成し、Supabase secrets と Vault の両方に保存。
 ```bash
 supabase secrets set CRON_SECRET=reaper-secret-2026-commit-app
 ```
 
 ### 2. Supabase CLI に SQL 実行コマンドがない
-**Problem:** `supabase db execute --sql "..."` のようなコマンドが存在しない。
-
 **Solution:** マイグレーションファイルを作成して `supabase db push` で実行。
-```bash
-# マイグレーションファイル作成 → push
-supabase db push
-```
 
 ### 3. pg_cron から Edge Function を呼ぶ認証
-**Problem:** cron job 内で SERVICE_ROLE_KEY を直接参照できない。
-
 **Solution:** Vault に secrets を保存し、`vault.decrypted_secrets` ビューから動的取得。
-```sql
-SELECT net.http_post(
-  url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url') || '/functions/v1/...',
-  headers := jsonb_build_object(
-    'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cron_secret')
-  ),
-  ...
-);
-```
 
 ---
 
 ## Immediate Next Steps
 
-### Phase 7.6: Server-side Validation (Optional)
+### Option A: Phase 7.6 - Server-side Validation (Optional)
 - Google Books API で総ページ数を検証
 - pledge_amount の上限チェック
 
-### Phase 7.7: Internal Admin Dashboard (Ops)
+### Option B: Phase 7.7 - Internal Admin Dashboard (Ops)
 - Retool/Admin ビューで Support 用ダッシュボード
 - 手動 Refund/Complete 機能
+
+### Option C: Phase 8 - Reliability & Ops
+- 8.1 Sentry 統合 (Crash Monitoring)
+- 8.2 CI/CD Pipeline (GitHub Actions)
+- 8.3 Product Analytics
+- 8.4 Remote Config & Force Update
+- 8.5 Maintenance Mode
 
 ---
 
@@ -99,15 +88,27 @@ SELECT net.http_post(
 | Cron Setup | `supabase/migrations/20260113170000_setup_reaper_cron_job.sql` |
 | Cron Secret Fix | `supabase/migrations/20260113170001_update_cron_secret.sql` |
 | Edge Function | `supabase/functions/process-expired-commitments/index.ts` |
-| Types | `src/types/database.types.ts` |
-| i18n | `src/i18n/locales/{ja,en,ko}.json` → `reaper` section |
 
-### Manual Test Command
+### Push Notifications (Phase 7.3)
+| Feature | File |
+|---------|------|
+| Token Storage | `supabase/migrations/20260113150000_create_expo_push_tokens.sql` |
+| Edge Function | `supabase/functions/send-push-notification/index.ts` |
+| Client Service | `src/lib/NotificationService.ts` |
+
+### Manual Test Commands
 ```bash
+# Test The Reaper
 curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/process-expired-commitments \
   -H "Authorization: Bearer reaper-secret-2026-commit-app" \
   -H "Content-Type: application/json" \
   -d '{"source": "manual_test"}'
+
+# Test Push Notification (requires SERVICE_ROLE_KEY)
+curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-notification \
+  -H "Authorization: Bearer <SERVICE_ROLE_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "<USER_ID>", "title": "Test", "body": "Test message"}'
 ```
 
 ---
@@ -140,17 +141,7 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/process-expir
 
 ---
 
-## Files Modified This Session
-
-| File | Change |
-|------|--------|
-| `supabase/migrations/20260113180000_harden_commitments_rls.sql` | NEW (Phase 7.5) |
-| `supabase/migrations/20260113160000_create_penalty_charges.sql` | NEW |
-| `supabase/migrations/20260113160001_add_defaulted_at.sql` | NEW |
-| `supabase/migrations/20260113160002_enable_cron_extensions.sql` | NEW |
-| `supabase/migrations/20260113170000_setup_reaper_cron_job.sql` | NEW |
-| `supabase/migrations/20260113170001_update_cron_secret.sql` | NEW |
-| `supabase/functions/process-expired-commitments/index.ts` | NEW |
-| `src/types/database.types.ts` | penalty_charges型、defaulted_at追加 |
-| `src/i18n/locales/{ja,en,ko}.json` | reaper通知メッセージ追加 |
-| `ROADMAP.md` | Phase 7.4, 7.5 [x] |
+## Git Status
+- Branch: `main`
+- Commits ahead of origin: **5**
+- Ready to push: `git push origin main`
