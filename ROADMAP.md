@@ -357,10 +357,11 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Update `babel.config.js` presets to `['babel-preset-expo', { jsxRuntime: 'automatic' }]`.
     - **Status:** 🚨 **Critical Blocker** (App fails to bundle).
 
-- [ ] **H.2 Deprecated SafeAreaView Replacement**
+- [x] **H.2 Deprecated SafeAreaView Replacement**
     - **Warning:** `SafeAreaView has been deprecated...`
     - **Scope:** `App.js`, `DashboardScreen.tsx`, and all screens using native `SafeAreaView`.
     - **Fix:** Replace with `SafeAreaView` from `react-native-safe-area-context`.
+    - **Status:** ✅ Already fixed - all 18 files use `react-native-safe-area-context`.
 
 - [x] **H.3 Hardcoded Strings (Localization Failures)**
     - **Problem:** Japanese text hardcoded in logic, bypassing i18n system.

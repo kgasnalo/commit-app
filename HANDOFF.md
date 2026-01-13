@@ -1,13 +1,36 @@
 # Handoff: Session 2026-01-13
 
 ## Current Goal
-**Phase 8: Reliability & Ops**
+**Phase 8: Reliability & Ops + Technical Debt Cleanup**
 
-Phase 8.1 Sentry Integration 完了。Phase 8.2 CI/CD Pipeline 完了。次は Phase 8.3 Product Analytics へ。
+Phase 8.1 Sentry ✅, Phase 8.2 CI/CD ✅ 完了。
+技術的負債 Batch 1-3 完了（8項目解決）。次は Phase 8.3 Product Analytics または追加の技術的負債修正へ。
 
 ---
 
 ## Current Critical Status
+
+### Technical Debt Cleanup ✅ Batch 1-3 COMPLETE
+
+**Batch 1 (Critical/Money):**
+| ID | Item | Status |
+|----|------|--------|
+| H.1 | React 19 JSX Runtime (`babel.config.js`) | ✅ |
+| S.4 | Stripe Idempotency Key (二重課金防止) | ✅ |
+| H.3 | Hardcoded i18n defaultValue | ✅ |
+
+**Batch 2 (Compliance):**
+| ID | Item | Status |
+|----|------|--------|
+| C.1 | Permission Strings (Japanese) | ✅ |
+| C.3 | In-App Legal View (`expo-web-browser`) | ✅ |
+| P.5 | Dark Theme (`userInterfaceStyle`) | ✅ |
+
+**Batch 3 (Code Quality):**
+| ID | Item | Status |
+|----|------|--------|
+| D.2 | Console Log Cleanup | ✅ |
+| D.7 | File Naming (`hall-of-fame`) | ✅ |
 
 ### Phase 8.2: CI/CD Pipeline ✅ COMPLETE
 
@@ -18,26 +41,15 @@ Phase 8.1 Sentry Integration 完了。Phase 8.2 CI/CD Pipeline 完了。次は P
 | Deploy Edge Functions | Push to main only | ~27s | ✅ 7 functions deployed |
 
 **Deployed Edge Functions** (Auto-deploy on push to main):
-| Function | Size | Purpose |
-|----------|------|---------|
-| `admin-actions` | 174.9kB | Admin dashboard operations |
-| `create-commitment` | 142.4kB | Commitment creation with validation |
-| `delete-account` | 139.2kB | Apple-required account deletion |
-| `isbn-lookup` | 93.25kB | Barcode scanning |
-| `process-expired-commitments` | 183.3kB | The Reaper |
-| `send-push-notification` | 142.2kB | System push notifications |
-| `use-lifeline` | 140.1kB | Emergency freeze |
-
-**Maestro Smoke Test** (`.maestro/smoke_test.yaml`):
-- ✅ App launches successfully on iOS Simulator
-- ✅ "COMMIT" text visible on Welcome screen
-- Run locally: `MAESTRO_DRIVER_STARTUP_TIMEOUT=180000 ~/.maestro/bin/maestro test .maestro/smoke_test.yaml`
-
-**GitHub Secrets Required**:
-| Secret | Purpose |
-|--------|---------|
-| `SUPABASE_PROJECT_ID` | Remote project reference ID |
-| `SUPABASE_ACCESS_TOKEN` | Supabase CLI authentication |
+| Function | Purpose |
+|----------|---------|
+| `admin-actions` | Admin dashboard operations |
+| `create-commitment` | Commitment creation with validation |
+| `delete-account` | Apple-required account deletion |
+| `isbn-lookup` | Barcode scanning |
+| `process-expired-commitments` | The Reaper (with idempotencyKey) |
+| `send-push-notification` | System push notifications |
+| `use-lifeline` | Emergency freeze |
 
 ### Phase 8.1: Sentry Integration ✅ COMPLETE
 
@@ -49,7 +61,21 @@ Phase 8.1 Sentry Integration 完了。Phase 8.2 CI/CD Pipeline 完了。次は P
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. Supabase CLI `--all` Flag Does NOT Exist
+### 1. sed で console.log 一括削除は危険
+**Symptom**: TypeScript構文エラー（`Declaration or statement expected`）
+**Cause**: `sed '/console\.log/d'` が try-catch 内のログを削除すると、残った文字列リテラルが壊れたコードになる
+```typescript
+// Before sed (valid):
+console.log('[Service] Starting:', { data });
+return result;
+
+// After sed (BROKEN):
+        '[Service] Starting:', { data });  // ← 残骸
+return result;
+```
+**Solution**: 一括削除後に必ず `npx tsc --noEmit` で確認し、壊れたファイルを手動修正
+
+### 2. Supabase CLI `--all` Flag Does NOT Exist
 ```bash
 # BAD - Will fail with "unknown flag: --all"
 supabase functions deploy --all
@@ -60,46 +86,51 @@ for func in admin-actions create-commitment ...; do
 done
 ```
 
-### 2. Maestro iOS Driver Timeout
+### 3. Maestro iOS Driver Timeout
 **Symptom**: `iOS driver not ready in time` even with simulator running
 **Solution**:
 ```bash
-# Kill stale processes first
 pkill -f maestro; pkill -f XCTestRunner
-
-# Run with extended timeout
 MAESTRO_DRIVER_STARTUP_TIMEOUT=180000 ~/.maestro/bin/maestro test .maestro/smoke_test.yaml
 ```
 
-### 3. GitHub CLI Not in PATH
+### 4. GitHub CLI Not in PATH
 **Solution**: Use full path `/opt/homebrew/bin/gh` or add to PATH
 
 ---
 
-## Immediate Next Steps: Phase 8.3-8.5
+## Immediate Next Steps
 
-### 8.3 Product Analytics (PostHog/Mixpanel) ← NEXT
-- Track: Commitment Created, Completed, Defaulted
-- Dashboard: Completion Rate, Churn
+### Option A: Phase 8.3-8.5 (Ops)
+- **8.3** Product Analytics (PostHog/Mixpanel)
+- **8.4** Remote Config & Force Update
+- **8.5** Maintenance Mode
 
-### 8.4 Remote Config & Force Update
-- Check `min_required_version` on app launch
-- Block old versions with update modal
-
-### 8.5 Maintenance Mode
-- Global "Under Maintenance" switch
-- Graceful offline for DB migrations
+### Option B: Continue Technical Debt (Remaining Items)
+- **W.1** Type Safety Enforcement (`any` → strict types)
+- **D.5** God Component Refactoring (CreateCommitmentScreen)
+- **P.2** Image Caching (`expo-image`)
+- **C.2** Offline Handling (`NetInfo`)
 
 ---
 
 ## Key File Locations
+
+### Technical Debt Fixes (This Session)
+| File | Change |
+|------|--------|
+| `babel.config.js` | `jsxRuntime: 'automatic'` |
+| `supabase/functions/process-expired-commitments/index.ts` | `idempotencyKey` |
+| `src/screens/VerificationScreen.tsx` | Remove `defaultValue` |
+| `src/screens/SettingsScreen.tsx` | `expo-web-browser` |
+| `app.json` | Dark theme + Japanese permissions |
+| `src/components/hall-of-fame/` | Renamed from `halloffame` |
 
 ### CI/CD Pipeline
 | File | Purpose |
 |------|---------|
 | `.github/workflows/ci-cd.yml` | GitHub Actions workflow |
 | `.maestro/smoke_test.yaml` | Local smoke test |
-| `package.json` | `typecheck` script |
 
 ### Sentry Integration
 | Platform | Files |
@@ -110,26 +141,7 @@ MAESTRO_DRIVER_STARTUP_TIMEOUT=180000 ~/.maestro/bin/maestro test .maestro/smoke
 
 ---
 
-## Environment Setup
-
-### GitHub Secrets (Already Configured)
-```
-SUPABASE_PROJECT_ID=<your-project-ref>
-SUPABASE_ACCESS_TOKEN=<your-access-token>
-```
-
-### Supabase Secrets
-```bash
-supabase secrets set STRIPE_SECRET_KEY=sk_live_xxx
-supabase secrets set CRON_SECRET=your-cron-secret
-supabase secrets set GOOGLE_BOOKS_API_KEY=xxx
-supabase secrets set ADMIN_EMAILS=your-email@example.com
-supabase secrets set SENTRY_DSN_EDGE=https://xxx@xxx.ingest.sentry.io/xxx
-```
-
----
-
 ## Git Status
 - Branch: `main`
-- Latest commit: `0ecdb3ef` - docs: update ROADMAP with detailed code quality findings
+- Latest commit: `23e08993` - fix: batch 2-3 technical debt cleanup
 - CI/CD: ✅ All workflows passing
