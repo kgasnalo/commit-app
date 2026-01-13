@@ -10,5 +10,9 @@
     "noEmit": true,
     "jsx": "react-native",
     "allowSyntheticDefaultImports": true
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "supabase/functions"
+  ]
 }

@@ -1,0 +1,26 @@
+# COMMIT App - Smoke Test
+# Phase 8.2 - Minimal smoke test to verify app launches successfully
+#
+# Prerequisites:
+# - App must be built and installed on simulator/device
+# - Run with: maestro test .maestro/smoke_test.yaml
+
+appId: com.kgxxx.commitapp
+
+---
+
+# Launch the app
+- launchApp:
+    appId: com.kgxxx.commitapp
+    clearState: true
+
+# Wait for app to initialize and Welcome screen to appear
+- extendedWaitUntil:
+    visible: "COMMIT"
+    timeout: 15000
+
+# Verify logo text is visible
+- assertVisible: "COMMIT"
+
+# Take a screenshot for verification
+- takeScreenshot: smoke_test_welcome_screen

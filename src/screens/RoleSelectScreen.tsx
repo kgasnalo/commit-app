@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Linking, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { RECOMMENDED_BOOKS } from '../constants/recommendations';
 import { Role, Book } from '../types';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';

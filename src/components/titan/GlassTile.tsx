@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, ViewStyle, StyleSheet } from 'react-native';
+import { View, ViewStyle, StyleSheet, ColorValue } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+
+type GradientColors = readonly [ColorValue, ColorValue, ...ColorValue[]];
 import { titanColors, titanShadows } from '../../theme/titan';
 
 interface GlassTileProps {
@@ -68,7 +70,7 @@ export function GlassTile({
   })();
 
   // Gradient colors based on variant
-  const getGradientColors = (): string[] => {
+  const getGradientColors = (): GradientColors => {
     if (isGlowing) {
       // 発光グラス: 背景からオレンジが透過
       return [
@@ -76,7 +78,7 @@ export function GlassTile({
         'rgba(255, 107, 53, 0.08)',
         'rgba(26, 23, 20, 0.95)',      // 半透明ダーク
         'rgba(26, 23, 20, 0.98)',
-      ];
+      ] as const;
     }
     if (isSunken) {
       return [
@@ -84,25 +86,25 @@ export function GlassTile({
         'rgba(0, 0, 0, 0.1)',
         titanColors.background.card,
         'rgba(255, 255, 255, 0.02)',
-      ];
+      ] as const;
     }
     return [
       'rgba(255, 255, 255, 0.12)',
       'rgba(255, 255, 255, 0.04)',
       'transparent',
       'transparent',
-    ];
+    ] as const;
   };
 
   // Inner glow gradient (発光効果)
-  const getInnerGlowColors = (): string[] | null => {
+  const getInnerGlowColors = (): GradientColors | null => {
     if (innerGlow === 'strong') {
       return [
         'rgba(255, 107, 53, 0.25)',
         'rgba(255, 107, 53, 0.12)',
         'transparent',
         'transparent',
-      ];
+      ] as const;
     }
     if (innerGlow === 'orange') {
       return [
@@ -110,7 +112,7 @@ export function GlassTile({
         'rgba(255, 107, 53, 0.05)',
         'transparent',
         'transparent',
-      ];
+      ] as const;
     }
     return null;
   };
