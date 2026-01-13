@@ -334,12 +334,15 @@ export interface Database {
           stripe_payment_intent_id: string | null
           stripe_customer_id: string | null
           stripe_payment_method_id: string | null
-          charge_status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action'
+          charge_status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refunded'
           failure_reason: string | null
           failure_code: string | null
           attempt_count: number
           last_attempt_at: string | null
           next_retry_at: string | null
+          stripe_refund_id: string | null
+          refunded_at: string | null
+          refunded_by: string | null
           created_at: string
           updated_at: string
         }
@@ -352,12 +355,15 @@ export interface Database {
           stripe_payment_intent_id?: string | null
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
-          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action'
+          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refunded'
           failure_reason?: string | null
           failure_code?: string | null
           attempt_count?: number
           last_attempt_at?: string | null
           next_retry_at?: string | null
+          stripe_refund_id?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -370,12 +376,15 @@ export interface Database {
           stripe_payment_intent_id?: string | null
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
-          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action'
+          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refunded'
           failure_reason?: string | null
           failure_code?: string | null
           attempt_count?: number
           last_attempt_at?: string | null
           next_retry_at?: string | null
+          stripe_refund_id?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -395,6 +404,42 @@ export interface Database {
             referencedColumns: ["id"]
           }
         ]
+      }
+      admin_audit_logs: {
+        Row: {
+          id: string
+          admin_email: string
+          action: string
+          target_type: string
+          target_id: string
+          details: Json | null
+          result: string
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          admin_email: string
+          action: string
+          target_type: string
+          target_id: string
+          details?: Json | null
+          result: string
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          admin_email?: string
+          action?: string
+          target_type?: string
+          target_id?: string
+          details?: Json | null
+          result?: string
+          error_message?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

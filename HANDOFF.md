@@ -1,13 +1,22 @@
 # Handoff: Session 2026-01-13
 
 ## Current Goal
-**Phase 7.7: Internal Admin Dashboard** or **Phase 8: Reliability & Ops**
+**Phase 8: Reliability & Ops**
 
-Phase 7.6 Server-side Validation 完了。コミットメント作成がEdge Function経由で検証されるようになりました。
+Phase 7 完了! Admin Dashboard が稼働中。次は Phase 8 へ。
 
 ---
 
 ## Current Critical Status
+
+### Phase 7.7: Internal Admin Dashboard ✅ COMPLETE
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Admin Dashboard Page | ✅ | `/admin/dashboard` (Web Portal) |
+| `admin-actions` Edge Function | ✅ | Refund & Complete アクション |
+| Middleware Protection | ✅ | Email ベースの Admin 認証 |
+| `admin_audit_logs` Table | ✅ | 監査ログ記録 |
+| `charge_status = 'refunded'` | ✅ | 返金ステータス追加 |
 
 ### Phase 7.6: Server-side Validation ✅ COMPLETE
 | Component | Status | Notes |
@@ -43,37 +52,50 @@ Phase 7.6 Server-side Validation 完了。コミットメント作成がEdge Fun
 
 ---
 
-## What Didn't Work / Lessons Learned
+## IMPORTANT: Set ADMIN_EMAILS
 
-### 1. SERVICE_ROLE_KEY timingSafeEqual 比較失敗 (Phase 7.4)
-**Problem:** Edge Function 内で `Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')` と Authorization ヘッダーの比較が一致しない。
+Admin Dashboard を使用するには、環境変数を設定してください:
 
-**Solution:** 専用の `CRON_SECRET` を作成し、Supabase secrets と Vault の両方に保存。
+```bash
+# Supabase Edge Functions
+supabase secrets set ADMIN_EMAILS=your-email@example.com
 
-### 2. Supabase CLI に SQL 実行コマンドがない
-**Solution:** マイグレーションファイルを作成して `supabase db push` で実行。
-
-### 3. pg_cron から Edge Function を呼ぶ認証
-**Solution:** Vault に secrets を保存し、`vault.decrypted_secrets` ビューから動的取得。
+# Vercel (Web Portal)
+echo "your-email@example.com" | npx vercel env add ADMIN_EMAILS production
+npx vercel --prod  # Redeploy to pick up new vars
+```
 
 ---
 
-## Immediate Next Steps
+## Immediate Next Steps: Phase 8
 
-### Option A: Phase 7.7 - Internal Admin Dashboard (Ops)
-- Retool/Admin ビューで Support 用ダッシュボード
-- 手動 Refund/Complete 機能
+### 8.1 Sentry 統合 (Crash Monitoring)
+- App + Edge Functions のエラー監視
 
-### Option B: Phase 8 - Reliability & Ops
-- 8.1 Sentry 統合 (Crash Monitoring)
-- 8.2 CI/CD Pipeline (GitHub Actions)
-- 8.3 Product Analytics
-- 8.4 Remote Config & Force Update
-- 8.5 Maintenance Mode
+### 8.2 CI/CD Pipeline (GitHub Actions)
+- main マージで自動デプロイ
+
+### 8.3 Product Analytics (PostHog/Mixpanel)
+- コミットメント完了率・チャーン追跡
+
+### 8.4 Remote Config & Force Update
+- 強制アップデートモーダル
+
+### 8.5 Maintenance Mode
+- グローバルメンテナンスモード
 
 ---
 
 ## Key File Locations
+
+### Internal Admin Dashboard (Phase 7.7)
+| Feature | File |
+|---------|------|
+| Dashboard Page | `commit-app-web/src/app/admin/dashboard/page.tsx` |
+| Client Component | `commit-app-web/src/app/admin/dashboard/AdminDashboardClient.tsx` |
+| Middleware | `commit-app-web/src/middleware.ts` |
+| Edge Function | `supabase/functions/admin-actions/index.ts` |
+| DB Migration | `supabase/migrations/20260114100000_admin_dashboard_support.sql` |
 
 ### Server-side Validation (Phase 7.6)
 | Feature | File |
@@ -105,6 +127,12 @@ Phase 7.6 Server-side Validation 完了。コミットメント作成がEdge Fun
 
 ### Manual Test Commands
 ```bash
+# Test admin-actions (requires ADMIN JWT)
+curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/admin-actions \
+  -H "Authorization: Bearer <ADMIN_JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "complete", "commitment_id": "<ID>", "reason": "Test"}'
+
 # Test create-commitment (requires USER JWT)
 curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/create-commitment \
   -H "Authorization: Bearer <USER_JWT>" \
@@ -138,10 +166,10 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-not
 ## Supabase Status
 
 ### Database Tables
-`users`, `books`, `commitments`, `verification_logs`, `tags`, `book_tags`, `reading_sessions`, `expo_push_tokens`, `penalty_charges`
+`users`, `books`, `commitments`, `verification_logs`, `tags`, `book_tags`, `reading_sessions`, `expo_push_tokens`, `penalty_charges`, `admin_audit_logs`
 
 ### Edge Functions
-`use-lifeline`, `isbn-lookup`, `delete-account`, `send-push-notification`, `process-expired-commitments`, `create-commitment`
+`use-lifeline`, `isbn-lookup`, `delete-account`, `send-push-notification`, `process-expired-commitments`, `create-commitment`, `admin-actions`
 
 ### Cron Jobs (Active)
 | Job Name | Schedule | Purpose |
@@ -161,10 +189,11 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-not
 | `STRIPE_SECRET_KEY` | Stripe API認証 |
 | `CRON_SECRET` | cron認証受け入れ |
 | `GOOGLE_BOOKS_API_KEY` | Google Books API (create-commitment用) |
+| `ADMIN_EMAILS` | Admin Dashboard アクセス許可リスト |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Latest commit: Phase 7.6 Server-side Validation
+- Latest commit: Phase 7.7 Admin Dashboard
 - Ready to push: `git push origin main`

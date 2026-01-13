@@ -263,9 +263,14 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - RLS INSERT policy removed (forces Edge Function usage)
     - **DoD:** All commitment creation goes through server-side validation.
 
-- [ ] **7.7 Internal Admin Dashboard (Ops)**
+- [x] **7.7 Internal Admin Dashboard (Ops)**
     - **Role:** `[Fullstack Engineer]`
     - **Action:** Simple Retool/Admin view for Support.
+    - **Implementation:**
+      - Admin Dashboard at `/admin/dashboard` (Web Portal)
+      - `admin-actions` Edge Function for refund/complete
+      - Email-based admin authentication in middleware
+      - `admin_audit_logs` table for action tracking
     - **DoD:** Ability to Refund/Complete commitments manually.
 
 ---
