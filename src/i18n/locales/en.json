@@ -430,6 +430,7 @@
     "agree_penalty": "Please agree to the penalty terms.",
     "camera_permission": "Camera permission is required",
     "memo_too_short": "Memo is too short",
+    "memo_length_requirement": "Please write at least {{length}} characters about what you learned.\nCurrent: {{current}} characters",
     "photo_required": "Please take a photo of the last page",
     "verification_failed": "Failed to save verification",
     "subscription_failed": "Failed to start subscription",

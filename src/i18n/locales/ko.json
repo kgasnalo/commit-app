@@ -427,6 +427,7 @@
     "agree_penalty": "페널티에 동의해주세요.",
     "camera_permission": "카메라 접근 권한이 필요합니다",
     "memo_too_short": "메모가 너무 짧습니다",
+    "memo_length_requirement": "읽은 내용에서 배운 점을 {{length}}자 이상으로 작성해 주세요.\n현재: {{current}}자",
     "photo_required": "책의 마지막 페이지 사진을 촬영해주세요",
     "verification_failed": "완료 확인 저장에 실패했습니다",
     "subscription_failed": "구독 시작에 실패했습니다",

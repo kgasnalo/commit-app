@@ -430,6 +430,7 @@
     "agree_penalty": "ペナルティに同意してください。",
     "camera_permission": "カメラへのアクセス許可が必要です",
     "memo_too_short": "メモが短すぎます",
+    "memo_length_requirement": "読書から得た学びを{{length}}文字以上で記入してください。\n現在: {{current}}文字",
     "photo_required": "本の最終ページの写真を撮影してください",
     "verification_failed": "読了確認の保存に失敗しました",
     "subscription_failed": "サブスクリプションの開始に失敗しました",

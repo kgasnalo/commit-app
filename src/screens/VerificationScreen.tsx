@@ -73,7 +73,6 @@ export default function VerificationScreen({ route, navigation }: any) {
       Alert.alert(
         i18n.t('errors.memo_too_short'),
         i18n.t('errors.memo_length_requirement', {
-          defaultValue: `読書から得た学びを${MIN_MEMO_LENGTH}文字以上で記入してください。\n現在: ${memo.length}文字`,
           length: MIN_MEMO_LENGTH,
           current: memo.length
         }),

@@ -627,19 +627,24 @@ async function attemptStripeCharge(
   try {
     console.log(`[Reaper] Creating PaymentIntent for ${amount} ${currency}`)
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: currency.toLowerCase(),
-      customer: customerId,
-      payment_method: paymentMethodId,
-      off_session: true,
-      confirm: true,
-      metadata: {
-        commitment_id: commitmentId,
-        penalty_charge_id: chargeId,
-        type: 'penalty_charge',
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: amount,
+        currency: currency.toLowerCase(),
+        customer: customerId,
+        payment_method: paymentMethodId,
+        off_session: true,
+        confirm: true,
+        metadata: {
+          commitment_id: commitmentId,
+          penalty_charge_id: chargeId,
+          type: 'penalty_charge',
+        },
       },
-    })
+      {
+        idempotencyKey: `penalty_${chargeId}`,
+      }
+    )
 
     console.log(`[Reaper] PaymentIntent status: ${paymentIntent.status}`)
 
