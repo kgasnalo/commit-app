@@ -47,6 +47,9 @@ jobs:
       - name: Deploy all Edge Functions
         run: |
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-          supabase functions deploy --all
+          for func in admin-actions create-commitment delete-account isbn-lookup process-expired-commitments send-push-notification use-lifeline; do
+            echo "Deploying $func..."
+            supabase functions deploy $func
+          done
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
