@@ -31,7 +31,6 @@ export function logMessage(
   level: Sentry.SeverityLevel = 'info',
   extra?: Record<string, unknown>
 ): void {
-  console.log(`[${level.toUpperCase()}] ${message}`, extra);
 
   if (SENTRY_DSN && !__DEV__) {
     Sentry.captureMessage(message, {

@@ -36,11 +36,9 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   useEffect(() => {
     const loadOnboardingData = async () => {
       try {
-        console.log('Screen13 route.params:', route.params);
         
         // route.paramsがあればそれを使用（直接遷移の場合）
         if (route.params?.selectedBook) {
-          console.log('Using route.params data in Screen13');
           setSelectedBook(route.params.selectedBook);
           setDeadline(route.params.deadline);
           setPledgeAmount(route.params.pledgeAmount);
@@ -54,7 +52,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             setDeadline(parsed.deadline);
             setPledgeAmount(parsed.pledgeAmount);
             setCurrency(parsed.currency || 'JPY');
-            console.log('Onboarding data loaded from AsyncStorage');
           } else {
             console.warn('No onboarding data found in AsyncStorage');
           }
@@ -88,7 +85,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-      console.log('User found:', user.id);
 
       // subscription_statusを更新
       const { error: updateError } = await supabase
@@ -101,7 +97,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         throw updateError;
       }
 
-      console.log('Subscription status updated');
 
       // データソースを確定（stateよりもroute.paramsを優先、なければstate）
       const bookToCommit = route.params?.selectedBook || selectedBook;
@@ -117,12 +112,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-      console.log('Creating commitment with:', {
-         deadline: deadlineToCommit,
-         pledgeAmount: pledgeToCommit,
-         bookTitle: bookToCommit.volumeInfo?.title
-      });
-
       let bookId: string | null = null;
 
       // 1. まず既存の本を検索
@@ -134,7 +123,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       if (existingBook) {
         bookId = existingBook.id;
-        console.log('Found existing book:', bookId);
       } else {
         // 2. なければ新規作成
         const bookData = {
@@ -154,7 +142,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           console.error('Book insert error:', insertError);
         } else if (newBook) {
           bookId = newBook.id;
-          console.log('Created new book:', bookId);
         }
       }
 
@@ -176,7 +163,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           console.error('Commitment insert error:', commitError);
           throw new Error(`Commitment creation failed: ${commitError.message}`);
         } else {
-          console.log('Commitment created successfully');
         }
       } else {
         console.error('Failed to get book ID');

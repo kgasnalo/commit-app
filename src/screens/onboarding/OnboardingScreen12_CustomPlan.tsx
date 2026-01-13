@@ -31,7 +31,6 @@ export default function OnboardingScreen12({ navigation, route }: any) {
             setDeadline(parsed.deadline);
             setPledgeAmount(parsed.pledgeAmount);
             setCurrency(parsed.currency || 'JPY');
-            console.log('Onboarding data loaded from AsyncStorage in Screen12:', parsed);
           } else {
             console.warn('No onboarding data found in AsyncStorage in Screen12');
           }
@@ -46,7 +45,6 @@ export default function OnboardingScreen12({ navigation, route }: any) {
 
   // Navigate to next screen after animation completes
   const handleAnimationComplete = useCallback(() => {
-    console.log('Navigating to Screen13 with:', { selectedBook, deadline, pledgeAmount });
     navigation.navigate('Onboarding13', {
       selectedBook,
       deadline,

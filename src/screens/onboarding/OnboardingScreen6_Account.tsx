@@ -65,7 +65,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           );
 
         if (!upsertError) {
-          console.log(`User synced to database (attempt ${attempt})`);
           return;
         }
 
@@ -100,7 +99,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
     setLoading(true);
     try {
-      console.log('Starting signup process...');
 
       // オンボーディングデータをAsyncStorageに保存
       // 認証後にAppNavigatorのスタックが切り替わるため、route.paramsが失われる
@@ -111,7 +109,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         currency,
         tsundokuCount,
       }));
-      console.log('Onboarding data saved to AsyncStorage');
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -124,13 +121,11 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       }
 
       if (data.user) {
-        console.log('User created:', data.user.id);
 
         // upsertでusersテーブルにレコードを確実に同期
         // Auth Triggerのタイミングに依存しない堅牢な実装
         await syncUserToDatabase(data.user.id, email, username);
 
-        console.log('User synced, navigating to next screen...');
 
         // 次の画面に遷移（認証状態は保持される）
         navigation.navigate('Onboarding7', {
@@ -163,7 +158,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     // PKCE Flow: codeパラメータをチェック
     const code = queryParams.get('code');
     if (code) {
-      console.log('PKCE Flow detected, exchanging code for session...');
       const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
 
       if (sessionError) {
@@ -196,7 +190,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
 
     if (access_token && refresh_token) {
-      console.log('Implicit Flow detected, setting session...');
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token,
         refresh_token,
@@ -280,7 +273,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           await handleOAuthCallback(result.url);
         } else if (result.type === 'cancel') {
           // ユーザーがキャンセルした場合は何もしない
-          console.log('OAuth cancelled by user');
         }
       }
     } catch (error: unknown) {

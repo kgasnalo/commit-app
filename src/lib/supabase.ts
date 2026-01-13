@@ -14,6 +14,5 @@ export const AUTH_REFRESH_EVENT = 'REFRESH_AUTH';
  * Call this after manually updating subscription_status or other auth-related data.
  */
 export function triggerAuthRefresh(): void {
-  console.log('[Supabase] Triggering auth refresh event');
   DeviceEventEmitter.emit(AUTH_REFRESH_EVENT);
 }

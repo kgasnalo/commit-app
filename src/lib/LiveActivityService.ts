@@ -41,7 +41,6 @@ if (Platform.OS === 'ios') {
   try {
     ExpoLiveActivity = require('expo-live-activity');
   } catch (e) {
-    console.log('[LiveActivityService] expo-live-activity not available');
   }
 }
 
@@ -64,13 +63,11 @@ class LiveActivityServiceClass {
 
     try {
       if (typeof ExpoLiveActivity.areActivitiesEnabled !== 'function') {
-        console.log('[LiveActivityService] areActivitiesEnabled is not a function (likely Expo Go)');
         this.isSupported = false;
         return;
       }
       this.isSupported = ExpoLiveActivity.areActivitiesEnabled();
     } catch (e) {
-      console.log('[LiveActivityService] areActivitiesEnabled check failed:', e);
       this.isSupported = false;
     }
   }
@@ -90,7 +87,6 @@ class LiveActivityServiceClass {
     bookTitle?: string;
   }): string | null {
     if (!this.isSupported || !ExpoLiveActivity) {
-      console.log('[LiveActivityService] Not supported, skipping start');
       return null;
     }
 
@@ -111,7 +107,6 @@ class LiveActivityServiceClass {
       };
 
       this.currentActivityId = ExpoLiveActivity.startActivity(state);
-      console.log('[LiveActivityService] Started activity:', this.currentActivityId);
       return this.currentActivityId;
     } catch (error) {
       console.error('[LiveActivityService] Failed to start activity:', error);
@@ -184,7 +179,6 @@ class LiveActivityServiceClass {
       };
 
       ExpoLiveActivity.endActivity(this.currentActivityId, finalState);
-      console.log('[LiveActivityService] Stopped activity:', this.currentActivityId);
       this.currentActivityId = null;
     } catch (error) {
       console.error('[LiveActivityService] Failed to stop activity:', error);

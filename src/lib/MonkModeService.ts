@@ -110,7 +110,6 @@ class MonkModeServiceClass {
         return { success: false, error: error.message };
       }
 
-      console.log('[MonkModeService] Session saved:', data.id);
       return { success: true, sessionId: data.id };
     } catch (error) {
       console.error('[MonkModeService] Unexpected error saving session:', error);
@@ -263,7 +262,6 @@ class MonkModeServiceClass {
   async persistTimerState(state: PersistedTimerState): Promise<void> {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.TIMER_STATE, JSON.stringify(state));
-      console.log('[MonkModeService] Timer state persisted');
     } catch (error) {
       console.error('[MonkModeService] Failed to persist timer state:', error);
     }
@@ -278,7 +276,6 @@ class MonkModeServiceClass {
       if (!stateJson) return null;
 
       const state: PersistedTimerState = JSON.parse(stateJson);
-      console.log('[MonkModeService] Timer state restored');
       return state;
     } catch (error) {
       console.error('[MonkModeService] Failed to restore timer state:', error);
@@ -292,7 +289,6 @@ class MonkModeServiceClass {
   async clearTimerState(): Promise<void> {
     try {
       await AsyncStorage.removeItem(STORAGE_KEYS.TIMER_STATE);
-      console.log('[MonkModeService] Timer state cleared');
     } catch (error) {
       console.error('[MonkModeService] Failed to clear timer state:', error);
     }

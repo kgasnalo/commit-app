@@ -57,7 +57,6 @@ async function fetchOpenLibraryCover(
     const data = await response.json();
 
     if (!data.docs || data.docs.length === 0) {
-      console.log('No books found in Open Library for:', title);
       return null;
     }
 
@@ -74,7 +73,6 @@ async function fetchOpenLibraryCover(
       return `https://covers.openlibrary.org/b/isbn/${book.isbn[0]}-M.jpg`;
     }
 
-    console.log('No cover found in Open Library for:', title);
     return null;
   } catch (error) {
     console.error('Error fetching cover from Open Library:', error);
@@ -100,7 +98,6 @@ export async function fetchBookCover(
   }
 
   // Fallback to Open Library
-  console.log('Trying Open Library fallback for:', title);
   return await fetchOpenLibraryCover(title, author);
 }
 
@@ -130,7 +127,6 @@ async function fetchGoogleBooksCover(
     const data: GoogleBooksResponse = await response.json();
 
     if (!data.items || data.items.length === 0) {
-      console.log('No books found in Google Books for:', title);
       return null;
     }
 
@@ -138,7 +134,6 @@ async function fetchGoogleBooksCover(
     const imageLinks = book.volumeInfo.imageLinks;
 
     if (!imageLinks) {
-      console.log('No cover image found in Google Books for:', title);
       return null;
     }
 

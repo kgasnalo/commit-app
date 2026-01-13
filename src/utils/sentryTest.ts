@@ -42,7 +42,6 @@ export function triggerTestError(): void {
       },
     });
 
-    console.log('[Sentry Test] Test error sent to Sentry');
   }
 }
 
@@ -67,7 +66,6 @@ export function triggerTestMessage(): void {
     },
   });
 
-  console.log('[Sentry Test] Test message sent to Sentry');
 }
 
 /**
@@ -84,7 +82,6 @@ export function triggerNativeCrash(): void {
     return;
   }
 
-  console.log('[Sentry Test] Triggering native crash...');
   Sentry.nativeCrash();
 }
 
@@ -92,9 +89,6 @@ export function triggerNativeCrash(): void {
  * Test all Sentry features at once
  */
 export function runSentryDiagnostics(): void {
-  console.log('[Sentry Diagnostics] Starting...');
-  console.log('[Sentry Diagnostics] DSN configured:', !!SENTRY_DSN);
-  console.log('[Sentry Diagnostics] Environment:', __DEV__ ? 'development' : 'production');
 
   // Test message
   triggerTestMessage();
@@ -102,6 +96,5 @@ export function runSentryDiagnostics(): void {
   // Wait a bit, then test error
   setTimeout(() => {
     triggerTestError();
-    console.log('[Sentry Diagnostics] Complete. Check Sentry dashboard for events.');
   }, 1000);
 }

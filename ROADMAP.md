@@ -351,7 +351,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
 ## 🛠️ 技術的負債と品質改善 (Technical Debt & Quality Improvements)
 
 ### Level 1: Critical (Hotfixes) - 即時対応必須
-- [ ] **H.1 React 19 JSX Runtime Conflict Fix**
+- [x] **H.1 React 19 JSX Runtime Conflict Fix**
     - **Error:** `SyntaxError: Duplicate __self prop found` in `src/screens/CreateCommitmentScreen.tsx`.
     - **Cause:** React 19 (Automatic Runtime) conflicts with `babel-preset-expo` injecting `__self`.
     - **Fix:** Update `babel.config.js` presets to `['babel-preset-expo', { jsxRuntime: 'automatic' }]`.
@@ -362,7 +362,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Scope:** `App.js`, `DashboardScreen.tsx`, and all screens using native `SafeAreaView`.
     - **Fix:** Replace with `SafeAreaView` from `react-native-safe-area-context`.
 
-- [ ] **H.3 Hardcoded Strings (Localization Failures)**
+- [x] **H.3 Hardcoded Strings (Localization Failures)**
     - **Problem:** Japanese text hardcoded in logic, bypassing i18n system.
     - **Locations:**
         - `src/screens/VerificationScreen.tsx` (Line 76: `defaultValue`)
@@ -400,7 +400,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Problem:** Complex `Titan Background` logic (LinearGradients) duplicated across multiple screens.
     - **Fix:** Create reusable `TitanBackground` component.
 
-- [ ] **D.2 Console Log Cleanup**
+- [x] **D.2 Console Log Cleanup**
     - **Problem:** 200+ `console.log` calls remaining in production code.
     - **Locations:** `MetricsService.ts`, `MonkModeService.ts`, `LiveActivityService.ts`, `AppNavigator.tsx`, and Onboarding screens.
     - **Fix:** Replace with structured `Logger` utility and ensure removal in production builds.
@@ -420,7 +420,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Problem:** `react-native-confetti-cannon` is likely unmaintained and may conflict with New Architecture.
     - **Fix:** Replace with `react-native-skia` particle system or a modern, maintained alternative.
 
-- [ ] **D.7 File Naming Consistency**
+- [x] **D.7 File Naming Consistency**
     - **Problem:** Inconsistent folder naming conventions in `src/components`.
     - **Locations:** `halloffame` (lowercase) vs `reading-dna` (kebab-case) vs `BookDetailSkeleton.tsx` (PascalCase).
     - **Fix:** Standardize all component folders to kebab-case (e.g., `hall-of-fame`) or PascalCase to match React conventions.
@@ -455,7 +455,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Wrap in `Promise.all()` or use `for...of` loop.
 
 ### Level 5: Store Compliance & Production Polish (審査対策) - 公開前提
-- [ ] **C.1 Permission String Localization (Guideline 5.1.1)**
+- [x] **C.1 Permission String Localization (Guideline 5.1.1)**
     - **Problem:** `app.json` permission strings (`photosPermission`, etc.) are hardcoded in Japanese.
     - **Risk:** Rejection for non-localized permission requests on English devices.
     - **Fix:** Use `expo-localization` or update `app.config.ts` to support multi-language strings or use English as default.
@@ -464,7 +464,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Problem:** No `NetInfo` usage detected. App may crash or hang offline.
     - **Fix:** Implement `useNetInfo` hook and show a "No Connection" blocking UI or Toast to prevent API calls.
 
-- [ ] **C.3 In-App Legal View (UX/Compliance)**
+- [x] **C.3 In-App Legal View (UX/Compliance)**
     - **Problem:** Terms/Privacy links open in external browser (Safari/Chrome).
     - **Risk:** Poor UX and potential App Store rejection (Reviewers prefer in-app).
     - **Fix:** Use `expo-web-browser` to open legal docs in `SFSafariViewController` / `CustomTabs`.
@@ -487,13 +487,13 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Problem:** Zero test files found. Critical business logic is untested.
     - **Fix:** Setup `jest` and add unit tests for `commitmentHelpers.ts` and `MonkModeService`.
 
-- [ ] **P.5 Forced Dark Theme (Design Integrity)**
+- [x] **P.5 Forced Dark Theme (Design Integrity)**
     - **Problem:** `app.json` is set to `userInterfaceStyle: "light"`.
     - **Risk:** Titan Design (Dark UI) breaks on Light Mode devices (white status bars, system dialogs).
     - **Fix:** Set `userInterfaceStyle: "dark"` in `app.json` and force dark status bar.
 
 ### Level 6: Advanced Architecture & Stability (最終監査)
-- [ ] **S.4 Reaper Idempotency Hardening (CRITICAL)**
+- [x] **S.4 Reaper Idempotency Hardening (CRITICAL)**
     - **Problem:** `process-expired-commitments` creates Stripe PaymentIntents without `idempotencyKey`.
     - **Risk:** **DOUBLE CHARGE RISK.** If the function times out or runs concurrently, the same user could be charged multiple times for one commitment.
     - **Fix:** Update `stripe.paymentIntents.create` to include `{ idempotencyKey: 'penalty_' + chargeId }`.
@@ -507,6 +507,16 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Problem:** Stripe SDK version mismatch (`admin-actions` uses v14, `reaper` uses v17).
     - **Risk:** Inconsistent API behavior or type errors when handling payment objects.
     - **Fix:** Unify all Edge Functions to use the same Stripe SDK version (v17).
+
+- [ ] **S.7 Upload Security (File Bomb)**
+    - **Problem:** `VerificationScreen` uploads images without checking file size.
+    - **Risk:** Bandwidth exhaustion and storage abuse (DoS risk).
+    - **Fix:** Check `asset.fileSize` before upload and limit to 5MB.
+
+- [ ] **S.8 Deep Link Validation**
+    - **Problem:** `Linking.openURL` lacks pre-check and error feedback.
+    - **Risk:** Silent failures or handling of malicious schemes.
+    - **Fix:** Use `Linking.canOpenURL` and show Toast on failure.
 
 - [ ] **A.1 Granular Error Boundaries**
     - **Problem:** Global ErrorBoundary only. One screen crash breaks the entire app.

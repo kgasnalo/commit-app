@@ -9,6 +9,7 @@ import {
   ScrollView,
   Linking,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -94,8 +95,18 @@ export default function SettingsScreen({ navigation }: any) {
     );
   };
 
-  const openURL = (url: string) => {
-    Linking.openURL(url).catch((err) => console.error('An error occurred', err));
+  const openURL = async (url: string) => {
+    try {
+      if (url.startsWith('mailto:')) {
+        // Email links open in external mail app
+        await Linking.openURL(url);
+      } else {
+        // Web URLs open in-app browser (SFSafariViewController on iOS)
+        await WebBrowser.openBrowserAsync(url);
+      }
+    } catch (err) {
+      console.error('An error occurred', err);
+    }
   };
 
   const SectionHeader = ({ title }: { title: string }) => (

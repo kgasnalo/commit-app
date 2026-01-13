@@ -238,7 +238,6 @@ export default function BarcodeScannerModal({
             <View style={styles.header} pointerEvents="box-none">
               <GHTouchableOpacity
                 onPress={() => {
-                  console.log('Close button pressed');
                   onClose();
                 }}
                 style={styles.closeButton}

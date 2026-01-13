@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -42,14 +42,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "読了確認のために写真へのアクセスが必要です",
-          "cameraPermission": "読了確認のためにカメラへのアクセスが必要です"
+          "photosPermission": "読書記録の検証のために写真ライブラリへのアクセスを許可してください。",
+          "cameraPermission": "読書記録の撮影のためにカメラへのアクセスを許可してください。"
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "ISBNバーコードをスキャンするためにカメラへのアクセスが必要です"
+          "cameraPermission": "ISBNバーコードをスキャンするためにカメラへのアクセスを許可してください。"
         }
       ],
       [

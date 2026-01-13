@@ -179,7 +179,6 @@ function AppNavigatorInner() {
   async function checkSubscriptionStatus(userId: string, retryCount = 0): Promise<boolean> {
     const maxRetries = 3;
     try {
-      console.log(`Checking subscription for user ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
 
       const { data, error } = await supabase
         .from('users')
@@ -192,7 +191,6 @@ function AppNavigatorInner() {
 
         // usersテーブルにレコードが見つからない場合、リトライ
         if (error.code === 'PGRST116' && retryCount < maxRetries) {
-          console.log(`User record not found, retrying in ${(retryCount + 1) * 500}ms...`);
           await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 500));
           return checkSubscriptionStatus(userId, retryCount + 1);
         }
@@ -201,7 +199,6 @@ function AppNavigatorInner() {
       }
 
       const isActive = data?.subscription_status === 'active';
-      console.log('User subscription is:', isActive ? 'active' : 'inactive');
       return isActive;
     } catch (err) {
       console.error('Unexpected error checking subscription:', err);
@@ -242,7 +239,6 @@ function AppNavigatorInner() {
 
     // 認証状態の変化を監視
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session?.user?.id);
 
       // INITIAL_SESSION は initializeAuth で処理済み
       if (event === 'INITIAL_SESSION') return;
@@ -289,7 +285,6 @@ function AppNavigatorInner() {
               filter: `id=eq.${session.user.id}`,
             },
             (payload) => {
-              console.log('Subscription status changed:', payload);
               const newSubscriptionStatus = payload.new.subscription_status === 'active';
 
               // 既存の認証状態を維持しつつサブスク状態のみ更新
@@ -307,12 +302,10 @@ function AppNavigatorInner() {
 
     // Listen for manual auth refresh events (from OnboardingScreen13 after subscription update)
     const refreshListener = DeviceEventEmitter.addListener(AUTH_REFRESH_EVENT, async () => {
-      console.log('[AppNavigator] Received REFRESH_AUTH event, re-checking auth state...');
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session && isMounted) {
         const isSubscribed = await checkSubscriptionStatus(session.user.id);
-        console.log('[AppNavigator] Refreshed subscription status:', isSubscribed);
 
         setAuthState({
           status: 'authenticated',
@@ -351,7 +344,6 @@ function AppNavigatorInner() {
   useEffect(() => {
     async function registerPushToken() {
       if (authState.status === 'authenticated' && authState.isSubscribed && !pushTokenRegistered.current) {
-        console.log('[AppNavigator] User authenticated & subscribed, registering push token...');
         pushTokenRegistered.current = true;
 
         // Initialize notification service and register push token
@@ -359,9 +351,7 @@ function AppNavigatorInner() {
         const success = await NotificationService.registerForPushNotifications();
 
         if (success) {
-          console.log('[AppNavigator] Push token registered successfully');
         } else {
-          console.log('[AppNavigator] Push token registration skipped (simulator or no permission)');
           // Reset flag to allow retry on next auth state change
           pushTokenRegistered.current = false;
         }

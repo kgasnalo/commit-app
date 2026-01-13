@@ -71,7 +71,6 @@ class NotificationServiceClass {
       await this.loadPreferences();
 
       this.isInitialized = true;
-      console.log('[NotificationService] Initialized successfully');
       return true;
     } catch (error) {
       console.warn('[NotificationService] Initialization failed:', error);
@@ -297,10 +296,6 @@ class NotificationServiceClass {
         },
       });
 
-      console.log(
-        '[NotificationService] Scheduled daily reminder:',
-        identifier
-      );
       return identifier;
     } catch (error) {
       console.error(
@@ -343,9 +338,6 @@ class NotificationServiceClass {
         .eq('status', 'pending');
 
       if (error || !commitments?.length) {
-        console.log(
-          '[NotificationService] No active commitments to schedule notifications for'
-        );
         return;
       }
 
@@ -387,7 +379,6 @@ class NotificationServiceClass {
         new Date().toISOString()
       );
 
-      console.log('[NotificationService] All notifications scheduled');
     } catch (error) {
       console.error(
         '[NotificationService] Failed to schedule all notifications:',
@@ -402,7 +393,6 @@ class NotificationServiceClass {
   async cancelAllNotifications(): Promise<void> {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('[NotificationService] Cancelled all notifications');
     } catch (error) {
       console.error(
         '[NotificationService] Failed to cancel notifications:',
@@ -474,13 +464,6 @@ class NotificationServiceClass {
         },
       });
 
-      console.log(
-        '[NotificationService] Scheduled timer completion:',
-        identifier,
-        'in',
-        durationSeconds,
-        'seconds'
-      );
       return identifier;
     } catch (error) {
       console.error(
@@ -497,7 +480,6 @@ class NotificationServiceClass {
   async cancelNotification(identifier: string): Promise<void> {
     try {
       await Notifications.cancelScheduledNotificationAsync(identifier);
-      console.log('[NotificationService] Cancelled notification:', identifier);
     } catch (error) {
       console.error(
         '[NotificationService] Failed to cancel notification:',
@@ -518,7 +500,6 @@ class NotificationServiceClass {
     try {
       // Check if running on physical device
       if (!Device.isDevice) {
-        console.log('[NotificationService] Push tokens only work on physical devices');
         return null;
       }
 
@@ -527,7 +508,6 @@ class NotificationServiceClass {
       if (!hasPermission) {
         const granted = await this.requestPermissions();
         if (!granted) {
-          console.log('[NotificationService] Push notification permission denied');
           return null;
         }
       }
@@ -544,7 +524,6 @@ class NotificationServiceClass {
         projectId,
       });
 
-      console.log('[NotificationService] Got Expo Push Token:', tokenData.data);
       return tokenData.data;
     } catch (error) {
       console.error('[NotificationService] Failed to get push token:', error);
@@ -561,14 +540,12 @@ class NotificationServiceClass {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('[NotificationService] No authenticated user');
         return false;
       }
 
       // Get push token
       const pushToken = await this.getExpoPushToken();
       if (!pushToken) {
-        console.log('[NotificationService] Could not get push token');
         return false;
       }
 
@@ -597,7 +574,6 @@ class NotificationServiceClass {
         return false;
       }
 
-      console.log('[NotificationService] Push token registered successfully');
       return true;
     } catch (error) {
       console.error('[NotificationService] Push registration failed:', error);
@@ -624,7 +600,6 @@ class NotificationServiceClass {
         .eq('user_id', user.id)
         .eq('expo_push_token', pushToken);
 
-      console.log('[NotificationService] Push token unregistered');
     } catch (error) {
       console.error('[NotificationService] Failed to unregister push token:', error);
     }

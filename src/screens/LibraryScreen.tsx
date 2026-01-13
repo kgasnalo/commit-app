@@ -31,7 +31,7 @@ import {
   HeroBillboard,
   CinematicBookCard,
   GlassFilterBar,
-} from '../components/halloffame';
+} from '../components/hall-of-fame';
 
 interface Book {
   id: string;
@@ -169,7 +169,6 @@ export default function LibraryScreen() {
             .from('books')
             .update({ cover_url: coverUrl })
             .eq('id', book.id);
-          console.log('Saved cover URL to database for:', book.title);
         } catch (err) {
           console.warn('Failed to save cover URL to database:', err);
         }

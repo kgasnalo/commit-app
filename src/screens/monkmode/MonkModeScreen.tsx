@@ -127,14 +127,8 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
   };
 
   const handleStartSession = () => {
-    console.log('[MonkModeScreen] Start button pressed');
     try {
       HapticsService.feedbackHeavy();
-      console.log('[MonkModeScreen] Navigating to MonkModeActive', {
-        durationMinutes: duration,
-        bookId: selectedBook?.id,
-        bookTitle: selectedBook?.title,
-      });
       navigation.navigate('MonkModeActive', {
         durationMinutes: duration,
         bookId: selectedBook?.id,

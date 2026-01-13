@@ -153,7 +153,6 @@ export default function DashboardScreen({ navigation }: any) {
         setUserName(name || 'Guest');
       }
     } catch (e) {
-      console.log('Error fetching profile:', e);
     }
   };
 

@@ -60,7 +60,6 @@ class SoundManagerClass {
       await this.preloadShepardTones();
 
       this.isInitialized = true;
-      console.log('[SoundManager] Initialized successfully');
     } catch (error) {
       console.warn('[SoundManager] Initialization failed:', error);
     }
@@ -205,7 +204,6 @@ class SoundManagerClass {
         player.pause();
       }
       this.isShepardPlaying = false;
-      console.log('[SoundManager] Shepard tone stopped');
     } catch (error) {
       console.warn('[SoundManager] Failed to stop Shepard tone:', error);
     }
@@ -269,7 +267,6 @@ class SoundManagerClass {
     this.shepardSounds.clear();
 
     this.isInitialized = false;
-    console.log('[SoundManager] Cleanup complete');
   }
 
   // ============================================
