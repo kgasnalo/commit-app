@@ -13,9 +13,8 @@ import 'react-native-gesture-handler';
 if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
-    // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring
-    // Adjust in production for high-traffic apps
-    tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+    // Performance Monitoring: 100% of transactions
+    tracesSampleRate: 1.0,
     // Enable debug mode in development
     debug: __DEV__,
     // Disable in development to avoid noise
@@ -24,6 +23,8 @@ if (SENTRY_DSN) {
     attachScreenshot: true,
     // Environment tag
     environment: __DEV__ ? 'development' : 'production',
+    // Release tracking
+    release: 'commit-app@1.0.0',
   });
 }
 

@@ -10,13 +10,33 @@ Phase 7 完了! Admin Dashboard が稼働中。次は Phase 8 へ。
 ## Current Critical Status
 
 ### Phase 8.1: Sentry Integration ✅ COMPLETE
+
+#### Mobile App
 | Component | Status | Notes |
 |-----------|--------|-------|
 | `@sentry/react-native` SDK | ✅ | Installed via `npx expo install` |
-| Sentry Initialization | ✅ | `App.js` - conditional init with DSN |
-| Error Logger | ✅ | `src/utils/errorLogger.ts` - sends to Sentry |
+| Sentry Initialization | ✅ | `App.js` - 100% tracesSampleRate |
+| Error Logger | ✅ | `src/utils/errorLogger.ts` - captureException |
 | User Context Tracking | ✅ | `AppNavigator.tsx` - sets on auth change |
-| app.json Plugin Config | ✅ | Organization & project configured |
+| Metrics Service | ✅ | `src/lib/MetricsService.ts` - critical actions |
+| Test Utilities | ✅ | `src/utils/sentryTest.ts` - diagnostics |
+
+#### Web Portal
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `@sentry/nextjs` SDK | ✅ | Full Next.js integration |
+| Client Config | ✅ | `sentry.client.config.ts` - Replay + Tracing |
+| Server Config | ✅ | `sentry.server.config.ts` - Logging enabled |
+| Edge Config | ✅ | `sentry.edge.config.ts` - Middleware support |
+| Global Error | ✅ | `src/app/global-error.tsx` - Error boundary |
+| Test API | ✅ | `/api/sentry-test` - Verification endpoint |
+
+#### Edge Functions
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Shared Module | ✅ | `_shared/sentry.ts` - Deno SDK wrapper |
+| SENTRY_DSN_EDGE | ✅ | Secret set via Supabase |
+| process-expired-commitments | ✅ | Sentry 統合済み |
 
 ### Phase 7.7: Internal Admin Dashboard ✅ COMPLETE
 | Component | Status | Notes |
@@ -116,13 +136,34 @@ npx expo prebuild
 ## Key File Locations
 
 ### Sentry Integration (Phase 8.1)
+
+#### Mobile App
 | Feature | File |
 |---------|------|
 | SDK Initialization | `App.js` |
 | Error Logger | `src/utils/errorLogger.ts` |
+| Metrics Service | `src/lib/MetricsService.ts` |
+| Test Utilities | `src/utils/sentryTest.ts` |
 | User Context | `src/navigation/AppNavigator.tsx` |
 | Env Config | `src/config/env.ts` |
 | Plugin Config | `app.json` |
+
+#### Web Portal
+| Feature | File |
+|---------|------|
+| Client Config | `commit-app-web/sentry.client.config.ts` |
+| Server Config | `commit-app-web/sentry.server.config.ts` |
+| Edge Config | `commit-app-web/sentry.edge.config.ts` |
+| Instrumentation | `commit-app-web/instrumentation.ts` |
+| Global Error | `commit-app-web/src/app/global-error.tsx` |
+| Test API | `commit-app-web/src/app/api/sentry-test/route.ts` |
+| Next Config | `commit-app-web/next.config.ts` |
+
+#### Edge Functions
+| Feature | File |
+|---------|------|
+| Shared Module | `supabase/functions/_shared/sentry.ts` |
+| Reaper Integration | `supabase/functions/process-expired-commitments/index.ts` |
 
 ### Internal Admin Dashboard (Phase 7.7)
 | Feature | File |
@@ -226,6 +267,7 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-not
 | `CRON_SECRET` | cron認証受け入れ |
 | `GOOGLE_BOOKS_API_KEY` | Google Books API (create-commitment用) |
 | `ADMIN_EMAILS` | Admin Dashboard アクセス許可リスト |
+| `SENTRY_DSN_EDGE` | Sentry crash monitoring (Edge Functions) |
 
 ---
 

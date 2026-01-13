@@ -24,6 +24,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@17'
 import { corsHeaders } from '../_shared/cors.ts'
+import { initSentry, captureException, addBreadcrumb, incrementMetric } from '../_shared/sentry.ts'
+
+// Initialize Sentry for this function
+initSentry('process-expired-commitments')
 
 // ==========================================
 // Types
@@ -397,6 +401,12 @@ Deno.serve(async (req) => {
 
     console.log(`[Reaper] Processing complete. Stats:`, JSON.stringify(stats))
 
+    // Track metrics
+    incrementMetric('reaper.processed', stats.processed)
+    incrementMetric('reaper.charged', stats.charged)
+    incrementMetric('reaper.failed', stats.failed)
+    addBreadcrumb('Processing complete', 'reaper', { ...stats })
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -408,6 +418,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[Reaper] Unexpected error:', error)
+    captureException(error, {
+      functionName: 'process-expired-commitments',
+      extra: { stats },
+    })
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
