@@ -1,5 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
+
+// Initialize Sentry
+initSentry('use-lifeline')
 
 interface UseLifelineRequest {
   commitment_id: string
@@ -26,11 +30,14 @@ Deno.serve(async (req) => {
     // Get the authenticated user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
     if (authError || !user) {
+      addBreadcrumb('Auth failed for use-lifeline', 'auth', { error: authError?.message })
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    addBreadcrumb('User authenticated', 'auth', { userId: user.id })
 
     // Parse request body
     const { commitment_id }: UseLifelineRequest = await req.json()
@@ -120,6 +127,15 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Log successful lifeline usage (critical business event)
+    logBusinessEvent('lifeline_used', {
+      userId: user.id,
+      commitmentId: commitment_id,
+      bookId: commitment.book_id,
+      previousDeadline: commitment.deadline,
+      newDeadline: newDeadline.toISOString(),
+    })
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -131,6 +147,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Unexpected error:', error)
+    captureException(error, {
+      functionName: 'use-lifeline',
+      extra: { errorMessage: String(error) },
+    })
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

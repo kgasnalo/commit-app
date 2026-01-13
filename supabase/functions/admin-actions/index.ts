@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import Stripe from 'https://esm.sh/stripe@14.14.0'
-import { initSentry, captureException, addBreadcrumb, incrementMetric } from '../_shared/sentry.ts'
+import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
 
 // Initialize Sentry
 initSentry('admin-actions')
@@ -65,18 +65,17 @@ Deno.serve(async (req) => {
     // 2. Admin Check (Layer 2: Email Whitelist)
     // CRITICAL: Verify the user's email against the allowlist
     if (!ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-      console.warn(`[admin-actions] Unauthorized access attempt by: ${user.email}`)
-      addBreadcrumb('Admin access denied', 'security', { email: user.email })
+      console.warn(`[admin-actions] Unauthorized access attempt by user: ${user.id}`)
+      addBreadcrumb('Admin access denied', 'security', { userId: user.id })
       captureException(new Error('Unauthorized admin access attempt'), {
         functionName: 'admin-actions',
         userId: user.id,
-        extra: { email: user.email },
       })
       return errorResponse(403, 'FORBIDDEN', 'User is not an admin')
     }
 
-    // Admin authenticated
-    addBreadcrumb('Admin authenticated', 'auth', { adminEmail: user.email })
+    // Admin authenticated (log user ID only, not email for privacy)
+    addBreadcrumb('Admin authenticated', 'auth', { adminUserId: user.id })
 
     // 3. Parse Request
     let body: AdminActionRequest
@@ -121,7 +120,7 @@ Deno.serve(async (req) => {
 // ============================================================
 
 async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: string, reason?: string) {
-  addBreadcrumb('Refund action started', 'admin', { penaltyChargeId, adminEmail: adminUser.email })
+  addBreadcrumb('Refund action started', 'admin', { penaltyChargeId, adminUserId: adminUser.id })
 
   // 1. Fetch Charge
   const { data: charge, error: fetchError } = await supabase
@@ -185,9 +184,13 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     stripe_pi: charge.stripe_payment_intent_id
   })
 
-  // Track successful refund
-  incrementMetric('admin_refund_success', 1, { currency: charge.currency })
-  addBreadcrumb('Refund completed successfully', 'admin', { penaltyChargeId })
+  // Log successful refund (always recorded)
+  logBusinessEvent('admin_refund_success', {
+    penaltyChargeId,
+    adminUserId: adminUser.id,
+    amount: charge.amount,
+    currency: charge.currency,
+  })
 
   return new Response(
     JSON.stringify({ success: true, message: 'Refund processed successfully' }),
@@ -196,7 +199,7 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
 }
 
 async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: string, reason?: string) {
-  addBreadcrumb('Mark complete action started', 'admin', { commitmentId, adminEmail: adminUser.email })
+  addBreadcrumb('Mark complete action started', 'admin', { commitmentId, adminUserId: adminUser.id })
 
   // 1. Fetch Commitment
   const { data: commitment, error: fetchError } = await supabase
@@ -228,9 +231,12 @@ async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: s
     reason
   })
 
-  // Track successful mark complete
-  incrementMetric('admin_mark_complete_success', 1)
-  addBreadcrumb('Mark complete finished successfully', 'admin', { commitmentId })
+  // Log successful mark complete (always recorded)
+  logBusinessEvent('admin_mark_complete_success', {
+    commitmentId,
+    adminUserId: adminUser.id,
+    previousStatus: commitment.status,
+  })
 
   return new Response(
     JSON.stringify({ success: true, message: 'Commitment marked as completed' }),

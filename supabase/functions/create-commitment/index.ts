@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { initSentry, captureException, addBreadcrumb, incrementMetric } from '../_shared/sentry.ts'
+import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
 
 // Initialize Sentry
 initSentry('create-commitment')
@@ -267,15 +267,14 @@ Deno.serve(async (req) => {
 
     console.log(`[create-commitment] Success: user=${user.id}, commitment=${commitment.id}, book=${bookId}`)
 
-    // Track success metrics
-    addBreadcrumb('Commitment created', 'commitment', {
+    // Log business event (always recorded, not just on errors)
+    logBusinessEvent('commitment_created', {
       commitmentId: commitment.id,
       bookId,
       userId: user.id,
       amount: pledge_amount,
       currency,
     })
-    incrementMetric('commitment_created', 1, { currency })
 
     return new Response(
       JSON.stringify({

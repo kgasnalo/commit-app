@@ -24,7 +24,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@17'
 import { corsHeaders } from '../_shared/cors.ts'
-import { initSentry, captureException, addBreadcrumb, incrementMetric } from '../_shared/sentry.ts'
+import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
 
 // Initialize Sentry for this function
 initSentry('process-expired-commitments')
@@ -401,11 +401,14 @@ Deno.serve(async (req) => {
 
     console.log(`[Reaper] Processing complete. Stats:`, JSON.stringify(stats))
 
-    // Track metrics
-    incrementMetric('reaper.processed', stats.processed)
-    incrementMetric('reaper.charged', stats.charged)
-    incrementMetric('reaper.failed', stats.failed)
-    addBreadcrumb('Processing complete', 'reaper', { ...stats })
+    // Log reaper run metrics (always recorded for business visibility)
+    logBusinessEvent('reaper_run_complete', {
+      processed: stats.processed,
+      charged: stats.charged,
+      failed: stats.failed,
+      skipped: stats.skipped,
+      mode: isRetryMode ? 'retry' : 'normal',
+    })
 
     return new Response(
       JSON.stringify({

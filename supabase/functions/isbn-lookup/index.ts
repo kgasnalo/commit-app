@@ -1,4 +1,8 @@
 import { corsHeaders } from '../_shared/cors.ts'
+import { initSentry, captureException, addBreadcrumb } from '../_shared/sentry.ts'
+
+// Initialize Sentry
+initSentry('isbn-lookup')
 
 interface ISBNLookupRequest {
   isbn: string
@@ -61,10 +65,12 @@ Deno.serve(async (req) => {
     }
 
     // Fetch from Google Books API
+    addBreadcrumb('Fetching from Google Books API', 'http', { isbn: cleanedISBN })
     const response = await fetch(apiUrl.toString())
 
     if (!response.ok) {
       console.error('Google Books API error:', response.status, response.statusText)
+      addBreadcrumb('Google Books API error', 'error', { status: response.status })
       return new Response(
         JSON.stringify({ success: false, error: 'API_ERROR' }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -108,6 +114,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Unexpected error:', error)
+    captureException(error, {
+      functionName: 'isbn-lookup',
+      extra: { errorMessage: String(error) },
+    })
     return new Response(
       JSON.stringify({ success: false, error: 'INTERNAL_ERROR' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

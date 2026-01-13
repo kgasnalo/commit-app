@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { initSentry, captureException, addBreadcrumb, incrementMetric } from '../_shared/sentry.ts'
+import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
 
 // Initialize Sentry
 initSentry('delete-account')
@@ -69,9 +69,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Track successful account deletion
-    addBreadcrumb('Account deleted successfully', 'account', { userId: user.id })
-    incrementMetric('account_deleted', 1)
+    // Log successful account deletion (always recorded)
+    logBusinessEvent('account_deleted', { userId: user.id })
 
     return new Response(
       JSON.stringify({ success: true }),

@@ -18,7 +18,7 @@ export function initSentry(functionName: string) {
 
   Sentry.init({
     dsn: SENTRY_DSN,
-    tracesSampleRate: 1.0, // 100% of transactions for performance monitoring
+    tracesSampleRate: 0.1, // 10% of transactions to avoid quota exhaustion
     environment: Deno.env.get("DENO_DEPLOYMENT_ID") ? "production" : "development",
     release: `edge-functions@${new Date().toISOString().split("T")[0]}`,
     serverName: functionName,
@@ -163,7 +163,30 @@ export function createSentryHandler(
 }
 
 /**
- * Increment a custom metric counter
+ * Log a business metric/event that should ALWAYS be recorded
+ * Uses captureMessage (not breadcrumbs) to ensure visibility even on success
+ */
+export function logBusinessEvent(
+  eventName: string,
+  data?: Record<string, unknown>
+) {
+  if (!SENTRY_DSN) {
+    console.log(`[Sentry] Business event (not sent - no DSN): ${eventName}`, data);
+    return;
+  }
+
+  Sentry.captureMessage(eventName, {
+    level: "info",
+    extra: data,
+    tags: { event_type: "business_metric" },
+  });
+
+  console.log(`[Sentry] Business event logged: ${eventName}`, data);
+}
+
+/**
+ * @deprecated Use logBusinessEvent for success metrics. Breadcrumbs only appear with errors.
+ * Increment a custom metric counter (breadcrumb-based - only visible if error occurs)
  */
 export function incrementMetric(
   name: string,
@@ -172,7 +195,7 @@ export function incrementMetric(
 ) {
   if (!SENTRY_DSN) return;
 
-  // Note: Deno Sentry SDK may not support metrics yet
-  // This is a placeholder for future implementation
+  // WARNING: Breadcrumbs are only sent if an error occurs later
+  // For critical business metrics, use logBusinessEvent() instead
   addBreadcrumb(`Metric: ${name}`, "metric", { value, ...tags });
 }

@@ -14,6 +14,10 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
+
+// Initialize Sentry
+initSentry('send-push-notification')
 
 const EXPO_PUSH_API_URL = 'https://exp.host/--/api/v2/push/send'
 
@@ -96,6 +100,7 @@ Deno.serve(async (req) => {
 
     if (!authHeader) {
       console.warn('[SECURITY] Request rejected: No Authorization header')
+      addBreadcrumb('Auth rejected - no header', 'security', {})
       return new Response(
         JSON.stringify({ error: 'Authorization header required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,6 +110,11 @@ Deno.serve(async (req) => {
     // CRITICAL: Verify the caller is System/Admin, NOT a regular user
     if (!verifySystemAuthorization(authHeader)) {
       console.warn('[SECURITY] Request rejected: Invalid credentials (possible user JWT attempt)')
+      addBreadcrumb('System auth rejected - invalid credentials', 'security', {})
+      captureException(new Error('Unauthorized system function access attempt'), {
+        functionName: 'send-push-notification',
+        extra: { reason: 'invalid_credentials' },
+      })
       return new Response(
         JSON.stringify({ error: 'Forbidden: This endpoint is restricted to system use only' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -112,6 +122,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('[SECURITY] System authorization verified successfully')
+    addBreadcrumb('System authorization verified', 'security', {})
 
     // ==========================================
     // Create Supabase Admin Client
@@ -245,6 +256,14 @@ Deno.serve(async (req) => {
 
     console.log(`[send-push-notification] Sent ${successCount}/${tokens.length} notifications`)
 
+    // Log push notification batch result (always recorded)
+    logBusinessEvent('push_notification_batch', {
+      sent: successCount,
+      failed: failCount,
+      total: tokens.length,
+      isBroadcast: !!broadcast,
+    })
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -257,6 +276,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Unexpected error:', error)
+    captureException(error, {
+      functionName: 'send-push-notification',
+      extra: { errorMessage: String(error) },
+    })
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

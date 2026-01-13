@@ -13,8 +13,8 @@ import 'react-native-gesture-handler';
 if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
-    // Performance Monitoring: 100% of transactions
-    tracesSampleRate: 1.0,
+    // Performance Monitoring: 10% of transactions to avoid quota exhaustion
+    tracesSampleRate: 0.1,
     // Enable debug mode in development
     debug: __DEV__,
     // Disable in development to avoid noise
