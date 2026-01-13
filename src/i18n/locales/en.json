@@ -385,6 +385,16 @@
     "final_day_title": "Final Day",
     "final_day_body": "'{{book}}' - Today's the deadline. {{pages}} pages to keep your promise."
   },
+  "reaper": {
+    "charge_success_title": "Commitment Expired - Charged",
+    "charge_success_body": "Your commitment for '{{book}}' expired. {{amount}} has been charged to your card.",
+    "charge_failed_title": "Payment Failed",
+    "charge_failed_body": "We couldn't process the {{amount}} charge for '{{book}}'. Please update your payment method.",
+    "no_payment_method_title": "Commitment Expired - Payment Required",
+    "no_payment_method_body": "Your commitment for '{{book}}' expired. Please add a payment method to complete the {{amount}} donation.",
+    "defaulted_title": "Commitment Expired",
+    "defaulted_body": "Your commitment for '{{book}}' has expired. The {{amount}} pledge will be processed."
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancel",

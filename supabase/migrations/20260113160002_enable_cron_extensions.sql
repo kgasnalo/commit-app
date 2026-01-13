@@ -1,0 +1,73 @@
+-- Phase 7.4: The Reaper - Enable Cron Extensions
+--
+-- IMPORTANT: This migration only enables the required extensions.
+-- The actual cron jobs must be created MANUALLY via the Supabase Dashboard
+-- SQL Editor AFTER this migration is applied and Vault secrets are set.
+--
+-- Prerequisites:
+-- 1. Enable pg_cron extension in Supabase Dashboard (Database > Extensions)
+-- 2. Enable pg_net extension in Supabase Dashboard (Database > Extensions)
+-- 3. Set Vault secrets (see below)
+--
+-- After deploying this migration, run the following commands in Supabase SQL Editor:
+--
+-- Step 1: Create Vault secrets (replace with actual values)
+-- =========================================================
+-- SELECT vault.create_secret('https://rnksvjjcsnwlquaynduu.supabase.co', 'supabase_url');
+-- SELECT vault.create_secret('YOUR_SERVICE_ROLE_KEY_HERE', 'service_role_key');
+--
+-- Step 2: Create the hourly Reaper cron job
+-- =========================================
+-- SELECT cron.schedule(
+--   'reaper-process-expired-commitments',
+--   '0 * * * *',  -- Every hour at :00
+--   $$
+--   SELECT net.http_post(
+--     url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url')
+--            || '/functions/v1/process-expired-commitments',
+--     headers := jsonb_build_object(
+--       'Content-Type', 'application/json',
+--       'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
+--     ),
+--     body := jsonb_build_object(
+--       'triggered_at', NOW()::text,
+--       'source', 'pg_cron_reaper'
+--     )
+--   ) AS request_id;
+--   $$
+-- );
+--
+-- Step 3: Create the retry cron job (for failed charges)
+-- ======================================================
+-- SELECT cron.schedule(
+--   'reaper-retry-failed-charges',
+--   '0 */4 * * *',  -- Every 4 hours
+--   $$
+--   SELECT net.http_post(
+--     url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url')
+--            || '/functions/v1/process-expired-commitments',
+--     headers := jsonb_build_object(
+--       'Content-Type', 'application/json',
+--       'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
+--     ),
+--     body := jsonb_build_object(
+--       'triggered_at', NOW()::text,
+--       'source', 'pg_cron_reaper_retry',
+--       'retry_mode', true
+--     )
+--   ) AS request_id;
+--   $$
+-- );
+--
+-- Monitoring commands:
+-- ====================
+-- View scheduled jobs: SELECT * FROM cron.job;
+-- View job history:    SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 20;
+-- Unschedule a job:    SELECT cron.unschedule('reaper-process-expired-commitments');
+
+-- Enable pg_net extension (for HTTP requests from SQL)
+-- Note: This may already be enabled on Supabase projects
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+-- pg_cron extension must be enabled via Supabase Dashboard
+-- This migration just documents the setup requirements

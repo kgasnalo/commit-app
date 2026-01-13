@@ -384,6 +384,16 @@
     "final_day_title": "마지막 날",
     "final_day_body": "'{{book}}' - 오늘이 마감입니다. {{pages}}페이지로 약속을 지키세요."
   },
+  "reaper": {
+    "charge_success_title": "커밋먼트 만료 - 결제 완료",
+    "charge_success_body": "'{{book}}' 커밋먼트가 만료되었습니다. {{amount}}이(가) 카드에 청구되었습니다.",
+    "charge_failed_title": "결제 실패",
+    "charge_failed_body": "'{{book}}'의 {{amount}} 결제를 처리할 수 없습니다. 결제 수단을 업데이트해주세요.",
+    "no_payment_method_title": "커밋먼트 만료 - 결제 수단 미등록",
+    "no_payment_method_body": "'{{book}}' 커밋먼트가 만료되었습니다. {{amount}} 기부를 완료하려면 결제 수단을 등록해주세요.",
+    "defaulted_title": "커밋먼트 만료",
+    "defaulted_body": "'{{book}}' 커밋먼트가 만료되었습니다. {{amount}} 각오금이 처리됩니다."
+  },
   "common": {
     "ok": "확인",
     "cancel": "취소",

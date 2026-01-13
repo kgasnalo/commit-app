@@ -133,7 +133,7 @@ export default function SettingsScreen({ navigation }: any) {
         <MenuItem 
           icon="card-outline" 
           label={i18n.t('settings.manage_payment')} 
-          onPress={() => openURL('https://commit-app.vercel.app/billing')} 
+          onPress={() => openURL('https://commit-app-web.vercel.app/billing')} 
         />
 
         <SectionHeader title={i18n.t('settings.language')} />
@@ -155,12 +155,12 @@ export default function SettingsScreen({ navigation }: any) {
         <MenuItem 
           icon="document-text-outline" 
           label={i18n.t('settings.terms')} 
-          onPress={() => openURL('https://commit-app.vercel.app/terms')} 
+          onPress={() => openURL('https://commit-app-web.vercel.app/terms')} 
         />
         <MenuItem 
           icon="shield-checkmark-outline" 
           label={i18n.t('settings.privacy')} 
-          onPress={() => openURL('https://commit-app.vercel.app/privacy')} 
+          onPress={() => openURL('https://commit-app-web.vercel.app/privacy')} 
         />
 
         <SectionHeader title={i18n.t('settings.support')} />

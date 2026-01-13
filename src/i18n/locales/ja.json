@@ -385,6 +385,16 @@
     "final_day_title": "最終日",
     "final_day_body": "『{{book}}』今日が期限。{{pages}}ページで約束を守ろう。"
   },
+  "reaper": {
+    "charge_success_title": "コミットメント期限切れ - 課金完了",
+    "charge_success_body": "『{{book}}』のコミットメントが期限切れになりました。{{amount}}がカードに請求されました。",
+    "charge_failed_title": "課金失敗",
+    "charge_failed_body": "『{{book}}』の{{amount}}の請求処理ができませんでした。お支払い方法を更新してください。",
+    "no_payment_method_title": "コミットメント期限切れ - お支払い方法未登録",
+    "no_payment_method_body": "『{{book}}』のコミットメントが期限切れになりました。{{amount}}の寄付を完了するには、お支払い方法を登録してください。",
+    "defaulted_title": "コミットメント期限切れ",
+    "defaulted_body": "『{{book}}』のコミットメントが期限切れになりました。{{amount}}の覚悟金が処理されます。"
+  },
   "common": {
     "ok": "OK",
     "cancel": "キャンセル",

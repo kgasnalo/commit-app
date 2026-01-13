@@ -1,12 +1,17 @@
 /**
  * NotificationService - Smart notification orchestration singleton
  * Phase 4.1 - Dynamic Pacemaker
+ * Phase 7.3 - Push Notification Infrastructure
  *
  * Handles local push notifications for reading reminders.
  * Calculates daily reading targets based on remaining pages/days.
+ * Manages Expo Push Tokens for server-side notifications.
  */
 
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import i18n from '../i18n';
@@ -499,6 +504,150 @@ class NotificationServiceClass {
         error
       );
     }
+  }
+
+  // ============================================
+  // Phase 7.3: Push Notification Infrastructure
+  // ============================================
+
+  /**
+   * Get Expo Push Token for this device
+   * Returns null if not available (simulator, permissions denied, etc.)
+   */
+  async getExpoPushToken(): Promise<string | null> {
+    try {
+      // Check if running on physical device
+      if (!Device.isDevice) {
+        console.log('[NotificationService] Push tokens only work on physical devices');
+        return null;
+      }
+
+      // Ensure permissions are granted
+      const hasPermission = await this.hasPermissions();
+      if (!hasPermission) {
+        const granted = await this.requestPermissions();
+        if (!granted) {
+          console.log('[NotificationService] Push notification permission denied');
+          return null;
+        }
+      }
+
+      // Get the project ID from Constants
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      if (!projectId) {
+        console.warn('[NotificationService] No EAS project ID found in app.json');
+        return null;
+      }
+
+      // Get push token
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId,
+      });
+
+      console.log('[NotificationService] Got Expo Push Token:', tokenData.data);
+      return tokenData.data;
+    } catch (error) {
+      console.error('[NotificationService] Failed to get push token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Register push token with Supabase for server-side notifications
+   * Call this after user authentication
+   */
+  async registerForPushNotifications(): Promise<boolean> {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('[NotificationService] No authenticated user');
+        return false;
+      }
+
+      // Get push token
+      const pushToken = await this.getExpoPushToken();
+      if (!pushToken) {
+        console.log('[NotificationService] Could not get push token');
+        return false;
+      }
+
+      // Get device info
+      const deviceId = Constants.installationId || `${Platform.OS}-${Date.now()}`;
+      const platform = Platform.OS as 'ios' | 'android';
+
+      // Upsert token to Supabase
+      const { error } = await supabase
+        .from('expo_push_tokens')
+        .upsert(
+          {
+            user_id: user.id,
+            expo_push_token: pushToken,
+            device_id: deviceId,
+            platform,
+            is_active: true,
+          },
+          {
+            onConflict: 'user_id,expo_push_token',
+          }
+        );
+
+      if (error) {
+        console.error('[NotificationService] Failed to save push token:', error);
+        return false;
+      }
+
+      console.log('[NotificationService] Push token registered successfully');
+      return true;
+    } catch (error) {
+      console.error('[NotificationService] Push registration failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Unregister/deactivate push token
+   * Call this on logout to stop receiving notifications
+   */
+  async unregisterPushToken(): Promise<void> {
+    try {
+      const pushToken = await this.getExpoPushToken();
+      if (!pushToken) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Mark token as inactive
+      await supabase
+        .from('expo_push_tokens')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+        .eq('expo_push_token', pushToken);
+
+      console.log('[NotificationService] Push token unregistered');
+    } catch (error) {
+      console.error('[NotificationService] Failed to unregister push token:', error);
+    }
+  }
+
+  /**
+   * Setup notification response listener
+   * Call this once in app root to handle notification taps
+   */
+  setupNotificationResponseListener(
+    callback: (response: Notifications.NotificationResponse) => void
+  ): Notifications.EventSubscription {
+    return Notifications.addNotificationResponseReceivedListener(callback);
+  }
+
+  /**
+   * Setup foreground notification listener
+   * Call this once in app root to handle notifications received while app is open
+   */
+  setupForegroundNotificationListener(
+    callback: (notification: Notifications.Notification) => void
+  ): Notifications.EventSubscription {
+    return Notifications.addNotificationReceivedListener(callback);
   }
 }
 

@@ -1,197 +1,143 @@
-# Handoff: Session 2026-01-12
+# Handoff: Session 2026-01-13
 
 ## Current Goal
-**Phase 7.1: Web Payment Portal - COMPLETED ✅**
+**Phase 7.5: Row Level Security (RLS) Hardening**
 
-Web Payment Portal (`commit-app-web`) が作成されました。Vercelへのデプロイ準備完了。
-
----
-
-## Completed This Session
-
-| Task | Status | Details |
-|------|--------|---------|
-| **7.1.1** Next.js初期化 | ✅ | `/Users/kg_xxx/commit-app-web` に新規リポジトリ作成 |
-| **7.1.2** Supabase Client | ✅ | SSR対応クライアント (`@supabase/ssr`) |
-| **7.1.3** Auth Flow | ✅ | Magic Link + Callback (Suspense対応) |
-| **7.1.4** DB Migration | ✅ | `stripe_payment_method_id`, `card_last_four`, `card_brand` 追加 |
-| **7.1.5** Stripe API | ✅ | SetupIntent作成 + PaymentMethod保存 |
-| **7.1.6** Billing UI | ✅ | CardSetupForm with Stripe Elements |
-| **7.1.7** Legal Pages | ✅ | Terms, Privacy, Tokushoho |
-| **7.1.8** Landing Page | ✅ | Titan Design System適用 |
+Phase 7.4 "The Reaper" 完了。自動デッドライン強制執行システムが毎時稼働中。
 
 ---
 
-## Web Portal Structure
+## Current Critical Status
 
-**Location:** `/Users/kg_xxx/commit-app-web`
+### Phase 7.4: "The Reaper" ✅ COMPLETE
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `penalty_charges` table | ✅ | 課金履歴・リトライ追跡、UNIQUE(commitment_id) |
+| `commitments.defaulted_at` | ✅ | 期限切れ時刻記録 |
+| `process-expired-commitments` | ✅ | Stripe off-session課金、Push通知送信 |
+| `pg_cron` jobs | ✅ | 毎時 :00 + 4時間毎リトライ |
+| Vault secrets | ✅ | `supabase_url`, `cron_secret` |
+| `CRON_SECRET` | ✅ | Edge Function認証用 |
 
+### Test Result
+```json
+{"success":true,"mode":"normal","stats":{"processed":6,"charged":0,"failed":6,"skipped":0,"errors":[]}}
 ```
-commit-app-web/
-├── src/
-│   ├── app/
-│   │   ├── (auth)/login/page.tsx      # Magic Link入力
-│   │   ├── (auth)/callback/page.tsx   # Auth callback
-│   │   ├── billing/page.tsx           # カード登録 (Protected)
-│   │   ├── billing/success/page.tsx   # 完了ページ
-│   │   ├── terms/page.tsx             # 利用規約
-│   │   ├── privacy/page.tsx           # プライバシーポリシー
-│   │   ├── tokushoho/page.tsx         # 特商法表記
-│   │   └── api/stripe/
-│   │       ├── create-setup-intent/   # POST: SetupIntent作成
-│   │       └── save-payment-method/   # POST: PM保存
-│   ├── components/billing/
-│   │   └── CardSetupForm.tsx          # Stripe Elements
-│   ├── lib/
-│   │   ├── supabase/client.ts         # Browser client
-│   │   ├── supabase/server.ts         # Server client
-│   │   └── stripe/server.ts           # Stripe SDK
-│   └── middleware.ts                  # Auth protection
-└── .env.local                         # 環境変数 (要設定)
-```
+6件の期限切れコミットメントを検出（支払い方法未登録のため課金は全て `failed`）
 
 ---
 
-## Environment Setup Required
+## What Didn't Work / Lessons Learned
 
-### Web Portal (.env.local)
+### 1. SERVICE_ROLE_KEY timingSafeEqual 比較失敗
+**Problem:** Edge Function 内で `Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')` と Authorization ヘッダーの比較が一致しない。
+
+**Root Cause:** Supabase が自動注入する SERVICE_ROLE_KEY と Dashboard から取得したキーの比較で、何らかの理由で timingSafeEqual が false を返す。
+
+**Solution:** 専用の `CRON_SECRET` を作成し、Supabase secrets と Vault の両方に保存。cron job は Vault から取得した `cron_secret` を使用。
 ```bash
-# .env.local の以下を実際の値に置き換え:
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY_HERE
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_STRIPE_PUBLISHABLE_KEY_HERE
-STRIPE_SECRET_KEY=YOUR_STRIPE_SECRET_KEY_HERE
+supabase secrets set CRON_SECRET=reaper-secret-2026-commit-app
 ```
 
-モバイルアプリの `.env` から以下をコピー:
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+### 2. Supabase CLI に SQL 実行コマンドがない
+**Problem:** `supabase db execute --sql "..."` のようなコマンドが存在しない。
 
-**Stripe Secret Key** はStripe Dashboardから取得 (モバイルには存在しない)
+**Solution:** マイグレーションファイルを作成して `supabase db push` で実行。
+```bash
+# マイグレーションファイル作成 → push
+supabase db push
+```
 
----
+### 3. pg_cron から Edge Function を呼ぶ認証
+**Problem:** cron job 内で SERVICE_ROLE_KEY を直接参照できない。
 
-## Web Portal URLs (Vercelデプロイ後)
-
-| URL | Purpose | Status |
-|-----|---------|--------|
-| `https://commit-app.vercel.app/` | Landing | ✅ Created |
-| `https://commit-app.vercel.app/billing` | Payment management | ✅ Created |
-| `https://commit-app.vercel.app/terms` | Terms of Service | ✅ Created |
-| `https://commit-app.vercel.app/privacy` | Privacy Policy | ✅ Created |
-| `https://commit-app.vercel.app/tokushoho` | 特商法表記 | ✅ Created |
-
----
-
-## Database Changes
-
-### New Columns in `users` Table
+**Solution:** Vault に secrets を保存し、`vault.decrypted_secrets` ビューから動的取得。
 ```sql
-stripe_payment_method_id TEXT    -- Stripe PaymentMethod ID
-card_last_four TEXT              -- カード下4桁 (表示用)
-card_brand TEXT                  -- カードブランド (visa, mastercard等)
-```
-
-Migration: `supabase/migrations/20260113_add_payment_method_fields.sql`
-
----
-
-## Stripe SetupIntent Flow
-
-```
-1. User visits /billing
-2. API creates Stripe Customer (if not exists)
-3. API creates SetupIntent (usage: 'off_session')
-4. User enters card via Stripe Elements
-5. stripe.confirmCardSetup()
-6. API saves PaymentMethod ID to DB
-7. Redirect to /billing/success → Deep Link back to app
-```
-
-**Critical:** `usage: 'off_session'` enables future penalty charges without user presence.
-
----
-
-## Vercel Deploy Steps
-
-```bash
-cd /Users/kg_xxx/commit-app-web
-
-# 1. Initialize git (if not done)
-git init
-git add .
-git commit -m "Initial commit: Phase 7.1 Web Payment Portal"
-
-# 2. Create GitHub repo and push
-gh repo create commit-app-web --private --source=. --push
-
-# 3. Connect to Vercel
-vercel
-
-# 4. Set environment variables in Vercel Dashboard
-# Project Settings > Environment Variables
+SELECT net.http_post(
+  url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url') || '/functions/v1/...',
+  headers := jsonb_build_object(
+    'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cron_secret')
+  ),
+  ...
+);
 ```
 
 ---
 
 ## Immediate Next Steps
 
-1. **環境変数設定**: `.env.local` に実際の値を設定
-2. **ローカルテスト**: `npm run dev` で動作確認
-3. **Vercelデプロイ**: 上記手順でデプロイ
-4. **Phase 7.2**: Deep Linking & Magic Link Handoff
-5. **Phase 7.4**: "The Reaper" (自動ペナルティ課金)
+### Phase 7.5: Row Level Security (RLS) Hardening
+1. `commitments` テーブルの DELETE 禁止ポリシー
+2. 期限切れ後の `status = 'completed'` UPDATE 禁止
+3. `penalty_charges` の監査用ポリシー確認
+
+### Phase 7.6: Server-side Validation (Optional)
+- Google Books API で総ページ数を検証
+- pledge_amount の上限チェック
 
 ---
 
 ## Key File Locations
 
-### Mobile App (commit-app)
-| Feature | Files |
-|---------|-------|
-| **Database Types** | `src/types/database.types.ts` (updated) |
-| **Settings (Legal Links)** | `src/screens/SettingsScreen.tsx` |
-| **Supabase Migration** | `supabase/migrations/20260113_add_payment_method_fields.sql` |
+### The Reaper (Phase 7.4)
+| Feature | File |
+|---------|------|
+| Charge Storage | `supabase/migrations/20260113160000_create_penalty_charges.sql` |
+| Defaulted Tracking | `supabase/migrations/20260113160001_add_defaulted_at.sql` |
+| Cron Setup | `supabase/migrations/20260113170000_setup_reaper_cron_job.sql` |
+| Cron Secret Fix | `supabase/migrations/20260113170001_update_cron_secret.sql` |
+| Edge Function | `supabase/functions/process-expired-commitments/index.ts` |
+| Types | `src/types/database.types.ts` |
+| i18n | `src/i18n/locales/{ja,en,ko}.json` → `reaper` section |
 
-### Web Portal (commit-app-web)
-| Feature | Files |
-|---------|-------|
-| **Stripe API** | `src/app/api/stripe/*/route.ts` |
-| **Auth Flow** | `src/app/(auth)/*/page.tsx` |
-| **Billing UI** | `src/components/billing/CardSetupForm.tsx` |
-| **Legal Pages** | `src/app/terms/`, `privacy/`, `tokushoho/` |
+### Manual Test Command
+```bash
+curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/process-expired-commitments \
+  -H "Authorization: Bearer reaper-secret-2026-commit-app" \
+  -H "Content-Type: application/json" \
+  -d '{"source": "manual_test"}'
+```
 
 ---
 
-## Supabase
-- **Project Ref:** `rnksvjjcsnwlquaynduu`
-- **Migration Applied:** `20260113_add_payment_method_fields.sql`
+## Supabase Status
+
+### Database Tables
+`users`, `books`, `commitments`, `verification_logs`, `tags`, `book_tags`, `reading_sessions`, `expo_push_tokens`, `penalty_charges`
+
+### Edge Functions
+`use-lifeline`, `isbn-lookup`, `delete-account`, `send-push-notification`, `process-expired-commitments`
+
+### Cron Jobs (Active)
+| Job Name | Schedule | Purpose |
+|----------|----------|---------|
+| `reaper-process-expired-commitments` | `0 * * * *` | 毎時、期限切れ検出・課金 |
+| `reaper-retry-failed-charges` | `0 */4 * * *` | 4時間毎、失敗課金リトライ |
+
+### Vault Secrets
+| Name | Purpose |
+|------|---------|
+| `supabase_url` | プロジェクトURL |
+| `cron_secret` | cron→Edge Function認証 |
+
+### Supabase Secrets (Edge Functions)
+| Name | Purpose |
+|------|---------|
+| `STRIPE_SECRET_KEY` | Stripe API認証 |
+| `CRON_SECRET` | cron認証受け入れ |
 
 ---
 
 ## Files Modified This Session
 
-### Mobile App (commit-app)
 | File | Change |
 |------|--------|
-| `src/types/database.types.ts` | Added payment method fields |
-| `supabase/migrations/20260113_add_payment_method_fields.sql` | **CREATED** |
-
-### Web Portal (commit-app-web) - NEW REPOSITORY
-| File | Description |
-|------|-------------|
-| `src/app/page.tsx` | Landing page with Titan design |
-| `src/app/(auth)/login/page.tsx` | Magic Link login |
-| `src/app/(auth)/callback/page.tsx` | Auth callback handler |
-| `src/app/billing/page.tsx` | Card registration page |
-| `src/app/billing/success/page.tsx` | Success confirmation |
-| `src/app/terms/page.tsx` | Terms of Service |
-| `src/app/privacy/page.tsx` | Privacy Policy |
-| `src/app/tokushoho/page.tsx` | Japanese e-commerce disclosure |
-| `src/app/api/stripe/create-setup-intent/route.ts` | SetupIntent API |
-| `src/app/api/stripe/save-payment-method/route.ts` | Save PM API |
-| `src/components/billing/CardSetupForm.tsx` | Stripe Elements form |
-| `src/lib/supabase/client.ts` | Browser Supabase client |
-| `src/lib/supabase/server.ts` | Server Supabase client |
-| `src/lib/stripe/server.ts` | Stripe SDK init |
-| `src/middleware.ts` | Auth middleware |
-| `src/types/database.types.ts` | Shared DB types |
+| `supabase/migrations/20260113160000_create_penalty_charges.sql` | NEW |
+| `supabase/migrations/20260113160001_add_defaulted_at.sql` | NEW |
+| `supabase/migrations/20260113160002_enable_cron_extensions.sql` | NEW |
+| `supabase/migrations/20260113170000_setup_reaper_cron_job.sql` | NEW |
+| `supabase/migrations/20260113170001_update_cron_secret.sql` | NEW |
+| `supabase/functions/process-expired-commitments/index.ts` | NEW |
+| `src/types/database.types.ts` | penalty_charges型、defaulted_at追加 |
+| `src/i18n/locales/{ja,en,ko}.json` | reaper通知メッセージ追加 |
+| `ROADMAP.md` | Phase 7.4 [x] |

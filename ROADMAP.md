@@ -8,7 +8,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - Phase 1-3: Core features stabilized.
 - Phase 3.5 (MVP): Simplified User Profile (Username/Date) & Account Management.
 - Phase 7: "Web Companion Model" for compliant payments.
-- Phase 8: Ops, Reliability, and Analytics for continuous improvement.
+- Phase 8: Ops, Reliability, Analytics, and Lifecycle Management (Force Updates/Maintenance).
 
 ---
 
@@ -35,7 +35,6 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Role:** `[UX Engineer]`
     - **Action:** Group commitments by book and improve verification UX.
     - **DoD:** Dashboard is organized; Success modal drives retention.
-    - **Design Note:** Removed "Continue this book" button from Commitment Detail to prevent goal conflicts. New commitments should only be created after completion or via a clear non-conflicting flow.
 
 - [x] **1.5 Completion Celebration (The Reward)**
     - **Role:** `[Animation Specialist]`
@@ -52,27 +51,16 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Action:** Refine micro-interactions of the celebration modal.
     - **DoD:** Premium feel with fluid animations.
 
-- [x] **1.8 The Lifeline (Emergency Freeze) ✅**
+- [x] **1.8 The Lifeline (Emergency Freeze)**
     - **Role:** `[Fullstack Engineer]`
     - **Action:** Implement "Fairness Valve" via Edge Function.
-    - **Details:** One-time freeze **per Book** (not per commitment). Logic checks `book_id` history to prevent reuse on subsequent commitments for the same book.
-    - **Implementation:**
-      - Edge Function: `supabase/functions/use-lifeline/index.ts`
-      - DB Column: `commitments.is_freeze_used` (boolean)
-      - UI: Orange "Lifeline (+7 Days)" button in CommitmentDetailScreen
-      - i18n: Keys added for ja/en/ko
-    - **DoD:** User can extend deadline once per book; DB updates securely.
+    - **Details:** One-time freeze per commitment. Log MUST be server-side to prevent cheating.
+    - **DoD:** User can extend deadline once; DB updates securely.
 
-- [x] **1.9 Hyper Scanner (ISBN Barcode) ✅**
+- [x] **1.9 Hyper Scanner (ISBN Barcode)**
     - **Role:** `[Mobile Engineer]`
     - **Action:** Integrate Camera for barcode scanning.
-    - **Security:** Proxy Google Books API calls via Supabase Edge Function (`isbn-lookup`).
-    - **Implementation:**
-      - Component: `src/components/BarcodeScannerModal.tsx`
-      - Edge Function: `supabase/functions/isbn-lookup/index.ts` (deployed with `--no-verify-jwt`)
-      - Utilities: `src/utils/isbn.ts`
-      - Integration: CreateCommitmentScreen + OnboardingScreen3
-    - **Note:** `expo-camera` requires native rebuild (not Expo Go compatible). Run `npx expo run:ios/android`.
+    - **Security:** Proxy Google Books API calls via Supabase to hide keys.
     - **DoD:** Scan book -> Instant Commitment screen (< 2 sec).
 
 ---
@@ -96,21 +84,9 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **2.2.2 Screen 7 (Opportunity Cost):** Burning Text Effect (Shader).
 
 ### Phase 2.3: Act 3 - The Covenant (Screens 11-15) ✅
-- [x] **2.3.1 Screen 12 (The Plan):** Blueprint drawing animation (`BlueprintCard.tsx`).
-- [x] **2.3.2 Screen 13 (The Paywall):** Slide-to-Commit interaction (`SlideToCommit.tsx`).
-- [x] **2.3.3 Screen 13→Dashboard (The Transition):** "007-Style" Cinematic Reveal (`CinematicCommitReveal.tsx`).
-    - **Timeline:** Blackout (400ms) → Silence (500ms) → "COMMIT" fade-in (800ms) → Slow zoom 1.0→1.05 (2500ms) → Fade-out (500ms) → Dashboard fade-in (800ms).
-    - **Typography:** Futura-Bold (iOS) / sans-serif-black (Android), letterSpacing: 4, pure white (#FFFFFF).
-    - **Trigger:** `setShowWarpTransition(true)` in `OnboardingScreen13_Paywall.tsx` (NOT navigation).
-    - **Dashboard Integration:** `DashboardScreen.tsx` reads `showDashboardFadeIn` AsyncStorage flag and fades in from black.
-
-### Phase 2.4: Internationalization & UX Polish ✅ 🆕
-- [x] **2.4.1 Language Instant Switching:** Settings language change immediately reflects across all screens.
-    - `LanguageContext` (`src/contexts/LanguageContext.tsx`) manages language state.
-    - `NavigationContainer` uses `key={language}` to force full remount on language change.
-    - `SettingsScreen` uses `useLanguage()` hook.
-- [x] **2.4.2 i18n Translation Sync:** All locale files (ja/en/ko) synchronized with missing keys.
-- [x] **2.4.3 Cross-Tab Navigation Fix:** LibraryScreen → CreateCommitment uses proper nested navigation.
+- [x] **2.3.1 Screen 12 (The Plan):** Blueprint drawing animation.
+- [x] **2.3.2 Screen 13 (The Paywall):** Slide-to-Commit interaction.
+- [x] **2.3.3 Screen 15 (The Transition):** Warp Speed transition.
 
 ---
 
@@ -122,21 +98,17 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **3.2 Global Error Handling**
 - [x] **3.3 Strict Type Definitions (Supabase)**
 - [x] **3.4 Critical UI Edge Cases**
-- [x] **3.5 Engineering Standards: Localization & Layout 🆕**
-    - **Rule 1 (Zero Hard-coding):** All strings (UI, Alerts, Placeholders) MUST use `i18n.t()`. No Japanese/English/Korean should be hard-coded in TSX.
-    - **Rule 2 (Fluid Layouts):** Avoid fixed heights and absolute positioning that block text expansion. Use Flexbox `gap` and `padding`.
-    - **Rule 3 (No defaultValues):** Do NOT use Japanese strings in `defaultValue`. Use the key only, or English if absolutely necessary.
 
 ---
 
-## 👤 Phase 3.5: User Profile & Settings (The Control Room) ✅
+## 👤 Phase 3.5: User Profile & Settings (The Control Room)
 
 **Objective:** Essential account management for App Store compliance and user trust.
 
 - [x] **3.5.1 User Profile UI (MVP)**
     - **Role:** `[UI Designer]`
     - **Action:** Create `src/screens/ProfileScreen.tsx`.
-    - **Details:** Simple display name (or Email) and "Member Since [Date]".
+    - **Details:** Simple display of Username (or Email) and "Member Since [Date]".
     - **Note:** Keep it minimal. No complex stats for V1.
     - **DoD:** User can see their identity and registration date.
 
@@ -149,203 +121,53 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **3.5.3 Account Deletion (Apple Requirement) 🚨**
     - **Role:** `[Backend Engineer]`
     - **Action:** Implement "Delete Account" via Edge Function.
-    - **Logic:**
-        1. Check for **Failed Payments**. If exists, BLOCK deletion with alert.
-        2. If clean, DELETE Supabase Auth user + Profiles + Cancel Stripe Customer.
-        3. Active commitments are abandoned (deleted) without penalty.
-    - **DoD:** Irreversible deletion of all user data (unless debt exists).
+    - **Logic:** Delete Supabase Auth user + Profiles + Cancel Stripe Customer.
+    - **DoD:** Irreversible deletion of all user data.
 
 - [x] **3.5.4 Contact / Support Flow**
     - **Role:** `[Frontend Engineer]`
     - **Action:** "Contact Support" button (mailto or form link).
     - **DoD:** User can initiate a support request.
 
-**Implementation Notes (2026-01-09):**
-- **Profile:** Minimalist UI created at `src/screens/ProfileScreen.tsx`. Supports direct username editing via Supabase.
-- **Account Deletion:** Secured via Edge Function (`delete-account`). Deployed with `--no-verify-jwt` to handle client-side auth context correctly. Uses Service Role Key for irreversible user deletion.
-- **Legal/Support:** Integrated into `SettingsScreen.tsx` with external linking to Web Portal (Phase 7 prerequisite).
-- **Navigation:** Integrated into Settings stack within `AppNavigator.tsx`.
-- **Onboarding Reliability Fix:** 
-    - Replaced `upsert` with `SELECT -> INSERT` flow in `OnboardingScreen13` to avoid RLS Update permission errors for existing books.
-    - Switched from `AsyncStorage` state to direct `route.params` passing between Onboarding screens to ensure data consistency during rapid navigation/stack switches.
+---
+
+## 🔵 Phase 4: Engagement, Retention & Virality
+
+**Objective:** Integrate world-class trends to keep users engaged.
+
+- [x] **4.1 Dynamic Pacemaker (Notifications)**
+    - **Action:** Smart local notifications ("Read X pages today").
+
+- [x] **4.2 The Commitment Receipt**
+    - **Action:** Receipt-style image generation sharing.
+
+- [x] **4.3 Monk Mode**
+    - **Action:** Strict focus timer with ambient sound.
+
+- [x] **4.4 Lock Screen Live Activity**
+    - **Action:** iOS Dynamic Island widget.
+
+- [x] **4.5 Advanced Animation Polish**
+    - **Action:** Refine micro-interactions.
+
+- [x] **4.6 Reading DNA**
+    - **Action:** Visualize reading habits (Speed, Time).
+
+- [x] **4.7 The Hall of Fame**
+    - **Action:** Netflix-style library for completed books.
+
+- [ ] **4.8 Review & Rating Strategy (Growth)**
+    - **Role:** `[Product Manager]`
+    - **Action:** Implement StoreKit In-App Review API.
+    - **Trigger:** Prompt user for a rating ONLY after a "Positive Moment" (e.g., Successfully completing a commitment). Never prompt after a penalty.
+    - **DoD:** App requests review at appropriate high-engagement moments.
 
 ---
 
-## 🟡 Phase 4.1: Bug Fixes & Stabilization (Current Focus)
-
-**Objective:** Address critical visual bugs and ensure robust data handling.
-
-- [x] **4.1.1 Emergency Fix: Book Cover HTTPS Migration (ATS Compliance) ✅**
-    - **Role:** `[Backend/Mobile Engineer]`
-    - **Problem:** Google Books API returns `http://` URLs stored in DB, blocked by iOS ATS.
-    - **Action:** 
-        1. Run SQL migration to update all `http://` to `https://` in `books` table.
-        2. Implement fail-safe in `LibraryScreen` to auto-refetch covers on load error.
-        3. Removed `edge=curl` parameter to fix rendering issues.
-    - **DoD:** All book covers in Library display correctly without orange placeholders.
-
-- [x] **4.1 Dynamic Pacemaker (Smart Notifications) ✅**
-    - **Logic:** `Daily Target = Remaining Pages / Remaining Days`.
-    - **UX:** High-tier copywriting. Not generic; personalized based on progress.
-    - **Action:** Schedule local notifications via `expo-notifications`.
-    - **Implementation:**
-      - Service: `src/lib/NotificationService.ts` (singleton, pacemaker calculation)
-      - Settings UI: `src/screens/NotificationSettingsScreen.tsx`
-      - Integration: DashboardScreen auto-schedules on launch
-      - i18n: Notification copy in ja/en/ko
-    - **Note:** Requires native rebuild (`./run-ios-manual.sh`).
-
-- [x] **4.2 The Commitment Receipt (Shareable Keepsake) ✅**
-    - **Design:** High-end, international aesthetic (Minimalist/Premium). Dark mode only (#0A0A0A background).
-    - **Content:** Book Cover, Date, Duration. **NO penalty amount**. Focus on the asset gained.
-    - **Tech:** Generate image using `react-native-view-shot` + `expo-sharing`.
-    - **Timing:** Auto-generate in Success Modal + accessible from BookDetailScreen.
-    - **Implementation:**
-      - Component: `src/components/receipt/CommitmentReceipt.tsx` (1080x1920px, Instagram Story optimized)
-      - Modal: `src/components/receipt/ReceiptPreviewModal.tsx`
-      - Utils: `src/utils/shareUtils.ts`
-      - Integration: VerificationSuccessModal, BookDetailScreen
-    - **DoD:** User can share achievement certificate from completion modal or Library.
-
-- [x] **4.3 Monk Mode (Deep Reading Timer) ✅**
-    - **Ambience:** "Bonfire/Crackling Fire" sound loop (High quality).
-    - **Enforcement:** Simple warning toast on app backgrounding/exit.
-    - **Tracking:** Save focus duration to DB (`focus_sessions`) and reflect in user stats.
-    - **Implementation:**
-      - Screen: `src/screens/MonkModeScreen.tsx`
-      - Uses `useKeepAwake()` to prevent screen dimming during focus sessions
-      - Sound: `expo-av` for ambient fire sound playback
-      - AppState listener for background detection with warning toast
-      - Timer with start/pause/complete controls
-    - **DoD:** User can enter focused reading mode with ambient sound and session tracking.
-
-- [x] **4.4 Lock Screen Live Activity (Invasive UX) ✅**
-    - **Role:** `[Native Module Specialist]`
-    - **Action:** Implement iOS Live Activities (Dynamic Island) for Monk Mode timer.
-    - **Details:**
-        - **Package:** `expo-live-activity` (Software Mansion Labs)
-        - **Display:** Circular progress ring with remaining time on Lock Screen / Dynamic Island
-        - **States:** Running, Paused, Completed, Cancelled
-        - **Tech:** Conditional import with `Platform.OS` check for graceful Android degradation
-    - **Implementation:**
-        - Service: `src/lib/LiveActivityService.ts` (singleton, iOS-only)
-        - Hook Integration: `src/hooks/useMonkModeTimer.ts` (all timer events call LiveActivityService)
-        - i18n: 5 new keys for Live Activity text (ja/en/ko)
-        - Prebuild: Generates `LiveActivity.appex` widget extension
-    - **Note:** Requires iOS 16.2+. Icons optional (`assets/liveActivity/` folder).
-    - **DoD:** Timer progress visible on Lock Screen without unlocking the phone.
-
-- [x] **4.5 Advanced Animation Polish ✅**
-    - **Role:** `[Animation Specialist]`
-    - **Action:** Refine all micro-interactions based on beta feedback.
-    - **Details:**
-        - **Haptic Luxury:** ボタン押下時に「高級車の物理スイッチ」のような重みのある振動（Haptic Feedback）を実装。
-        - **Ambient Transition:** 画面遷移やカード表示に、白熱電球のようなゆっくりとしたフェードイン/アウト（Slow Fade）と、光源が広がるようなアニメーションを適用。
-    - **Implementation (2026-01-12):**
-        - **HapticsService:** Centralized singleton at `src/lib/HapticsService.ts` with throttling (50ms)
-        - **Methods:** `feedbackLight()`, `feedbackMedium()`, `feedbackHeavy()`, `feedbackSuccess()`, `progressiveFeedback()`
-        - **HAPTIC_BUTTON_SCALES:** Configuration at `src/config/haptics.ts`
-        - **AMBIENT_TIMING_CONFIGS:** Added to `src/config/animation.ts` (incandescent: 700ms, sine easing)
-        - **useAmbientTransition:** Hook at `src/hooks/useAmbientTransition.ts`
-        - **Buttons Enhanced:** PrimaryButton, SecondaryButton, CreateCommitmentScreen, MonkModeScreen, CommitmentDetailScreen, VerificationSuccessModal, ReceiptPreviewModal
-    - **DoD:** All Piano Black buttons have Heavy haptic + scale 0.97 animation. ✅
-
-- [x] **4.6 Reading DNA (Identity Analysis) ✅**
-    - **Role:** `[Data Viz Specialist]`
-    - **Action:** Visualize user's reading habits to build identity.
-    - **Details:**
-        - **Visual Style:** 統計データを単なるグラフではなく、**「ハイエンド車のテレメトリー画面」**のように表現。
-        - **UI:** 厚みのある磨りガラス（Thick Glass）カード内に、発光するデータラインを配置。
-    - **Implementation (2026-01-10):**
-        - **MonkModeService Extensions:** 4 new methods - `getHeatmapData()`, `getStreakStats()`, `detectReaderType()`, `getReadingInsights()`
-        - **Types Added:** `HeatmapDay`, `StreakStats`, `ReaderType`, `ReaderTypeResult`, `ReadingInsights`
-        - **Reader Types:** morning_reader, night_reader, sprinter, marathon_runner, weekend_warrior, streak_reader, balanced_reader
-        - **Components Created:** `src/components/reading-dna/` (ReaderTypeCard, StreakDisplay, InsightCard, ReadingDNASection)
-        - **ProfileScreen:** Integrated with Titan background + ReadingDNASection
-        - **DashboardScreen:** Added profile navigation button in header
-        - **ActivityMatrix:** Enhanced with month labels (JAN, FEB, etc.) using absolute positioning
-        - **i18n:** readingDna.* keys added to ja/en/ko locales
-    - **DoD:** ユーザーが自分の「Reader Type」を、高級ブランドのカスタマイズ履歴を確認するような「特別感」に感じられる。 ✅
-
-- [x] **4.7 The Hall of Fame: Cinematic Archive ✅**
-    - **Role:** `[Creative Director & UI/UX Designer]`
-    - **Action:** Transform the library into a premium streaming-style showcase that treats each completed book as a "Major Production".
-    - **Details:**
-        - **Hero Billboard:** 最上部に「最新の完読本」を配置。表紙画像をグラスモーフィズム越しに投影し、文字は大きく、エレガントなタイポグラフィで表示。
-        - **Immersive Theming:** 選択している本に合わせて、画面背景のアンビエント光がわずかに変色（Apple MusicやNetflixのプレビュー演出）。
-        - **Automotive Metadata:** 各本の統計（読了までの日数、時速など）を、車のスペック表（0-100km加速など）のように、細いフォントと発光する数字で表示。
-        - **Card Design:**
-            - **Materials:** 1pxの枠線を廃止し、**「厚みのあるガラスブロック（Thick Glass）」**を採用。
-            - **Badge:** 「SECURED（確保済）」のバッジを、高級時計の刻印のような質感で配置。
-    - **Implementation (2026-01-12):**
-        - **HeroBillboard.tsx:** Ultra-thin typography (fontWeight: '100'), glass panel with top/left highlight edges (0.5px), 40px+ vertical margin to prevent overlap
-        - **AutomotiveMetrics.tsx:** Self-glow effect on numbers (`textShadowColor: 'rgba(255, 140, 80, 0.5)'`), micro labels (fontSize: 10, opacity: 0.4)
-        - **SecuredBadge.tsx:** Added "metallic" variant with black card inscription style
-        - **AmbientGlow.tsx:** Cinematic intensity mode with blur(60px)+ ambient glow, left-top ambient lighting
-        - **GlassFilterBar.tsx (NEW):** Notion-style colored tag pills + month-based filtering
-        - **LibraryScreen.tsx:** Netflix-style horizontal carousel with `snapToInterval`, FlatList implementation
-        - **BookDetailScreen.tsx:** Tag section moved outside hero for visibility, prominent "+" button with dashed border
-        - **Commits:** `a8576da`, `0a688c6`, `243866f`, `53274e5`, `6a311aa`
-    - **DoD:** ユーザーがライブラリを開いた瞬間、「自分が築き上げた知の帝国」を眺めているような圧倒的な所有感を感じる。 ✅
-
-- [x] **4.8 The Activity Matrix (Daily Habit HUD) ✅**
-    - **Role:** `[UI/UX Designer]`
-    - **Action:** Add habit visualization to Dashboard with industry best practices.
-    - **Details:**
-        - **Design Decision:** 海外アプリ事例（GitHub, Duolingo, Strava）を参考に、ダッシュボードはシンプルに保ち、詳細分析はプロフィールに集約。
-        - **Dashboard:** Duolingo-style streak badge (🔥 N日連続) - タップでプロフィールへ遷移
-        - **Profile:** Full ActivityMatrix with soft-light indicators (#0F0A06 unlit → #FF6B35 lit)
-    - **Implementation (2026-01-10):**
-        - **Streak Badge:** `streakStats.currentStreak` display with tap navigation to Profile
-        - **Soft-Light Upgrade:** ActivityMatrix inner glow effect for ProfileScreen
-        - **i18n:** Added `streak_days` key (ja: 日連続, en: day streak, ko: 일 연속)
-        - **Files:** `DashboardScreen.tsx`, `ActivityMatrix.tsx`, locale files
-    - **DoD:** ダッシュボードは最小限の情報（ストリーク数のみ）、詳細はプロフィールで確認する導線を構築。 ✅
-
-- [x] **4.9 The Titan Design Overhaul (Liquid Metal & Dark Glass Aesthetic) ✅**
-    - **Role:** `[Creative Director & UI Architect]`
-    - **Action:** Execute a complete visual rebranding to unify the app under a "Hardcore Luxury & Ambient Flow" identity.
-    - **Details:**
-        - **Core Concept:** "The Executive Cockpit & Light Sanctuary".
-        - **Materials:** 「No Borders（枠線なし）」思想。境界符号（¥）は数字の80%サイズに落とし、ウェイトも一段階細くして「情報のヒエラルキー」を構築。境界線の代わりに、ハイコントラストなハイライトと深いシャドウ（Bevels）を使用して、1pxの線を使わずに物理的な厚みを表現。
-        - **Typography (Automotive Spec):**
-            - **Data/Numbers:** エレガントなジオメトリック・サンセリフ（DIN, Inter, Helvetica Neue）。メトリクスにはスピードメーターのような大きく細いウェイトを使用。
-            - **Labels:** ミニマルで鮮明。プレミアムなトラッキング（字間）を適用。
-        - **Color Palette:**
-          - **Base:** リッチダークオレンジブラウン（#1A1008）からディープダーク（#080604）へのグラデーション。
-          - **Primary Glow:** ブラッドオレンジ（#FF6B35）のアンビエント発光。
-          - **Alert:** クリムゾン・ルビー（深みのある赤）。
-          - **Light:** ガラスの反射を表現するソフトな白のグラデーション。
-        - **UI Component Overhaul:**
-            - **Activity Log:** "Ambient Status Strip". Seamless glass panel with embedded soft-light indicators (not punched holes).
-            - **Panels (Risk/Missions):** "Thick Glass Tiles". Remove borders. Use inner shadows and drop shadows to simulate heavy glass blocks resting on the background.
-            - **Interaction:** "Haptic Luxury". Heavy, mechanical feedback paired with "lighting up" animations (slow fade-in/out like incandescent bulbs).
-    - **Implementation (2026-01-10):**
-        - **Titan Background:** `LinearGradient` with `['#1A1008', '#100A06', '#080604']` + top-left ambient glow `rgba(255, 160, 120, 0.15)`
-        - **Glassmorphism:** `backgroundColor: 'rgba(26, 23, 20, 0.8)'`, `borderColor: 'rgba(255, 255, 255, 0.1)'`
-        - **Piano Black Buttons:** `backgroundColor: '#1A1714'`, `shadowColor: '#FF6B35'` (orange glow)
-        - **Orange Accent:** `#FF6B35` for highlights, checkmarks, labels
-        - **Text Glow:** `textShadowColor` with `textShadowRadius` for luxury gauge effect
-        - **Screens Updated:** MonkModeScreen, MonkModeActiveScreen, CreateCommitmentScreen, CommitmentDetailScreen
-        - **Components Updated:** DurationSlider, TimerDisplay, CommitmentReceipt, ReceiptPreviewModal
-        - **Commits:** `1d7f5fe`, `77db970`, `46fbf09`, `0624b75`, `d5656f3`
-    - **DoD:** The app feels like a physical instrument cluster of a hypercar. "Wet" black textures, optical depth, and "No Borders" philosophy are implemented. ✅
-
----
-
-## 🛠️ Phase 5: Technical Debt & Maintenance ✅
+## 🛠️ Phase 5: Technical Debt & Maintenance
 
 - [x] **5.1 Migrate Audio System**
     - **Action:** Update `expo-av` to `expo-audio` (SDK 54).
-    - **Implementation (2026-01-12):**
-      - Removed `expo-av` dependency
-      - Installed `expo-audio` via `npx expo install expo-audio`
-      - Rewrote `src/lib/audio.ts` (SoundManager) using new API:
-        - `createAudioPlayer()` for non-hook audio player creation
-        - `player.play()` / `player.pause()` / `player.seekTo()` methods
-        - `player.volume` / `player.loop` direct property assignment
-        - `player.release()` for memory cleanup
-        - `setAudioModeAsync()` with new signature (`interruptionMode: 'duckOthers'`)
 
 ---
 
@@ -353,78 +175,72 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 **Objective:** Clean up shortcuts and ensure legal/platform compliance.
 
-- [x] **6.1 Remove Dev-only Auth Credentials ✅**
-    - **Action:** Removed `__DEV__` conditional with test credentials from `AuthScreen.tsx`
-    - **DoD:** Production builds have no pre-filled test credentials.
+- [x] **6.1 Remove Dev-only Auth Credentials**
+- [x] **6.2 Final Animation Quality Audit**
+- [x] **6.3 Production Environment Audit**
+- [x] **6.4 Final Build & Smoke Test**
 
-- [x] **6.2 Final Animation Quality Audit ✅**
-    - **Note:** Completed in Phase 4.5 (HapticsService, Ambient Transition)
-    - **DoD:** All animations reviewed and polished.
-
-- [x] **6.3 Production Environment Audit ✅**
-    - **Action:** Added `babel-plugin-transform-remove-console` for production builds
-    - **DoD:** 155 console.* calls will be stripped in production.
-
-- [x] **6.4 Final Build & Smoke Test ✅**
-    - **Action:** TypeCheck passed (no new errors)
-    - **DoD:** Build system verified working.
-
-- [x] **6.5 App Store Guidelines Check ✅**
+- [x] **6.5 App Store Guidelines Check**
     - **Role:** `[Product Owner]`
-    - **Action:** Removed dead `SubscriptionScreen.tsx` (unused Stripe PaymentSheet UI)
-    - **DoD:** No in-app payment UI exists. Penalties route to Web (Phase 7).
+    - **Action:** Verify NO native payment screens for penalties. All must route to Web.
+    - **DoD:** Compliance with Apple Guidelines 3.1.1 & 3.2.1.
 
-- [ ] **6.6 Compliance (Launch Critical) 🆕**
+- [x] **6.6 Legal & Compliance (Launch Critical)**
     - **Role:** `[Legal/Product Owner]`
-    - **Action:** Create Web Pages for: Terms of Service, Privacy Policy, Tokushoho (特商法).
+    - **Action:** Create Web Pages for:
+        - Terms of Service (Define Penalty rules)
+        - Privacy Policy (Data usage)
+        - Tokushoho (特商法) (Japanese Web Payment requirement)
     - **DoD:** Legal footer exists on Web Payment Portal.
-    - **Status:** Postponed to Phase 7 (Web Portal construction)
 
-- [x] **6.7 Audio Asset Integration ✅**
-    - **Role:** `[Frontend Engineer]`
-    - **Action:** Generate placeholder audio files and activate `src/lib/audio.ts`
-    - **Details:**
-        - Created `src/assets/audio/` directory with 11 silent MP3 files
-        - Ambient: `ambient_calm.mp3`, `ambient_tension.mp3`, `ambient_hope.mp3`
-        - Shepard Tones: `shepard_tone_low.mp3`, `shepard_tone_mid.mp3`, `shepard_tone_high.mp3`
-        - UI Sounds: `ui_tap.mp3`, `ui_slide.mp3`, `ui_success.mp3`, `ui_transition.mp3`, `ui_toast.mp3`
-        - Updated `audio.ts` with actual `require()` statements
-        - Added `preloadShepardTones()` method
-    - **DoD:** SoundManager.initialize() successfully loads all audio assets.
+- [ ] **6.7 Legal Consent Versioning (Compliance)**
+    - **Role:** `[Backend Engineer]`
+    - **Action:** Store `agreed_tos_version` in user profile.
+    - **Logic:** If `app_tos_version > user_agreed_version`, force show a "Terms Updated" modal on launch blocking usage until agreed.
+    - **DoD:** Infrastructure to force-renew consent when legal terms change.
 
 ---
 
-## ⚙️ Phase 7: The Engine (Web Companion & Security) 🆕
+## ⚙️ Phase 7: The Engine (Web Companion & Security)
 
 **Priority: CRITICAL** (Concurrent with Phase 2/3)
 **Objective:** Secure infrastructure for payments via Web Portal (Apple Compliance).
 
-- [ ] **7.1 Web Payment Portal (Next.js)**
+- [x] **7.1 Web Payment Portal (Next.js)**
     - **Role:** `[Fullstack Engineer]`
     - **Action:** Deploy minimal Vercel app sharing Supabase project.
     - **Features:** Login (Auth), Stripe Elements (Card Setup).
     - **DoD:** User can save credit card securely on the web.
+    - **Production URL:** https://commit-app-web.vercel.app
 
-- [ ] **7.2 Deep Linking & Handoff**
+- [x] **7.2 Deep Linking & Handoff**
     - **Role:** `[Mobile Engineer]`
     - **Action:** App (Linking) <-> Web Redirects.
-    - **Details:** Use **Magic Link Auth Handoff**. App requests one-time token -> Web auto-logins -> User sets card -> Redirects back to App.
-    - **DoD:** Seamless flow without password re-entry.
+    - **DoD:** Seamless flow: App -> Web (Set Card) -> App (Toast "Card Updated").
+    - **Implementation:**
+      - App: `Linking.openURL()` in SettingsScreen.tsx
+      - Web: `commitapp://` scheme redirect in success/page.tsx
+      - Supabase: Auth redirect URLs configured via CLI
 
-- [ ] **7.3 Push Notification Infrastructure (Prerequisite)**
+- [x] **7.3 Push Notification Infrastructure (Prerequisite)**
     - **Role:** `[Backend Engineer]`
     - **Action:** Setup Expo Push Notifications & Supabase Tables.
-    - **DoD:** Server can send test notification to a specific user.
+    - **DoD:** Server can send a test notification to a specific user.
+    - **Implementation:**
+      - DB: `expo_push_tokens` table with RLS
+      - Mobile: `NotificationService.registerForPushNotifications()` (auto-called on auth)
+      - Server: `send-push-notification` Edge Function deployed
 
-- [ ] **7.4 "The Reaper" (Automated Deadline Enforcer)**
+- [x] **7.4 "The Reaper" (Automated Deadline Enforcer)**
     - **Role:** `[Backend Engineer]`
     - **Action:** `pg_cron` + Edge Function.
-    - **Logic:**
-        1. Hourly check for missed deadlines.
-        2. Trigger Stripe Off-Session Charge.
-        3. Use **Stripe Smart Retries** for failures.
-        4. If payment fails (final), mark user as 'payment_failed' and **BLOCK new commitments**.
-    - **DoD:** Automated penalty charge and protection against non-payment.
+    - **Logic:** Hourly check -> Mark Defaulted -> Stripe Off-Session Charge -> Push Notification.
+    - **DoD:** Automated penalty charge and notification upon deadline miss.
+    - **Implementation:**
+      - `penalty_charges` table for charge tracking
+      - `process-expired-commitments` Edge Function
+      - Vault secrets for secure cron authentication
+      - Hourly + 4-hour retry cron jobs
 
 - [ ] **7.5 Row Level Security (RLS) Hardening**
     - **Role:** `[Security Engineer]`
@@ -441,21 +257,34 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ---
 
-## 🛡️ Phase 8: Reliability, Ops & Analytics (Pro-Grade) 🆕
+## 🛡️ Phase 8: Reliability, Ops & Analytics (Pro-Grade)
 
 **Objective:** Monitoring, Automation, and Business Intelligence.
 
 - [ ] **8.1 Crash & Error Monitoring (Sentry)**
     - **Role:** `[DevOps Engineer]`
     - **Action:** Integrate Sentry (App + Edge Functions).
-    - **DoD:** Crash reports received in dashboard.
+    - **DoD:** Crash reports received in Sentry dashboard.
 
 - [ ] **8.2 CI/CD Pipeline (GitHub Actions)**
     - **Role:** `[DevOps Engineer]`
     - **Action:** Automate build (EAS) and deploy (Edge Functions).
-    - **DoD:** Merge to main triggers auto-deployment.
+    - **DoD:** Merge to `main` triggers auto-deployment.
 
-- [ ] **8.3 Product Analytics (PostHog/Mixpanel) 🆕**
+- [ ] **8.3 Product Analytics (PostHog/Mixpanel)**
     - **Role:** `[Product Manager]`
     - **Action:** Track key user events (Commitment Created, Completed, Defaulted).
     - **DoD:** Dashboard shows "Commitment Completion Rate" and "Churn".
+
+- [ ] **8.4 Remote Config & Force Update (The Kill Switch)**
+    - **Role:** `[Mobile Engineer]`
+    - **Action:** Implement a check on app launch against Supabase/Edge Config.
+    - **Logic:** If `current_app_version < min_required_version`, show a blocking modal: "Please update to continue" with a link to the App Store.
+    - **Why:** To prevent crashes or exploits from old versions circulating.
+    - **DoD:** Admin can force all users to update by changing a server-side value.
+
+- [ ] **8.5 Maintenance Mode (Ops)**
+    - **Role:** `[Fullstack Engineer]`
+    - **Action:** Global "Under Maintenance" switch in DB/Config.
+    - **Logic:** If `maintenance_mode` is TRUE, the app shows a "We'll be back soon" screen instead of trying to fetch data and failing.
+    - **DoD:** Can take the entire service offline gracefully for database migrations.

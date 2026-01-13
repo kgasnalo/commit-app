@@ -290,6 +290,21 @@
   -- GOOD - built-in function
   id UUID PRIMARY KEY DEFAULT gen_random_uuid()
   ```
+- **Supabase Migration File Naming:** Use full timestamp format (`YYYYMMDDHHMMSS`) to avoid conflicts when multiple migrations are created on the same day:
+  ```bash
+  # BAD - causes conflicts if multiple files on same day
+  20260113_create_table_a.sql
+  20260113_create_table_b.sql  # Supabase CLI gets confused
+
+  # GOOD - unique timestamps prevent conflicts
+  20260113140000_create_table_a.sql
+  20260113150000_create_table_b.sql
+  ```
+  If migration history becomes mismatched, repair with:
+  ```bash
+  supabase migration repair --status reverted <version>
+  supabase db push
+  ```
 - **Notifications Deprecation:** In `expo-notifications`, `shouldShowAlert` is deprecated. Use `shouldShowBanner: true` and `shouldShowList: true` instead for foreground notification handling.
 - **Data Fetching with React Navigation (CRITICAL):**
   - **Issue:** `useEffect` only runs on initial mount. When navigating back to a screen (Stack Pop), the screen is NOT re-mounted, so `useEffect` does NOT run, causing stale data (e.g., deleted items still showing).
@@ -350,3 +365,118 @@
     interruptionMode: 'duckOthers',
   });
   ```
+- **Supabase OAuth in React Native (CRITICAL):** When implementing OAuth with `expo-web-browser` and `expo-auth-session`:
+  - **PKCE + Implicit Flow:** Always support BOTH flows. Check for `code` parameter first (PKCE), then `access_token`/`refresh_token` (Implicit):
+    ```typescript
+    const code = urlObj.searchParams.get('code');
+    if (code) {
+      // PKCE Flow - modern Supabase default
+      await supabase.auth.exchangeCodeForSession(code);
+    } else {
+      // Implicit Flow - legacy fallback
+      const access_token = hashParams.get('access_token');
+      const refresh_token = hashParams.get('refresh_token');
+      await supabase.auth.setSession({ access_token, refresh_token });
+    }
+    ```
+  - **skipBrowserRedirect:** Set to `true` when using `WebBrowser.openAuthSessionAsync()` since it manages the browser lifecycle manually:
+    ```typescript
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUri,
+        skipBrowserRedirect: true, // REQUIRED for openAuthSessionAsync
+      },
+    });
+    ```
+- **DB Trigger Race Condition:** NEVER use `setTimeout()` to wait for Supabase Auth Triggers to complete. Use `upsert` with `onConflict` and retry logic instead:
+  ```typescript
+  // BAD - flaky, fails under network latency
+  await new Promise(resolve => setTimeout(resolve, 500));
+  await supabase.from('users').update({ username }).eq('id', userId);
+
+  // GOOD - robust upsert with retry
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const { error } = await supabase.from('users').upsert(
+      { id: userId, email, username, subscription_status: 'inactive' },
+      { onConflict: 'id' }
+    );
+    if (!error) break;
+    await new Promise(r => setTimeout(r, 200 * attempt)); // Exponential backoff
+  }
+  ```
+- **Arrow Function Declaration Order:** Unlike `function` declarations, `const` arrow functions are NOT hoisted. Helper functions MUST be declared BEFORE functions that use them:
+  ```typescript
+  // BAD - ReferenceError: Cannot access 'helper' before initialization
+  const main = async () => { await helper(); };
+  const helper = async () => { /* ... */ };
+
+  // GOOD - helper declared first
+  const helper = async () => { /* ... */ };
+  const main = async () => { await helper(); };
+  ```
+- **Web Portal URL:** The production Web Portal URL is `https://commit-app-web.vercel.app`. Do NOT use `commit-app.vercel.app` (old/incorrect). When linking from mobile app to web (billing, terms, privacy), always use:
+  ```typescript
+  Linking.openURL('https://commit-app-web.vercel.app/billing')
+  Linking.openURL('https://commit-app-web.vercel.app/terms')
+  Linking.openURL('https://commit-app-web.vercel.app/privacy')
+  ```
+- **Vercel Deployment Workflow:** When deploying to Vercel:
+  1. First-time: Run `npx vercel login` (opens browser for auth)
+  2. Deploy: `npx vercel --prod --yes`
+  3. **CRITICAL:** `.env.local` is NOT deployed. Set env vars via CLI:
+     ```bash
+     echo "VALUE" | npx vercel env add VAR_NAME production
+     npx vercel env ls  # Verify
+     npx vercel --prod  # Redeploy to pick up new vars
+     ```
+- **Supabase Config Push:** When pushing local config to remote, the CLI prompts for confirmation. Use pipe to auto-confirm:
+  ```bash
+  echo "Y" | supabase config push
+  ```
+  Or check if `--yes` flag is supported in newer CLI versions.
+- **Edge Function Security (CRITICAL):** System-only Edge Functions (e.g., `send-push-notification`) MUST verify the caller is authorized. Checking for the presence of an Authorization header is NOT enough.
+  ```typescript
+  // BAD - Any user with JWT can call this
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) return unauthorized()
+  // ... proceeds without verification
+
+  // GOOD - Verify caller is System/Admin
+  function verifySystemAuthorization(authHeader: string): boolean {
+    const token = authHeader.replace('Bearer ', '').trim()
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    return timingSafeEqual(token, serviceRoleKey)
+  }
+
+  if (!verifySystemAuthorization(authHeader)) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 })
+  }
+  ```
+  - Use timing-safe comparison to prevent timing attacks
+  - Log security rejections for monitoring
+  - Accept SERVICE_ROLE_KEY or CRON_SECRET only
+- **pg_cron + Edge Function Authentication:** When calling Edge Functions from pg_cron jobs, use a dedicated `CRON_SECRET` instead of `SERVICE_ROLE_KEY`. The SERVICE_ROLE_KEY comparison via `timingSafeEqual` may fail due to how Supabase injects environment variables.
+  ```bash
+  # Set CRON_SECRET for Edge Function
+  supabase secrets set CRON_SECRET=your-secret-here
+  ```
+  ```sql
+  -- Store in Vault for cron job access
+  SELECT vault.create_secret('your-secret-here', 'cron_secret');
+
+  -- Reference in cron job
+  SELECT net.http_post(
+    url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url') || '/functions/v1/...',
+    headers := jsonb_build_object(
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cron_secret')
+    ),
+    body := '{}'::jsonb
+  );
+  ```
+- **Supabase CLI SQL Execution:** The Supabase CLI has no direct SQL execution command (`supabase db execute` does not exist). To run SQL on the remote database, create a migration file and use `supabase db push`:
+  ```bash
+  # Create migration file, then:
+  supabase db push
+  ```
+- **Vault Secrets for Cron Jobs:** pg_cron jobs cannot directly access Edge Function environment variables. Store credentials in Supabase Vault and reference via `vault.decrypted_secrets` view.

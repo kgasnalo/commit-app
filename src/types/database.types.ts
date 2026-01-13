@@ -89,6 +89,7 @@ export interface Database {
           currency: string
           target_pages: number
           is_freeze_used: boolean
+          defaulted_at: string | null
           created_at: string
           updated_at: string | null
         }
@@ -102,6 +103,7 @@ export interface Database {
           currency?: string
           target_pages?: number
           is_freeze_used?: boolean
+          defaulted_at?: string | null
           created_at?: string
           updated_at?: string | null
         }
@@ -115,6 +117,7 @@ export interface Database {
           currency?: string
           target_pages?: number
           is_freeze_used?: boolean
+          defaulted_at?: string | null
           created_at?: string
           updated_at?: string | null
         }
@@ -276,6 +279,119 @@ export interface Database {
             columns: ["book_id"]
             isOneToOne: false
             referencedRelation: "books"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      expo_push_tokens: {
+        Row: {
+          id: string
+          user_id: string
+          expo_push_token: string
+          device_id: string | null
+          platform: 'ios' | 'android' | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          expo_push_token: string
+          device_id?: string | null
+          platform?: 'ios' | 'android' | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          expo_push_token?: string
+          device_id?: string | null
+          platform?: 'ios' | 'android' | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expo_push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      penalty_charges: {
+        Row: {
+          id: string
+          commitment_id: string
+          user_id: string
+          amount: number
+          currency: string
+          stripe_payment_intent_id: string | null
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+          charge_status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action'
+          failure_reason: string | null
+          failure_code: string | null
+          attempt_count: number
+          last_attempt_at: string | null
+          next_retry_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          commitment_id: string
+          user_id: string
+          amount: number
+          currency?: string
+          stripe_payment_intent_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action'
+          failure_reason?: string | null
+          failure_code?: string | null
+          attempt_count?: number
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          commitment_id?: string
+          user_id?: string
+          amount?: number
+          currency?: string
+          stripe_payment_intent_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action'
+          failure_reason?: string | null
+          failure_code?: string | null
+          attempt_count?: number
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "penalty_charges_commitment_id_fkey"
+            columns: ["commitment_id"]
+            isOneToOne: true
+            referencedRelation: "commitments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "penalty_charges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           }
         ]

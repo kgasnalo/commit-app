@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -11,6 +11,7 @@ import i18n from '../i18n';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { colors, typography } from '../theme';
+import { NotificationService } from '../lib/NotificationService';
 
 // 統一された認証状態型
 type AuthState =
@@ -334,6 +335,36 @@ function AppNavigatorInner() {
   const isLoading = authState.status === 'loading';
   const session = authState.status === 'authenticated' ? authState.session : null;
   const isSubscribed = authState.status === 'authenticated' ? authState.isSubscribed : false;
+
+  // Phase 7.3: Register push token when user is authenticated and subscribed
+  const pushTokenRegistered = useRef(false);
+  useEffect(() => {
+    async function registerPushToken() {
+      if (authState.status === 'authenticated' && authState.isSubscribed && !pushTokenRegistered.current) {
+        console.log('[AppNavigator] User authenticated & subscribed, registering push token...');
+        pushTokenRegistered.current = true;
+
+        // Initialize notification service and register push token
+        await NotificationService.initialize();
+        const success = await NotificationService.registerForPushNotifications();
+
+        if (success) {
+          console.log('[AppNavigator] Push token registered successfully');
+        } else {
+          console.log('[AppNavigator] Push token registration skipped (simulator or no permission)');
+          // Reset flag to allow retry on next auth state change
+          pushTokenRegistered.current = false;
+        }
+      }
+
+      // Reset flag when user logs out
+      if (authState.status === 'unauthenticated') {
+        pushTokenRegistered.current = false;
+      }
+    }
+
+    registerPushToken();
+  }, [authState]);
 
   // ローディング中はブランドローディング画面を表示
   if (isLoading) {
