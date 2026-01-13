@@ -1,5 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { initSentry, captureException, addBreadcrumb, incrementMetric } from '../_shared/sentry.ts'
+
+// Initialize Sentry
+initSentry('create-commitment')
 
 // ============================================================
 // Types
@@ -134,8 +138,12 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
     if (authError || !user) {
       console.warn('[create-commitment] Auth failed:', authError?.message)
+      addBreadcrumb('Auth failed', 'auth', { error: authError?.message })
       return errorResponse(401, 'UNAUTHORIZED')
     }
+
+    // Set user context for Sentry
+    addBreadcrumb('User authenticated', 'auth', { userId: user.id })
 
     // 2. Parse request body
     let body: CreateCommitmentRequest
@@ -259,6 +267,16 @@ Deno.serve(async (req) => {
 
     console.log(`[create-commitment] Success: user=${user.id}, commitment=${commitment.id}, book=${bookId}`)
 
+    // Track success metrics
+    addBreadcrumb('Commitment created', 'commitment', {
+      commitmentId: commitment.id,
+      bookId,
+      userId: user.id,
+      amount: pledge_amount,
+      currency,
+    })
+    incrementMetric('commitment_created', 1, { currency })
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -270,6 +288,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[create-commitment] Unexpected error:', error)
+    captureException(error, {
+      functionName: 'create-commitment',
+      extra: { errorMessage: String(error) },
+    })
     return errorResponse(500, 'INTERNAL_ERROR', String(error))
   }
 })

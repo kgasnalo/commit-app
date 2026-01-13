@@ -1,6 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import Stripe from 'https://esm.sh/stripe@14.14.0'
+import { initSentry, captureException, addBreadcrumb, incrementMetric } from '../_shared/sentry.ts'
+
+// Initialize Sentry
+initSentry('admin-actions')
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2023-10-16',
@@ -62,8 +66,17 @@ Deno.serve(async (req) => {
     // CRITICAL: Verify the user's email against the allowlist
     if (!ADMIN_EMAILS.includes(user.email.toLowerCase())) {
       console.warn(`[admin-actions] Unauthorized access attempt by: ${user.email}`)
+      addBreadcrumb('Admin access denied', 'security', { email: user.email })
+      captureException(new Error('Unauthorized admin access attempt'), {
+        functionName: 'admin-actions',
+        userId: user.id,
+        extra: { email: user.email },
+      })
       return errorResponse(403, 'FORBIDDEN', 'User is not an admin')
     }
+
+    // Admin authenticated
+    addBreadcrumb('Admin authenticated', 'auth', { adminEmail: user.email })
 
     // 3. Parse Request
     let body: AdminActionRequest
@@ -95,6 +108,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[admin-actions] Unexpected error:', error)
+    captureException(error, {
+      functionName: 'admin-actions',
+      extra: { errorMessage: String(error) },
+    })
     return errorResponse(500, 'INTERNAL_ERROR', String(error))
   }
 })
@@ -104,6 +121,8 @@ Deno.serve(async (req) => {
 // ============================================================
 
 async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: string, reason?: string) {
+  addBreadcrumb('Refund action started', 'admin', { penaltyChargeId, adminEmail: adminUser.email })
+
   // 1. Fetch Charge
   const { data: charge, error: fetchError } = await supabase
     .from('penalty_charges')
@@ -129,8 +148,17 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
       payment_intent: charge.stripe_payment_intent_id,
       reason: 'requested_by_customer', // or 'duplicate', 'fraudulent'
     })
+    addBreadcrumb('Stripe refund processed', 'payment', {
+      paymentIntentId: charge.stripe_payment_intent_id,
+      amount: charge.amount,
+      currency: charge.currency,
+    })
   } catch (stripeError) {
     console.error('[admin-actions] Stripe Refund Failed:', stripeError)
+    captureException(stripeError, {
+      functionName: 'admin-actions',
+      extra: { action: 'REFUND', penaltyChargeId, stripeError: stripeError.message },
+    })
     return errorResponse(500, 'STRIPE_REFUND_FAILED', stripeError.message)
   }
 
@@ -157,6 +185,10 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     stripe_pi: charge.stripe_payment_intent_id
   })
 
+  // Track successful refund
+  incrementMetric('admin_refund_success', 1, { currency: charge.currency })
+  addBreadcrumb('Refund completed successfully', 'admin', { penaltyChargeId })
+
   return new Response(
     JSON.stringify({ success: true, message: 'Refund processed successfully' }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -164,6 +196,8 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
 }
 
 async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: string, reason?: string) {
+  addBreadcrumb('Mark complete action started', 'admin', { commitmentId, adminEmail: adminUser.email })
+
   // 1. Fetch Commitment
   const { data: commitment, error: fetchError } = await supabase
     .from('commitments')
@@ -193,6 +227,10 @@ async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: s
     previous_status: commitment.status,
     reason
   })
+
+  // Track successful mark complete
+  incrementMetric('admin_mark_complete_success', 1)
+  addBreadcrumb('Mark complete finished successfully', 'admin', { commitmentId })
 
   return new Response(
     JSON.stringify({ success: true, message: 'Commitment marked as completed' }),
