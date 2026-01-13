@@ -3,124 +3,67 @@
 ## Current Goal
 **Phase 8: Reliability & Ops**
 
-Phase 7 完了! Admin Dashboard が稼働中。次は Phase 8 へ。
+Phase 8.1 Sentry Integration 完了（監査修正含む）。次は Phase 8.2 CI/CD Pipeline へ。
 
 ---
 
 ## Current Critical Status
 
-### Phase 8.1: Sentry Integration ✅ COMPLETE
+### Phase 8.1: Sentry Integration ✅ COMPLETE (Audit Remediation Done)
+
+**監査修正 (2026-01-13):**
+| Issue | Fix | Status |
+|-------|-----|--------|
+| Fake Metrics | `incrementMetric` → `logBusinessEvent` (captureMessage) | ✅ |
+| Coverage Gaps | 全7 Edge Functions に Sentry 追加 | ✅ |
+| Sampling Rate | `tracesSampleRate: 1.0` → `0.1` (10%) | ✅ |
+| PII Logging | `user.email` → `user.id` のみ | ✅ |
 
 #### Mobile App
 | Component | Status | Notes |
 |-----------|--------|-------|
 | `@sentry/react-native` SDK | ✅ | Installed via `npx expo install` |
-| Sentry Initialization | ✅ | `App.js` - 100% tracesSampleRate |
+| Sentry Initialization | ✅ | `App.js` - **10% tracesSampleRate** |
 | Error Logger | ✅ | `src/utils/errorLogger.ts` - captureException |
 | User Context Tracking | ✅ | `AppNavigator.tsx` - sets on auth change |
 | Metrics Service | ✅ | `src/lib/MetricsService.ts` - critical actions |
-| Test Utilities | ✅ | `src/utils/sentryTest.ts` - diagnostics |
 
 #### Web Portal
 | Component | Status | Notes |
 |-----------|--------|-------|
 | `@sentry/nextjs` SDK | ✅ | Full Next.js integration |
-| Client Config | ✅ | `sentry.client.config.ts` - Replay + Tracing |
-| Server Config | ✅ | `sentry.server.config.ts` - Logging enabled |
-| Edge Config | ✅ | `sentry.edge.config.ts` - Middleware support |
+| Client Config | ✅ | `sentry.client.config.ts` - **10% sampling** |
+| Server Config | ✅ | `sentry.server.config.ts` - **10% sampling** |
+| Edge Config | ✅ | `sentry.edge.config.ts` - **10% sampling** |
 | Global Error | ✅ | `src/app/global-error.tsx` - Error boundary |
-| Test API | ✅ | `/api/sentry-test` - Verification endpoint |
 
-#### Edge Functions
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Shared Module | ✅ | `_shared/sentry.ts` - Deno SDK wrapper |
-| SENTRY_DSN_EDGE | ✅ | Secret set via Supabase |
-| process-expired-commitments | ✅ | Sentry 統合済み |
+#### Edge Functions (ALL 7 COVERED)
+| Function | Sentry | logBusinessEvent | Notes |
+|----------|--------|------------------|-------|
+| `create-commitment` | ✅ | `commitment_created` | 金額・期限・ページ検証 |
+| `admin-actions` | ✅ | `admin_refund_success`, `admin_mark_complete_success` | PII削除済み |
+| `delete-account` | ✅ | `account_deleted` | Apple要件 |
+| `use-lifeline` | ✅ | `lifeline_used` | 緊急フリーズ |
+| `isbn-lookup` | ✅ | - | バーコードスキャン |
+| `send-push-notification` | ✅ | `push_notification_batch` | システム専用 |
+| `process-expired-commitments` | ✅ | `reaper_run_complete` | The Reaper |
 
-### Phase 7.7: Internal Admin Dashboard ✅ COMPLETE
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Admin Dashboard Page | ✅ | `/admin/dashboard` (Web Portal) |
-| `admin-actions` Edge Function | ✅ | Refund & Complete アクション |
-| Middleware Protection | ✅ | Email ベースの Admin 認証 |
-| `admin_audit_logs` Table | ✅ | 監査ログ記録 |
-| `charge_status = 'refunded'` | ✅ | 返金ステータス追加 |
-
-### Phase 7.6: Server-side Validation ✅ COMPLETE
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `create-commitment` Edge Function | ✅ | 金額・期限・ページ数のバリデーション |
-| Google Books API 検証 | ✅ | ページ数が本の総ページ数+10以下か確認（soft fail） |
-| 金額上限チェック | ✅ | JPY: 50-50000, USD: 1-350, EUR: 1-300, GBP: 1-250, KRW: 500-500000 |
-| 期限バリデーション | ✅ | 24時間以上先のみ許可 |
-| RLS INSERT 禁止 | ✅ | 認証ユーザーの直接INSERTをブロック |
-
-### Phase 7.5: RLS Hardening ✅ COMPLETE
-| Component | Status | Notes |
-|-----------|--------|-------|
-| DELETE 禁止 | ✅ | commitments に DELETE ポリシーなし |
-| UPDATE 制限 | ✅ | `deadline > NOW()` かつ `status='pending'` のみ |
-| completed 限定 | ✅ | WITH CHECK で `status='completed'` のみ許可 |
-| penalty_charges RLS | ✅ | SELECT のみ、INSERT/UPDATE/DELETE は service_role のみ |
-
-### Phase 7.4: "The Reaper" ✅ COMPLETE
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `penalty_charges` table | ✅ | 課金履歴・リトライ追跡、UNIQUE(commitment_id) |
-| `commitments.defaulted_at` | ✅ | 期限切れ時刻記録 |
-| `process-expired-commitments` | ✅ | Stripe off-session課金、Push通知送信 |
-| `pg_cron` jobs | ✅ | 毎時 :00 + 4時間毎リトライ |
-
-### Phase 7.3: Push Notifications ✅ COMPLETE
-| Component | Status |
-|-----------|--------|
-| `expo_push_tokens` table | ✅ |
-| `send-push-notification` Edge Function | ✅ |
-| `NotificationService.ts` | ✅ |
+### Previous Phases ✅
+- Phase 7.7: Internal Admin Dashboard
+- Phase 7.6: Server-side Validation
+- Phase 7.5: RLS Hardening
+- Phase 7.4: "The Reaper" (Automated Penalty Collection)
+- Phase 7.3: Push Notifications
+- Phase 7.2: Deep Linking
+- Phase 7.1: Web Payment Portal
 
 ---
 
-## IMPORTANT: Set ADMIN_EMAILS
+## Immediate Next Steps: Phase 8.2-8.5
 
-Admin Dashboard を使用するには、環境変数を設定してください:
-
-```bash
-# Supabase Edge Functions
-supabase secrets set ADMIN_EMAILS=your-email@example.com
-
-# Vercel (Web Portal)
-echo "your-email@example.com" | npx vercel env add ADMIN_EMAILS production
-npx vercel --prod  # Redeploy to pick up new vars
-```
-
----
-
-## IMPORTANT: Set SENTRY_DSN
-
-Sentry を有効化するには、`.env` ファイルに DSN を設定してください:
-
-```bash
-# 1. Sentry でプロジェクトを作成 (https://sentry.io/)
-# 2. Client Keys (DSN) から DSN を取得
-# 3. .env ファイルに追加:
-EXPO_PUBLIC_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
-
-# 4. app.json の organization/project を更新:
-# "organization": "your-sentry-org"
-# "project": "your-sentry-project"
-
-# 5. ネイティブモジュールのためリビルド:
-npx expo prebuild
-./run-ios-manual.sh  # または npx expo run:ios
-```
-
----
-
-## Immediate Next Steps: Phase 8
-
-### 8.2 CI/CD Pipeline (GitHub Actions)
-- main マージで自動デプロイ
+### 8.2 CI/CD Pipeline (GitHub Actions) ← NEXT
+- main マージで自動デプロイ (EAS Build + Edge Functions)
+- Type check & lint on PR
 
 ### 8.3 Product Analytics (PostHog/Mixpanel)
 - コミットメント完了率・チャーン追跡
@@ -133,119 +76,52 @@ npx expo prebuild
 
 ---
 
+## IMPORTANT: Environment Setup
+
+### ADMIN_EMAILS (Admin Dashboard)
+```bash
+# Supabase Edge Functions
+supabase secrets set ADMIN_EMAILS=your-email@example.com
+
+# Vercel (Web Portal)
+echo "your-email@example.com" | npx vercel env add ADMIN_EMAILS production
+npx vercel --prod
+```
+
+### SENTRY_DSN
+```bash
+# Mobile App (.env)
+EXPO_PUBLIC_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+
+# Edge Functions
+supabase secrets set SENTRY_DSN_EDGE=https://xxx@xxx.ingest.sentry.io/xxx
+
+# Web Portal (Vercel)
+echo "https://xxx@xxx.ingest.sentry.io/xxx" | npx vercel env add NEXT_PUBLIC_SENTRY_DSN production
+```
+
+---
+
 ## Key File Locations
 
-### Sentry Integration (Phase 8.1)
+### Sentry Integration
+| Platform | Files |
+|----------|-------|
+| Mobile | `App.js`, `src/utils/errorLogger.ts`, `src/lib/MetricsService.ts` |
+| Web | `sentry.*.config.ts`, `src/app/global-error.tsx` |
+| Edge | `supabase/functions/_shared/sentry.ts` |
 
-#### Mobile App
-| Feature | File |
-|---------|------|
-| SDK Initialization | `App.js` |
-| Error Logger | `src/utils/errorLogger.ts` |
-| Metrics Service | `src/lib/MetricsService.ts` |
-| Test Utilities | `src/utils/sentryTest.ts` |
-| User Context | `src/navigation/AppNavigator.tsx` |
-| Env Config | `src/config/env.ts` |
-| Plugin Config | `app.json` |
-
-#### Web Portal
-| Feature | File |
-|---------|------|
-| Client Config | `commit-app-web/sentry.client.config.ts` |
-| Server Config | `commit-app-web/sentry.server.config.ts` |
-| Edge Config | `commit-app-web/sentry.edge.config.ts` |
-| Instrumentation | `commit-app-web/instrumentation.ts` |
-| Global Error | `commit-app-web/src/app/global-error.tsx` |
-| Test API | `commit-app-web/src/app/api/sentry-test/route.ts` |
-| Next Config | `commit-app-web/next.config.ts` |
-
-#### Edge Functions
-| Feature | File |
-|---------|------|
-| Shared Module | `supabase/functions/_shared/sentry.ts` |
-| Reaper Integration | `supabase/functions/process-expired-commitments/index.ts` |
-
-### Internal Admin Dashboard (Phase 7.7)
+### Admin Dashboard
 | Feature | File |
 |---------|------|
 | Dashboard Page | `commit-app-web/src/app/admin/dashboard/page.tsx` |
-| Client Component | `commit-app-web/src/app/admin/dashboard/AdminDashboardClient.tsx` |
-| Middleware | `commit-app-web/src/middleware.ts` |
 | Edge Function | `supabase/functions/admin-actions/index.ts` |
-| DB Migration | `supabase/migrations/20260114100000_admin_dashboard_support.sql` |
-
-### Server-side Validation (Phase 7.6)
-| Feature | File |
-|---------|------|
-| Edge Function | `supabase/functions/create-commitment/index.ts` |
-| RLS Migration | `supabase/migrations/20260114000000_restrict_commitment_insert.sql` |
-| Client Update | `src/screens/CreateCommitmentScreen.tsx` |
-| i18n Errors | `src/i18n/locales/*.json` (errors.validation.*) |
-
-### RLS Hardening (Phase 7.5)
-| Feature | File |
-|---------|------|
-| Commitments RLS | `supabase/migrations/20260113180000_harden_commitments_rls.sql` |
-
-### The Reaper (Phase 7.4)
-| Feature | File |
-|---------|------|
-| Charge Storage | `supabase/migrations/20260113160000_create_penalty_charges.sql` |
-| Defaulted Tracking | `supabase/migrations/20260113160001_add_defaulted_at.sql` |
-| Cron Setup | `supabase/migrations/20260113170000_setup_reaper_cron_job.sql` |
-| Edge Function | `supabase/functions/process-expired-commitments/index.ts` |
-
-### Push Notifications (Phase 7.3)
-| Feature | File |
-|---------|------|
-| Token Storage | `supabase/migrations/20260113150000_create_expo_push_tokens.sql` |
-| Edge Function | `supabase/functions/send-push-notification/index.ts` |
-| Client Service | `src/lib/NotificationService.ts` |
-
-### Manual Test Commands
-```bash
-# Test admin-actions (requires ADMIN JWT)
-curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/admin-actions \
-  -H "Authorization: Bearer <ADMIN_JWT>" \
-  -H "Content-Type: application/json" \
-  -d '{"action": "complete", "commitment_id": "<ID>", "reason": "Test"}'
-
-# Test create-commitment (requires USER JWT)
-curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/create-commitment \
-  -H "Authorization: Bearer <USER_JWT>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "google_books_id": "abc123",
-    "book_title": "Test Book",
-    "book_author": "Author",
-    "book_cover_url": null,
-    "deadline": "2026-01-20T00:00:00Z",
-    "pledge_amount": 1000,
-    "currency": "JPY",
-    "target_pages": 50
-  }'
-
-# Test The Reaper
-curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/process-expired-commitments \
-  -H "Authorization: Bearer reaper-secret-2026-commit-app" \
-  -H "Content-Type: application/json" \
-  -d '{"source": "manual_test"}'
-
-# Test Push Notification (requires SERVICE_ROLE_KEY)
-curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-notification \
-  -H "Authorization: Bearer <SERVICE_ROLE_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "<USER_ID>", "title": "Test", "body": "Test message"}'
-```
 
 ---
 
 ## Supabase Status
 
-### Database Tables
-`users`, `books`, `commitments`, `verification_logs`, `tags`, `book_tags`, `reading_sessions`, `expo_push_tokens`, `penalty_charges`, `admin_audit_logs`
-
-### Edge Functions
+### Edge Functions (7 total, all with Sentry)
 `use-lifeline`, `isbn-lookup`, `delete-account`, `send-push-notification`, `process-expired-commitments`, `create-commitment`, `admin-actions`
 
 ### Cron Jobs (Active)
@@ -254,24 +130,18 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-not
 | `reaper-process-expired-commitments` | `0 * * * *` | 毎時、期限切れ検出・課金 |
 | `reaper-retry-failed-charges` | `0 */4 * * *` | 4時間毎、失敗課金リトライ |
 
-### Vault Secrets
-| Name | Purpose |
-|------|---------|
-| `supabase_url` | プロジェクトURL |
-| `cron_secret` | cron→Edge Function認証 |
-
-### Supabase Secrets (Edge Functions)
+### Secrets
 | Name | Purpose |
 |------|---------|
 | `STRIPE_SECRET_KEY` | Stripe API認証 |
-| `CRON_SECRET` | cron認証受け入れ |
-| `GOOGLE_BOOKS_API_KEY` | Google Books API (create-commitment用) |
-| `ADMIN_EMAILS` | Admin Dashboard アクセス許可リスト |
-| `SENTRY_DSN_EDGE` | Sentry crash monitoring (Edge Functions) |
+| `CRON_SECRET` | cron認証 |
+| `GOOGLE_BOOKS_API_KEY` | Google Books API |
+| `ADMIN_EMAILS` | Admin アクセス許可 |
+| `SENTRY_DSN_EDGE` | Sentry (Edge Functions) |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Latest commit: Phase 8.1 Sentry Integration
-- Ready to push: `git push origin main`
+- Latest commit: `32843bb7` - Phase 8.1 Sentry audit remediation
+- All changes pushed to `origin/main`

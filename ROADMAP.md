@@ -284,7 +284,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Action:** Integrate Sentry across all platforms (App + Web + Edge Functions).
     - **Implementation:**
       - **Mobile App:**
-        - `@sentry/react-native` SDK with 100% tracesSampleRate
+        - `@sentry/react-native` SDK with **10% tracesSampleRate**
         - Sentry init in `App.js` with conditional DSN
         - Error logger (`src/utils/errorLogger.ts`) with captureException
         - User context tracking in AppNavigator (setUser on auth change)
@@ -293,17 +293,29 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - Plugin config in `app.json`
       - **Web Portal:**
         - `@sentry/nextjs` SDK with full integration
-        - Client config (`sentry.client.config.ts`) - Replay + Tracing + Logging
-        - Server config (`sentry.server.config.ts`) - Node runtime monitoring
-        - Edge config (`sentry.edge.config.ts`) - Middleware support
+        - Client config (`sentry.client.config.ts`) - Replay + Tracing + Logging (**10% sampling**)
+        - Server config (`sentry.server.config.ts`) - Node runtime monitoring (**10% sampling**)
+        - Edge config (`sentry.edge.config.ts`) - Middleware support (**10% sampling**)
         - Instrumentation (`instrumentation.ts`) for Next.js
         - Global error boundary (`src/app/global-error.tsx`)
         - Test API endpoint (`/api/sentry-test`)
-      - **Edge Functions:**
-        - Shared Sentry module (`_shared/sentry.ts`) for Deno SDK
+      - **Edge Functions (ALL 7 COVERED):**
+        - Shared Sentry module (`_shared/sentry.ts`) for Deno SDK (**10% sampling**)
         - `SENTRY_DSN_EDGE` secret configured
-        - `process-expired-commitments` integrated with error capture
-    - **DoD:** Crash reports received in Sentry dashboard for all platforms.
+        - `logBusinessEvent()` for success metrics (captureMessage, not breadcrumbs)
+        - `create-commitment`: `commitment_created` event
+        - `admin-actions`: `admin_refund_success`, `admin_mark_complete_success` events (PII-free)
+        - `delete-account`: `account_deleted` event
+        - `use-lifeline`: `lifeline_used` event
+        - `isbn-lookup`: Error capture only
+        - `send-push-notification`: `push_notification_batch` event
+        - `process-expired-commitments`: `reaper_run_complete` event
+    - **Audit Remediation (2026-01-13):**
+      - Fixed "Fake Metrics": `incrementMetric` → `logBusinessEvent` (captureMessage)
+      - Closed Coverage Gaps: All 7 Edge Functions now have Sentry
+      - Fixed Sampling Rate: 1.0 → 0.1 (10%) to prevent quota exhaustion
+      - Removed PII: `user.email` → `user.id` only in all logging
+    - **DoD:** Crash reports and business events received in Sentry dashboard for all platforms.
 
 - [ ] **8.2 CI/CD Pipeline (GitHub Actions)**
     - **Role:** `[DevOps Engineer]`

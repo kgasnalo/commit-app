@@ -480,3 +480,41 @@
   supabase db push
   ```
 - **Vault Secrets for Cron Jobs:** pg_cron jobs cannot directly access Edge Function environment variables. Store credentials in Supabase Vault and reference via `vault.decrypted_secrets` view.
+- **Sentry Business Metrics (CRITICAL):** For business success events that must ALWAYS be recorded (even without errors), use `logBusinessEvent()` (captureMessage), NOT `addBreadcrumb()` or `incrementMetric()`. Breadcrumbs are only sent to Sentry if an error occurs later in the same request.
+  ```typescript
+  // BAD - Only visible if an error occurs later
+  addBreadcrumb('Commitment created', 'business', { id: commitmentId });
+  incrementMetric('commitment_created', 1);
+
+  // GOOD - Always sent to Sentry as an info-level event
+  logBusinessEvent('commitment_created', {
+    commitmentId,
+    userId,
+    amount,
+    currency,
+  });
+  ```
+  - Use `logBusinessEvent` for: `commitment_created`, `account_deleted`, `lifeline_used`, `admin_refund_success`, `reaper_run_complete`, `push_notification_batch`
+  - Use breadcrumbs only for debugging context that supplements error reports
+- **Sentry Sampling Rate:** ALWAYS use `tracesSampleRate: 0.1` (10%) in production. Using `1.0` (100%) will exhaust Sentry quota and cause rate limiting.
+  ```typescript
+  // BAD - Will exhaust quota
+  Sentry.init({
+    tracesSampleRate: 1.0,
+  });
+
+  // GOOD - Sustainable for production
+  Sentry.init({
+    tracesSampleRate: 0.1, // 10% of transactions
+  });
+  ```
+- **Sentry PII Policy:** NEVER log user email addresses in Sentry. Use `user.id` only for user identification. This applies to breadcrumbs, captureMessage extra data, and error context.
+  ```typescript
+  // BAD - PII violation
+  addBreadcrumb('Admin action', 'admin', { email: user.email });
+  captureException(error, { extra: { adminEmail: user.email } });
+
+  // GOOD - Privacy compliant
+  addBreadcrumb('Admin action', 'admin', { userId: user.id });
+  captureException(error, { userId: user.id });
+  ```
