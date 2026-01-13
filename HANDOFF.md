@@ -9,6 +9,15 @@ Phase 7 完了! Admin Dashboard が稼働中。次は Phase 8 へ。
 
 ## Current Critical Status
 
+### Phase 8.1: Sentry Integration ✅ COMPLETE
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `@sentry/react-native` SDK | ✅ | Installed via `npx expo install` |
+| Sentry Initialization | ✅ | `App.js` - conditional init with DSN |
+| Error Logger | ✅ | `src/utils/errorLogger.ts` - sends to Sentry |
+| User Context Tracking | ✅ | `AppNavigator.tsx` - sets on auth change |
+| app.json Plugin Config | ✅ | Organization & project configured |
+
 ### Phase 7.7: Internal Admin Dashboard ✅ COMPLETE
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -67,10 +76,28 @@ npx vercel --prod  # Redeploy to pick up new vars
 
 ---
 
-## Immediate Next Steps: Phase 8
+## IMPORTANT: Set SENTRY_DSN
 
-### 8.1 Sentry 統合 (Crash Monitoring)
-- App + Edge Functions のエラー監視
+Sentry を有効化するには、`.env` ファイルに DSN を設定してください:
+
+```bash
+# 1. Sentry でプロジェクトを作成 (https://sentry.io/)
+# 2. Client Keys (DSN) から DSN を取得
+# 3. .env ファイルに追加:
+EXPO_PUBLIC_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+
+# 4. app.json の organization/project を更新:
+# "organization": "your-sentry-org"
+# "project": "your-sentry-project"
+
+# 5. ネイティブモジュールのためリビルド:
+npx expo prebuild
+./run-ios-manual.sh  # または npx expo run:ios
+```
+
+---
+
+## Immediate Next Steps: Phase 8
 
 ### 8.2 CI/CD Pipeline (GitHub Actions)
 - main マージで自動デプロイ
@@ -87,6 +114,15 @@ npx vercel --prod  # Redeploy to pick up new vars
 ---
 
 ## Key File Locations
+
+### Sentry Integration (Phase 8.1)
+| Feature | File |
+|---------|------|
+| SDK Initialization | `App.js` |
+| Error Logger | `src/utils/errorLogger.ts` |
+| User Context | `src/navigation/AppNavigator.tsx` |
+| Env Config | `src/config/env.ts` |
+| Plugin Config | `app.json` |
 
 ### Internal Admin Dashboard (Phase 7.7)
 | Feature | File |
@@ -195,5 +231,5 @@ curl -X POST https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/send-push-not
 
 ## Git Status
 - Branch: `main`
-- Latest commit: Phase 7.7 Admin Dashboard
+- Latest commit: Phase 8.1 Sentry Integration
 - Ready to push: `git push origin main`

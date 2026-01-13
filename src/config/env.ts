@@ -17,6 +17,7 @@ interface RequiredEnvVars {
 
 interface OptionalEnvVars {
   GOOGLE_API_KEY: string | undefined;
+  SENTRY_DSN: string | undefined;
 }
 
 export interface EnvConfig extends RequiredEnvVars, OptionalEnvVars {}
@@ -114,12 +115,14 @@ function buildEnvConfig(): EnvConfig {
 
   // Optional variables - will log warning if missing
   const googleApiKey = getOptionalEnv('GOOGLE_API_KEY');
+  const sentryDsn = getOptionalEnv('SENTRY_DSN');
 
   return {
     SUPABASE_URL: supabaseUrl,
     SUPABASE_ANON_KEY: supabaseAnonKey,
     STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
     GOOGLE_API_KEY: googleApiKey,
+    SENTRY_DSN: sentryDsn,
   };
 }
 
@@ -140,4 +143,5 @@ export const {
   SUPABASE_ANON_KEY,
   STRIPE_PUBLISHABLE_KEY,
   GOOGLE_API_KEY,
+  SENTRY_DSN,
 } = env;

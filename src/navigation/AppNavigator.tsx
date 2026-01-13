@@ -12,6 +12,7 @@ import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
+import { setUserContext, clearUserContext } from '../utils/errorLogger';
 
 // 統一された認証状態型
 type AuthState =
@@ -335,6 +336,15 @@ function AppNavigatorInner() {
   const isLoading = authState.status === 'loading';
   const session = authState.status === 'authenticated' ? authState.session : null;
   const isSubscribed = authState.status === 'authenticated' ? authState.isSubscribed : false;
+
+  // Phase 8.1: Set Sentry user context for crash monitoring
+  useEffect(() => {
+    if (authState.status === 'authenticated') {
+      setUserContext(authState.session.user.id, authState.session.user.email);
+    } else if (authState.status === 'unauthenticated') {
+      clearUserContext();
+    }
+  }, [authState]);
 
   // Phase 7.3: Register push token when user is authenticated and subscribed
   const pushTokenRegistered = useRef(false);

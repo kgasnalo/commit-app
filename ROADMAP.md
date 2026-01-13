@@ -279,9 +279,15 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 **Objective:** Monitoring, Automation, and Business Intelligence.
 
-- [ ] **8.1 Crash & Error Monitoring (Sentry)**
+- [x] **8.1 Crash & Error Monitoring (Sentry)**
     - **Role:** `[DevOps Engineer]`
     - **Action:** Integrate Sentry (App + Edge Functions).
+    - **Implementation:**
+      - `@sentry/react-native` SDK installed
+      - Sentry init in `App.js` with conditional DSN
+      - Error logger sends to Sentry in production
+      - User context tracking in AppNavigator
+      - Plugin config in `app.json`
     - **DoD:** Crash reports received in Sentry dashboard.
 
 - [ ] **8.2 CI/CD Pipeline (GitHub Actions)**

@@ -59,7 +59,14 @@
         }
       ],
       "expo-live-activity",
-      "expo-audio"
+      "expo-audio",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "commit-app",
+          "project": "commit-app-mobile"
+        }
+      ]
     ],
     "extra": {
       "eas": {
