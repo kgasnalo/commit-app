@@ -317,7 +317,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - Removed PII: `user.email` → `user.id` only in all logging
     - **DoD:** Crash reports and business events received in Sentry dashboard for all platforms.
 
-- [ ] **8.2 CI/CD Pipeline (GitHub Actions)**
+- [x] **8.2 CI/CD Pipeline (GitHub Actions)**
     - **Role:** `[DevOps Engineer]`
     - **Action:** Automate build (EAS) and deploy (Edge Functions).
     - **DoD:** Merge to `main` triggers auto-deployment.
@@ -339,3 +339,47 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Action:** Global "Under Maintenance" switch in DB/Config.
     - **Logic:** If `maintenance_mode` is TRUE, the app shows a "We'll be back soon" screen instead of trying to fetch data and failing.
     - **DoD:** Can take the entire service offline gracefully for database migrations.
+
+---
+
+## 🛠️ 技術的負債と品質改善 (Technical Debt & Quality Improvements)
+
+### Level 1: Critical (Hotfixes) - 即時対応必須
+- [ ] **H.1 React 19 JSX Runtime Conflict Fix**
+    - **Error:** `SyntaxError: Duplicate __self prop found` in `src/screens/CreateCommitmentScreen.tsx`.
+    - **Cause:** React 19 (Automatic Runtime) conflicts with `babel-preset-expo` injecting `__self`.
+    - **Fix:** Update `babel.config.js` presets to `['babel-preset-expo', { jsxRuntime: 'automatic' }]`.
+    - **Status:** 🚨 **Critical Blocker** (App fails to bundle).
+
+- [ ] **H.2 Deprecated SafeAreaView Replacement**
+    - **Warning:** `SafeAreaView has been deprecated...`
+    - **Scope:** `App.js`, `DashboardScreen.tsx`, and all screens using native `SafeAreaView`.
+    - **Fix:** Replace with `SafeAreaView` from `react-native-safe-area-context`.
+
+### Level 2: Warning (Refactoring) - バグの温床
+- [ ] **W.1 Type Safety Enforcement**
+    - **Problem:** Widespread use of `any` type in navigation props (`DashboardScreen`, `VerificationScreen`, etc).
+    - **Risk:** Runtime errors due to missing/incorrect route params.
+    - **Fix:** Implement strictly typed `StackScreenProps` for all screens.
+
+- [ ] **W.2 Hardcoded Values & i18n Gaps**
+    - **Problem:** Direct color codes (`#080604`) and hardcoded English/Japanese strings mixed in UI logic.
+    - **Fix:** Move all colors to `src/theme` and enforce `i18n.t()` for all user-facing text.
+
+### Level 3: Debt (Architecture) - メンテナンス性
+- [ ] **D.1 DRY: Background Component Extraction**
+    - **Problem:** Complex `Titan Background` logic (LinearGradients) duplicated across multiple screens.
+    - **Fix:** Create reusable `TitanBackground` component.
+
+- [ ] **D.2 Console Log Cleanup**
+    - **Problem:** 90+ `console.log` calls remaining in production code (e.g., `[AppNavigator]`, `[Supabase]`).
+    - **Fix:** Replace with structured `Logger` utility and ensure removal in production builds.
+
+### Level 4: Improvement (UX/Performance) - 品質向上
+- [ ] **I.1 Optimized Data Fetching**
+    - **Problem:** `DashboardScreen` re-fetches data on every focus (`useFocusEffect`), causing lag and network waste.
+    - **Fix:** Implement `React Query` or simple cache invalidation strategy.
+
+- [ ] **I.2 Error Handling UX**
+    - **Problem:** Over-reliance on blocking `Alert.alert` for minor errors.
+    - **Fix:** Transition to non-blocking Toast notifications or inline error messages.
