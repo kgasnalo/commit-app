@@ -320,7 +320,13 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **8.2 CI/CD Pipeline (GitHub Actions)**
     - **Role:** `[DevOps Engineer]`
     - **Action:** Automate build (EAS) and deploy (Edge Functions).
-    - **DoD:** Merge to `main` triggers auto-deployment.
+    - **Implementation (2026-01-13):**
+      - GitHub Actions workflow: `.github/workflows/ci-cd.yml`
+      - Job 1: Quality Check (TypeScript) - runs on all pushes/PRs (~27s)
+      - Job 2: Deploy Edge Functions - runs on push to main only (~27s)
+      - Maestro smoke test: `.maestro/smoke_test.yaml` (local execution)
+      - All 7 Edge Functions auto-deployed on merge to main
+    - **DoD:** Merge to `main` triggers auto-deployment. ✅
 
 - [ ] **8.3 Product Analytics (PostHog/Mixpanel)**
     - **Role:** `[Product Manager]`

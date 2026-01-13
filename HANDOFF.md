@@ -3,106 +3,103 @@
 ## Current Goal
 **Phase 8: Reliability & Ops**
 
-Phase 8.1 Sentry Integration 完了（監査修正含む）。次は Phase 8.2 CI/CD Pipeline へ。
+Phase 8.1 Sentry Integration 完了。Phase 8.2 CI/CD Pipeline 完了。次は Phase 8.3 Product Analytics へ。
 
 ---
 
 ## Current Critical Status
 
-### Phase 8.1: Sentry Integration ✅ COMPLETE (Audit Remediation Done)
+### Phase 8.2: CI/CD Pipeline ✅ COMPLETE
 
-**監査修正 (2026-01-13):**
-| Issue | Fix | Status |
-|-------|-----|--------|
-| Fake Metrics | `incrementMetric` → `logBusinessEvent` (captureMessage) | ✅ |
-| Coverage Gaps | 全7 Edge Functions に Sentry 追加 | ✅ |
-| Sampling Rate | `tracesSampleRate: 1.0` → `0.1` (10%) | ✅ |
-| PII Logging | `user.email` → `user.id` のみ | ✅ |
+**GitHub Actions Workflow** (`.github/workflows/ci-cd.yml`):
+| Job | Trigger | Duration | Status |
+|-----|---------|----------|--------|
+| Quality Check | All pushes/PRs | ~27s | ✅ TypeScript check |
+| Deploy Edge Functions | Push to main only | ~27s | ✅ 7 functions deployed |
 
-#### Mobile App
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `@sentry/react-native` SDK | ✅ | Installed via `npx expo install` |
-| Sentry Initialization | ✅ | `App.js` - **10% tracesSampleRate** |
-| Error Logger | ✅ | `src/utils/errorLogger.ts` - captureException |
-| User Context Tracking | ✅ | `AppNavigator.tsx` - sets on auth change |
-| Metrics Service | ✅ | `src/lib/MetricsService.ts` - critical actions |
+**Deployed Edge Functions** (Auto-deploy on push to main):
+| Function | Size | Purpose |
+|----------|------|---------|
+| `admin-actions` | 174.9kB | Admin dashboard operations |
+| `create-commitment` | 142.4kB | Commitment creation with validation |
+| `delete-account` | 139.2kB | Apple-required account deletion |
+| `isbn-lookup` | 93.25kB | Barcode scanning |
+| `process-expired-commitments` | 183.3kB | The Reaper |
+| `send-push-notification` | 142.2kB | System push notifications |
+| `use-lifeline` | 140.1kB | Emergency freeze |
 
-#### Web Portal
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `@sentry/nextjs` SDK | ✅ | Full Next.js integration |
-| Client Config | ✅ | `sentry.client.config.ts` - **10% sampling** |
-| Server Config | ✅ | `sentry.server.config.ts` - **10% sampling** |
-| Edge Config | ✅ | `sentry.edge.config.ts` - **10% sampling** |
-| Global Error | ✅ | `src/app/global-error.tsx` - Error boundary |
+**Maestro Smoke Test** (`.maestro/smoke_test.yaml`):
+- ✅ App launches successfully on iOS Simulator
+- ✅ "COMMIT" text visible on Welcome screen
+- Run locally: `MAESTRO_DRIVER_STARTUP_TIMEOUT=180000 ~/.maestro/bin/maestro test .maestro/smoke_test.yaml`
 
-#### Edge Functions (ALL 7 COVERED)
-| Function | Sentry | logBusinessEvent | Notes |
-|----------|--------|------------------|-------|
-| `create-commitment` | ✅ | `commitment_created` | 金額・期限・ページ検証 |
-| `admin-actions` | ✅ | `admin_refund_success`, `admin_mark_complete_success` | PII削除済み |
-| `delete-account` | ✅ | `account_deleted` | Apple要件 |
-| `use-lifeline` | ✅ | `lifeline_used` | 緊急フリーズ |
-| `isbn-lookup` | ✅ | - | バーコードスキャン |
-| `send-push-notification` | ✅ | `push_notification_batch` | システム専用 |
-| `process-expired-commitments` | ✅ | `reaper_run_complete` | The Reaper |
+**GitHub Secrets Required**:
+| Secret | Purpose |
+|--------|---------|
+| `SUPABASE_PROJECT_ID` | Remote project reference ID |
+| `SUPABASE_ACCESS_TOKEN` | Supabase CLI authentication |
 
-### Previous Phases ✅
-- Phase 7.7: Internal Admin Dashboard
-- Phase 7.6: Server-side Validation
-- Phase 7.5: RLS Hardening
-- Phase 7.4: "The Reaper" (Automated Penalty Collection)
-- Phase 7.3: Push Notifications
-- Phase 7.2: Deep Linking
-- Phase 7.1: Web Payment Portal
+### Phase 8.1: Sentry Integration ✅ COMPLETE
+
+**Coverage**: Mobile App, Web Portal, All 7 Edge Functions
+**Sampling Rate**: 10% (`tracesSampleRate: 0.1`)
+**Business Events**: `logBusinessEvent()` for critical actions
 
 ---
 
-## Immediate Next Steps: Phase 8.2-8.5
+## What Didn't Work (Lessons Learned)
 
-### 8.2 CI/CD Pipeline (GitHub Actions) ← NEXT
-- main マージで自動デプロイ (EAS Build + Edge Functions)
-- Type check & lint on PR
+### 1. Supabase CLI `--all` Flag Does NOT Exist
+```bash
+# BAD - Will fail with "unknown flag: --all"
+supabase functions deploy --all
 
-### 8.3 Product Analytics (PostHog/Mixpanel)
-- コミットメント完了率・チャーン追跡
+# GOOD - Deploy each function individually
+for func in admin-actions create-commitment ...; do
+  supabase functions deploy $func
+done
+```
+
+### 2. Maestro iOS Driver Timeout
+**Symptom**: `iOS driver not ready in time` even with simulator running
+**Solution**:
+```bash
+# Kill stale processes first
+pkill -f maestro; pkill -f XCTestRunner
+
+# Run with extended timeout
+MAESTRO_DRIVER_STARTUP_TIMEOUT=180000 ~/.maestro/bin/maestro test .maestro/smoke_test.yaml
+```
+
+### 3. GitHub CLI Not in PATH
+**Solution**: Use full path `/opt/homebrew/bin/gh` or add to PATH
+
+---
+
+## Immediate Next Steps: Phase 8.3-8.5
+
+### 8.3 Product Analytics (PostHog/Mixpanel) ← NEXT
+- Track: Commitment Created, Completed, Defaulted
+- Dashboard: Completion Rate, Churn
 
 ### 8.4 Remote Config & Force Update
-- 強制アップデートモーダル
+- Check `min_required_version` on app launch
+- Block old versions with update modal
 
 ### 8.5 Maintenance Mode
-- グローバルメンテナンスモード
-
----
-
-## IMPORTANT: Environment Setup
-
-### ADMIN_EMAILS (Admin Dashboard)
-```bash
-# Supabase Edge Functions
-supabase secrets set ADMIN_EMAILS=your-email@example.com
-
-# Vercel (Web Portal)
-echo "your-email@example.com" | npx vercel env add ADMIN_EMAILS production
-npx vercel --prod
-```
-
-### SENTRY_DSN
-```bash
-# Mobile App (.env)
-EXPO_PUBLIC_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
-
-# Edge Functions
-supabase secrets set SENTRY_DSN_EDGE=https://xxx@xxx.ingest.sentry.io/xxx
-
-# Web Portal (Vercel)
-echo "https://xxx@xxx.ingest.sentry.io/xxx" | npx vercel env add NEXT_PUBLIC_SENTRY_DSN production
-```
+- Global "Under Maintenance" switch
+- Graceful offline for DB migrations
 
 ---
 
 ## Key File Locations
+
+### CI/CD Pipeline
+| File | Purpose |
+|------|---------|
+| `.github/workflows/ci-cd.yml` | GitHub Actions workflow |
+| `.maestro/smoke_test.yaml` | Local smoke test |
+| `package.json` | `typecheck` script |
 
 ### Sentry Integration
 | Platform | Files |
@@ -111,37 +108,28 @@ echo "https://xxx@xxx.ingest.sentry.io/xxx" | npx vercel env add NEXT_PUBLIC_SEN
 | Web | `sentry.*.config.ts`, `src/app/global-error.tsx` |
 | Edge | `supabase/functions/_shared/sentry.ts` |
 
-### Admin Dashboard
-| Feature | File |
-|---------|------|
-| Dashboard Page | `commit-app-web/src/app/admin/dashboard/page.tsx` |
-| Edge Function | `supabase/functions/admin-actions/index.ts` |
-
 ---
 
-## Supabase Status
+## Environment Setup
 
-### Edge Functions (7 total, all with Sentry)
-`use-lifeline`, `isbn-lookup`, `delete-account`, `send-push-notification`, `process-expired-commitments`, `create-commitment`, `admin-actions`
+### GitHub Secrets (Already Configured)
+```
+SUPABASE_PROJECT_ID=<your-project-ref>
+SUPABASE_ACCESS_TOKEN=<your-access-token>
+```
 
-### Cron Jobs (Active)
-| Job Name | Schedule | Purpose |
-|----------|----------|---------|
-| `reaper-process-expired-commitments` | `0 * * * *` | 毎時、期限切れ検出・課金 |
-| `reaper-retry-failed-charges` | `0 */4 * * *` | 4時間毎、失敗課金リトライ |
-
-### Secrets
-| Name | Purpose |
-|------|---------|
-| `STRIPE_SECRET_KEY` | Stripe API認証 |
-| `CRON_SECRET` | cron認証 |
-| `GOOGLE_BOOKS_API_KEY` | Google Books API |
-| `ADMIN_EMAILS` | Admin アクセス許可 |
-| `SENTRY_DSN_EDGE` | Sentry (Edge Functions) |
+### Supabase Secrets
+```bash
+supabase secrets set STRIPE_SECRET_KEY=sk_live_xxx
+supabase secrets set CRON_SECRET=your-cron-secret
+supabase secrets set GOOGLE_BOOKS_API_KEY=xxx
+supabase secrets set ADMIN_EMAILS=your-email@example.com
+supabase secrets set SENTRY_DSN_EDGE=https://xxx@xxx.ingest.sentry.io/xxx
+```
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Latest commit: `32843bb7` - Phase 8.1 Sentry audit remediation
-- All changes pushed to `origin/main`
+- Latest commit: `0ecdb3ef` - docs: update ROADMAP with detailed code quality findings
+- CI/CD: ✅ All workflows passing

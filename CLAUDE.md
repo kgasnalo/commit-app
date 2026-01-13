@@ -518,3 +518,22 @@
   addBreadcrumb('Admin action', 'admin', { userId: user.id });
   captureException(error, { userId: user.id });
   ```
+- **Supabase CLI Edge Functions Deploy:** The `supabase functions deploy --all` flag does NOT exist. Deploy functions individually using a loop:
+  ```bash
+  # BAD - Will fail with "unknown flag: --all"
+  supabase functions deploy --all
+
+  # GOOD - Deploy each function individually
+  for func in admin-actions create-commitment delete-account isbn-lookup process-expired-commitments send-push-notification use-lifeline; do
+    supabase functions deploy $func
+  done
+  ```
+- **Maestro iOS Driver Timeout:** When Maestro fails with "iOS driver not ready in time" even with simulator running, kill stale processes and use extended timeout:
+  ```bash
+  # Kill existing Maestro/XCTest processes
+  pkill -f maestro; pkill -f XCTestRunner
+
+  # Run with extended timeout (180 seconds)
+  MAESTRO_DRIVER_STARTUP_TIMEOUT=180000 ~/.maestro/bin/maestro test .maestro/smoke_test.yaml
+  ```
+  Note: Maestro CLI may not be in PATH by default. Use full path `~/.maestro/bin/maestro` if needed.
