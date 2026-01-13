@@ -356,15 +356,38 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Scope:** `App.js`, `DashboardScreen.tsx`, and all screens using native `SafeAreaView`.
     - **Fix:** Replace with `SafeAreaView` from `react-native-safe-area-context`.
 
+- [ ] **H.3 Hardcoded Strings (Localization Failures)**
+    - **Problem:** Japanese text hardcoded in logic, bypassing i18n system.
+    - **Locations:**
+        - `src/screens/VerificationScreen.tsx` (Line 76: `defaultValue`)
+        - `app.json` (`photosPermission` in Japanese)
+    - **Risk:** App rejection or poor UX for non-Japanese users.
+    - **Fix:** Move all strings to `src/i18n/locales/*.json`.
+
 ### Level 2: Warning (Refactoring) - バグの温床
 - [ ] **W.1 Type Safety Enforcement**
-    - **Problem:** Widespread use of `any` type in navigation props (`DashboardScreen`, `VerificationScreen`, etc).
+    - **Problem:** Widespread use of `any` type and `as any` casting in navigation props and hooks.
+    - **Locations:**
+        - `src/screens/onboarding/*.tsx` (Almost all onboarding screens)
+        - `src/screens/monkmode/MonkModeScreen.tsx`
+        - `src/components/VerificationSuccessModal.tsx` (`useRef<any>`)
+        - `src/screens/LibraryScreen.tsx`
     - **Risk:** Runtime errors due to missing/incorrect route params.
     - **Fix:** Implement strictly typed `StackScreenProps` for all screens.
 
 - [ ] **W.2 Hardcoded Values & i18n Gaps**
-    - **Problem:** Direct color codes (`#080604`) and hardcoded English/Japanese strings mixed in UI logic.
+    - **Problem:** Direct color codes (`#080604`, `#EC4899`) and strings mixed in UI logic.
+    - **Locations:** `src/screens/BookDetailScreen.tsx` (TAG_COLORS), `src/theme/colors.ts`.
     - **Fix:** Move all colors to `src/theme` and enforce `i18n.t()` for all user-facing text.
+
+- [ ] **W.3 Inline Styles Performance (16 locations)**
+    - **Problem:** Usage of `style={{ ... }}` creates new objects on every render, causing unnecessary re-renders.
+    - **Locations:**
+        - `src/screens/RoleSelectScreen.tsx`
+        - `src/components/AnimatedPageSlider.tsx`
+        - `src/screens/monkmode/MonkModeScreen.tsx`
+        - `src/screens/LibraryScreen.tsx` (and others)
+    - **Fix:** Move all styles to `StyleSheet.create`.
 
 ### Level 3: Debt (Architecture) - メンテナンス性
 - [ ] **D.1 DRY: Background Component Extraction**
@@ -372,8 +395,34 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Create reusable `TitanBackground` component.
 
 - [ ] **D.2 Console Log Cleanup**
-    - **Problem:** 90+ `console.log` calls remaining in production code (e.g., `[AppNavigator]`, `[Supabase]`).
+    - **Problem:** 200+ `console.log` calls remaining in production code.
+    - **Locations:** `MetricsService.ts`, `MonkModeService.ts`, `LiveActivityService.ts`, `AppNavigator.tsx`, and Onboarding screens.
     - **Fix:** Replace with structured `Logger` utility and ensure removal in production builds.
+
+- [ ] **D.3 Magic Numbers Refactoring**
+    - **Problem:** Hardcoded confidence scores (30, 50, 95) and logic thresholds in `MonkModeService.ts`.
+    - **Fix:** Extract to `src/config/constants.ts` or top-level constants.
+
+- [ ] **D.5 God Component Refactoring (High Priority)**
+    - **Problem:** Massive components handling mixed concerns (UI, State, API).
+    - **Locations:**
+        - `CreateCommitmentScreen.tsx` (>1080 lines)
+        - `BookDetailScreen.tsx` (>840 lines)
+    - **Fix:** Extract logic into custom hooks (e.g., `useBookDetails`, `useCommitmentCreation`) and sub-components.
+
+- [ ] **D.6 Legacy Library Replacement**
+    - **Problem:** `react-native-confetti-cannon` is likely unmaintained and may conflict with New Architecture.
+    - **Fix:** Replace with `react-native-skia` particle system or a modern, maintained alternative.
+
+- [ ] **D.7 File Naming Consistency**
+    - **Problem:** Inconsistent folder naming conventions in `src/components`.
+    - **Locations:** `halloffame` (lowercase) vs `reading-dna` (kebab-case) vs `BookDetailSkeleton.tsx` (PascalCase).
+    - **Fix:** Standardize all component folders to kebab-case (e.g., `hall-of-fame`) or PascalCase to match React conventions.
+
+- [ ] **D.8 Type Definition Consistency**
+    - **Problem:** Manual types in `src/types/index.ts` duplicate `database.types.ts`.
+    - **Risk:** Schema changes not reflecting in app code, leading to runtime errors.
+    - **Fix:** Refactor `src/types/index.ts` to export types derived directly from `Database['public']['Tables']`.
 
 ### Level 4: Improvement (UX/Performance) - 品質向上
 - [ ] **I.1 Optimized Data Fetching**
@@ -383,3 +432,143 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [ ] **I.2 Error Handling UX**
     - **Problem:** Over-reliance on blocking `Alert.alert` for minor errors.
     - **Fix:** Transition to non-blocking Toast notifications or inline error messages.
+
+- [ ] **I.3 Accessibility (a11y) Implementation**
+    - **Problem:** No `accessibilityLabel` or `accessibilityRole` found. App is unusable for VoiceOver users.
+    - **Fix:** Add a11y props to all interactive elements (`CommitmentCard`, Buttons, Inputs).
+
+- [ ] **P.6 List Performance Anti-pattern**
+    - **Problem:** Using array index as `key` in lists.
+    - **Locations:** `src/screens/onboarding/OnboardingScreen11.tsx`, `OnboardingScreen9.tsx`.
+    - **Risk:** Performance degradation and state bugs when list items change order.
+    - **Fix:** Use stable unique IDs for keys.
+
+- [ ] **P.8 Unawaited Promises in Loops**
+    - **Problem:** `secureUrls.map(async ...)` in `useImageColors.ts` creates unhandled promises.
+    - **Risk:** Potential race conditions or unhandled rejections.
+    - **Fix:** Wrap in `Promise.all()` or use `for...of` loop.
+
+### Level 5: Store Compliance & Production Polish (審査対策) - 公開前提
+- [ ] **C.1 Permission String Localization (Guideline 5.1.1)**
+    - **Problem:** `app.json` permission strings (`photosPermission`, etc.) are hardcoded in Japanese.
+    - **Risk:** Rejection for non-localized permission requests on English devices.
+    - **Fix:** Use `expo-localization` or update `app.config.ts` to support multi-language strings or use English as default.
+
+- [ ] **C.2 Offline Handling (Robustness)**
+    - **Problem:** No `NetInfo` usage detected. App may crash or hang offline.
+    - **Fix:** Implement `useNetInfo` hook and show a "No Connection" blocking UI or Toast to prevent API calls.
+
+- [ ] **C.3 In-App Legal View (UX/Compliance)**
+    - **Problem:** Terms/Privacy links open in external browser (Safari/Chrome).
+    - **Risk:** Poor UX and potential App Store rejection (Reviewers prefer in-app).
+    - **Fix:** Use `expo-web-browser` to open legal docs in `SFSafariViewController` / `CustomTabs`.
+
+- [ ] **P.1 Keyboard Avoidance (UX)**
+    - **Problem:** `CreateCommitmentScreen` and `VerificationScreen` lack `KeyboardAvoidingView`.
+    - **Risk:** Input fields and submit buttons blocked by keyboard.
+    - **Fix:** Wrap all form screens in `KeyboardAvoidingView` with platform-specific behavior.
+
+- [ ] **P.2 Image Caching & Performance**
+    - **Problem:** Standard `<Image />` component used in 15 locations (Lists, Verify).
+    - **Risk:** High bandwidth usage, flickering, and potential memory leaks in lists.
+    - **Fix:** Replace all `<Image />` with `expo-image` for caching and performance.
+
+- [ ] **P.3 Alert API Standardization**
+    - **Problem:** `alert()` (Web API) used in `src/screens/BookDetailScreen.tsx`.
+    - **Fix:** Replace with `Alert.alert()` for consistent native behavior.
+
+- [ ] **P.4 Unit Testing Foundation**
+    - **Problem:** Zero test files found. Critical business logic is untested.
+    - **Fix:** Setup `jest` and add unit tests for `commitmentHelpers.ts` and `MonkModeService`.
+
+- [ ] **P.5 Forced Dark Theme (Design Integrity)**
+    - **Problem:** `app.json` is set to `userInterfaceStyle: "light"`.
+    - **Risk:** Titan Design (Dark UI) breaks on Light Mode devices (white status bars, system dialogs).
+    - **Fix:** Set `userInterfaceStyle: "dark"` in `app.json` and force dark status bar.
+
+### Level 6: Advanced Architecture & Stability (最終監査)
+- [ ] **S.4 Reaper Idempotency Hardening (CRITICAL)**
+    - **Problem:** `process-expired-commitments` creates Stripe PaymentIntents without `idempotencyKey`.
+    - **Risk:** **DOUBLE CHARGE RISK.** If the function times out or runs concurrently, the same user could be charged multiple times for one commitment.
+    - **Fix:** Update `stripe.paymentIntents.create` to include `{ idempotencyKey: 'penalty_' + chargeId }`.
+
+- [ ] **S.5 Date/Time Integrity (Timezone Bomb)**
+    - **Problem:** `new Date()` (Device Local Time) mixed with Server UTC timestamps in critical logic.
+    - **Risk:** Deadline mismatches (e.g., user passes deadline locally but server says active), or cheating by changing device time.
+    - **Fix:** Standardize all time logic to UTC using a library like `date-fns` or strict `ISOString` comparison.
+
+- [ ] **S.6 Dependency Consistency (Edge Functions)**
+    - **Problem:** Stripe SDK version mismatch (`admin-actions` uses v14, `reaper` uses v17).
+    - **Risk:** Inconsistent API behavior or type errors when handling payment objects.
+    - **Fix:** Unify all Edge Functions to use the same Stripe SDK version (v17).
+
+- [ ] **A.1 Granular Error Boundaries**
+    - **Problem:** Global ErrorBoundary only. One screen crash breaks the entire app.
+    - **Fix:** Implement sub-boundaries for MainTabs and critical screens (`CreateCommitment`, `Verification`).
+
+- [ ] **A.2 Sentry Capture Consistency Audit**
+    - **Problem:** 90+ `catch` blocks, but many only `console.error`.
+    - **Fix:** Ensure `Sentry.captureException(error)` is present in all critical API and logic failures.
+
+- [ ] **A.3 Provider Optimization**
+    - **Problem:** `OnboardingAtmosphereProvider` wraps the entire app, causing root re-renders on every atmosphere change.
+    - **Fix:** Use `memo` on `AppNavigator` or split context into static/dynamic parts.
+
+- [ ] **A.4 Async Safety & Cleanup**
+    - **Problem:** Unawaited promises and `.then()` chains in `useEffect` (e.g., `LanguageContext`, `OnboardingScreen0`) without cleanup.
+    - **Risk:** Memory leaks and "Can't perform state update on unmounted component" errors.
+    - **Fix:** Use `AbortController` or cleanup flags in all async `useEffect` hooks.
+
+- [ ] **P.9 Context Memoization**
+    - **Problem:** `OnboardingAtmosphereContext` provider value is not memoized.
+    - **Risk:** Unnecessary re-renders of all consuming components on every state update.
+    - **Fix:** Wrap `contextValue` in `useMemo`.
+
+- [ ] **P.10 Missing Indexes (Database Performance)**
+    - **Problem:** `commitments` table lacks indexes on foreign keys (`user_id`, `book_id`) and status.
+    - **Risk:** Full table scans causing slow dashboard loading as data grows.
+    - **Fix:** Create a migration to add indexes for common query patterns.
+
+---
+
+**Final Deep Dive Audit (Money & Privacy):**
+- **💰 Money (Billing Safety):** 🚨 **CRITICAL FIX NEEDED.** The Reaper logic is missing the Stripe `idempotencyKey`. While the database prevents duplicate records, a network timeout during the Stripe call could lead to a double charge. Fixing **S.4** is mandatory before launch.
+- **🔒 Privacy (PII):** ✅ **CLEAN.** No leaked emails or personal data found in logs/Sentry. RLS policies strictly enforce data isolation.
+- **🔑 Security (Secrets):** ✅ **CLEAN.** No Secret Keys found in client bundles.
+- **Verdict:** Fix **S.4**, and the service is safe to operate.
+
+### Level 6: Security & Backend Consistency (バックエンド監査)
+- [ ] **S.1 Edge Function Security Verification**
+    - **Status:** ✅ **Robust**.
+    - **Findings:**
+        - `send-push-notification`, `process-expired-commitments`: Uses `verifySystemAuthorization` with `timingSafeEqual` (Prevent Timing Attacks).
+        - `admin-actions`: Checks `ADMIN_EMAILS` whitelist.
+        - `create-commitment`, `use-lifeline`: Correctly validates User JWT.
+    - **Action:** Document this security model in `docs/SECURITY.md` for future reference.
+
+- [ ] **S.2 ISBN Lookup Rate Limiting**
+    - **Observation:** `isbn-lookup` is public.
+    - **Risk:** Potential abuse of Google Books API quota.
+    - **Mitigation:** Consider adding IP-based rate limiting or CAPTCHA if abuse is detected.
+
+- [ ] **S.3 Sentry Sampling & Scoping**
+    - **Problem:** `tracesSampleRate: 0.1` vs `CLAUDE.md` mandate (100%). ErrorBoundary scope needs verification.
+    - **Fix:** Adjust sample rate for launch (1.0) and verify ErrorBoundary wraps all Context Providers.
+
+- [ ] **W.4 i18n Key Consistency Audit**
+    - **Problem:** Inconsistent keys between `en`, `ja`, `ko` (e.g., `monkmode.minutes_unit`).
+    - **Risk:** Missing translations in production.
+    - **Fix:** Sync all keys and remove `defaultValue` usage.
+
+- [ ] **W.4 i18n Key Consistency Audit**
+    - **Problem:** Inconsistent keys between `en`, `ja`, `ko` (e.g., `monkmode.minutes_unit`).
+    - **Risk:** Missing translations in production.
+    - **Fix:** Sync all keys and remove `defaultValue` usage.
+
+- [ ] **W.5 Supabase Metadata Sync**
+    - **Problem:** `database.types.ts` has `never` for Views/Functions.
+    - **Fix:** Regenerate types to reflect current DB schema completely.
+
+- [ ] **D.4 UI Timer Interpolation**
+    - **Problem:** `useMonkModeTimer` relies on 1s interval, risking skipped seconds under load.
+    - **Fix:** Implement `requestAnimationFrame` or drift-correction logic.

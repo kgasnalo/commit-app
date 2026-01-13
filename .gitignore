@@ -42,3 +42,5 @@ yarn-error.*
 .env
 build/
 ios/build/
+.idea/
+smoke_test_welcome_screen.png
