@@ -281,14 +281,29 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 - [x] **8.1 Crash & Error Monitoring (Sentry)**
     - **Role:** `[DevOps Engineer]`
-    - **Action:** Integrate Sentry (App + Edge Functions).
+    - **Action:** Integrate Sentry across all platforms (App + Web + Edge Functions).
     - **Implementation:**
-      - `@sentry/react-native` SDK installed
-      - Sentry init in `App.js` with conditional DSN
-      - Error logger sends to Sentry in production
-      - User context tracking in AppNavigator
-      - Plugin config in `app.json`
-    - **DoD:** Crash reports received in Sentry dashboard.
+      - **Mobile App:**
+        - `@sentry/react-native` SDK with 100% tracesSampleRate
+        - Sentry init in `App.js` with conditional DSN
+        - Error logger (`src/utils/errorLogger.ts`) with captureException
+        - User context tracking in AppNavigator (setUser on auth change)
+        - MetricsService (`src/lib/MetricsService.ts`) for critical action tracking
+        - Test utilities (`src/utils/sentryTest.ts`) for diagnostics
+        - Plugin config in `app.json`
+      - **Web Portal:**
+        - `@sentry/nextjs` SDK with full integration
+        - Client config (`sentry.client.config.ts`) - Replay + Tracing + Logging
+        - Server config (`sentry.server.config.ts`) - Node runtime monitoring
+        - Edge config (`sentry.edge.config.ts`) - Middleware support
+        - Instrumentation (`instrumentation.ts`) for Next.js
+        - Global error boundary (`src/app/global-error.tsx`)
+        - Test API endpoint (`/api/sentry-test`)
+      - **Edge Functions:**
+        - Shared Sentry module (`_shared/sentry.ts`) for Deno SDK
+        - `SENTRY_DSN_EDGE` secret configured
+        - `process-expired-commitments` integrated with error capture
+    - **DoD:** Crash reports received in Sentry dashboard for all platforms.
 
 - [ ] **8.2 CI/CD Pipeline (GitHub Actions)**
     - **Role:** `[DevOps Engineer]`
