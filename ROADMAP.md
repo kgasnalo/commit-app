@@ -399,10 +399,11 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Risk:** Runtime errors due to missing/incorrect route params.
     - **Fix:** Implement strictly typed `StackScreenProps` for all screens.
 
-- [ ] **W.2 Hardcoded Values & i18n Gaps**
+- [x] **W.2 Hardcoded Values & i18n Gaps**
     - **Problem:** Direct color codes (`#080604`, `#EC4899`) and strings mixed in UI logic.
     - **Locations:** `src/screens/BookDetailScreen.tsx` (TAG_COLORS), `src/theme/colors.ts`.
     - **Fix:** Move all colors to `src/theme` and enforce `i18n.t()` for all user-facing text.
+    - **Implementation:** Added `tag.purple` and `tag.pink` to `src/theme/titan.ts`, updated BookDetailScreen to use theme colors.
 
 - [ ] **W.3 Inline Styles Performance (16 locations)**
     - **Problem:** Usage of `style={{ ... }}` creates new objects on every render, causing unnecessary re-renders.
@@ -478,28 +479,31 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Risk:** Rejection for non-localized permission requests on English devices.
     - **Fix:** Use `expo-localization` or update `app.config.ts` to support multi-language strings or use English as default.
 
-- [ ] **C.2 Offline Handling (Robustness)**
+- [x] **C.2 Offline Handling (Robustness)**
     - **Problem:** No `NetInfo` usage detected. App may crash or hang offline.
     - **Fix:** Implement `useNetInfo` hook and show a "No Connection" blocking UI or Toast to prevent API calls.
+    - **Implementation:** `OfflineContext.tsx` + `OfflineBanner.tsx` with Reanimated animations.
 
 - [x] **C.3 In-App Legal View (UX/Compliance)**
     - **Problem:** Terms/Privacy links open in external browser (Safari/Chrome).
     - **Risk:** Poor UX and potential App Store rejection (Reviewers prefer in-app).
     - **Fix:** Use `expo-web-browser` to open legal docs in `SFSafariViewController` / `CustomTabs`.
 
-- [ ] **P.1 Keyboard Avoidance (UX)**
+- [x] **P.1 Keyboard Avoidance (UX)**
     - **Problem:** `CreateCommitmentScreen` and `VerificationScreen` lack `KeyboardAvoidingView`.
     - **Risk:** Input fields and submit buttons blocked by keyboard.
     - **Fix:** Wrap all form screens in `KeyboardAvoidingView` with platform-specific behavior.
+    - **Implementation:** Added KeyboardAvoidingView with `behavior={Platform.OS === 'ios' ? 'padding' : 'height'}`.
 
 - [ ] **P.2 Image Caching & Performance**
     - **Problem:** Standard `<Image />` component used in 15 locations (Lists, Verify).
     - **Risk:** High bandwidth usage, flickering, and potential memory leaks in lists.
     - **Fix:** Replace all `<Image />` with `expo-image` for caching and performance.
 
-- [ ] **P.3 Alert API Standardization**
+- [x] **P.3 Alert API Standardization**
     - **Problem:** `alert()` (Web API) used in `src/screens/BookDetailScreen.tsx`.
     - **Fix:** Replace with `Alert.alert()` for consistent native behavior.
+    - **Implementation:** Changed to `Alert.alert(i18n.t('common.error'), i18n.t('bookDetail.memo_update_failed'))`.
 
 - [ ] **P.4 Unit Testing Foundation**
     - **Problem:** Zero test files found. Critical business logic is untested.
@@ -516,20 +520,22 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Risk:** **DOUBLE CHARGE RISK.** If the function times out or runs concurrently, the same user could be charged multiple times for one commitment.
     - **Fix:** Update `stripe.paymentIntents.create` to include `{ idempotencyKey: 'penalty_' + chargeId }`.
 
-- [ ] **S.5 Date/Time Integrity (Timezone Bomb)**
+- [x] **S.5 Date/Time Integrity (Timezone Bomb)**
     - **Problem:** `new Date()` (Device Local Time) mixed with Server UTC timestamps in critical logic.
     - **Risk:** Deadline mismatches (e.g., user passes deadline locally but server says active), or cheating by changing device time.
     - **Fix:** Standardize all time logic to UTC using a library like `date-fns` or strict `ISOString` comparison.
+    - **Implementation:** Created `src/lib/DateUtils.ts` with `getNowUTC()`, `getTodayUTC()`, `getYesterdayUTC()`. Refactored `MonkModeService.ts` and `commitmentHelpers.ts`.
 
 - [ ] **S.6 Dependency Consistency (Edge Functions)**
     - **Problem:** Stripe SDK version mismatch (`admin-actions` uses v14, `reaper` uses v17).
     - **Risk:** Inconsistent API behavior or type errors when handling payment objects.
     - **Fix:** Unify all Edge Functions to use the same Stripe SDK version (v17).
 
-- [ ] **S.7 Upload Security (File Bomb)**
+- [x] **S.7 Upload Security (File Bomb)**
     - **Problem:** `VerificationScreen` uploads images without checking file size.
     - **Risk:** Bandwidth exhaustion and storage abuse (DoS risk).
     - **Fix:** Check `asset.fileSize` before upload and limit to 5MB.
+    - **Implementation:** Changed state from URI string to `ImagePickerAsset`, added 5MB validation before upload.
 
 - [ ] **S.8 Deep Link Validation**
     - **Problem:** `Linking.openURL` lacks pre-check and error feedback.

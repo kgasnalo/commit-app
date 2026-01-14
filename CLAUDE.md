@@ -537,3 +537,31 @@
   MAESTRO_DRIVER_STARTUP_TIMEOUT=180000 ~/.maestro/bin/maestro test .maestro/smoke_test.yaml
   ```
   Note: Maestro CLI may not be in PATH by default. Use full path `~/.maestro/bin/maestro` if needed.
+- **DateUtils for Timestamps (CRITICAL):** NEVER use raw `new Date()` for creating timestamps or date comparisons in business logic. Always use helpers from `src/lib/DateUtils.ts`:
+  ```typescript
+  // BAD - timezone bugs, device time manipulation
+  completed_at: new Date().toISOString()
+  const today = new Date().toISOString().split('T')[0]
+
+  // GOOD - centralized UTC handling
+  import { getNowUTC, getTodayUTC, getYesterdayUTC } from '../lib/DateUtils';
+  completed_at: getNowUTC()
+  const today = getTodayUTC()
+  ```
+  - `getNowUTC()`: Returns current time as ISO string (for DB timestamps)
+  - `getNowDate()`: Returns current time as Date object (for calculations)
+  - `getTodayUTC()`: Returns today's date as YYYY-MM-DD string
+  - `getYesterdayUTC()`: Returns yesterday's date as YYYY-MM-DD string
+  - Note: `new Date()` is fine for relative calculations (e.g., "30 days ago"), but NOT for creating stored timestamps.
+- **Theme Colors in titan.ts:** The app uses `titanColors` from `src/theme/titan.ts` (exported via `src/theme/index.ts`). When adding new theme colors, add them to `titan.ts`, NOT `colors.ts`:
+  ```typescript
+  // In src/theme/titan.ts
+  export const titanColors = {
+    // ...existing colors...
+    tag: {
+      purple: '#8B5CF6',
+      pink: '#EC4899',
+    },
+  };
+  ```
+  The `colors.ts` file exists for legacy compatibility but `titanColors` is the primary theme source.

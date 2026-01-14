@@ -1,58 +1,52 @@
 # Handoff: Session 2026-01-14
 
 ## Current Goal
-**Phase 8 Complete + Phase 4.8 Review Logic**
+**Batch A+B Pre-Launch Fixes Complete**
 
-Phase 8.1-8.5 全完了。Phase 4.8 Review & Rating も完了。
-アプリは本番リリース準備段階。残りは最終ポリッシュまたは EAS Build へ。
+Phase 8完了後の最終ポリッシュ。Batch A (UX/Security) と Batch B (Timezone/i18n) 完了。
+次は残りのポリッシュタスクまたは EAS Build へ。
 
 ---
 
 ## Current Critical Status
 
-### Phase 4.8: Review & Rating ✅ COMPLETE
+### Batch A: UX & Security ✅ COMPLETE
 
-**Implementation:**
-- `expo-store-review` パッケージ
-- `ReviewService.ts` で90日クールダウン管理
-- `VerificationScreen.tsx` の3つの終了ハンドラーに統合
+| Task | Description | Status |
+|------|-------------|--------|
+| P.1 | KeyboardAvoidingView (CreateCommitment, Verification) | ✅ |
+| S.7 | Upload Security (5MB file size limit) | ✅ |
+| C.2 | Offline Handling (NetInfo + OfflineBanner) | ✅ |
 
-**Logic:**
-```typescript
-// VerificationScreen.tsx - 成功モーダル終了時
-ReviewService.attemptReviewRequest();
-// 1. StoreReview.hasAction() でデバイスサポートチェック
-// 2. 90日クールダウンチェック (AsyncStorage)
-// 3. 条件満たせば StoreReview.requestReview()
-```
+**New Files Created:**
+- `src/contexts/OfflineContext.tsx` - Network status context
+- `src/components/OfflineBanner.tsx` - Animated offline indicator
 
-**Key Files:**
-| File | Purpose |
-|------|---------|
-| `src/lib/ReviewService.ts` | 90日クールダウン + レビューリクエスト |
-| `src/screens/VerificationScreen.tsx` | 統合箇所 (lines 209-234) |
+### Batch B: Timezone & i18n ✅ COMPLETE
 
-### Phase 8.4-8.5: Remote Config & Force Update ✅ COMPLETE
+| Task | Description | Status |
+|------|-------------|--------|
+| S.5 | DateUtils.ts (UTC-first date handling) | ✅ |
+| W.2 | Hardcoded colors → theme (tag.purple, tag.pink) | ✅ |
+| W.4/P.3 | alert() → Alert.alert() fix | ✅ |
 
-**Feature Flags (PostHog Dashboard で作成必要):**
-| Flag Key | Type | Default | Purpose |
-|----------|------|---------|---------|
-| `maintenance_mode` | Boolean | `false` | 全ユーザーをメンテナンス画面にブロック |
-| `min_app_version` | String | `"1.0.0"` | このバージョン未満はアップデート強制 |
+**New Files Created:**
+- `src/lib/DateUtils.ts` - UTC date utilities
 
-### Phase 8.1-8.3: Sentry + CI/CD + PostHog ✅ COMPLETE
-
-### Technical Debt ✅ Batch 1-3 COMPLETE
+**Key Refactoring:**
+- `MonkModeService.ts`: Uses `getNowUTC()`, `getTodayUTC()`, `getYesterdayUTC()`
+- `commitmentHelpers.ts`: Uses `getNowDate()` for deadline calculation
+- `BookDetailScreen.tsx`: Uses `colors.tag.purple/pink` from titan.ts
 
 ---
 
 ## Immediate Next Steps
 
-### Option A: Final Polish (Recommended)
-Release前の品質向上:
-- **P.1** KeyboardAvoidingView (CreateCommitment, Verification)
-- **S.7** Upload Security (ファイルサイズ制限 5MB)
-- **C.2** Offline Handling (`NetInfo` + 「接続なし」UI)
+### Option A: Continue Polish (Recommended)
+Remaining tasks from ROADMAP.md:
+- **P.2** Image Caching (`expo-image` replacement)
+- **S.6** Edge Function Stripe SDK version unification
+- **S.8** Deep Link validation (`Linking.canOpenURL`)
 
 ### Option B: EAS Build
 直接本番ビルドへ進む:
@@ -65,47 +59,43 @@ eas submit --platform ios
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. PostHog Type Compatibility
+### 1. Theme Colors Location
+- **Problem:** Added `tag.purple/pink` to `colors.ts` but app uses `titanColors` from `titan.ts`
+- **Fix:** Theme colors must be added to `src/theme/titan.ts` (exported via `src/theme/index.ts`)
+
+### 2. MonkModeService Raw Date Usage
+- **Problem:** Gemini audit found `new Date().toISOString()` on line 100 after initial fix
+- **Fix:** Import `getNowUTC` from DateUtils and use for all timestamp creation
+
+### 3. PostHog Type Compatibility
 - `Record<string, unknown>` is NOT compatible with PostHog's `JsonType`
 - Use `Record<string, JsonType>` where `JsonType = string | number | boolean | null | object | array`
-
-### 2. Supabase CLI `--all` Flag Does NOT Exist
-```bash
-# GOOD
-for func in admin-actions create-commitment ...; do
-  supabase functions deploy $func
-done
-```
-
-### 3. sed で console.log 一括削除は危険
-- 一括削除後は必ず `npx tsc --noEmit` で確認
 
 ---
 
 ## Key File Locations
 
-### Phase 4.8 Review
+### Batch A+B Files
 | File | Purpose |
 |------|---------|
-| `src/lib/ReviewService.ts` | 90日クールダウン + レビューリクエスト |
-| `src/screens/VerificationScreen.tsx` | 統合箇所 |
+| `src/lib/DateUtils.ts` | UTC-first date utilities |
+| `src/contexts/OfflineContext.tsx` | Network status context |
+| `src/components/OfflineBanner.tsx` | Offline UI indicator |
+| `src/screens/VerificationScreen.tsx` | 5MB limit + KeyboardAvoidingView |
+| `src/screens/CreateCommitmentScreen.tsx` | KeyboardAvoidingView |
+| `src/lib/MonkModeService.ts` | Refactored to use DateUtils |
+| `src/theme/titan.ts` | Added tag.purple, tag.pink |
 
-### Phase 8.4-8.5 Remote Config
+### Phase 8 Files (Reference)
 | File | Purpose |
 |------|---------|
-| `src/lib/RemoteConfigService.ts` | `useBlockingStatus()` hook |
-| `src/screens/blocking/MaintenanceScreen.tsx` | Maintenance UI |
-| `src/screens/blocking/ForceUpdateScreen.tsx` | Force Update UI |
-
-### Phase 8.3 PostHog
-| File | Purpose |
-|------|---------|
+| `src/lib/RemoteConfigService.ts` | Force Update / Maintenance Mode |
 | `src/contexts/AnalyticsContext.tsx` | PostHog provider |
-| `src/lib/AnalyticsService.ts` | Centralized tracking |
+| `src/lib/ReviewService.ts` | In-App Review (90-day cooldown) |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Latest: Phase 4.8 Review Logic implemented
+- Latest Commit: `8bfd26bc` - Batch A+B pre-launch fixes
 - CI/CD: ✅ All workflows passing
