@@ -174,10 +174,9 @@ function MainTabs() {
   );
 }
 
-function AppNavigatorInner() {
-  // Subscribe to language changes to force re-render of entire navigation tree
-  const { language } = useLanguage();
-
+// NavigationContent: Contains all auth logic and navigation stacks
+// Must be inside NavigationContainer and AnalyticsProvider
+function NavigationContent() {
   // Phase 8.3: PostHog Analytics
   const { identify, reset, trackEvent, isReady } = useAnalytics();
   const appLaunchTracked = useRef(false);
@@ -399,19 +398,17 @@ function AppNavigatorInner() {
   // Phase 8.4: Blocking Screen (highest priority - before loading/auth)
   if (blockingStatus.isBlocked) {
     return (
-      <NavigationContainer key={language}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {blockingStatus.reason === 'maintenance' ? (
-            <Stack.Screen name="Maintenance" component={MaintenanceScreen} />
-          ) : (
-            <Stack.Screen
-              name="ForceUpdate"
-              component={ForceUpdateScreen}
-              initialParams={{ storeUrl: blockingStatus.storeUrl }}
-            />
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {blockingStatus.reason === 'maintenance' ? (
+          <Stack.Screen name="Maintenance" component={MaintenanceScreen} />
+        ) : (
+          <Stack.Screen
+            name="ForceUpdate"
+            component={ForceUpdateScreen}
+            initialParams={{ storeUrl: blockingStatus.storeUrl }}
+          />
+        )}
+      </Stack.Navigator>
     );
   }
 
@@ -429,70 +426,82 @@ function AppNavigatorInner() {
   }
 
   return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!session ? (
+        <>
+          {/* Onboarding flow screens (14 screens total) */}
+          <Stack.Screen name="Onboarding0" component={OnboardingScreen0} />
+          <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
+          <Stack.Screen name="Onboarding2" component={OnboardingScreen2} />
+          <Stack.Screen name="Onboarding3" component={OnboardingScreen3} />
+          <Stack.Screen name="Onboarding4" component={OnboardingScreen4} />
+          <Stack.Screen name="Onboarding5" component={OnboardingScreen5} />
+          <Stack.Screen name="Onboarding6" component={OnboardingScreen6} />
+          <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
+          <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
+          <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
+          <Stack.Screen name="Onboarding10" component={OnboardingScreen10} />
+          <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
+          <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
+          <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
+          <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
+
+          {/* Legacy auth screen (for existing users or testing) */}
+
+          {/* Legacy auth screen (for existing users or testing) */}
+          <Stack.Screen name="Auth" component={AuthScreen} />
+        </>
+      ) : !isSubscribed ? (
+        <>
+          {/* Authenticated but not subscribed - show Onboarding7-13 + MainTabs for transition */}
+          <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
+          <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
+          <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
+          <Stack.Screen name="Onboarding10" component={OnboardingScreen10} />
+          <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
+          <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
+          <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
+          <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
+
+          {/* Legacy auth screen (for existing users or testing) */}
+          {/* Main tabs for direct navigation after subscription */}
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+        </>
+      ) : (
+        <>
+          {/* Authenticated and subscribed - show MainTabs */}
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+// AppNavigatorInner: Provides NavigationContainer with AnalyticsProvider inside
+function AppNavigatorInner() {
+  // Subscribe to language changes to force re-render of entire navigation tree
+  const { language } = useLanguage();
+
+  return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
       <NavigationContainer key={language}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!session ? (
-            <>
-              {/* Onboarding flow screens (14 screens total) */}
-              <Stack.Screen name="Onboarding0" component={OnboardingScreen0} />
-              <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
-              <Stack.Screen name="Onboarding2" component={OnboardingScreen2} />
-              <Stack.Screen name="Onboarding3" component={OnboardingScreen3} />
-              <Stack.Screen name="Onboarding4" component={OnboardingScreen4} />
-              <Stack.Screen name="Onboarding5" component={OnboardingScreen5} />
-              <Stack.Screen name="Onboarding6" component={OnboardingScreen6} />
-              <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
-              <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
-              <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
-              <Stack.Screen name="Onboarding10" component={OnboardingScreen10} />
-              <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
-              <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
-              <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
-              <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
-
-              {/* Legacy auth screen (for existing users or testing) */}
-
-              {/* Legacy auth screen (for existing users or testing) */}
-              <Stack.Screen name="Auth" component={AuthScreen} />
-            </>
-          ) : !isSubscribed ? (
-            <>
-              {/* Authenticated but not subscribed - show Onboarding7-13 + MainTabs for transition */}
-              <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
-              <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
-              <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
-              <Stack.Screen name="Onboarding10" component={OnboardingScreen10} />
-              <Stack.Screen name="Onboarding11" component={OnboardingScreen11} />
-              <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
-              <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
-              <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
-
-              {/* Legacy auth screen (for existing users or testing) */}
-              {/* Main tabs for direct navigation after subscription */}
-              <Stack.Screen name="MainTabs" component={MainTabs} />
-            </>
-          ) : (
-            <>
-              {/* Authenticated and subscribed - show MainTabs */}
-              <Stack.Screen name="MainTabs" component={MainTabs} />
-            </>
-          )}
-        </Stack.Navigator>
+        <AnalyticsProvider>
+          <NavigationContent />
+        </AnalyticsProvider>
       </NavigationContainer>
       <OfflineBanner />
     </StripeProvider>
   );
 }
 
-// Wrap with LanguageProvider, OfflineProvider, and AnalyticsProvider
+// Wrap with LanguageProvider and OfflineProvider
+// Note: AnalyticsProvider is now inside NavigationContainer (in AppNavigatorInner)
+// to ensure PostHog's captureScreens has access to navigation context
 export default function AppNavigator() {
   return (
     <LanguageProvider>
       <OfflineProvider>
-        <AnalyticsProvider>
-          <AppNavigatorInner />
-        </AnalyticsProvider>
+        <AppNavigatorInner />
       </OfflineProvider>
     </LanguageProvider>
   );
