@@ -565,3 +565,52 @@
   };
   ```
   The `colors.ts` file exists for legacy compatibility but `titanColors` is the primary theme source.
+- **React Navigation Screen Tracking (CRITICAL):** NEVER use `useNavigationState` hook for top-level analytics/screen tracking. PostHog's `captureScreens: true` also uses this hook internally and causes errors. Instead, use the `onStateChange` callback on `NavigationContainer`:
+  ```typescript
+  // BAD - useNavigationState error, hook called outside Navigator hierarchy
+  function ScreenTracker() {
+    const routeName = useNavigationState(state => state.routes[state.index].name);
+    // Error: useNavigationState must be inside a Navigator
+  }
+
+  // BAD - PostHog captureScreens causes same error internally
+  <PHProvider autocapture={{ captureScreens: true }}>
+
+  // GOOD - Use onStateChange callback with navigationRef
+  import { useNavigationContainerRef } from '@react-navigation/native';
+  import { trackScreenView } from '../lib/AnalyticsService';
+
+  function AppNavigatorInner() {
+    const navigationRef = useNavigationContainerRef();
+    const routeNameRef = useRef<string | null>(null);
+
+    return (
+      <NavigationContainer
+        ref={navigationRef}
+        onStateChange={() => {
+          const currentRouteName = getActiveRouteName(navigationRef.getRootState());
+          if (currentRouteName && currentRouteName !== routeNameRef.current) {
+            trackScreenView(currentRouteName);
+          }
+          routeNameRef.current = currentRouteName;
+        }}
+      >
+        {/* children */}
+      </NavigationContainer>
+    );
+  }
+  ```
+  - Always set `captureScreens: false` in PostHog config
+  - Use `AnalyticsService.trackScreenView()` for manual screen tracking
+  - The `onStateChange` callback fires after navigation state updates, avoiding hook timing issues
+- **expo-image vs react-native Image:** `expo-image` does NOT support `blurRadius`. For components that need blur effects (e.g., blurred background images), keep using `Image` from `react-native`. Only use `expo-image` for standard image display with caching benefits.
+  ```typescript
+  // GOOD - expo-image for normal images
+  import { Image } from 'expo-image';
+  <Image source={{ uri }} contentFit="cover" cachePolicy="memory-disk" />
+
+  // GOOD - react-native Image for blur effects
+  import { Image } from 'react-native';
+  <Image source={{ uri }} blurRadius={25} />
+  ```
+- **i18n Key Duplication Prevention:** When adding new i18n keys, ALWAYS search for existing keys first using `grep '"key_name":' src/i18n/locales/`. Duplicate keys in JSON cause the last occurrence to silently override previous ones, leading to inconsistent behavior.

@@ -232,16 +232,6 @@
     "slider_min_note": "* {{pages}} pages already read. You can set goals from page {{next}}.",
     "success_message": "Commitment created!\nDeadline: {{deadline}}\nPenalty: {{penalty}}"
   },
-  "scanner": {
-    "title": "Scan Barcode",
-    "permission_denied": "Camera permission is required",
-    "instruction": "Scan the ISBN barcode on the back of the book",
-    "looking_up": "Searching book info...",
-    "not_found_title": "Not Found",
-    "not_found_message": "Could not read barcode or book not found.",
-    "rescan": "Scan Again",
-    "manual_search": "Search by Title"
-  },
   "commitment_detail": {
     "title": "Commitment Details",
     "in_progress": "In Progress",

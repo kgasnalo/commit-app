@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Image,
   Alert,
   ScrollView,
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -289,7 +289,12 @@ export default function VerificationScreen({ route, navigation }: any) {
 
           {imageAsset ? (
             <View style={styles.imageContainer}>
-              <Image source={{ uri: imageAsset?.uri }} style={styles.previewImage} />
+              <Image
+                source={{ uri: imageAsset?.uri }}
+                style={styles.previewImage}
+                contentFit="cover"
+                transition={200}
+              />
               <TouchableOpacity
                 style={styles.retakeButton}
                 onPress={takePhoto}

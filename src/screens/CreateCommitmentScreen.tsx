@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image,
   ScrollView,
   Platform,
   Dimensions,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -314,7 +314,15 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         </View>
       );
     }
-    return <Image source={{ uri: secureUri }} style={large ? styles.selectedBookCover : styles.bookCover} />;
+    return (
+      <Image
+        source={{ uri: secureUri }}
+        style={large ? styles.selectedBookCover : styles.bookCover}
+        contentFit="cover"
+        transition={200}
+        cachePolicy="memory-disk"
+      />
+    );
   };
 
   const searchBooks = async () => {

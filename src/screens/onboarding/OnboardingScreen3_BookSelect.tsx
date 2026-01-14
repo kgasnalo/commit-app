@@ -5,10 +5,10 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { ScanBarcode } from 'lucide-react-native';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
@@ -126,6 +126,9 @@ export default function OnboardingScreen3({ navigation, route }: any) {
                 <Image
                   source={{ uri: ensureHttps(item.volumeInfo.imageLinks?.thumbnail)! }}
                   style={styles.bookCover}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
                 />
               ) : (
                 <View style={styles.bookCoverPlaceholder}>

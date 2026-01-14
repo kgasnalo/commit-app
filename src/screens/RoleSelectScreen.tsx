@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Linking, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Linking, ScrollView, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { RECOMMENDED_BOOKS } from '../constants/recommendations';
@@ -44,7 +45,15 @@ export default function RoleSelectScreen({ navigation }: Props) {
         </View>
       );
     }
-    return <Image source={{ uri }} style={styles.bookCover} />;
+    return (
+      <Image
+        source={{ uri }}
+        style={styles.bookCover}
+        contentFit="cover"
+        transition={200}
+        cachePolicy="memory-disk"
+      />
+    );
   };
 
   const renderBookItem = ({ item }: { item: Book }) => {

@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  Image,
   ImageBackground,
   Dimensions,
   StatusBar,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -431,7 +431,13 @@ export default function BookDetailScreen() {
               <View style={styles.heroContent}>
                 <View style={styles.posterContainer}>
                   {secureCoverUrl ? (
-                    <Image source={{ uri: secureCoverUrl }} style={styles.poster} />
+                    <Image
+                      source={{ uri: secureCoverUrl }}
+                      style={styles.poster}
+                      contentFit="cover"
+                      transition={300}
+                      cachePolicy="memory-disk"
+                    />
                   ) : (
                     <View style={styles.posterPlaceholder}>
                       <Ionicons name="book" size={40} color={colors.text.muted} />

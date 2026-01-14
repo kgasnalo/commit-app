@@ -232,16 +232,6 @@
     "slider_min_note": "※ 前回までに{{pages}}ページ読了済み。{{next}}ページ目から設定できます。",
     "success_message": "コミットメントを作成しました。\n期限: {{deadline}}\nペナルティ: {{penalty}}"
   },
-  "scanner": {
-    "title": "バーコードスキャン",
-    "permission_denied": "カメラへのアクセス許可が必要です",
-    "instruction": "本の裏表紙にあるISBNバーコードをスキャンしてください",
-    "looking_up": "書籍情報を検索中...",
-    "not_found_title": "見つかりませんでした",
-    "not_found_message": "バーコードを読み取れませんでした、または該当する書籍が見つかりませんでした。",
-    "rescan": "もう一度スキャン",
-    "manual_search": "タイトルで検索"
-  },
   "commitment_detail": {
     "title": "コミットメント詳細",
     "in_progress": "進行中",

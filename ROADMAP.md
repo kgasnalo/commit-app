@@ -495,10 +495,11 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Wrap all form screens in `KeyboardAvoidingView` with platform-specific behavior.
     - **Implementation:** Added KeyboardAvoidingView with `behavior={Platform.OS === 'ios' ? 'padding' : 'height'}`.
 
-- [ ] **P.2 Image Caching & Performance**
+- [x] **P.2 Image Caching & Performance**
     - **Problem:** Standard `<Image />` component used in 15 locations (Lists, Verify).
     - **Risk:** High bandwidth usage, flickering, and potential memory leaks in lists.
     - **Fix:** Replace all `<Image />` with `expo-image` for caching and performance.
+    - **Implementation:** Installed `expo-image`, updated 8 files with `contentFit`, `transition`, `cachePolicy`. Kept react-native Image for 2 files using `blurRadius` (not supported by expo-image).
 
 - [x] **P.3 Alert API Standardization**
     - **Problem:** `alert()` (Web API) used in `src/screens/BookDetailScreen.tsx`.
@@ -526,10 +527,11 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Standardize all time logic to UTC using a library like `date-fns` or strict `ISOString` comparison.
     - **Implementation:** Created `src/lib/DateUtils.ts` with `getNowUTC()`, `getTodayUTC()`, `getYesterdayUTC()`. Refactored `MonkModeService.ts` and `commitmentHelpers.ts`.
 
-- [ ] **S.6 Dependency Consistency (Edge Functions)**
+- [x] **S.6 Dependency Consistency (Edge Functions)**
     - **Problem:** Stripe SDK version mismatch (`admin-actions` uses v14, `reaper` uses v17).
     - **Risk:** Inconsistent API behavior or type errors when handling payment objects.
     - **Fix:** Unify all Edge Functions to use the same Stripe SDK version (v17).
+    - **Implementation:** Updated `admin-actions/index.ts` to use `stripe@17` with `apiVersion: '2025-12-15.clover'` and `getStripe()` lazy initialization pattern.
 
 - [x] **S.7 Upload Security (File Bomb)**
     - **Problem:** `VerificationScreen` uploads images without checking file size.
@@ -564,10 +566,11 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Risk:** Unnecessary re-renders of all consuming components on every state update.
     - **Fix:** Wrap `contextValue` in `useMemo`.
 
-- [ ] **P.10 Missing Indexes (Database Performance)**
+- [x] **P.10 Missing Indexes (Database Performance)**
     - **Problem:** `commitments` table lacks indexes on foreign keys (`user_id`, `book_id`) and status.
     - **Risk:** Full table scans causing slow dashboard loading as data grows.
     - **Fix:** Create a migration to add indexes for common query patterns.
+    - **Implementation:** Created `20260114200000_add_missing_indexes.sql` with 9 indexes on commitments (user_id, book_id, status, user_status composite), verification_logs (commitment_id, created_at), tags (user_id), book_tags (tag_id, commitment_id).
 
 ---
 
@@ -595,15 +598,11 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Problem:** `tracesSampleRate: 0.1` vs `CLAUDE.md` mandate (100%). ErrorBoundary scope needs verification.
     - **Fix:** Adjust sample rate for launch (1.0) and verify ErrorBoundary wraps all Context Providers.
 
-- [ ] **W.4 i18n Key Consistency Audit**
+- [x] **W.4 i18n Key Consistency Audit**
     - **Problem:** Inconsistent keys between `en`, `ja`, `ko` (e.g., `monkmode.minutes_unit`).
     - **Risk:** Missing translations in production.
     - **Fix:** Sync all keys and remove `defaultValue` usage.
-
-- [ ] **W.4 i18n Key Consistency Audit**
-    - **Problem:** Inconsistent keys between `en`, `ja`, `ko` (e.g., `monkmode.minutes_unit`).
-    - **Risk:** Missing translations in production.
-    - **Fix:** Sync all keys and remove `defaultValue` usage.
+    - **Implementation:** Added 3 missing keys to ko.json (`common.unknown_author`, `common.coming_soon`, `profile.monthly_reading_trend`). Removed duplicate `scanner` keys from all locale files (kept the more complete definition).
 
 - [ ] **W.5 Supabase Metadata Sync**
     - **Problem:** `database.types.ts` has `never` for Views/Functions.

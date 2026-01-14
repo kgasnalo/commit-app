@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform } from 'react-native';
@@ -7,7 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
-import i18n from '../i18n';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsProvider, useAnalytics } from '../contexts/AnalyticsContext';
@@ -16,6 +15,7 @@ import { OfflineBanner } from '../components/OfflineBanner';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
 import { setUserContext, clearUserContext } from '../utils/errorLogger';
+import { trackScreenView } from '../lib/AnalyticsService';
 
 // 統一された認証状態型
 type AuthState =
@@ -477,14 +477,43 @@ function NavigationContent() {
   );
 }
 
+// Helper to extract current route name from navigation state
+function getActiveRouteName(state: any): string | null {
+  if (!state?.routes?.length) return null;
+  const route = state.routes[state.index];
+  // Handle nested navigators (e.g., HomeTab/Dashboard)
+  if (route.state?.routes?.length) {
+    const nestedRoute = route.state.routes[route.state.index];
+    return `${route.name}/${nestedRoute.name}`;
+  }
+  return route.name;
+}
+
 // AppNavigatorInner: Provides NavigationContainer with AnalyticsProvider inside
 function AppNavigatorInner() {
   // Subscribe to language changes to force re-render of entire navigation tree
   const { language } = useLanguage();
+  const navigationRef = useNavigationContainerRef();
+  const routeNameRef = useRef<string | null>(null);
 
   return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-      <NavigationContainer key={language}>
+      <NavigationContainer
+        ref={navigationRef}
+        key={language}
+        onReady={() => {
+          // Set initial route name
+          routeNameRef.current = getActiveRouteName(navigationRef.getRootState());
+        }}
+        onStateChange={() => {
+          const currentRouteName = getActiveRouteName(navigationRef.getRootState());
+          // Only track if route actually changed
+          if (currentRouteName && currentRouteName !== routeNameRef.current) {
+            trackScreenView(currentRouteName);
+          }
+          routeNameRef.current = currentRouteName;
+        }}
+      >
         <AnalyticsProvider>
           <NavigationContent />
         </AnalyticsProvider>

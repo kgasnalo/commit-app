@@ -232,16 +232,6 @@
     "slider_min_note": "※ 이전까지 {{pages}}페이지 읽음. {{next}}페이지부터 설정할 수 있습니다.",
     "success_message": "커밋먼트를 생성했습니다.\n기한: {{deadline}}\n페널티: {{penalty}}"
   },
-  "scanner": {
-    "title": "바코드 스캔",
-    "permission_denied": "카메라 접근 권한이 필요합니다",
-    "instruction": "책 뒷면의 ISBN 바코드를 스캔해주세요",
-    "looking_up": "도서 정보 검색 중...",
-    "not_found_title": "찾을 수 없습니다",
-    "not_found_message": "바코드를 읽을 수 없거나 해당 도서를 찾을 수 없습니다.",
-    "rescan": "다시 스캔",
-    "manual_search": "제목으로 검색"
-  },
   "commitment_detail": {
     "title": "커밋먼트 상세",
     "in_progress": "진행 중",
@@ -307,7 +297,8 @@
     "edit_username": "사용자명 수정",
     "enter_new_username": "새 사용자명 입력",
     "username_updated": "사용자명이 업데이트되었습니다",
-    "username_update_error": "사용자명 업데이트에 실패했습니다"
+    "username_update_error": "사용자명 업데이트에 실패했습니다",
+    "monthly_reading_trend": "월별 독서 추이 (시간)"
   },
   "readingDna": {
     "title": "READING DNA",
@@ -401,7 +392,9 @@
     "success": "성공",
     "loading": "로딩 중...",
     "save": "저장",
-    "back": "뒤로"
+    "back": "뒤로",
+    "unknown_author": "저자 미상",
+    "coming_soon": "준비 중"
   },
   "errors": {
     "network": "네트워크 오류가 발생했습니다",

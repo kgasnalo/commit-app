@@ -217,6 +217,18 @@ export function receiptPreviewOpened(): void {
 }
 
 // ============================================
+// Screen Tracking
+// ============================================
+
+/**
+ * Track screen views. Called from NavigationContainer onStateChange.
+ * This replaces PostHog's automatic captureScreens which caused useNavigationState errors.
+ */
+export function trackScreenView(screenName: string): void {
+  capture('$screen', { $screen_name: screenName });
+}
+
+// ============================================
 // Default Export (for convenience)
 // ============================================
 
@@ -238,6 +250,7 @@ export const AnalyticsService = {
   verificationSubmitted,
   receiptShared,
   receiptPreviewOpened,
+  trackScreenView,
 };
 
 export default AnalyticsService;

@@ -13,8 +13,8 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -68,6 +68,8 @@ export default function BookSelector({
             <Image
               source={{ uri: ensureHttps(selectedBook?.coverUrl)! }}
               style={styles.coverThumbnail}
+              contentFit="cover"
+              cachePolicy="memory-disk"
             />
           ) : (
             <View style={styles.coverPlaceholder}>
@@ -125,6 +127,8 @@ export default function BookSelector({
                         <Image
                           source={{ uri: ensureHttps(item.coverUrl)! }}
                           style={styles.optionCover}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
                         />
                       ) : (
                         <View style={styles.optionCoverPlaceholder}>

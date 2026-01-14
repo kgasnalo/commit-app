@@ -1,15 +1,22 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import Stripe from 'https://esm.sh/stripe@14.14.0'
+import Stripe from 'https://esm.sh/stripe@17'
 import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
 
 // Initialize Sentry
 initSentry('admin-actions')
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-  apiVersion: '2023-10-16',
-  httpClient: Stripe.createFetchHttpClient(),
-})
+// Lazy initialization to ensure env var is available
+function getStripe(): Stripe {
+  const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
+  if (!stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY is not configured')
+  }
+  return new Stripe(stripeSecretKey, {
+    apiVersion: '2025-12-15.clover' as Stripe.LatestApiVersion,
+    httpClient: Stripe.createFetchHttpClient(),
+  })
+}
 
 // ============================================================
 // Configuration
@@ -143,7 +150,7 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
 
   // 2. Process Stripe Refund
   try {
-    await stripe.refunds.create({
+    await getStripe().refunds.create({
       payment_intent: charge.stripe_payment_intent_id,
       reason: 'requested_by_customer', // or 'duplicate', 'fraudulent'
     })

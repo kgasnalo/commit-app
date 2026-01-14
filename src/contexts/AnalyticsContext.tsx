@@ -194,7 +194,10 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         disabled: __DEV__,
       }}
       autocapture={{
-        captureScreens: true,
+        // DISABLED: PostHog's auto screen capture uses useNavigationState internally,
+        // which causes errors when called before NavigationContainer is ready.
+        // Screen tracking is done manually in NavigationContent instead.
+        captureScreens: false,
         captureTouches: false,
       }}
     >

@@ -1,12 +1,12 @@
 import React from 'react';
 import {
   View,
-  Image,
   StyleSheet,
   TouchableOpacity,
   ViewStyle,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { titanColors, titanShadows } from '../../theme/titan';
@@ -51,7 +51,9 @@ export function CinematicBookCard({
             <Image
               source={{ uri: ensureHttps(coverUrl) || '' }}
               style={styles.cover}
-              resizeMode="cover"
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
             />
           ) : (
             <View style={[styles.cover, styles.placeholder]}>

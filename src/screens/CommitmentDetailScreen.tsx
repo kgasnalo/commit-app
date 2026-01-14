@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   ScrollView,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -306,7 +306,13 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         <View style={styles.bookHeader}>
           <View style={styles.bookCoverContainer}>
               {ensureHttps(commitment.book.cover_url) ? (
-                <Image source={{ uri: ensureHttps(commitment.book.cover_url)! }} style={styles.bookCover} />
+                <Image
+                  source={{ uri: ensureHttps(commitment.book.cover_url)! }}
+                  style={styles.bookCover}
+                  contentFit="cover"
+                  transition={300}
+                  cachePolicy="memory-disk"
+                />
               ) : (
                 <View style={styles.bookCoverPlaceholder}>
                   <Ionicons name="book-outline" size={40} color={colors.text.muted} />
