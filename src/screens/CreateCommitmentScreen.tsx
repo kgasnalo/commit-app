@@ -11,6 +11,7 @@ import {
   ScrollView,
   Platform,
   Dimensions,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -515,7 +516,11 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.contentWrapper}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.contentWrapper}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
@@ -737,9 +742,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           </Animated.View>
         </ScrollView>
 
-        {/* Vignette Overlay */}
-        <VignetteOverlay intensity={vignetteIntensity} />
-      </View>
+          {/* Vignette Overlay */}
+          <VignetteOverlay intensity={vignetteIntensity} />
+        </View>
+      </KeyboardAvoidingView>
 
       {/* Barcode Scanner Modal */}
       <BarcodeScannerModal

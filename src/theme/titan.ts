@@ -60,7 +60,13 @@ export const titanColors = {
     bright: '#3D3530',
     orange: '#FF6B35', // オレンジボーダー
     orangeMuted: 'rgba(255, 107, 53, 0.3)',
-  }
+  },
+
+  // タグ色
+  tag: {
+    purple: '#8B5CF6',
+    pink: '#EC4899',
+  },
 };
 
 export const titanTypography = {

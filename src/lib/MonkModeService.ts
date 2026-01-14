@@ -11,6 +11,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { Database } from '../types/database.types';
+import { getNowUTC, getTodayUTC, getYesterdayUTC } from './DateUtils';
 
 // Storage keys for timer state persistence
 const STORAGE_KEYS = {
@@ -96,7 +97,7 @@ class MonkModeServiceClass {
         user_id: user.id,
         book_id: params.bookId || null,
         duration_seconds: params.durationSeconds,
-        completed_at: new Date().toISOString(),
+        completed_at: getNowUTC(),
       };
 
       const { data, error } = await supabase
@@ -389,7 +390,7 @@ class MonkModeServiceClass {
       });
 
       // Generate array for all days
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayUTC();
       const result: HeatmapDay[] = [];
 
       for (let i = 0; i < days; i++) {
@@ -453,8 +454,8 @@ class MonkModeServiceClass {
       let tempStreak = 1;
 
       // Check if today or yesterday has activity for current streak
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const today = getTodayUTC();
+      const yesterday = getYesterdayUTC();
       const hasRecentActivity = lastReadingDate === today || lastReadingDate === yesterday;
 
       // Calculate longest streak

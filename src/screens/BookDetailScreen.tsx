@@ -12,6 +12,7 @@ import {
   Dimensions,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -72,8 +73,8 @@ const TAG_COLORS = [
   colors.signal.success,
   colors.signal.warning,
   colors.signal.info,
-  '#8B5CF6',
-  '#EC4899',
+  colors.tag.purple,
+  colors.tag.pink,
 ];
 
 // Helper to force HTTPS
@@ -231,7 +232,7 @@ export default function BookDetailScreen() {
       setShowMemoModal(false);
     } catch (error) {
       console.error('Error updating memo:', error);
-      alert(i18n.t('bookDetail.memo_update_failed'));
+      Alert.alert(i18n.t('common.error'), i18n.t('bookDetail.memo_update_failed'));
     }
   }
 

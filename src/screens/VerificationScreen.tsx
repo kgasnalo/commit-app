@@ -10,6 +10,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,11 +26,12 @@ import { ReviewService } from '../lib/ReviewService';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const MIN_MEMO_LENGTH = 100;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
 export default function VerificationScreen({ route, navigation }: any) {
   const { commitmentId, bookTitle } = route.params;
 
-  const [image, setImage] = useState<string | null>(null);
+  const [imageAsset, setImageAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -55,7 +58,7 @@ export default function VerificationScreen({ route, navigation }: any) {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setImage(result.assets[0].uri);
+      setImageAsset(result.assets[0]);
     }
   };
 
@@ -66,7 +69,7 @@ export default function VerificationScreen({ route, navigation }: any) {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setImage(result.assets[0].uri);
+      setImageAsset(result.assets[0]);
     }
   };
 
@@ -86,12 +89,21 @@ export default function VerificationScreen({ route, navigation }: any) {
   };
 
   const submitVerification = async () => {
-    if (!image) {
+    if (!imageAsset) {
       Alert.alert(i18n.t('common.error'), i18n.t('errors.photo_required'));
       return;
     }
 
     if (!validateMemo()) {
+      return;
+    }
+
+    // S.7: File size validation (5MB limit)
+    if (imageAsset.fileSize && imageAsset.fileSize > MAX_FILE_SIZE) {
+      Alert.alert(
+        i18n.t('errors.file_too_large_title'),
+        i18n.t('errors.file_too_large_message')
+      );
       return;
     }
 
@@ -140,7 +152,7 @@ export default function VerificationScreen({ route, navigation }: any) {
 
       // 画像をSupabase Storageにアップロード
       const fileName = `verification_${commitmentId}_${Date.now()}.jpg`;
-      const response = await fetch(image);
+      const response = await fetch(imageAsset.uri);
       const blob = await response.blob();
 
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -263,17 +275,21 @@ export default function VerificationScreen({ route, navigation }: any) {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.bookTitle}>{bookTitle}</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={styles.bookTitle}>{bookTitle}</Text>
 
         {/* 写真撮影セクション - Glassmorphism タイル */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{i18n.t('verification.photo_section')}</Text>
           <Text style={styles.sectionDesc}>{i18n.t('verification.photo_instruction')}</Text>
 
-          {image ? (
+          {imageAsset ? (
             <View style={styles.imageContainer}>
-              <Image source={{ uri: image }} style={styles.previewImage} />
+              <Image source={{ uri: imageAsset?.uri }} style={styles.previewImage} />
               <TouchableOpacity
                 style={styles.retakeButton}
                 onPress={takePhoto}
@@ -344,10 +360,10 @@ export default function VerificationScreen({ route, navigation }: any) {
         <TouchableOpacity
           style={[
             styles.submitButton,
-            (!image || memo.length < MIN_MEMO_LENGTH) && styles.submitButtonDisabled
+            (!imageAsset || memo.length < MIN_MEMO_LENGTH) && styles.submitButtonDisabled
           ]}
           onPress={submitVerification}
-          disabled={loading || !image || memo.length < MIN_MEMO_LENGTH}
+          disabled={loading || !imageAsset || memo.length < MIN_MEMO_LENGTH}
           activeOpacity={0.8}
         >
           {loading ? (
@@ -356,7 +372,8 @@ export default function VerificationScreen({ route, navigation }: any) {
             <Text style={styles.submitButtonText}>{i18n.t('verification.submit')}</Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Success Celebration Modal */}
       <VerificationSuccessModal

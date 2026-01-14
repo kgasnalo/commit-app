@@ -437,6 +437,8 @@
     "commitment_not_found": "Commitment not found",
     "fetch_commitment_failed": "Failed to fetch commitment info.",
     "create_commitment_failed": "Failed to create commitment.",
+    "file_too_large_title": "File Too Large",
+    "file_too_large_message": "Please select an image under 5MB.",
     "validation": {
       "INVALID_AMOUNT": "Pledge amount is outside the allowed range",
       "INVALID_CURRENCY": "Unsupported currency",
@@ -454,6 +456,9 @@
     "monkmode": "Focus",
     "library": "Library",
     "settings": "Settings"
+  },
+  "offline": {
+    "banner_message": "No Internet Connection"
   },
   "celebration": {
     "title": "Commitment Achieved!",

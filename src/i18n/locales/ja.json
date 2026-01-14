@@ -437,6 +437,8 @@
     "commitment_not_found": "コミットメントが見つかりません",
     "fetch_commitment_failed": "コミットメント情報の取得に失敗しました。",
     "create_commitment_failed": "コミットメントの作成に失敗しました。",
+    "file_too_large_title": "ファイルが大きすぎます",
+    "file_too_large_message": "5MB以下の画像を選択してください。",
     "validation": {
       "INVALID_AMOUNT": "金額が許容範囲外です",
       "INVALID_CURRENCY": "サポートされていない通貨です",
@@ -454,6 +456,9 @@
     "monkmode": "集中",
     "library": "本棚",
     "settings": "設定"
+  },
+  "offline": {
+    "banner_message": "インターネット接続がありません"
   },
   "celebration": {
     "title": "コミットメント達成！",

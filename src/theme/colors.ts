@@ -27,4 +27,9 @@ export const colors = {
     default: '#333333',
     selected: '#FF4D00',
   },
+  // タグ色
+  tag: {
+    purple: '#8B5CF6',
+    pink: '#EC4899',
+  },
 };

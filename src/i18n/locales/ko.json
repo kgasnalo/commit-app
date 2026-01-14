@@ -434,6 +434,8 @@
     "commitment_not_found": "커밋먼트를 찾을 수 없습니다",
     "fetch_commitment_failed": "커밋먼트 정보 가져오기에 실패했습니다.",
     "create_commitment_failed": "커밋먼트 생성에 실패했습니다.",
+    "file_too_large_title": "파일이 너무 큽니다",
+    "file_too_large_message": "5MB 이하의 이미지를 선택해 주세요.",
     "validation": {
       "INVALID_AMOUNT": "금액이 허용 범위를 벗어났습니다",
       "INVALID_CURRENCY": "지원되지 않는 통화입니다",
@@ -451,6 +453,9 @@
     "monkmode": "집중",
     "library": "서재",
     "settings": "설정"
+  },
+  "offline": {
+    "banner_message": "인터넷 연결 없음"
   },
   "celebration": {
     "title": "커밋먼트 달성!",

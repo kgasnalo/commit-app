@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getNowDate } from './DateUtils';
 
 export interface BookProgress {
   totalPagesRead: number;
@@ -165,7 +166,7 @@ export function calculateSuggestedDeadline(lastDeadline: string, lastCreatedAt: 
   const maxDuration = 30 * 24 * 60 * 60 * 1000; // 30 days
   const clampedDuration = Math.min(Math.max(durationMs, minDuration), maxDuration);
 
-  return new Date(Date.now() + clampedDuration);
+  return new Date(getNowDate().getTime() + clampedDuration);
 }
 
 /**

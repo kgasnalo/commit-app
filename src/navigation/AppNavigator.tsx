@@ -11,6 +11,8 @@ import i18n from '../i18n';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsProvider, useAnalytics } from '../contexts/AnalyticsContext';
+import { OfflineProvider } from '../contexts/OfflineContext';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
 import { setUserContext, clearUserContext } from '../utils/errorLogger';
@@ -478,17 +480,20 @@ function AppNavigatorInner() {
           )}
         </Stack.Navigator>
       </NavigationContainer>
+      <OfflineBanner />
     </StripeProvider>
   );
 }
 
-// Wrap with LanguageProvider and AnalyticsProvider
+// Wrap with LanguageProvider, OfflineProvider, and AnalyticsProvider
 export default function AppNavigator() {
   return (
     <LanguageProvider>
-      <AnalyticsProvider>
-        <AppNavigatorInner />
-      </AnalyticsProvider>
+      <OfflineProvider>
+        <AnalyticsProvider>
+          <AppNavigatorInner />
+        </AnalyticsProvider>
+      </OfflineProvider>
     </LanguageProvider>
   );
 }
