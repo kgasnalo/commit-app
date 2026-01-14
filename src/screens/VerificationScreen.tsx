@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import VerificationSuccessModal from '../components/VerificationSuccessModal';
 import * as AnalyticsService from '../lib/AnalyticsService';
+import { ReviewService } from '../lib/ReviewService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -207,11 +208,15 @@ export default function VerificationScreen({ route, navigation }: any) {
 
   const handleModalClose = () => {
     setShowSuccessModal(false);
+    // Phase 4.8: Request review after successful completion (non-blocking)
+    ReviewService.attemptReviewRequest();
     navigation.navigate('Dashboard');
   };
 
   const handleContinue = () => {
     setShowSuccessModal(false);
+    // Phase 4.8: Request review after successful completion (non-blocking)
+    ReviewService.attemptReviewRequest();
     if (bookId) {
       // Navigate directly to CreateCommitment with bookId to trigger Quick Continue flow
       navigation.navigate('CreateCommitment', { bookId });
@@ -222,6 +227,8 @@ export default function VerificationScreen({ route, navigation }: any) {
 
   const handleSelectNewBook = () => {
     setShowSuccessModal(false);
+    // Phase 4.8: Request review after successful completion (non-blocking)
+    ReviewService.attemptReviewRequest();
     // Navigate to RoleSelect to start a fresh book selection flow
     navigation.navigate('RoleSelect');
   };

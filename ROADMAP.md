@@ -156,11 +156,15 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **4.7 The Hall of Fame**
     - **Action:** Netflix-style library for completed books.
 
-- [ ] **4.8 Review & Rating Strategy (Growth)**
+- [x] **4.8 Review & Rating Strategy (Growth)**
     - **Role:** `[Product Manager]`
     - **Action:** Implement StoreKit In-App Review API.
     - **Trigger:** Prompt user for a rating ONLY after a "Positive Moment" (e.g., Successfully completing a commitment). Never prompt after a penalty.
-    - **DoD:** App requests review at appropriate high-engagement moments.
+    - **Implementation:**
+      - `expo-store-review` package
+      - `ReviewService.ts` with 90-day cooldown
+      - Integrated in `VerificationScreen.tsx` (all 3 exit handlers)
+    - **DoD:** App requests review at appropriate high-engagement moments. ✅
 
 ---
 
