@@ -571,5 +571,12 @@
       "11": { "title": "Clean Code", "author": "Robert C. Martin" },
       "12": { "title": "Refactoring", "author": "Martin Fowler" }
     }
+  },
+  "blocking": {
+    "maintenance_title": "Under Maintenance",
+    "maintenance_message": "We're currently performing system maintenance. Please check back shortly.",
+    "update_title": "Update Required",
+    "update_message": "Please update to the latest version to continue using the app.",
+    "update_button": "Update"
   }
 }

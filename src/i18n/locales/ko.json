@@ -568,5 +568,12 @@
       "11": { "title": "클린 코드 (Clean Code)", "author": "로버트 C. 마틴" },
       "12": { "title": "리팩터링 (Refactoring)", "author": "마틴 파울러" }
     }
+  },
+  "blocking": {
+    "maintenance_title": "점검 중",
+    "maintenance_message": "현재 시스템 점검 중입니다. 잠시 후 다시 확인해 주세요.",
+    "update_title": "업데이트 필요",
+    "update_message": "앱을 계속 사용하려면 최신 버전으로 업데이트해 주세요.",
+    "update_button": "업데이트"
   }
 }

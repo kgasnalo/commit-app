@@ -571,5 +571,12 @@
       "11": { "title": "Clean Code", "author": "Robert C. Martin" },
       "12": { "title": "リファクタリング", "author": "Martin Fowler" }
     }
+  },
+  "blocking": {
+    "maintenance_title": "メンテナンス中",
+    "maintenance_message": "現在システムメンテナンス中です。しばらくお待ちください。",
+    "update_title": "アップデートが必要です",
+    "update_message": "最新バージョンにアップデートしてご利用ください。",
+    "update_button": "アップデート"
   }
 }

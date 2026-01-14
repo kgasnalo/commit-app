@@ -1,0 +1,4 @@
+{
+  "NSPhotoLibraryUsageDescription": "読書記録の検証のために写真ライブラリへのアクセスを許可してください。",
+  "NSCameraUsageDescription": "読書記録の撮影のためにカメラへのアクセスを許可してください。"
+}

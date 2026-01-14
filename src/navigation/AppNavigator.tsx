@@ -21,6 +21,9 @@ type AuthState =
   | { status: 'unauthenticated' }
   | { status: 'authenticated'; session: Session; isSubscribed: boolean };
 
+import { useBlockingStatus } from '../lib/RemoteConfigService';
+import MaintenanceScreen from '../screens/blocking/MaintenanceScreen';
+import ForceUpdateScreen from '../screens/blocking/ForceUpdateScreen';
 import AuthScreen from '../screens/AuthScreen';
 import RoleSelectScreen from '../screens/RoleSelectScreen';
 import CreateCommitmentScreen from '../screens/CreateCommitmentScreen';
@@ -176,6 +179,9 @@ function AppNavigatorInner() {
   // Phase 8.3: PostHog Analytics
   const { identify, reset, trackEvent, isReady } = useAnalytics();
   const appLaunchTracked = useRef(false);
+
+  // Phase 8.4: Remote Config - Blocking Status
+  const blockingStatus = useBlockingStatus();
 
   // 統一された認証状態（フリッカー防止のためアトミックに更新）
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
@@ -387,6 +393,25 @@ function AppNavigatorInner() {
 
     registerPushToken();
   }, [authState]);
+
+  // Phase 8.4: Blocking Screen (highest priority - before loading/auth)
+  if (blockingStatus.isBlocked) {
+    return (
+      <NavigationContainer key={language}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {blockingStatus.reason === 'maintenance' ? (
+            <Stack.Screen name="Maintenance" component={MaintenanceScreen} />
+          ) : (
+            <Stack.Screen
+              name="ForceUpdate"
+              component={ForceUpdateScreen}
+              initialParams={{ storeUrl: blockingStatus.storeUrl }}
+            />
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    );
+  }
 
   // ローディング中はブランドローディング画面を表示
   if (isLoading) {

@@ -328,23 +328,36 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - All 7 Edge Functions auto-deployed on merge to main
     - **DoD:** Merge to `main` triggers auto-deployment. ✅
 
-- [ ] **8.3 Product Analytics (PostHog/Mixpanel)**
+- [x] **8.3 Product Analytics (PostHog)**
     - **Role:** `[Product Manager]`
-    - **Action:** Track key user events (Commitment Created, Completed, Defaulted).
-    - **DoD:** Dashboard shows "Commitment Completion Rate" and "Churn".
+    - **Action:** Track key user events with PostHog analytics.
+    - **Implementation:**
+      - `posthog-react-native` SDK with Feature Flags, Session Replay, A/B Testing
+      - `AnalyticsContext.tsx` provider with user identification
+      - `AnalyticsService.ts` centralized tracking (replaces MetricsService)
+      - Events: `app_launched`, `commitment_created/completed`, `lifeline_used`, `onboarding_completed`, `user_logged_out`, `account_deleted`, `book_scanned`, `monk_mode_session_*`, `verification_submitted`, `receipt_shared`
+    - **DoD:** Dashboard shows "Commitment Completion Rate" and "Churn". ✅
 
-- [ ] **8.4 Remote Config & Force Update (The Kill Switch)**
+- [x] **8.4 Remote Config & Force Update (The Kill Switch)**
     - **Role:** `[Mobile Engineer]`
-    - **Action:** Implement a check on app launch against Supabase/Edge Config.
-    - **Logic:** If `current_app_version < min_required_version`, show a blocking modal: "Please update to continue" with a link to the App Store.
-    - **Why:** To prevent crashes or exploits from old versions circulating.
-    - **DoD:** Admin can force all users to update by changing a server-side value.
+    - **Action:** Implement a check on app launch against PostHog Feature Flags.
+    - **Implementation (2026-01-14):**
+      - `RemoteConfigService.ts` with `useBlockingStatus()` hook
+      - `expo-application` for native version detection
+      - `ForceUpdateScreen.tsx` with App Store link
+      - Semantic version comparison (1.0.0 < 1.0.1 < 1.1.0)
+    - **Feature Flag:** `min_app_version` (String payload in PostHog)
+    - **DoD:** Admin can force all users to update by changing PostHog flag value. ✅
 
-- [ ] **8.5 Maintenance Mode (Ops)**
+- [x] **8.5 Maintenance Mode (Ops)**
     - **Role:** `[Fullstack Engineer]`
-    - **Action:** Global "Under Maintenance" switch in DB/Config.
-    - **Logic:** If `maintenance_mode` is TRUE, the app shows a "We'll be back soon" screen instead of trying to fetch data and failing.
-    - **DoD:** Can take the entire service offline gracefully for database migrations.
+    - **Action:** Global "Under Maintenance" switch via PostHog Feature Flag.
+    - **Implementation (2026-01-14):**
+      - `MaintenanceScreen.tsx` (Titan design, non-dismissible)
+      - Integrated into AppNavigator (highest priority check)
+      - i18n support (ja/en/ko)
+    - **Feature Flag:** `maintenance_mode` (Boolean in PostHog)
+    - **DoD:** Can take the entire service offline gracefully. ✅
 
 ---
 
