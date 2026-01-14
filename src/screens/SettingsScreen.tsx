@@ -17,6 +17,7 @@ import i18n, { LANGUAGES } from '../i18n';
 import { useLanguage } from '../contexts/LanguageContext';
 import { colors, typography } from '../theme';
 import { MicroLabel } from '../components/titan/MicroLabel';
+import * as AnalyticsService from '../lib/AnalyticsService';
 
 export default function SettingsScreen({ navigation }: any) {
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
@@ -43,6 +44,8 @@ export default function SettingsScreen({ navigation }: any) {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Phase 8.3: Track logout
+              AnalyticsService.userLoggedOut();
               const { error } = await supabase.auth.signOut();
               if (error) throw error;
             } catch (error) {
@@ -74,6 +77,8 @@ export default function SettingsScreen({ navigation }: any) {
               if (error) throw error;
 
               if (data?.success) {
+                // Phase 8.3: Track account deletion
+                AnalyticsService.accountDeleted();
                 await supabase.auth.signOut();
               } else {
                 throw new Error(data?.error || 'Failed to delete account');

@@ -24,6 +24,7 @@ import Animated, {
 import i18n from '../i18n';
 import { supabase } from '../lib/supabase';
 import { isValidISBN, normalizeISBN } from '../utils/isbn';
+import * as AnalyticsService from '../lib/AnalyticsService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
@@ -128,6 +129,8 @@ export default function BarcodeScannerModal({
       }
 
       if (data?.success && data?.book) {
+        // Phase 8.3: Track successful scan
+        AnalyticsService.bookScanned({ isbn: normalizedISBN, found: true });
         // Convert to GoogleBook format for compatibility
         const googleBook: GoogleBook = {
           id: data.book.id,
@@ -142,6 +145,8 @@ export default function BarcodeScannerModal({
         onBookFound(googleBook);
         onClose();
       } else {
+        // Phase 8.3: Track failed scan
+        AnalyticsService.bookScanned({ isbn: normalizedISBN, found: false });
         setScannerState('not_found');
       }
     } catch (err) {

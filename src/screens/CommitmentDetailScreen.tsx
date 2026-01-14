@@ -27,6 +27,7 @@ import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { ensureHttps } from '../utils/googleBooks';
+import * as AnalyticsService from '../lib/AnalyticsService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -210,6 +211,8 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
               }
 
               if (data?.success) {
+                // Phase 8.3: Track lifeline usage
+                AnalyticsService.lifelineUsed({ days_extended: 7 });
                 Alert.alert(i18n.t('common.success'), i18n.t('commitment_detail.lifeline_success'));
                 fetchCommitment();
                 setLifelineUsedForBook(true);

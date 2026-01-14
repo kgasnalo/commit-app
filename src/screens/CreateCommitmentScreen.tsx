@@ -48,6 +48,7 @@ import BarcodeScannerModal from '../components/BarcodeScannerModal';
 import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
+import * as AnalyticsService from '../lib/AnalyticsService';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -430,6 +431,18 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           : i18n.t('errors.create_commitment_failed');
         throw new Error(errorMessage);
       }
+
+      // Phase 8.3: Track commitment creation
+      const deadlineDays = Math.ceil(
+        (deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
+      AnalyticsService.commitmentCreated({
+        currency: currency,
+        amount: pledgeAmount,
+        deadline_days: deadlineDays,
+        target_pages: Math.max(1, pageCount - totalPagesRead),
+        is_continue_flow: isContinueFlow,
+      });
 
       setCreating(false);
 

@@ -10,6 +10,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import i18n from '../i18n';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
+import { AnalyticsProvider, useAnalytics } from '../contexts/AnalyticsContext';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
 import { setUserContext, clearUserContext } from '../utils/errorLogger';
@@ -172,6 +173,10 @@ function AppNavigatorInner() {
   // Subscribe to language changes to force re-render of entire navigation tree
   const { language } = useLanguage();
 
+  // Phase 8.3: PostHog Analytics
+  const { identify, reset, trackEvent, isReady } = useAnalytics();
+  const appLaunchTracked = useRef(false);
+
   // 統一された認証状態（フリッカー防止のためアトミックに更新）
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
@@ -331,13 +336,30 @@ function AppNavigatorInner() {
   const isSubscribed = authState.status === 'authenticated' ? authState.isSubscribed : false;
 
   // Phase 8.1: Set Sentry user context for crash monitoring
+  // Phase 8.3: Set PostHog user identification
   useEffect(() => {
     if (authState.status === 'authenticated') {
       setUserContext(authState.session.user.id, authState.session.user.email);
+      // PostHog: Identify user (no PII - userId only)
+      identify(authState.session.user.id, {
+        subscription_status: authState.isSubscribed ? 'active' : 'inactive',
+      });
     } else if (authState.status === 'unauthenticated') {
       clearUserContext();
+      reset(); // Clear PostHog identity
     }
-  }, [authState]);
+  }, [authState, identify, reset]);
+
+  // Phase 8.3: Track app launch once per session
+  useEffect(() => {
+    if (authState.status !== 'loading' && isReady && !appLaunchTracked.current) {
+      appLaunchTracked.current = true;
+      trackEvent('app_launched', {
+        auth_status: authState.status,
+        is_subscribed: authState.status === 'authenticated' ? authState.isSubscribed : null,
+      });
+    }
+  }, [authState.status, isReady, trackEvent]);
 
   // Phase 7.3: Register push token when user is authenticated and subscribed
   const pushTokenRegistered = useRef(false);
@@ -435,11 +457,13 @@ function AppNavigatorInner() {
   );
 }
 
-// Wrap with LanguageProvider to enable instant language switching
+// Wrap with LanguageProvider and AnalyticsProvider
 export default function AppNavigator() {
   return (
     <LanguageProvider>
-      <AppNavigatorInner />
+      <AnalyticsProvider>
+        <AppNavigatorInner />
+      </AnalyticsProvider>
     </LanguageProvider>
   );
 }

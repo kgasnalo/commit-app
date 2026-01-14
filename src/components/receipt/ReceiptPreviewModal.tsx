@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { HAPTIC_BUTTON_SCALES } from '../../config/haptics';
 import i18n from '../../i18n';
 import { shareImage } from '../../utils/shareUtils';
 import CommitmentReceipt, { CommitmentReceiptProps } from './CommitmentReceipt';
+import * as AnalyticsService from '../../lib/AnalyticsService';
 
 interface ReceiptPreviewModalProps extends CommitmentReceiptProps {
   visible: boolean;
@@ -46,6 +47,13 @@ export default function ReceiptPreviewModal({
     transform: [{ scale: shareButtonScale.value }],
   }));
 
+  // Phase 8.3: Track receipt preview opened
+  useEffect(() => {
+    if (visible) {
+      AnalyticsService.receiptPreviewOpened();
+    }
+  }, [visible]);
+
   const handleSharePressIn = () => {
     shareButtonScale.value = withSpring(
       HAPTIC_BUTTON_SCALES.heavy.pressed,
@@ -70,6 +78,8 @@ export default function ReceiptPreviewModal({
 
       const success = await shareImage(uri);
       if (success) {
+        // Phase 8.3: Track receipt share
+        AnalyticsService.receiptShared();
         // Optionally close modal after successful share
         // onClose();
       }

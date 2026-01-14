@@ -37,6 +37,7 @@ import TimerRing from '../../components/monkmode/TimerRing';
 import TimerDisplay from '../../components/monkmode/TimerDisplay';
 import SessionCompleteModal from '../../components/monkmode/SessionCompleteModal';
 import { SPRING_CONFIGS } from '../../config/animation';
+import * as AnalyticsService from '../../lib/AnalyticsService';
 
 export default function MonkModeActiveScreen({ route, navigation }: any) {
   useKeepAwake(); // Keep screen on while timer is active
@@ -89,6 +90,12 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
 
   // Handle timer completion
   function handleTimerComplete() {
+    // Phase 8.3: Track session completion
+    AnalyticsService.monkModeSessionCompleted({
+      duration_minutes: durationMinutes,
+      actual_duration_seconds: durationMinutes * 60,
+      book_id: bookId || null,
+    });
     setShowCompleteModal(true);
     saveSession();
   }
@@ -149,6 +156,12 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
           text: i18n.t('common.ok'),
           style: 'destructive',
           onPress: async () => {
+            // Phase 8.3: Track session cancellation
+            const elapsedSeconds = (durationMinutes * 60) - remainingSeconds;
+            AnalyticsService.monkModeSessionCancelled({
+              duration_minutes: durationMinutes,
+              seconds_elapsed: elapsedSeconds,
+            });
             await cancel();
             navigation.goBack();
           },

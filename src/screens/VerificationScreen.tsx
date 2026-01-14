@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import VerificationSuccessModal from '../components/VerificationSuccessModal';
+import * as AnalyticsService from '../lib/AnalyticsService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -181,6 +182,16 @@ export default function VerificationScreen({ route, navigation }: any) {
       if (updateError) {
         throw updateError;
       }
+
+      // Phase 8.3: Track commitment completion and verification
+      AnalyticsService.commitmentCompleted({
+        currency: commitmentData.currency,
+        amount_saved: commitmentData.pledge_amount,
+        days_to_complete: readingDays,
+      });
+      AnalyticsService.verificationSubmitted({
+        memo_length: memo.length,
+      });
 
       // Show celebration modal instead of Alert
       setSavedAmount(commitmentData.pledge_amount);

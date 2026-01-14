@@ -35,6 +35,7 @@ import { supabase } from '../../lib/supabase';
 import { MonkModeService, SessionSummary } from '../../lib/MonkModeService';
 import DurationSlider from '../../components/monkmode/DurationSlider';
 import BookSelector, { BookOption } from '../../components/monkmode/BookSelector';
+import * as AnalyticsService from '../../lib/AnalyticsService';
 
 interface MonkModeScreenProps {
   navigation: any;
@@ -129,6 +130,11 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
   const handleStartSession = () => {
     try {
       HapticsService.feedbackHeavy();
+      // Phase 8.3: Track session start
+      AnalyticsService.monkModeSessionStarted({
+        duration_minutes: duration,
+        has_book_selected: selectedBook !== null,
+      });
       navigation.navigate('MonkModeActive', {
         durationMinutes: duration,
         bookId: selectedBook?.id,

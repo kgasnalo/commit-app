@@ -9,6 +9,7 @@ import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase, triggerAuthRefresh } from '../../lib/supabase';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
+import * as AnalyticsService from '../../lib/AnalyticsService';
 
 type Plan = 'yearly' | 'monthly';
 
@@ -172,6 +173,9 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       // 5. Success (Cinematic COMMIT Reveal)
       await AsyncStorage.removeItem('onboardingData');
+
+      // Phase 8.3: Track onboarding completion
+      AnalyticsService.onboardingCompleted({ plan_type: selectedPlan });
 
       // Start cinematic reveal animation
       setShowWarpTransition(true);
