@@ -1,88 +1,71 @@
-# Handoff: Session 2026-01-15 (Evening)
+# Handoff: Session 2026-01-15 (Night)
 
 ## Current Goal
-**Auth Screen Login Fix Complete** - Auth画面からのGoogleログイン時に一瞬Onboarding7が表示されるUX問題を修正。
+**Multiple Bug Fixes Complete** - Auth画面ログイン、i18n重複、Edge Function 401エラーを修正。
 
 ---
 
 ## Current Critical Status
 
-### Auth Screen Login Fix ✅
+### All Issues Resolved ✅
 
-| Task | Status | Details |
-|------|--------|---------|
-| **Problem #1** | ✅ | Auth画面からのログインでサブスクチェックがタイムアウト → `isSubscribed=false` |
-| **Problem #2** | ✅ | タイムアウト後に一瞬Onboarding7が表示 → バックグラウンドチェック完了後MainTabsに遷移 |
-| **Fix Deployed** | ✅ | Auth画面ログインを識別、タイムアウト時はローディング維持 |
-| **iOS Test** | ✅ | Onboarding7のチラつきなし、直接MainTabsに遷移 |
+| Issue | Status | Fix |
+|-------|--------|-----|
+| **Auth画面ログインでOnboarding7表示** | ✅ | `loginSource`フラグ + ローディング状態維持 |
+| **i18n book_search missing translation** | ✅ | JSONの重複`book_search`セクションをマージ |
+| **create-commitment 401エラー** | ✅ | `--no-verify-jwt`フラグで再デプロイ |
 
 ---
 
 ## What Worked (Solutions Applied)
 
-### 1. Auth画面からのログインを識別するフラグ
-- **AuthScreen.tsx:** `AsyncStorage.setItem('loginSource', 'auth_screen')` をGoogleログイン開始時に設定
-- **Result:** ✅ 既存ユーザーの再ログインを新規オンボーディングと区別可能に
+### 1. Auth画面ログインのUIフリッカー修正
+- **Problem:** タイムアウト時に`isSubscribed=false`で状態設定 → Onboarding7が一瞬表示
+- **Fix:**
+  - AuthScreen: `AsyncStorage.setItem('loginSource', 'auth_screen')`
+  - AppNavigator: Auth画面ログイン検知時、finally blockで状態設定スキップ
+  - バックグラウンドチェック完了後に状態設定
+- **Result:** ✅ ローディング画面維持 → 直接MainTabsに遷移
 
-### 2. バックグラウンドチェック完了までローディング維持
-- **Problem:** タイムアウト時にまず`isSubscribed=false`で状態設定 → Onboarding7が一瞬表示
-- **Fix:** finally blockで状態を設定せず、バックグラウンドチェックの`.then()`で状態を設定
-- **Result:** ✅ ローディング画面が表示され続け、直接MainTabsに遷移
+### 2. i18n book_search キー重複修正
+- **Problem:** `ja.json`と`en.json`に`book_search`が2回定義、後の定義が前を上書き
+- **Fix:** 2つのセクションを1つにマージ（全16キー）
+- **Files:** `ja.json`, `en.json`, `ko.json`（不足キー追加）
+- **Result:** ✅ RoleSelectScreenで`[missing translation]`解消
+
+### 3. create-commitment Edge Function 401エラー
+- **Problem:** Supabase GatewayがES256 JWTを拒否
+- **Fix:** `supabase functions deploy create-commitment --no-verify-jwt`
+- **Result:** ✅ 本の登録が正常に動作
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. 最初のアプローチ（バックグラウンドチェック後に状態更新のみ）
-- **Attempted:** バックグラウンドチェックの結果で`setAuthState(prev => ...)`
-- **Result:** ❌ finally blockで先に`isSubscribed=false`が設定され、一瞬Onboarding7が表示
-- **Solution:** finally blockで状態設定をスキップし、バックグラウンドチェックで完全な状態を設定
+### 1. 最初のAuth画面修正アプローチ
+- **Attempted:** バックグラウンドチェックで`setAuthState(prev => ...)`のみ
+- **Result:** ❌ finally blockで先に状態設定され、一瞬Onboarding7表示
+- **Solution:** finally blockで状態設定をスキップ
+
+### 2. Edge Function通常デプロイ
+- **Attempted:** `supabase functions deploy create-commitment`（フラグなし）
+- **Result:** ❌ Gateway JWT検証で401エラー
+- **Solution:** `--no-verify-jwt`フラグ必須
 
 ---
 
 ## Immediate Next Steps
 
-### NEXT: Commit Changes
+### Commit Changes
 ```bash
-# 変更をコミット
-git add -A
-git commit -m "fix: prevent UI flicker on Auth screen login
+git add -A && git commit -m "fix: i18n book_search duplicate keys and Edge Function deploy
 
-- Add loginSource flag to identify Auth screen logins
-- Keep loading state until background subscription check completes
-- Prevent Onboarding7 flash for existing users re-logging in"
+- Merge duplicate book_search sections in ja.json and en.json
+- Add missing book_search keys to ko.json
+- Redeploy create-commitment with --no-verify-jwt flag
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
-
-### If Testing Again
-```bash
-# 1. アプリ起動
-./run-ios-manual.sh
-
-# 2. テストフロー
-# - サブスク済みユーザーでログイン
-# - Settings画面からログアウト
-# - Onboarding0で「すでにアカウントをお持ちの方」をタップ
-# - Auth画面でGoogleログイン
-# - ローディング画面（SYSTEM INITIALIZING...）が表示され続ける
-# - 直接MainTabsに遷移（Onboarding7は表示されない）
-
-# 3. ログ確認
-# ✅ Auth: Detected login from Auth screen (existing user re-login)
-# ✅ Auth: Waiting for background subscription check (Auth screen login)...
-# ✅ Auth: Background check complete, result: true
-# [AnalyticsService] $screen {"$screen_name": "MainTabs/HomeTab"}
-```
-
----
-
-## Verification Checklist
-
-- [x] Problem identified: OAuth後のDBクエリ遅延
-- [x] loginSource flag added to AuthScreen
-- [x] AppNavigator: Auth画面ログイン時はfinally blockで状態設定スキップ
-- [x] AppNavigator: バックグラウンドチェックで完全な状態を設定
-- [x] iOS Test: Onboarding7のチラつきなし
-- [x] iOS Test: 直接MainTabsに遷移
 
 ---
 
@@ -90,30 +73,21 @@ git commit -m "fix: prevent UI flicker on Auth screen login
 
 | Category | Files |
 |----------|-------|
-| **Auth Screen** | `src/screens/AuthScreen.tsx` |
-| **Navigation** | `src/navigation/AppNavigator.tsx` |
-
-### AuthScreen Changes
-1. AsyncStorage importを追加
-2. `handleGoogleSignIn`で`loginSource: 'auth_screen'`フラグを設定
-
-### AppNavigator Changes
-1. `onAuthStateChange`でloginSourceフラグを検知
-2. Auth画面ログインでタイムアウト時、finally blockで状態設定をスキップ
-3. バックグラウンドチェックの`.then()`で完全な状態を設定
-4. `.catch()`でエラー時のフォールバック状態を設定
+| **Auth** | `src/screens/AuthScreen.tsx`, `src/navigation/AppNavigator.tsx` |
+| **i18n** | `src/i18n/locales/ja.json`, `en.json`, `ko.json` |
+| **Edge Function** | `create-commitment` (redeployed with `--no-verify-jwt`) |
 
 ---
 
-## Technical Details
+## Technical Notes
 
-### Auth Screen Login Flow (After Fix)
+### Auth Screen Login Flow (Final)
 ```
 AuthScreen: handleGoogleSignIn()
     ↓
 AsyncStorage.setItem('loginSource', 'auth_screen')
     ↓
-OAuth -> SIGNED_IN event
+OAuth → SIGNED_IN event
     ↓
 AppNavigator: loginSource === 'auth_screen' 検知
     ↓
@@ -121,35 +95,26 @@ checkSubscriptionStatus() タイムアウト
     ↓
 finally block: 状態設定スキップ（ローディング維持）
     ↓
-Background check完了: subscription_status=active
+Background check完了
     ↓
-setAuthState({ isSubscribed: true })
+setAuthState({ isSubscribed: result })
     ↓
-MainTabs/HomeTab
+MainTabs
 ```
 
-### New Code Pattern (Background Check with Loading State)
-```typescript
-// finally block
-if (isFromAuthScreen && !isSubscribed && subscriptionPromise) {
-  console.log('✅ Auth: Waiting for background check...');
-  // 状態を設定しない（ローディング維持）
-} else {
-  setAuthState({ status: 'authenticated', session, isSubscribed });
+### i18n book_search Keys (Complete Set)
+```json
+"book_search": {
+  "title", "subtitle", "search_title", "search_subtitle",
+  "recommended", "role_prompt", "recommendations_for", "change",
+  "select", "buy_on_amazon", "cant_find_book", "add_manually",
+  "advanced_search", "simple_search", "title_placeholder", "author_placeholder"
 }
-
-// バックグラウンドチェック
-subscriptionPromise.then((result) => {
-  setAuthState({ status: 'authenticated', session, isSubscribed: result });
-}).catch((err) => {
-  setAuthState({ status: 'authenticated', session, isSubscribed: false });
-});
 ```
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Changes: Uncommitted
-  - `src/screens/AuthScreen.tsx`
-  - `src/navigation/AppNavigator.tsx`
+- Last Commit: `9f6294de` (fix: prevent UI flicker on Auth screen login)
+- Uncommitted: i18n locale file changes

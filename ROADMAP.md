@@ -644,6 +644,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Risk:** Missing translations in production.
     - **Fix:** Sync all keys and remove `defaultValue` usage.
     - **Implementation:** Added 3 missing keys to ko.json (`common.unknown_author`, `common.coming_soon`, `profile.monthly_reading_trend`). Removed duplicate `scanner` keys from all locale files (kept the more complete definition).
+    - **Phase 2 Fix (2026-01-15):** Merged duplicate `book_search` sections in `ja.json` and `en.json`. Added 4 missing keys to `ko.json` (`advanced_search`, `simple_search`, `title_placeholder`, `author_placeholder`).
 
 - [ ] **W.5 Supabase Metadata Sync**
     - **Problem:** `database.types.ts` has `never` for Views/Functions.

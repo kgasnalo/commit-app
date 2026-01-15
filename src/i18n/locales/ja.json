@@ -209,7 +209,13 @@
     "recommendations_for": "へのおすすめ",
     "change": "変更する",
     "select": "選択",
-    "buy_on_amazon": "Amazonで購入"
+    "buy_on_amazon": "Amazonで購入",
+    "cant_find_book": "見つからない？手動で追加",
+    "add_manually": "本を手動で追加",
+    "advanced_search": "詳細検索",
+    "simple_search": "簡易検索",
+    "title_placeholder": "書籍タイトル",
+    "author_placeholder": "著者名"
   },
   "commitment": {
     "create_title": "コミットメント作成",
@@ -396,14 +402,6 @@
     "unknown_author": "著者不明",
     "untitled": "無題",
     "coming_soon": "準備中"
-  },
-  "book_search": {
-    "cant_find_book": "見つからない？手動で追加",
-    "add_manually": "本を手動で追加",
-    "advanced_search": "詳細検索",
-    "simple_search": "簡易検索",
-    "title_placeholder": "書籍タイトル",
-    "author_placeholder": "著者名"
   },
   "manual_entry": {
     "title": "本を手動で追加",

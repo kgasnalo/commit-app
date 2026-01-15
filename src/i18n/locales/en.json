@@ -209,7 +209,13 @@
     "recommendations_for": "Recommendations for",
     "change": "Change",
     "select": "Select",
-    "buy_on_amazon": "Buy on Amazon"
+    "buy_on_amazon": "Buy on Amazon",
+    "cant_find_book": "Can't find your book? Add it manually",
+    "add_manually": "Add Book Manually",
+    "advanced_search": "Advanced Search",
+    "simple_search": "Simple Search",
+    "title_placeholder": "Book title",
+    "author_placeholder": "Author name"
   },
   "commitment": {
     "create_title": "Create Commitment",
@@ -396,14 +402,6 @@
     "unknown_author": "Unknown Author",
     "untitled": "Untitled",
     "coming_soon": "Coming Soon"
-  },
-  "book_search": {
-    "cant_find_book": "Can't find your book? Add it manually",
-    "add_manually": "Add Book Manually",
-    "advanced_search": "Advanced Search",
-    "simple_search": "Simple Search",
-    "title_placeholder": "Book title",
-    "author_placeholder": "Author name"
   },
   "manual_entry": {
     "title": "Add Book Manually",
