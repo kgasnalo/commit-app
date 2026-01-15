@@ -492,7 +492,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       // Build request body
       const requestBody: Record<string, unknown> = {
-        book_title: selectedBook.volumeInfo.title,
+        book_title: selectedBook.volumeInfo.title ?? i18n.t('common.untitled'),
         book_author: selectedBook.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author'),
         book_cover_url: coverUrl,
         deadline: deadline.toISOString(),
@@ -575,7 +575,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     >
       <BookThumbnail uri={item.volumeInfo.imageLinks?.thumbnail || item.volumeInfo.imageLinks?.smallThumbnail} />
       <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle} numberOfLines={2}>{item.volumeInfo.title}</Text>
+        <Text style={styles.bookTitle} numberOfLines={2}>{item.volumeInfo.title ?? i18n.t('common.untitled')}</Text>
         <Text style={styles.bookAuthor}>{item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author')}</Text>
       </View>
       <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -641,8 +641,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                 large
               />
               <View style={styles.selectedBookInfo}>
-                <Text style={styles.selectedBookTitle}>{selectedBook.volumeInfo.title.toUpperCase()}</Text>
-                <Text style={styles.selectedBookAuthor}>{selectedBook.volumeInfo.authors?.join(', ').toUpperCase()}</Text>
+                <Text style={styles.selectedBookTitle}>{(selectedBook.volumeInfo.title ?? i18n.t('common.untitled')).toUpperCase()}</Text>
+                <Text style={styles.selectedBookAuthor}>{selectedBook.volumeInfo.authors?.join(', ')?.toUpperCase() || i18n.t('common.unknown_author').toUpperCase()}</Text>
                 {isContinueFlow && totalPagesRead > 0 && (
                   <Text style={styles.progressInfo}>
                     PREVIOUSLY SECURED: {totalPagesRead} PGS

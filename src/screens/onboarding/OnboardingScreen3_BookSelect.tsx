@@ -137,7 +137,7 @@ export default function OnboardingScreen3({ navigation, route }: any) {
               )}
               <View style={styles.bookInfo}>
                 <Text style={styles.bookTitle} numberOfLines={2}>
-                  {item.volumeInfo.title.toUpperCase()}
+                  {(item.volumeInfo.title ?? 'NO TITLE').toUpperCase()}
                 </Text>
                 <TacticalText size={10} color={colors.text.muted} numberOfLines={1}>
                   {item.volumeInfo.authors?.join(', ').toUpperCase() || 'UNKNOWN AUTHOR'}
