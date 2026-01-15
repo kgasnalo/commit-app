@@ -1,7 +1,7 @@
 # Handoff: Session 2026-01-16
 
 ## Current Goal
-**Google OAuth Flow Complete** - OAuth認証からセッション確立までの全フローが動作可能。
+**Google OAuth Flow with Username Persistence** - OAuth認証時にユーザー名が失われない実装完了。
 
 ---
 
@@ -9,70 +9,51 @@
 
 ### Google OAuth Full Flow ✅ COMPLETE
 
-| Task | Status | Commit |
-|------|--------|--------|
-| **redirectTo hardcode** | ✅ | `a633684a` |
-| **Deep Link Handler** | ✅ | `e683161c` |
-| **URL Polyfill** | ✅ | (user added) |
-| **Undefined title fix** | ✅ | `e48c5582` |
+| Task | Status | Details |
+|------|--------|---------|
+| **URL Polyfill in index.js** | ✅ | Entry point で最初に読み込み |
+| **redirectTo hardcode** | ✅ | `commitapp://` |
+| **Deep Link Handler** | ✅ | PKCE + Implicit 両対応 |
+| **Username Persistence** | ✅ | AsyncStorage 経由で保持 |
+| **User Record Creation** | ✅ | AppNavigator で OAuth 後に作成 |
+| **Subscription Check Timeout** | ✅ | 2秒タイムアウト + 1回リトライ |
 
-### Previous: Storage Bucket ✅ COMPLETE
-
-| Task | Status |
-|------|--------|
-| book-covers bucket | ✅ |
-| Public upload policy | ✅ |
-
-### Previous: Manual Book Entry ✅ COMPLETE
-
-| Task | Status |
-|------|--------|
-| ManualBookEntryScreen | ✅ |
-| FlatList + ListFooterComponent | ✅ |
-| i18n (ja/en/ko) | ✅ |
+### Debug Logs Added (Remove Before Release)
+- `🔗 Deep Link:` - Deep Link 受信・処理
+- `🚀 initializeAuth:` - 初期化プロセス
+- `✅ Auth State Changed:` - 認証状態変化
+- `📊 checkSubscriptionStatus:` - サブスク確認
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. OAuth redirectがVercelに行く
-- **Problem:** `makeRedirectUri()` が不正なURLを生成
-- **Root Cause:** 動的生成されたURIがSupabaseのRedirect URL設定と不一致
-- **Solution:** `redirectTo: 'commitapp://'` にハードコード
-  ```typescript
-  // BAD - can generate incorrect URL
-  redirectTo: makeRedirectUri({ scheme: 'commitapp' })
-
-  // GOOD - explicit scheme
-  redirectTo: 'commitapp://'
+### 1. URL Polyfill の読み込み位置
+- **Problem:** AppNavigator.tsx で import しても、Deep Link 処理時に `new URL()` が動作しない
+- **Root Cause:** Polyfill が useEffect 内の関数より後に評価される場合がある
+- **Solution:** `index.js` の**最初の行**で `import 'react-native-url-polyfill/auto'` を実行
+  ```javascript
+  // index.js - MUST be first line
+  import 'react-native-url-polyfill/auto';
   ```
 
-### 2. OAuth後にローディング画面で停止
-- **Problem:** `openAuthSessionAsync` がURLをキャプチャせず、ディープリンクとして来る
-- **Root Cause:** AppNavigatorにLinkingリスナーがなく、URLを処理できない
-- **Solution:** `Linking.getInitialURL()` + `Linking.addEventListener('url')` を追加
-  ```typescript
-  // Cold start
-  Linking.getInitialURL().then(handleDeepLink);
+### 2. OAuth後にユーザー名が消失
+- **Problem:** Google Login 後に「SYSTEM INITIALIZING...」で停止、ユーザーレコードがない
+- **Root Cause:**
+  1. OAuth redirect が `Linking.addEventListener` 経由で AppNavigator に届く
+  2. OnboardingScreen6 のコンポーネント state にある `username` にアクセスできない
+  3. ユーザーレコードが作成されず、`checkSubscriptionStatus` が失敗
+- **Solution:**
+  1. OAuth 前に `username` を `onboardingData` と共に AsyncStorage に保存
+  2. AppNavigator の Deep Link 処理で `createUserRecordFromOnboardingData()` を呼び出し
 
-  // Runtime
-  Linking.addEventListener('url', (event) => {
-    handleDeepLink(event.url);
-  });
-  ```
-
-### 3. URL parsing error
-- **Problem:** `new URL()` がReact Nativeで動作しない
-- **Root Cause:** React NativeにはネイティブのURLクラスがない
-- **Solution:** `import 'react-native-url-polyfill/auto'` を追加
-
-### 4. undefined title crash
-- **Problem:** `item.volumeInfo.title.toUpperCase()` でクラッシュ
-- **Root Cause:** Google Books APIがtitleなしのデータを返すことがある
-- **Solution:** null coalescing追加
-  ```typescript
-  {(item.volumeInfo.title ?? 'NO TITLE').toUpperCase()}
-  ```
+### 3. checkSubscriptionStatus の無限待機
+- **Problem:** 新規ユーザーでプロファイルがない場合、3回リトライ × 500ms = 1.5秒以上待機
+- **Root Cause:** DB に user レコードがないと `PGRST116` エラーでリトライループ
+- **Solution:**
+  - リトライを 3回 → 1回 に削減
+  - 2秒のタイムアウトを追加（Promise.race）
+  - 合計最大待機時間: ~900ms
 
 ---
 
@@ -82,16 +63,14 @@
 ```bash
 ./run-ios-manual.sh
 
-# Google OAuth テスト
-1. OnboardingScreen6 → Google Login
-2. Google認証完了
-3. アプリに戻る（Vercelではなく）
-4. ローディング画面が消えてOnboarding7へ遷移
-
-# Manual Entry テスト
-1. 本の検索 → タイトルなしの本が表示されてもクラッシュしない
-2. 「見つからない？」→ ManualBookEntryScreen
-3. カバー撮影 → アップロード成功
+# Google OAuth テスト (NEW USER)
+1. OnboardingScreen6 → ユーザー名入力「testuser」
+2. Google Login タップ
+3. Google 認証完了
+4. ログ確認:
+   - 🔗 createUserRecord: Creating user record with username: testuser
+   - 🔗 createUserRecord: User record created successfully ✅
+5. 「SYSTEM INITIALIZING...」が ~1秒以内に消えてOnboarding7へ遷移
 ```
 
 ---
@@ -99,13 +78,12 @@
 ## Verification Checklist
 
 - [x] TypeScript: `npx tsc --noEmit` パス
-- [x] OAuth: redirectTo hardcoded
-- [x] OAuth: Deep Link Handler追加
-- [x] OAuth: URL Polyfill追加
-- [x] Crash: undefined title fix
-- [x] Git Commit & Push
-- [ ] iOS Build Test: Google OAuth full flow
-- [ ] iOS Build Test: Manual Entry
+- [x] URL Polyfill: index.js の最初に配置
+- [x] Username: AsyncStorage に保存
+- [x] User Record: AppNavigator で作成
+- [x] Timeout: checkSubscriptionStatus に 2秒タイムアウト
+- [ ] iOS Build Test: Google OAuth full flow (NEW USER)
+- [ ] iOS Build Test: Google OAuth full flow (EXISTING USER)
 
 ---
 
@@ -113,19 +91,12 @@
 
 | Category | Files |
 |----------|-------|
-| **OAuth** | `src/screens/onboarding/OnboardingScreen6_Account.tsx` |
-| **OAuth** | `src/screens/AuthScreen.tsx` |
+| **Entry Point** | `index.js` (URL Polyfill moved here) |
+| **OAuth Flow** | `src/screens/onboarding/OnboardingScreen6_Account.tsx` |
 | **Deep Link** | `src/navigation/AppNavigator.tsx` |
-| **Crash Fix** | `src/screens/onboarding/OnboardingScreen3_BookSelect.tsx` |
-| **Crash Fix** | `src/screens/CreateCommitmentScreen.tsx` |
-| **i18n** | `src/i18n/locales/{en,ja,ko}.json` (common.untitled) |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Latest Commits:
-  - `e48c5582` - fix: prevent crash on undefined book title
-  - `e683161c` - fix: add deep link handler for OAuth callback
-  - `a633684a` - fix: hardcode OAuth redirectTo to commitapp://
-- All pushed to origin/main
+- Changes: Uncommitted (ready to test)

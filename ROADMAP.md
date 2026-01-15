@@ -90,7 +90,13 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ### Phase 2.2: Act 2 - The Crisis (Screens 5-10)
 - [x] **2.2.1 Screen 5 (Penalty):** Haptic Resistance Slider.
-- [x] **2.2.2 Screen 7 (Opportunity Cost):** Burning Text Effect (Shader).
+- [x] **2.2.2 Screen 6 (Account):** Google OAuth with Username Persistence.
+    - **Implementation:**
+      - Username persisted to AsyncStorage before OAuth redirect
+      - AppNavigator creates user record after OAuth callback via Deep Link
+      - URL Polyfill in `index.js` (first import) for `new URL()` support
+      - `checkSubscriptionStatus` timeout (2s) and reduced retries (1x)
+- [x] **2.2.3 Screen 7 (Opportunity Cost):** Burning Text Effect (Shader).
 
 ### Phase 2.3: Act 3 - The Covenant (Screens 11-15) ✅
 - [x] **2.3.1 Screen 12 (The Plan):** Blueprint drawing animation.

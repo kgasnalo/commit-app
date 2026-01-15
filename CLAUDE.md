@@ -407,9 +407,26 @@
     // Runtime
     Linking.addEventListener('url', (event) => handleDeepLink(event.url));
     ```
-  - **URL Polyfill:** React Native lacks native `URL` class. Add polyfill import at top of AppNavigator:
-    ```typescript
+  - **URL Polyfill (CRITICAL):** React Native lacks native `URL` class. The polyfill MUST be the **very first import** in `index.js` (app entry point), NOT in AppNavigator. Importing it elsewhere may cause `new URL()` to fail in Deep Link handlers:
+    ```javascript
+    // index.js - MUST be the first line
     import 'react-native-url-polyfill/auto';
+
+    import { registerRootComponent } from 'expo';
+    import App from './App';
+    ```
+  - **OAuth State Persistence (CRITICAL):** OAuth redirects cause complete navigation stack replacement. Any data needed after OAuth (username, form state) MUST be saved to AsyncStorage BEFORE starting OAuth:
+    ```typescript
+    // In OAuth screen (e.g., OnboardingScreen6)
+    await AsyncStorage.setItem('onboardingData', JSON.stringify({
+      selectedBook, deadline, pledgeAmount, currency,
+      username, // Include any user input that must survive OAuth
+    }));
+
+    // In AppNavigator after session established
+    const onboardingData = await AsyncStorage.getItem('onboardingData');
+    const { username } = JSON.parse(onboardingData);
+    await supabase.from('users').upsert({ id, email, username });
     ```
 - **DB Trigger Race Condition:** NEVER use `setTimeout()` to wait for Supabase Auth Triggers to complete. Use `upsert` with `onConflict` and retry logic instead:
   ```typescript

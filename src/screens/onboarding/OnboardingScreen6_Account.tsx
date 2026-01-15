@@ -240,12 +240,15 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     setOauthLoading(provider);
     try {
       // オンボーディングデータをAsyncStorageに保存
+      // username を含めることで、Deep Link 経由で AppNavigator に戻った場合でも
+      // ユーザー名を取得して users テーブルにレコードを作成できる
       await AsyncStorage.setItem('onboardingData', JSON.stringify({
         selectedBook,
         deadline,
         pledgeAmount,
         currency,
         tsundokuCount,
+        username, // OAuth後にAppNavigatorで使用
       }));
 
       const { data, error } = await supabase.auth.signInWithOAuth({

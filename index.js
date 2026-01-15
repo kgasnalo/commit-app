@@ -1,3 +1,6 @@
+// URL Polyfill MUST be first - React Native lacks native URL class
+import 'react-native-url-polyfill/auto';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';

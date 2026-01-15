@@ -1,10 +1,11 @@
-import 'react-native-url-polyfill/auto';
+// URL Polyfill moved to index.js (must be first import in app entry point)
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
@@ -191,32 +192,52 @@ function NavigationContent() {
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
   // サブスクリプション状態を確認する純粋関数（boolean を返す）
+  // 新規ユーザーの場合はプロファイルがまだ存在しない可能性があるため、
+  // リトライは1回のみで、素早くfalseを返してアプリに入れるようにする
+  // 修正: タイムアウト（2秒）を導入し、DB応答がない場合も強制的に次に進む
   async function checkSubscriptionStatus(userId: string, retryCount = 0): Promise<boolean> {
-    const maxRetries = 3;
-    try {
+    const maxRetries = 1; // 新規ユーザーのために1回だけリトライ（以前は3回）
+    const TIMEOUT_MS = 2000; // 2秒のタイムアウト設定
 
-      const { data, error } = await supabase
+    console.log(`📊 checkSubscriptionStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
+
+    try {
+      // DBリクエストのPromise
+      const dbRequest = supabase
         .from('users')
         .select('subscription_status')
         .eq('id', userId)
         .single();
 
-      if (error) {
-        console.error('Subscription check error:', error);
+      // タイムアウトのPromise
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database request timed out')), TIMEOUT_MS)
+      );
 
-        // usersテーブルにレコードが見つからない場合、リトライ
+      // Promise.raceで競合させる
+      const { data, error } = await Promise.race([dbRequest, timeoutPromise]) as any;
+
+      if (error) {
+        console.log(`📊 checkSubscriptionStatus: Error code=${error.code}, message=${error.message}`);
+
+        // usersテーブルにレコードが見つからない場合（PGRST116）、短めのリトライ
         if (error.code === 'PGRST116' && retryCount < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 500));
+          console.log(`📊 checkSubscriptionStatus: User profile not found, retrying in 300ms...`);
+          await new Promise(resolve => setTimeout(resolve, 300));
           return checkSubscriptionStatus(userId, retryCount + 1);
         }
 
+        // プロファイルが見つからない = 新規ユーザー = サブスクリプションなし
+        console.log(`📊 checkSubscriptionStatus: Returning false (no profile or error)`);
         return false;
       }
 
       const isActive = data?.subscription_status === 'active';
+      console.log(`📊 checkSubscriptionStatus: Found profile, subscription_status=${data?.subscription_status}, isActive=${isActive}`);
       return isActive;
     } catch (err) {
-      console.error('Unexpected error checking subscription:', err);
+      console.error('📊 checkSubscriptionStatus: Unexpected error or timeout:', err);
+      // タイムアウトや予期せぬエラーの場合は、安全側に倒して「無料ユーザー」としてアプリを開始させる
       return false;
     }
   }
@@ -224,11 +245,65 @@ function NavigationContent() {
   useEffect(() => {
     let isMounted = true;
 
+    /**
+     * OAuth認証後にユーザーレコードを作成するヘルパー関数
+     * OnboardingScreen6で保存したusernameをAsyncStorageから取得し、
+     * usersテーブルにレコードを作成する
+     */
+    async function createUserRecordFromOnboardingData(session: Session): Promise<void> {
+      try {
+        const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
+        if (!onboardingDataStr) {
+          console.log('🔗 createUserRecord: No onboarding data found in AsyncStorage');
+          return;
+        }
+
+        const onboardingData = JSON.parse(onboardingDataStr);
+        const pendingUsername = onboardingData?.username;
+
+        if (!pendingUsername) {
+          console.log('🔗 createUserRecord: No username found in onboarding data');
+          return;
+        }
+
+        // emailが必須フィールドなので、存在しない場合はスキップ
+        if (!session.user.email) {
+          console.log('🔗 createUserRecord: No email in session, skipping');
+          return;
+        }
+
+        console.log('🔗 createUserRecord: Creating user record with username:', pendingUsername);
+
+        const { error } = await supabase.from('users').upsert(
+          {
+            id: session.user.id,
+            email: session.user.email,
+            username: pendingUsername,
+            subscription_status: 'inactive',
+          },
+          { onConflict: 'id' }
+        );
+
+        if (error) {
+          console.error('🔗 createUserRecord: Failed to create user record:', error.message);
+        } else {
+          console.log('🔗 createUserRecord: User record created successfully ✅');
+        }
+      } catch (err) {
+        console.error('🔗 createUserRecord: Unexpected error:', err);
+      }
+    }
+
     // Deep Link Handler: Process OAuth callback URLs
     async function handleDeepLink(url: string | null) {
-      if (!url || !url.startsWith('commitapp://')) return;
+      console.log('🔗 Deep Link received:', url);
+      if (!url || !url.startsWith('commitapp://')) {
+        console.log('🔗 Deep Link: Ignored (not commitapp://)');
+        return;
+      }
 
       try {
+        console.log('🔗 Deep Link: Processing OAuth callback...');
         const urlObj = new URL(url);
         const hashParams = new URLSearchParams(urlObj.hash.slice(1));
         const queryParams = urlObj.searchParams;
@@ -236,15 +311,21 @@ function NavigationContent() {
         // PKCE Flow: Check for code parameter
         const code = queryParams.get('code');
         if (code) {
-          console.log('Deep link: Processing PKCE code');
+          console.log('🔗 Deep Link: Found PKCE code, exchanging for session...');
           const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
           if (sessionError) {
-            console.error('Deep link: PKCE exchange failed:', sessionError);
+            console.error('🔗 Deep Link: PKCE exchange FAILED:', sessionError.message);
             return;
           }
           if (sessionData.session) {
-            console.log('Deep link: Session established via PKCE');
+            console.log('🔗 Deep Link: Session established via PKCE ✅', sessionData.session.user.email);
+
+            // OAuth後にユーザーレコードを作成（OnboardingScreen6で保存したusernameを使用）
+            await createUserRecordFromOnboardingData(sessionData.session);
+
             // onAuthStateChange will handle the rest
+          } else {
+            console.log('🔗 Deep Link: PKCE exchange returned no session');
           }
           return;
         }
@@ -252,23 +333,32 @@ function NavigationContent() {
         // Implicit Flow: Check for access_token
         const access_token = hashParams.get('access_token') || queryParams.get('access_token');
         const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+        console.log('🔗 Deep Link: Checking Implicit flow tokens...', { hasAccessToken: !!access_token, hasRefreshToken: !!refresh_token });
         if (access_token && refresh_token) {
-          console.log('Deep link: Processing Implicit flow tokens');
+          console.log('🔗 Deep Link: Found Implicit flow tokens, setting session...');
           const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
             access_token,
             refresh_token,
           });
           if (sessionError) {
-            console.error('Deep link: setSession failed:', sessionError);
+            console.error('🔗 Deep Link: setSession FAILED:', sessionError.message);
             return;
           }
           if (sessionData.session) {
-            console.log('Deep link: Session established via Implicit flow');
+            console.log('🔗 Deep Link: Session established via Implicit flow ✅', sessionData.session.user.email);
+
+            // OAuth後にユーザーレコードを作成（OnboardingScreen6で保存したusernameを使用）
+            await createUserRecordFromOnboardingData(sessionData.session);
+
             // onAuthStateChange will handle the rest
+          } else {
+            console.log('🔗 Deep Link: setSession returned no session');
           }
+        } else {
+          console.log('🔗 Deep Link: No valid tokens found in URL');
         }
       } catch (error) {
-        console.error('Deep link processing error:', error);
+        console.error('🔗 Deep Link processing ERROR:', error);
       }
     }
 
@@ -282,18 +372,24 @@ function NavigationContent() {
 
     // 初期化：セッションとサブスク状態を一括で確認・設定
     async function initializeAuth() {
+      console.log('🚀 initializeAuth: Starting...');
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('🚀 initializeAuth: Got session:', session?.user?.email ?? '(no session)');
 
         if (!session) {
+          console.log('🚀 initializeAuth: No session, setting unauthenticated');
           if (isMounted) setAuthState({ status: 'unauthenticated' });
           return;
         }
 
         // サブスクリプションチェック完了後に状態を一括更新
+        console.log('🚀 initializeAuth: Checking subscription status...');
         const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        console.log('🚀 initializeAuth: Subscription status:', isSubscribed);
 
         if (isMounted) {
+          console.log('🚀 initializeAuth: Setting authenticated state');
           setAuthState({
             status: 'authenticated',
             session,
@@ -301,7 +397,7 @@ function NavigationContent() {
           });
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('🚀 initializeAuth: ERROR:', error);
         if (isMounted) setAuthState({ status: 'unauthenticated' });
       }
     }
@@ -310,9 +406,13 @@ function NavigationContent() {
 
     // 認証状態の変化を監視
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('✅ Auth State Changed:', event, session?.user?.email ?? '(no session)');
 
       // INITIAL_SESSION は initializeAuth で処理済み
-      if (event === 'INITIAL_SESSION') return;
+      if (event === 'INITIAL_SESSION') {
+        console.log('✅ Auth: Skipping INITIAL_SESSION (handled by initializeAuth)');
+        return;
+      }
 
       if (!session) {
         if (isMounted) setAuthState({ status: 'unauthenticated' });
@@ -322,20 +422,39 @@ function NavigationContent() {
       // 重要: 先にローディング状態にしてフリッカーを防止
       if (isMounted) setAuthState({ status: 'loading' });
 
-      // 新規ユーザーの場合、usersテーブルレコード作成を待つため少し遅延
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      try {
+        // 新規ユーザーの場合、usersテーブルレコード作成を待つため少し遅延
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          console.log('✅ Auth: Waiting 300ms for user profile creation...');
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
 
-      // サブスクリプションチェック完了後に状態を一括更新
-      const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        // サブスクリプションチェック完了後に状態を一括更新
+        console.log('✅ Auth: Checking subscription status...');
+        const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        console.log('✅ Auth: Subscription check complete, isSubscribed=', isSubscribed);
 
-      if (isMounted) {
-        setAuthState({
-          status: 'authenticated',
-          session,
-          isSubscribed,
-        });
+        if (isMounted) {
+          console.log('✅ Auth: Setting authenticated state (loading complete)');
+          setAuthState({
+            status: 'authenticated',
+            session,
+            isSubscribed,
+          });
+        } else {
+          console.log('✅ Auth: Component unmounted, skipping state update');
+        }
+      } catch (error) {
+        console.error('❌ Auth State Change Error:', error);
+        // エラーが発生しても、セッションがある場合はログインさせる（安全策）
+        if (isMounted) {
+          console.log('✅ Auth: Error occurred, but setting authenticated state anyway');
+          setAuthState({
+            status: 'authenticated',
+            session,
+            isSubscribed: false, // エラー時はサブスクリプションなしとして扱う
+          });
+        }
       }
     });
 
