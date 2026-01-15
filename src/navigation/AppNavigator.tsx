@@ -196,12 +196,16 @@ function NavigationContent() {
   // リトライは1回のみで、素早くfalseを返してアプリに入れるようにする
   // 修正: タイムアウト（2秒）を導入し、DB応答がない場合も強制的に次に進む
   async function checkSubscriptionStatus(userId: string, retryCount = 0): Promise<boolean> {
-    const maxRetries = 1; // 新規ユーザーのために1回だけリトライ（以前は3回）
-    const TIMEOUT_MS = 2000; // 2秒のタイムアウト設定
+    const maxRetries = 2; // 2回リトライ（合計3回試行）
+    const TIMEOUT_MS = 4000; // 4秒のタイムアウト（OAuth後のセッション確立に時間がかかるため）
 
     console.log(`📊 checkSubscriptionStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
 
     try {
+      // OAuth後にSupabaseクライアントのセッション状態が更新されていない可能性があるため、
+      // DBリクエスト前にセッションを明示的に取得/更新する
+      await supabase.auth.getSession();
+
       // DBリクエストのPromise
       const dbRequest = supabase
         .from('users')
@@ -209,21 +213,38 @@ function NavigationContent() {
         .eq('id', userId)
         .single();
 
-      // タイムアウトのPromise
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database request timed out')), TIMEOUT_MS)
+      // タイムアウト時はrejectではなくnullをresolveする（catchブロックに入らないように）
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => {
+          console.log('📊 checkSubscriptionStatus: Request timed out');
+          resolve(null);
+        }, TIMEOUT_MS)
       );
 
       // Promise.raceで競合させる
-      const { data, error } = await Promise.race([dbRequest, timeoutPromise]) as any;
+      const result = await Promise.race([dbRequest, timeoutPromise]);
+
+      // タイムアウトした場合（resultがnull）
+      if (result === null) {
+        if (retryCount < maxRetries) {
+          console.log(`📊 checkSubscriptionStatus: Timeout, waiting 500ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, 500)); // セッション安定化待機
+          return checkSubscriptionStatus(userId, retryCount + 1);
+        }
+        // 最大リトライ後もタイムアウト → falseを返す（新規ユーザー扱い）
+        console.log('📊 checkSubscriptionStatus: Max retries reached after timeout');
+        return false;
+      }
+
+      const { data, error } = result;
 
       if (error) {
         console.log(`📊 checkSubscriptionStatus: Error code=${error.code}, message=${error.message}`);
 
         // usersテーブルにレコードが見つからない場合（PGRST116）、短めのリトライ
         if (error.code === 'PGRST116' && retryCount < maxRetries) {
-          console.log(`📊 checkSubscriptionStatus: User profile not found, retrying in 300ms...`);
-          await new Promise(resolve => setTimeout(resolve, 300));
+          console.log(`📊 checkSubscriptionStatus: User profile not found, retrying in 500ms...`);
+          await new Promise(resolve => setTimeout(resolve, 500));
           return checkSubscriptionStatus(userId, retryCount + 1);
         }
 
@@ -236,8 +257,7 @@ function NavigationContent() {
       console.log(`📊 checkSubscriptionStatus: Found profile, subscription_status=${data?.subscription_status}, isActive=${isActive}`);
       return isActive;
     } catch (err) {
-      console.error('📊 checkSubscriptionStatus: Unexpected error or timeout:', err);
-      // タイムアウトや予期せぬエラーの場合は、安全側に倒して「無料ユーザー」としてアプリを開始させる
+      console.error('📊 checkSubscriptionStatus: Unexpected error:', err);
       return false;
     }
   }
@@ -455,6 +475,17 @@ function NavigationContent() {
       // フェイルセーフのためのデフォルト値
       let isSubscribed = false;
 
+      // Auth画面からのログインかどうかを判定
+      const loginSource = await AsyncStorage.getItem('loginSource');
+      const isFromAuthScreen = loginSource === 'auth_screen';
+      if (isFromAuthScreen) {
+        console.log('✅ Auth: Detected login from Auth screen (existing user re-login)');
+        await AsyncStorage.removeItem('loginSource');
+      }
+
+      // サブスクリプションチェック用のPromise（バックグラウンド継続用）
+      let subscriptionPromise: Promise<boolean> | null = null;
+
       try {
         // SIGNED_IN: ユーザーレコード作成（5秒タイムアウト）
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
@@ -472,28 +503,65 @@ function NavigationContent() {
           );
         }
 
-        // サブスクリプションチェック（8秒の外部タイムアウト）
+        // サブスクリプションチェック（15秒の外部タイムアウト）
+        // 内側のcheckSubscriptionStatusが最大13秒かかる可能性があるため余裕を持たせる
         console.log('✅ Auth: Checking subscription status...');
+        subscriptionPromise = checkSubscriptionStatus(session.user.id);
         isSubscribed = await withTimeout(
-          checkSubscriptionStatus(session.user.id),
-          8000,
+          subscriptionPromise,
+          15000,
           false,
           'checkSubscriptionStatus'
         );
         console.log('✅ Auth: Subscription check complete, isSubscribed=', isSubscribed);
+
+        // Auth画面からのログインでタイムアウトした場合、バックグラウンドで結果を待つ
+        // ローディング状態を維持し、結果が来てから状態を設定（Onboarding7のチラつき防止）
+        if (!isSubscribed && isFromAuthScreen && subscriptionPromise) {
+          console.log('✅ Auth: Waiting for background subscription check (Auth screen login)...');
+          subscriptionPromise.then((result) => {
+            console.log('✅ Auth: Background check complete, result:', result);
+            if (isMounted) {
+              // バックグラウンドチェック完了後に状態を設定
+              setAuthState({
+                status: 'authenticated',
+                session,
+                isSubscribed: result,
+              });
+            }
+          }).catch((err) => {
+            console.log('✅ Auth: Background check error:', err);
+            // エラー時はfalseで状態を設定
+            if (isMounted) {
+              setAuthState({
+                status: 'authenticated',
+                session,
+                isSubscribed: false,
+              });
+            }
+          });
+        }
 
       } catch (error) {
         console.error('❌ Auth State Change Error:', error);
         // デフォルト値（isSubscribed = false）で続行
       } finally {
         // 保証: 必ずローディング状態を終了
+        // ただし、Auth画面からのログインでタイムアウトした場合は、
+        // バックグラウンドチェックの結果を待つ（ローディング状態維持）
         if (isMounted) {
-          console.log('✅ Auth: Setting authenticated state (finally block)');
-          setAuthState({
-            status: 'authenticated',
-            session,
-            isSubscribed,
-          });
+          if (isFromAuthScreen && !isSubscribed && subscriptionPromise) {
+            console.log('✅ Auth: Waiting for background check (Auth screen login), keeping loading state...');
+            // finally blockでは状態を設定しない
+            // バックグラウンドチェックの.then()で状態を設定する
+          } else {
+            console.log('✅ Auth: Setting authenticated state (finally block)');
+            setAuthState({
+              status: 'authenticated',
+              session,
+              isSubscribed,
+            });
+          }
         }
       }
     });

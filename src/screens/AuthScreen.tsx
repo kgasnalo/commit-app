@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -109,6 +110,12 @@ export default function AuthScreen({ navigation }: any) {
   async function handleGoogleSignIn() {
     try {
       setLoading(true);
+
+      // Auth画面からのログインであることを識別するフラグを設定
+      // これにより、AppNavigatorでタイムアウト後もバックグラウンドで
+      // サブスクリプションチェックを継続できる
+      await AsyncStorage.setItem('loginSource', 'auth_screen');
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -145,10 +152,8 @@ export default function AuthScreen({ navigation }: any) {
               Alert.alert(i18n.t('auth.error_auth'), sessionError.message);
               return;
             }
-
-            if (sessionData.user) {
-              await ensureUserRecord(sessionData.user.id, sessionData.user.email);
-            }
+            // ユーザーレコード作成はonAuthStateChangeで処理されるため、ここでは不要
+            // DB競合を避けるため、ensureUserRecord呼び出しを削除
             return;
           }
 
@@ -166,10 +171,8 @@ export default function AuthScreen({ navigation }: any) {
               Alert.alert(i18n.t('auth.error_auth'), sessionError.message);
               return;
             }
-
-            if (sessionData.user) {
-              await ensureUserRecord(sessionData.user.id, sessionData.user.email);
-            }
+            // ユーザーレコード作成はonAuthStateChangeで処理されるため、ここでは不要
+            // DB競合を避けるため、ensureUserRecord呼び出しを削除
           }
         }
       }

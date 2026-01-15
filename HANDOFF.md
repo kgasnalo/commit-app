@@ -1,56 +1,42 @@
-# Handoff: Session 2026-01-15
+# Handoff: Session 2026-01-15 (Evening)
 
 ## Current Goal
-**Cinematic Animation Fix Complete** - サブスク契約後の `CinematicCommitReveal` アニメーションがスキップされる問題を修正。
+**Auth Screen Login Fix Complete** - Auth画面からのGoogleログイン時に一瞬Onboarding7が表示されるUX問題を修正。
 
 ---
 
 ## Current Critical Status
 
-### Animation Issue Fixed ✅
+### Auth Screen Login Fix ✅
 
 | Task | Status | Details |
 |------|--------|---------|
-| **Problem Identified** | ✅ | `subscription_status`更新がRealtimeをトリガーし、アニメーション前にスタック切替 |
-| **Root Cause #1** | ✅ | `handleSubscribe()`内でDB更新 → Realtime発火 → コンポーネントアンマウント |
-| **Root Cause #2** | ✅ | `TOKEN_REFRESHED`イベントでサブスクチェック → タイムアウト → Onboarding7に戻る |
-| **Fix Deployed** | ✅ | DB更新を`handleWarpComplete()`に移動、TOKEN_REFRESHED処理を修正 |
-| **iOS Test** | ✅ | アニメーション表示確認済み |
-
-### Debug Additions (Remove Before Release)
-- `OnboardingScreen7`: DEV用ログアウトボタン（`__DEV__`環境のみ表示）
+| **Problem #1** | ✅ | Auth画面からのログインでサブスクチェックがタイムアウト → `isSubscribed=false` |
+| **Problem #2** | ✅ | タイムアウト後に一瞬Onboarding7が表示 → バックグラウンドチェック完了後MainTabsに遷移 |
+| **Fix Deployed** | ✅ | Auth画面ログインを識別、タイムアウト時はローディング維持 |
+| **iOS Test** | ✅ | Onboarding7のチラつきなし、直接MainTabsに遷移 |
 
 ---
 
 ## What Worked (Solutions Applied)
 
-### 1. subscription_status更新タイミングの変更
-- **Before:** `handleSubscribe()` → コミットメント作成成功 → DB更新 → アニメーション開始（失敗）
-- **After:** `handleSubscribe()` → コミットメント作成成功 → アニメーション開始 → `handleWarpComplete()` → DB更新
-- **Result:** ✅ アニメーションが3.5秒間表示された後にダッシュボードに遷移
+### 1. Auth画面からのログインを識別するフラグ
+- **AuthScreen.tsx:** `AsyncStorage.setItem('loginSource', 'auth_screen')` をGoogleログイン開始時に設定
+- **Result:** ✅ 既存ユーザーの再ログインを新規オンボーディングと区別可能に
 
-### 2. TOKEN_REFRESHEDイベントの処理改善
-- **Problem:** `refreshSession()`呼び出し → `TOKEN_REFRESHED`発火 → サブスクチェック → タイムアウト → `isSubscribed: false` → Onboarding7に戻る
-- **Fix:** `TOKEN_REFRESHED`イベントでは`isSubscribed`状態を維持し、セッションのみ更新
-- **Result:** ✅ Screen13が維持され、アニメーションが正常に表示
-
-### 3. デバッグ用ログアウト機能
-- **Problem:** 認証済み・未サブスク状態でダッシュボードにアクセスできず、ログアウト不可
-- **Fix:** `OnboardingScreen7`に`__DEV__`限定のログアウトボタンを追加
-- **Result:** ✅ 開発時にいつでもクリーンな状態からテスト可能
+### 2. バックグラウンドチェック完了までローディング維持
+- **Problem:** タイムアウト時にまず`isSubscribed=false`で状態設定 → Onboarding7が一瞬表示
+- **Fix:** finally blockで状態を設定せず、バックグラウンドチェックの`.then()`で状態を設定
+- **Result:** ✅ ローディング画面が表示され続け、直接MainTabsに遷移
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. Supabase CLIでのユーザー削除
-- **Attempted:** `supabase db execute` でリモートDBに直接SQL実行
-- **Result:** ❌ コマンドが存在しない、Management APIもアクセストークン不足
-- **Workaround:** デバッグ用ログアウトボタンをアプリに追加
-
-### 2. シミュレーターのタイムアウト
-- **Problem:** `npx expo run:ios` 後に `xcrun simctl openurl` がタイムアウト
-- **Workaround:** `./run-ios-manual.sh` またはシミュレーター再起動
+### 1. 最初のアプローチ（バックグラウンドチェック後に状態更新のみ）
+- **Attempted:** バックグラウンドチェックの結果で`setAuthState(prev => ...)`
+- **Result:** ❌ finally blockで先に`isSubscribed=false`が設定され、一瞬Onboarding7が表示
+- **Solution:** finally blockで状態設定をスキップし、バックグラウンドチェックで完全な状態を設定
 
 ---
 
@@ -60,11 +46,11 @@
 ```bash
 # 変更をコミット
 git add -A
-git commit -m "fix: cinematic animation skipped after subscription
+git commit -m "fix: prevent UI flicker on Auth screen login
 
-- Move subscription_status update to handleWarpComplete()
-- Preserve isSubscribed state on TOKEN_REFRESHED event
-- Add DEV-only logout button to Onboarding7 for testing"
+- Add loginSource flag to identify Auth screen logins
+- Keep loading state until background subscription check completes
+- Prevent Onboarding7 flash for existing users re-logging in"
 ```
 
 ### If Testing Again
@@ -73,28 +59,30 @@ git commit -m "fix: cinematic animation skipped after subscription
 ./run-ios-manual.sh
 
 # 2. テストフロー
-# - Onboarding7で「DEV: Logout」をタップ（必要に応じて）
-# - Onboarding0から最初から進める
-# - Screen13で「Slide to Commit」
-# - 黒背景に「COMMIT」テキストが表示されることを確認
-# - アニメーション完了後にDashboardに遷移
+# - サブスク済みユーザーでログイン
+# - Settings画面からログアウト
+# - Onboarding0で「すでにアカウントをお持ちの方」をタップ
+# - Auth画面でGoogleログイン
+# - ローディング画面（SYSTEM INITIALIZING...）が表示され続ける
+# - 直接MainTabsに遷移（Onboarding7は表示されない）
 
 # 3. ログ確認
-# [Screen13] Commitment created successfully
-# [Screen13] Updating subscription_status to active...
-# [Screen13] subscription_status updated to active ✅
+# ✅ Auth: Detected login from Auth screen (existing user re-login)
+# ✅ Auth: Waiting for background subscription check (Auth screen login)...
+# ✅ Auth: Background check complete, result: true
+# [AnalyticsService] $screen {"$screen_name": "MainTabs/HomeTab"}
 ```
 
 ---
 
 ## Verification Checklist
 
-- [x] Problem identified: Realtime triggers before animation
-- [x] TOKEN_REFRESHED handling fixed
-- [x] subscription_status moved to handleWarpComplete
-- [x] DEV logout button added to Onboarding7
-- [x] iOS Test: Animation displays correctly
-- [x] iOS Test: Dashboard transition after animation
+- [x] Problem identified: OAuth後のDBクエリ遅延
+- [x] loginSource flag added to AuthScreen
+- [x] AppNavigator: Auth画面ログイン時はfinally blockで状態設定スキップ
+- [x] AppNavigator: バックグラウンドチェックで完全な状態を設定
+- [x] iOS Test: Onboarding7のチラつきなし
+- [x] iOS Test: 直接MainTabsに遷移
 
 ---
 
@@ -102,55 +90,60 @@ git commit -m "fix: cinematic animation skipped after subscription
 
 | Category | Files |
 |----------|-------|
-| **Paywall Screen** | `src/screens/onboarding/OnboardingScreen13_Paywall.tsx` |
+| **Auth Screen** | `src/screens/AuthScreen.tsx` |
 | **Navigation** | `src/navigation/AppNavigator.tsx` |
-| **Debug Tool** | `src/screens/onboarding/OnboardingScreen7_OpportunityCost.tsx` |
 
-### OnboardingScreen13 Changes
-1. `subscription_status`更新を`handleWarpComplete()`に移動
-2. コメント追加（Realtimeトリガーの説明）
+### AuthScreen Changes
+1. AsyncStorage importを追加
+2. `handleGoogleSignIn`で`loginSource: 'auth_screen'`フラグを設定
 
 ### AppNavigator Changes
-1. `TOKEN_REFRESHED`イベントで`isSubscribed`状態を維持
-2. セッションのみ更新するように変更
-
-### OnboardingScreen7 Changes
-1. `__DEV__`限定のログアウトボタン追加
-2. スタイル追加（`debugLogout`, `debugLogoutText`）
+1. `onAuthStateChange`でloginSourceフラグを検知
+2. Auth画面ログインでタイムアウト時、finally blockで状態設定をスキップ
+3. バックグラウンドチェックの`.then()`で完全な状態を設定
+4. `.catch()`でエラー時のフォールバック状態を設定
 
 ---
 
 ## Technical Details
 
-### Animation Flow (After Fix)
+### Auth Screen Login Flow (After Fix)
 ```
-handleSubscribe()
+AuthScreen: handleGoogleSignIn()
     ↓
-Commitment created successfully
+AsyncStorage.setItem('loginSource', 'auth_screen')
     ↓
-setShowWarpTransition(true)
+OAuth -> SIGNED_IN event
     ↓
-CinematicCommitReveal (3.5秒)
+AppNavigator: loginSource === 'auth_screen' 検知
     ↓
-handleWarpComplete()
+checkSubscriptionStatus() タイムアウト
     ↓
-subscription_status = 'active' (DB UPDATE)
+finally block: 状態設定スキップ（ローディング維持）
     ↓
-triggerAuthRefresh()
+Background check完了: subscription_status=active
+    ↓
+setAuthState({ isSubscribed: true })
     ↓
 MainTabs/HomeTab
 ```
 
-### TOKEN_REFRESHED Handling
+### New Code Pattern (Background Check with Loading State)
 ```typescript
-if (event === 'TOKEN_REFRESHED') {
-  // セッションのみ更新、isSubscribedは維持
-  setAuthState(prev => {
-    if (prev.status !== 'authenticated') return prev;
-    return { ...prev, session };
-  });
-  return;
+// finally block
+if (isFromAuthScreen && !isSubscribed && subscriptionPromise) {
+  console.log('✅ Auth: Waiting for background check...');
+  // 状態を設定しない（ローディング維持）
+} else {
+  setAuthState({ status: 'authenticated', session, isSubscribed });
 }
+
+// バックグラウンドチェック
+subscriptionPromise.then((result) => {
+  setAuthState({ status: 'authenticated', session, isSubscribed: result });
+}).catch((err) => {
+  setAuthState({ status: 'authenticated', session, isSubscribed: false });
+});
 ```
 
 ---
@@ -158,6 +151,5 @@ if (event === 'TOKEN_REFRESHED') {
 ## Git Status
 - Branch: `main`
 - Changes: Uncommitted
-  - `src/screens/onboarding/OnboardingScreen13_Paywall.tsx`
+  - `src/screens/AuthScreen.tsx`
   - `src/navigation/AppNavigator.tsx`
-  - `src/screens/onboarding/OnboardingScreen7_OpportunityCost.tsx`

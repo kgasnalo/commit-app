@@ -45,6 +45,10 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Role:** `[Core Engineer]`
     - **Action:** Stabilize auth state management.
     - **DoD:** Smooth login transition without flashes.
+    - **Phase 2 Fix (2026-01-15):** Auth画面からの既存ユーザー再ログイン時のUIフリッカー修正
+      - `loginSource: 'auth_screen'`フラグでAuth画面ログインを識別
+      - タイムアウト時はfinally blockで状態設定をスキップ、ローディング維持
+      - バックグラウンドチェック完了後に状態設定（Onboarding7のチラつき防止）
 
 - [x] **1.7 Success Modal UI/UX Polish**
     - **Role:** `[UI/UX Designer]`
