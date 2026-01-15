@@ -480,6 +480,18 @@
   supabase db push
   ```
 - **Vault Secrets for Cron Jobs:** pg_cron jobs cannot directly access Edge Function environment variables. Store credentials in Supabase Vault and reference via `vault.decrypted_secrets` view.
+- **Supabase Storage for Onboarding:** When creating storage buckets that need to accept uploads during onboarding (before user authentication), add a `public` INSERT policy in addition to `authenticated`:
+  ```sql
+  -- Authenticated users can upload
+  CREATE POLICY "Authenticated users can upload"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'your-bucket');
+
+  -- Public uploads for onboarding (unauthenticated users)
+  CREATE POLICY "Allow public uploads"
+  ON storage.objects FOR INSERT TO public
+  WITH CHECK (bucket_id = 'your-bucket');
+  ```
 - **Sentry Business Metrics (CRITICAL):** For business success events that must ALWAYS be recorded (even without errors), use `logBusinessEvent()` (captureMessage), NOT `addBreadcrumb()` or `incrementMetric()`. Breadcrumbs are only sent to Sentry if an error occurs later in the same request.
   ```typescript
   // BAD - Only visible if an error occurs later

@@ -86,6 +86,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - FlatList with ListFooterComponent for "Can't find?" CTA
       - DB schema: `google_books_id` nullable, `total_pages`, `is_manual` columns
       - Edge Function: `create-commitment` manual entry support
+      - Storage: `book-covers` bucket with public read + authenticated/public upload policies
 
 ### Phase 2.2: Act 2 - The Crisis (Screens 5-10)
 - [x] **2.2.1 Screen 5 (Penalty):** Haptic Resistance Slider.

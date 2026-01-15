@@ -148,8 +148,8 @@ export default function OnboardingScreen3({ navigation, route }: any) {
           )}
           ListEmptyComponent={
             query.length > 0 && !loading ? (
-              <View style={styles.noResultsContainer}>
-                <Text style={styles.noResultsText}>{i18n.t('errors.no_books_found')}</Text>
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{i18n.t('errors.no_books_found')}</Text>
               </View>
             ) : null
           }
@@ -157,14 +157,14 @@ export default function OnboardingScreen3({ navigation, route }: any) {
             query.length > 0 && !loading ? (
               <View style={styles.manualEntryContainer}>
                 <TouchableOpacity
-                  style={styles.manualEntryButtonOutlined}
+                  style={styles.manualEntryButton}
                   onPress={() => navigation.navigate('ManualBookEntry', {
                     fromOnboarding: true,
                     tsundokuCount,
                   })}
                 >
-                  <MaterialIcons name="add-circle-outline" size={20} color="#FF6B35" />
-                  <Text style={styles.manualEntryButtonOutlinedText}>
+                  <MaterialIcons name="add-circle-outline" size={20} color={colors.signal.active} />
+                  <Text style={styles.manualEntryText}>
                     {i18n.t('book_search.cant_find_book')}
                   </Text>
                 </TouchableOpacity>

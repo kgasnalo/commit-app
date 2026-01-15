@@ -1,31 +1,36 @@
-# Handoff: Session 2026-01-15
+# Handoff: Session 2026-01-15/16
 
 ## Current Goal
-**Google OAuth Fix Complete** - AuthScreenのOAuth実装をCLAUDE.mdルールに準拠させ修正完了。
+**Manual Book Entry & Storage Complete** - カバー画像アップロード機能が完全に動作可能。
 
 ---
 
 ## Current Critical Status
 
-### Google OAuth Implementation Fix ✅ COMPLETE
+### Storage Bucket Setup ✅ COMPLETE
 
-| Task | Status | Details |
-|------|--------|---------|
-| **skipBrowserRedirect** | ✅ | `false` → `true` に修正 (CLAUDE.mdルール準拠) |
-| **PKCE Flow** | ✅ | `code`パラメータ対応追加 (`exchangeCodeForSession`) |
-| **Implicit Flow** | ✅ | `access_token`/`refresh_token` 対応維持 |
-| **ensureUserRecord** | ✅ | ヘルパー関数でユーザーレコード作成を統一 |
-| **TypeScript** | ✅ | `npx tsc --noEmit` パス |
+| Task | Status | Migration |
+|------|--------|-----------|
+| **book-covers bucket** | ✅ | `20260115120000` |
+| **Public read policy** | ✅ | SELECT for public |
+| **Authenticated upload** | ✅ | INSERT for authenticated |
+| **Public upload (Onboarding)** | ✅ | `20260116000000` |
 
-### Previous: Book Search & Manual Entry ✅ COMPLETE
+### Previous: Google OAuth Fix ✅ COMPLETE
+
+| Task | Status |
+|------|--------|
+| skipBrowserRedirect: true | ✅ |
+| PKCE Flow | ✅ |
+| Implicit Flow | ✅ |
+
+### Previous: Manual Book Entry ✅ COMPLETE
 
 | Task | Status |
 |------|--------|
 | ManualBookEntryScreen | ✅ |
-| searchQueryBuilder.ts | ✅ |
-| searchResultFilter.ts | ✅ |
-| DB Migration | ✅ (deployed) |
-| Edge Function | ✅ (deployed) |
+| DB Migration (google_books_id nullable) | ✅ |
+| Edge Function | ✅ |
 | i18n (ja/en/ko) | ✅ |
 | Onboarding対応 | ✅ |
 
@@ -33,58 +38,57 @@
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. AuthScreen OAuth設定ミス
-- **Problem:** `skipBrowserRedirect: false` だが `openAuthSessionAsync` を使用
-- **Root Cause:** `openAuthSessionAsync`使用時は`skipBrowserRedirect: true`が必須
-- **Solution:** CLAUDE.mdルールに従い `skipBrowserRedirect: true` に修正
-
-### 2. PKCEフロー未対応
-- **Problem:** AuthScreenはImplicit Flow（access_token/refresh_token）のみ対応
-- **Root Cause:** Supabaseの最新デフォルトはPKCE Flow（codeパラメータ）
-- **Solution:** OnboardingScreen6と同じパターンでPKCE対応追加
-  ```typescript
-  // PKCE Flow (優先)
-  const code = queryParams.get('code');
-  if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
-  }
-  // Implicit Flow (フォールバック)
+### 1. StorageApiError: Bucket not found
+- **Problem:** `book-covers`バケットが存在しない
+- **Root Cause:** Supabase Storageバケットはマイグレーションで明示的に作成が必要
+- **Solution:** `20260115120000_create_storage_bucket.sql` で作成
+  ```sql
+  INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  VALUES ('book-covers', 'book-covers', true, 5242880, ARRAY['image/jpeg', ...])
   ```
 
-### 3. 前セッション: Manual Entryボタン非表示
+### 2. Onboarding中のアップロード失敗
+- **Problem:** 未認証ユーザー（Onboarding中）がカバー画像をアップロードできない
+- **Root Cause:** INSERT ポリシーが `authenticated` のみだった
+- **Solution:** `20260116000000_allow_public_uploads.sql` で `public` ポリシー追加
+  ```sql
+  CREATE POLICY "Allow public uploads for book covers"
+  ON storage.objects FOR INSERT
+  TO public
+  WITH CHECK (bucket_id = 'book-covers');
+  ```
+
+### 3. AuthScreen OAuth設定ミス (前セッション)
+- **Problem:** `skipBrowserRedirect: false` + `openAuthSessionAsync`
+- **Solution:** `skipBrowserRedirect: true` + PKCE Flow対応
+
+### 4. Manual Entryボタン非表示 (前セッション)
 - **Problem:** `map()` + 条件分岐でボタンが見えない
 - **Solution:** `FlatList` + `ListFooterComponent`
-
-### 4. 前セッション: Onboardingナビゲーションエラー
-- **Problem:** ManualBookEntryが認証済みスタックにのみ登録
-- **Solution:** 複数スタック登録 + `fromOnboarding` param
 
 ---
 
 ## Immediate Next Steps
 
-### ✅ DONE: Commit & Push
+### NEXT: iOS Build Test
 ```bash
-git commit -m "feat: Manual Book Entry + Google OAuth fix"
-git push origin main
-# Commit: 8297a3dd
-```
-
-### NEXT: Production Build Test
-```bash
-# iOSビルド
 ./run-ios-manual.sh
+
+# Manual Entry テスト (認証済みユーザー)
+1. DashboardScreen → 新規Commitment作成
+2. 本の検索 → 「見つからない？」ボタンタップ
+3. ManualBookEntryScreen → 情報入力 + カバー撮影
+4. アップロード成功 → CreateCommitmentへ遷移
+
+# Manual Entry テスト (Onboarding)
+1. 新規ユーザーでOnboarding開始
+2. OnboardingScreen3 → 本の検索 → 「見つからない？」
+3. ManualBookEntryScreen → カバー撮影/選択
+4. アップロード成功 → Onboarding4へ遷移
 
 # Google OAuth テスト
 1. AuthScreen → Googleでログイン
-2. Google認証完了 → commitapp:// リダイレクト確認
-3. セッション確立・ユーザーレコード作成確認
-
-# Manual Entry テスト
-1. 本の検索 → 「見つからない？」ボタンタップ
-2. ManualBookEntryScreen → 情報入力
-3. カバー撮影/選択 → アップロード確認
-4. CreateCommitment/Onboarding4への遷移確認
+2. リダイレクト確認 → セッション確立
 ```
 
 ---
@@ -92,12 +96,13 @@ git push origin main
 ## Verification Checklist
 
 - [x] TypeScript: `npx tsc --noEmit` パス
-- [x] AuthScreen: `skipBrowserRedirect: true`
-- [x] AuthScreen: PKCE + Implicit 両フロー対応
-- [x] OnboardingScreen6: 正しい実装（参照実装）
-- [x] Git Commit & Push: `8297a3dd`
-- [ ] iOS Build Test: Google OAuth動作確認
-- [ ] iOS Build Test: Manual Entry動作確認
+- [x] Storage: book-covers bucket作成
+- [x] Storage: Public upload policy適用
+- [x] AuthScreen: skipBrowserRedirect + PKCE
+- [x] Git Commit & Push
+- [ ] iOS Build Test: Manual Entry (認証済み)
+- [ ] iOS Build Test: Manual Entry (Onboarding)
+- [ ] iOS Build Test: Google OAuth
 
 ---
 
@@ -105,59 +110,16 @@ git push origin main
 
 | Category | Files |
 |----------|-------|
-| **OAuth Fix** | `src/screens/AuthScreen.tsx` |
-
-### AuthScreen.tsx 変更詳細
-- Line 118: `skipBrowserRedirect: true`
-- Lines 87-106: `ensureUserRecord` ヘルパー関数追加
-- Lines 139-153: PKCE Flow対応（`code`パラメータ）
-- Lines 155-173: Implicit Flow維持（`access_token`/`refresh_token`）
-
----
-
-## Architecture: OAuth Flow
-
-```
-[AuthScreen - 修正後]
-                                  ┌─────────────────────────────┐
-signInWithOAuth(google)           │  skipBrowserRedirect: true  │
-        │                         └─────────────────────────────┘
-        ▼
-openAuthSessionAsync(url, redirectUri)
-        │
-        ▼
-┌───────────────────────────────────────┐
-│ Google OAuth → commitapp://callback   │
-└───────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────┐    ┌──────────────────────────┐
-│ code パラメータ?    │───▶│ exchangeCodeForSession() │ (PKCE)
-└─────────────────────┘    └──────────────────────────┘
-        │ No
-        ▼
-┌─────────────────────┐    ┌──────────────────────────┐
-│ access_token?       │───▶│ setSession()             │ (Implicit)
-└─────────────────────┘    └──────────────────────────┘
-        │
-        ▼
-ensureUserRecord(userId, email)
-```
-
----
-
-## Reference Implementation
-
-**OnboardingScreen6_Account.tsx** - 正しい実装（参照）:
-- `skipBrowserRedirect: true` ✅
-- PKCE Flow (lines 158-183) ✅
-- Implicit Flow (lines 188-220) ✅
-- `syncUserToDatabase` ヘルパー ✅
+| **Storage** | `supabase/migrations/20260115120000_create_storage_bucket.sql` |
+| **Storage** | `supabase/migrations/20260116000000_allow_public_uploads.sql` |
+| **OAuth** | `src/screens/AuthScreen.tsx` |
+| **Manual Entry** | `src/screens/ManualBookEntryScreen.tsx` |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- TypeScript: ✅ Passing
-- Commit: ✅ `8297a3dd` - feat: Manual Book Entry + Google OAuth fix
-- Push: ✅ Pushed to origin/main
+- Latest Commits:
+  - `3ca6ccc6` - feat: add book-covers storage bucket
+  - `8297a3dd` - feat: Manual Book Entry + Google OAuth fix
+- All pushed to origin/main
