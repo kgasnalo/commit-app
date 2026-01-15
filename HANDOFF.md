@@ -1,70 +1,78 @@
-# Handoff: Session 2026-01-15/16
+# Handoff: Session 2026-01-16
 
 ## Current Goal
-**Manual Book Entry & Storage Complete** - カバー画像アップロード機能が完全に動作可能。
+**Google OAuth Flow Complete** - OAuth認証からセッション確立までの全フローが動作可能。
 
 ---
 
 ## Current Critical Status
 
-### Storage Bucket Setup ✅ COMPLETE
+### Google OAuth Full Flow ✅ COMPLETE
 
-| Task | Status | Migration |
-|------|--------|-----------|
-| **book-covers bucket** | ✅ | `20260115120000` |
-| **Public read policy** | ✅ | SELECT for public |
-| **Authenticated upload** | ✅ | INSERT for authenticated |
-| **Public upload (Onboarding)** | ✅ | `20260116000000` |
+| Task | Status | Commit |
+|------|--------|--------|
+| **redirectTo hardcode** | ✅ | `a633684a` |
+| **Deep Link Handler** | ✅ | `e683161c` |
+| **URL Polyfill** | ✅ | (user added) |
+| **Undefined title fix** | ✅ | `e48c5582` |
 
-### Previous: Google OAuth Fix ✅ COMPLETE
+### Previous: Storage Bucket ✅ COMPLETE
 
 | Task | Status |
 |------|--------|
-| skipBrowserRedirect: true | ✅ |
-| PKCE Flow | ✅ |
-| Implicit Flow | ✅ |
+| book-covers bucket | ✅ |
+| Public upload policy | ✅ |
 
 ### Previous: Manual Book Entry ✅ COMPLETE
 
 | Task | Status |
 |------|--------|
 | ManualBookEntryScreen | ✅ |
-| DB Migration (google_books_id nullable) | ✅ |
-| Edge Function | ✅ |
+| FlatList + ListFooterComponent | ✅ |
 | i18n (ja/en/ko) | ✅ |
-| Onboarding対応 | ✅ |
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. StorageApiError: Bucket not found
-- **Problem:** `book-covers`バケットが存在しない
-- **Root Cause:** Supabase Storageバケットはマイグレーションで明示的に作成が必要
-- **Solution:** `20260115120000_create_storage_bucket.sql` で作成
-  ```sql
-  INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  VALUES ('book-covers', 'book-covers', true, 5242880, ARRAY['image/jpeg', ...])
+### 1. OAuth redirectがVercelに行く
+- **Problem:** `makeRedirectUri()` が不正なURLを生成
+- **Root Cause:** 動的生成されたURIがSupabaseのRedirect URL設定と不一致
+- **Solution:** `redirectTo: 'commitapp://'` にハードコード
+  ```typescript
+  // BAD - can generate incorrect URL
+  redirectTo: makeRedirectUri({ scheme: 'commitapp' })
+
+  // GOOD - explicit scheme
+  redirectTo: 'commitapp://'
   ```
 
-### 2. Onboarding中のアップロード失敗
-- **Problem:** 未認証ユーザー（Onboarding中）がカバー画像をアップロードできない
-- **Root Cause:** INSERT ポリシーが `authenticated` のみだった
-- **Solution:** `20260116000000_allow_public_uploads.sql` で `public` ポリシー追加
-  ```sql
-  CREATE POLICY "Allow public uploads for book covers"
-  ON storage.objects FOR INSERT
-  TO public
-  WITH CHECK (bucket_id = 'book-covers');
+### 2. OAuth後にローディング画面で停止
+- **Problem:** `openAuthSessionAsync` がURLをキャプチャせず、ディープリンクとして来る
+- **Root Cause:** AppNavigatorにLinkingリスナーがなく、URLを処理できない
+- **Solution:** `Linking.getInitialURL()` + `Linking.addEventListener('url')` を追加
+  ```typescript
+  // Cold start
+  Linking.getInitialURL().then(handleDeepLink);
+
+  // Runtime
+  Linking.addEventListener('url', (event) => {
+    handleDeepLink(event.url);
+  });
   ```
 
-### 3. AuthScreen OAuth設定ミス (前セッション)
-- **Problem:** `skipBrowserRedirect: false` + `openAuthSessionAsync`
-- **Solution:** `skipBrowserRedirect: true` + PKCE Flow対応
+### 3. URL parsing error
+- **Problem:** `new URL()` がReact Nativeで動作しない
+- **Root Cause:** React NativeにはネイティブのURLクラスがない
+- **Solution:** `import 'react-native-url-polyfill/auto'` を追加
 
-### 4. Manual Entryボタン非表示 (前セッション)
-- **Problem:** `map()` + 条件分岐でボタンが見えない
-- **Solution:** `FlatList` + `ListFooterComponent`
+### 4. undefined title crash
+- **Problem:** `item.volumeInfo.title.toUpperCase()` でクラッシュ
+- **Root Cause:** Google Books APIがtitleなしのデータを返すことがある
+- **Solution:** null coalescing追加
+  ```typescript
+  {(item.volumeInfo.title ?? 'NO TITLE').toUpperCase()}
+  ```
 
 ---
 
@@ -74,21 +82,16 @@
 ```bash
 ./run-ios-manual.sh
 
-# Manual Entry テスト (認証済みユーザー)
-1. DashboardScreen → 新規Commitment作成
-2. 本の検索 → 「見つからない？」ボタンタップ
-3. ManualBookEntryScreen → 情報入力 + カバー撮影
-4. アップロード成功 → CreateCommitmentへ遷移
-
-# Manual Entry テスト (Onboarding)
-1. 新規ユーザーでOnboarding開始
-2. OnboardingScreen3 → 本の検索 → 「見つからない？」
-3. ManualBookEntryScreen → カバー撮影/選択
-4. アップロード成功 → Onboarding4へ遷移
-
 # Google OAuth テスト
-1. AuthScreen → Googleでログイン
-2. リダイレクト確認 → セッション確立
+1. OnboardingScreen6 → Google Login
+2. Google認証完了
+3. アプリに戻る（Vercelではなく）
+4. ローディング画面が消えてOnboarding7へ遷移
+
+# Manual Entry テスト
+1. 本の検索 → タイトルなしの本が表示されてもクラッシュしない
+2. 「見つからない？」→ ManualBookEntryScreen
+3. カバー撮影 → アップロード成功
 ```
 
 ---
@@ -96,13 +99,13 @@
 ## Verification Checklist
 
 - [x] TypeScript: `npx tsc --noEmit` パス
-- [x] Storage: book-covers bucket作成
-- [x] Storage: Public upload policy適用
-- [x] AuthScreen: skipBrowserRedirect + PKCE
+- [x] OAuth: redirectTo hardcoded
+- [x] OAuth: Deep Link Handler追加
+- [x] OAuth: URL Polyfill追加
+- [x] Crash: undefined title fix
 - [x] Git Commit & Push
-- [ ] iOS Build Test: Manual Entry (認証済み)
-- [ ] iOS Build Test: Manual Entry (Onboarding)
-- [ ] iOS Build Test: Google OAuth
+- [ ] iOS Build Test: Google OAuth full flow
+- [ ] iOS Build Test: Manual Entry
 
 ---
 
@@ -110,16 +113,19 @@
 
 | Category | Files |
 |----------|-------|
-| **Storage** | `supabase/migrations/20260115120000_create_storage_bucket.sql` |
-| **Storage** | `supabase/migrations/20260116000000_allow_public_uploads.sql` |
+| **OAuth** | `src/screens/onboarding/OnboardingScreen6_Account.tsx` |
 | **OAuth** | `src/screens/AuthScreen.tsx` |
-| **Manual Entry** | `src/screens/ManualBookEntryScreen.tsx` |
+| **Deep Link** | `src/navigation/AppNavigator.tsx` |
+| **Crash Fix** | `src/screens/onboarding/OnboardingScreen3_BookSelect.tsx` |
+| **Crash Fix** | `src/screens/CreateCommitmentScreen.tsx` |
+| **i18n** | `src/i18n/locales/{en,ja,ko}.json` (common.untitled) |
 
 ---
 
 ## Git Status
 - Branch: `main`
 - Latest Commits:
-  - `3ca6ccc6` - feat: add book-covers storage bucket
-  - `8297a3dd` - feat: Manual Book Entry + Google OAuth fix
+  - `e48c5582` - fix: prevent crash on undefined book title
+  - `e683161c` - fix: add deep link handler for OAuth callback
+  - `a633684a` - fix: hardcode OAuth redirectTo to commitapp://
 - All pushed to origin/main

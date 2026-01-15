@@ -328,6 +328,15 @@
 - **Google Books API & HTTPS (CRITICAL):**
   - **HTTPS Only:** iOS blocks `http://` resources (ATS). Always replace `http://` with `https://` for image URLs fetched from Google Books or stored in DB.
   - **Remove edge=curl:** Google Books image URLs often contain `&edge=curl` (curled page effect). This parameter frequently causes rendering failures or blank images in React Native. ALWAYS remove it: `url.replace(/&edge=curl/g, '')`.
+  - **Undefined title/authors:** Google Books API can return items without `title` or `authors`. ALWAYS use null coalescing:
+    ```typescript
+    // BAD - crashes if title is undefined
+    {item.volumeInfo.title.toUpperCase()}
+
+    // GOOD - safe with fallback
+    {(item.volumeInfo.title ?? i18n.t('common.untitled')).toUpperCase()}
+    {item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author')}
+    ```
 - **Hero/Billboard Overlays:** When placing text over images (HeroBillboard), keep overlay opacity low to ensure the image remains visible.
   - **Bad:** `rgba(0,0,0,0.7)` (Too dark, hides image)
   - **Good:** `rgba(10, 8, 6, 0.1)` to `rgba(8, 6, 4, 0.4)` gradient.
@@ -379,15 +388,28 @@
       await supabase.auth.setSession({ access_token, refresh_token });
     }
     ```
-  - **skipBrowserRedirect:** Set to `true` when using `WebBrowser.openAuthSessionAsync()` since it manages the browser lifecycle manually:
+  - **skipBrowserRedirect:** Set to `true` when using `WebBrowser.openAuthSessionAsync()` since it manages the browser lifecycle manually.
+  - **Hardcode redirectTo:** Do NOT use `makeRedirectUri()` - it can generate incorrect URLs. Hardcode the scheme directly:
     ```typescript
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUri,
-        skipBrowserRedirect: true, // REQUIRED for openAuthSessionAsync
-      },
-    });
+    // BAD - can generate mismatched URL
+    redirectTo: makeRedirectUri({ scheme: 'commitapp' })
+
+    // GOOD - explicit scheme
+    redirectTo: 'commitapp://'
+    ```
+  - **Deep Link Handler Required:** `openAuthSessionAsync` may not capture the redirect URL. Add global Linking listeners in AppNavigator:
+    ```typescript
+    import { Linking } from 'react-native';
+
+    // Cold start
+    Linking.getInitialURL().then(handleDeepLink);
+
+    // Runtime
+    Linking.addEventListener('url', (event) => handleDeepLink(event.url));
+    ```
+  - **URL Polyfill:** React Native lacks native `URL` class. Add polyfill import at top of AppNavigator:
+    ```typescript
+    import 'react-native-url-polyfill/auto';
     ```
 - **DB Trigger Race Condition:** NEVER use `setTimeout()` to wait for Supabase Auth Triggers to complete. Use `upsert` with `onConflict` and retry logic instead:
   ```typescript
