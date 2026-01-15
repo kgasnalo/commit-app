@@ -292,6 +292,25 @@ function NavigationContent() {
     }
   }
 
+  /**
+   * Wraps an async operation with a timeout.
+   * Returns the result if completed within timeout, otherwise returns fallback.
+   */
+  async function withTimeout<T>(
+    operation: Promise<T>,
+    timeoutMs: number,
+    fallback: T,
+    operationName: string
+  ): Promise<T> {
+    const timeoutPromise = new Promise<T>((resolve) => {
+      setTimeout(() => {
+        console.warn(`⏱️ ${operationName}: Timed out after ${timeoutMs}ms, using fallback`);
+        resolve(fallback);
+      }, timeoutMs);
+    });
+    return Promise.race([operation, timeoutPromise]);
+  }
+
   useEffect(() => {
     let isMounted = true;
 
@@ -366,6 +385,7 @@ function NavigationContent() {
     // 初期化：セッションとサブスク状態を一括で確認・設定
     async function initializeAuth() {
       console.log('🚀 initializeAuth: Starting...');
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('🚀 initializeAuth: Got session:', session?.user?.email ?? '(no session)');
@@ -376,9 +396,14 @@ function NavigationContent() {
           return;
         }
 
-        // サブスクリプションチェック完了後に状態を一括更新
+        // サブスクリプションチェック with outer timeout (8s safety net)
         console.log('🚀 initializeAuth: Checking subscription status...');
-        const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        const isSubscribed = await withTimeout(
+          checkSubscriptionStatus(session.user.id),
+          8000,
+          false,
+          'initializeAuth.checkSubscription'
+        );
         console.log('🚀 initializeAuth: Subscription status:', isSubscribed);
 
         if (isMounted) {
@@ -391,6 +416,7 @@ function NavigationContent() {
         }
       } catch (error) {
         console.error('🚀 initializeAuth: ERROR:', error);
+        // Fail-safe: Set unauthenticated on error
         if (isMounted) setAuthState({ status: 'unauthenticated' });
       }
     }
@@ -412,44 +438,50 @@ function NavigationContent() {
         return;
       }
 
-      // 重要: 先にローディング状態にしてフリッカーを防止
+      // ローディング状態に入る
       if (isMounted) setAuthState({ status: 'loading' });
 
+      // フェイルセーフのためのデフォルト値
+      let isSubscribed = false;
+
       try {
-        // 新規ユーザーの場合、ユーザーレコードを作成してからサブスクリプションチェック
+        // SIGNED_IN: ユーザーレコード作成（5秒タイムアウト）
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          console.log('✅ Auth: Waiting 300ms for auth trigger...');
+          console.log('✅ Auth: Processing SIGNED_IN/USER_UPDATED...');
+
+          // 認証トリガーを待つ
           await new Promise(resolve => setTimeout(resolve, 300));
 
-          // ユーザーレコードを作成（AsyncStorageからusernameを取得）
-          // これをcheckSubscriptionStatusの前に実行することで、RLSエラーを防止
-          await createUserRecordFromOnboardingData(session);
+          // ユーザーレコード作成（タイムアウトあり、失敗しても続行）
+          await withTimeout(
+            createUserRecordFromOnboardingData(session),
+            5000,
+            undefined,
+            'createUserRecord'
+          );
         }
 
-        // サブスクリプションチェック（ユーザーレコードが存在することが保証される）
+        // サブスクリプションチェック（8秒の外部タイムアウト）
         console.log('✅ Auth: Checking subscription status...');
-        const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        isSubscribed = await withTimeout(
+          checkSubscriptionStatus(session.user.id),
+          8000,
+          false,
+          'checkSubscriptionStatus'
+        );
         console.log('✅ Auth: Subscription check complete, isSubscribed=', isSubscribed);
 
+      } catch (error) {
+        console.error('❌ Auth State Change Error:', error);
+        // デフォルト値（isSubscribed = false）で続行
+      } finally {
+        // 保証: 必ずローディング状態を終了
         if (isMounted) {
-          console.log('✅ Auth: Setting authenticated state (loading complete)');
+          console.log('✅ Auth: Setting authenticated state (finally block)');
           setAuthState({
             status: 'authenticated',
             session,
             isSubscribed,
-          });
-        } else {
-          console.log('✅ Auth: Component unmounted, skipping state update');
-        }
-      } catch (error) {
-        console.error('❌ Auth State Change Error:', error);
-        // エラーが発生しても、セッションがある場合はログインさせる（安全策）
-        if (isMounted) {
-          console.log('✅ Auth: Error occurred, but setting authenticated state anyway');
-          setAuthState({
-            status: 'authenticated',
-            session,
-            isSubscribed: false, // エラー時はサブスクリプションなしとして扱う
           });
         }
       }

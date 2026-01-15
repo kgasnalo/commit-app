@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import BlueprintCard from '../../components/onboarding/BlueprintCard';
+import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { spacing } from '../../theme';
 import i18n from '../../i18n';
 
@@ -11,6 +12,7 @@ export default function OnboardingScreen12({ navigation, route }: any) {
   const [deadline, setDeadline] = useState<string>('');
   const [pledgeAmount, setPledgeAmount] = useState<number>(0);
   const [currency, setCurrency] = useState<string>('JPY');
+  const [animationComplete, setAnimationComplete] = useState(false);
 
   // オンボーディングデータを読み込む
   useEffect(() => {
@@ -43,14 +45,19 @@ export default function OnboardingScreen12({ navigation, route }: any) {
     loadOnboardingData();
   }, [route.params]);
 
-  // Navigate to next screen after animation completes
+  // アニメーション完了時にボタンを有効化
   const handleAnimationComplete = useCallback(() => {
+    setAnimationComplete(true);
+  }, []);
+
+  // 次の画面に遷移（ボタンタップ時）
+  const handleProceed = useCallback(() => {
     navigation.navigate('Onboarding13', {
       selectedBook,
       deadline,
       pledgeAmount,
       currency,
-      targetPages: selectedBook?.volumeInfo?.pageCount || 0, // Add page count
+      targetPages: selectedBook?.volumeInfo?.pageCount || 0,
     });
   }, [navigation, selectedBook, deadline, pledgeAmount, currency]);
 
@@ -60,6 +67,13 @@ export default function OnboardingScreen12({ navigation, route }: any) {
       totalSteps={14}
       title={i18n.t('onboarding.screen12_title')}
       subtitle={i18n.t('onboarding.screen12_subtitle')}
+      footer={
+        <PrimaryButton
+          label={i18n.t('onboarding.screen12_activate')}
+          onPress={handleProceed}
+          disabled={!animationComplete}
+        />
+      }
     >
       <View style={styles.container}>
         <BlueprintCard

@@ -458,6 +458,43 @@
     },
   });
   ```
+- **Auth State Change Timeouts (CRITICAL):** In `onAuthStateChange`, all async operations MUST have bounded execution times using `withTimeout` helper, and MUST use `try-finally` to GUARANTEE UI unlocking (exiting loading state):
+  ```typescript
+  // Helper function for timeout with fallback (no throw)
+  async function withTimeout<T>(
+    operation: Promise<T>,
+    timeoutMs: number,
+    fallback: T,
+    operationName: string
+  ): Promise<T> {
+    const timeoutPromise = new Promise<T>((resolve) => {
+      setTimeout(() => {
+        console.warn(`⏱️ ${operationName}: Timed out after ${timeoutMs}ms`);
+        resolve(fallback);
+      }, timeoutMs);
+    });
+    return Promise.race([operation, timeoutPromise]);
+  }
+
+  // onAuthStateChange with guaranteed UI unlock
+  onAuthStateChange(async (event, session) => {
+    setAuthState({ status: 'loading' });
+    let isSubscribed = false; // Default for fail-safe
+
+    try {
+      await withTimeout(createUserRecord(session), 5000, undefined, 'createUserRecord');
+      isSubscribed = await withTimeout(checkSubscription(userId), 8000, false, 'checkSubscription');
+    } catch (error) {
+      console.error('Auth error:', error);
+    } finally {
+      // GUARANTEE: Always exit loading state
+      setAuthState({ status: 'authenticated', session, isSubscribed });
+    }
+  });
+  ```
+  - `createUserRecordFromOnboardingData`: 5 second timeout
+  - `checkSubscriptionStatus`: 8 second outer timeout (has internal 2s timeout)
+  - Never leave user stuck on "SYSTEM INITIALIZING..." screen
 - **DB Trigger Race Condition:** NEVER use `setTimeout()` to wait for Supabase Auth Triggers to complete. Use `upsert` with `onConflict` and retry logic instead:
   ```typescript
   // BAD - flaky, fails under network latency

@@ -96,6 +96,8 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - AppNavigator creates user record after OAuth callback via Deep Link
       - URL Polyfill in `index.js` (first import) for `new URL()` support
       - `checkSubscriptionStatus` timeout (2s) and reduced retries (1x)
+      - Robust auth initialization with `withTimeout` helper (5s/8s timeouts)
+      - `try-finally` pattern guarantees UI unlocking (prevents zombie state)
 - [x] **2.2.3 Screen 7 (Opportunity Cost):** Burning Text Effect (Shader).
 
 ### Phase 2.3: Act 3 - The Covenant (Screens 11-15) ✅

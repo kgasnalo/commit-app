@@ -1,13 +1,13 @@
 # Handoff: Session 2026-01-16
 
 ## Current Goal
-**Google OAuth Full Flow + RLS Fix** - OAuth認証からコミットメント作成まで、RLSエラーなしで動作する実装完了。
+**Release-Quality Auth Flow** - ゾンビ状態（無限ローディング）を防ぐため、認証フローにタイムアウトと try-finally パターンを実装完了。
 
 ---
 
 ## Current Critical Status
 
-### All OAuth + RLS Issues Fixed ✅
+### All Auth Flow Improvements Complete ✅
 
 | Task | Status | Details |
 |------|--------|---------|
@@ -15,8 +15,14 @@
 | **Username Persistence** | ✅ | AsyncStorage 経由で OAuth 後も保持 |
 | **User Record Creation** | ✅ | `onAuthStateChange` 内でブロッキング実行 |
 | **Commitment via Edge Function** | ✅ | RLS バイパス + サーバーサイドバリデーション |
+| **Screen 12 Navigation Button** | ✅ | アニメーション完了後にボタン有効化 |
+| **Robust Auth Timeouts** | ✅ | `withTimeout` ヘルパー + try-finally パターン |
 
-### Debug Logs (Remove Before Release)
+### New Debug Logs (Remove Before Release)
+- `⏱️ [operationName]: Timed out after Xms` - タイムアウト発生時
+- `✅ Auth: Setting authenticated state (finally block)` - 保証されたUI解除
+
+### Existing Debug Logs
 - `🔗 Deep Link:` / `🔗 createUserRecord:`
 - `🚀 initializeAuth:` / `✅ Auth State Changed:`
 - `📊 checkSubscriptionStatus:`
@@ -41,6 +47,10 @@
 - **Problem:** `supabase.from('commitments').insert()` が RLS でブロック
 - **Solution:** `supabase.functions.invoke('create-commitment', ...)` に置換
 
+### 5. ゾンビ状態（無限ローディング）
+- **Problem:** ネットワーク遅延時に `onAuthStateChange` 内の非同期処理がハングし、永久にローディング状態のまま
+- **Solution:** `withTimeout` ヘルパーで各操作に境界時間を設定 + `try-finally` で UI 解除を保証
+
 ---
 
 ## Immediate Next Steps
@@ -53,12 +63,20 @@
 1. Onboarding開始 → Screen3: 本選択
 2. Screen6: ユーザー名入力 → Google Login
 3. Screen7-12: オンボーディング継続
-4. Screen13: Slide to Commit
-5. ログ確認:
+4. Screen12: アニメーション後「Activate」ボタン表示
+5. Screen13: Slide to Commit
+6. ログ確認:
    - 🔗 createUserRecord: User record created successfully ✅
+   - ✅ Auth: Setting authenticated state (finally block)
    - Commitment created via Edge Function: {...}
-6. Dashboard に遷移
+7. Dashboard に遷移
 ```
+
+### Timeout Test (Optional)
+ネットワーク遅延をシミュレートして、タイムアウトが機能することを確認:
+1. `createUserRecordFromOnboardingData` に `await new Promise(r => setTimeout(r, 10000))` を追加
+2. OAuth完了後、5秒でタイムアウトログ `⏱️ createUserRecord: Timed out` が表示
+3. アプリはハングせず続行することを確認
 
 ---
 
@@ -69,6 +87,8 @@
 - [x] Username: AsyncStorage に保存
 - [x] User Record: onAuthStateChange でブロッキング作成
 - [x] Commitment: Edge Function 経由
+- [x] Screen 12: Navigation Button 追加
+- [x] Auth Timeouts: withTimeout + try-finally
 - [ ] iOS Build Test: 新規ユーザーフルフロー
 
 ---
@@ -81,9 +101,33 @@
 | **Auth Flow** | `src/navigation/AppNavigator.tsx` |
 | **OAuth Screen** | `src/screens/onboarding/OnboardingScreen6_Account.tsx` |
 | **Paywall Screen** | `src/screens/onboarding/OnboardingScreen13_Paywall.tsx` |
+| **Custom Plan Screen** | `src/screens/onboarding/OnboardingScreen12_CustomPlan.tsx` |
+
+---
+
+## Technical Implementation Details
+
+### withTimeout Helper (AppNavigator.tsx:295-312)
+```typescript
+async function withTimeout<T>(
+  operation: Promise<T>,
+  timeoutMs: number,
+  fallback: T,
+  operationName: string
+): Promise<T>
+```
+- タイムアウト時はフォールバック値を返す（エラーをスローしない）
+- ログで `⏱️` プレフィックスを使用
+
+### Timeout Configuration
+| Operation | Timeout | Fallback |
+|-----------|---------|----------|
+| `createUserRecordFromOnboardingData` | 5s | `undefined` |
+| `checkSubscriptionStatus` (outer) | 8s | `false` |
+| `checkSubscriptionStatus` (inner) | 2s | `false` |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Changes: Uncommitted (ready to test then commit)
+- Changes: Uncommitted (ready to commit)
