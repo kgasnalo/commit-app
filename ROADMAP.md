@@ -101,6 +101,10 @@ Each task is atomic, role-specific, and has a clear definition of done.
 ### Phase 2.3: Act 3 - The Covenant (Screens 11-15) ✅
 - [x] **2.3.1 Screen 12 (The Plan):** Blueprint drawing animation.
 - [x] **2.3.2 Screen 13 (The Paywall):** Slide-to-Commit interaction.
+    - **Implementation:**
+      - Commitment creation via Edge Function (not direct INSERT)
+      - Edge Function handles book upsert + commitment insert
+      - Bypasses RLS with service_role key
 - [x] **2.3.3 Screen 15 (The Transition):** Warp Speed transition.
 
 ---

@@ -113,62 +113,29 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-      let bookId: string | null = null;
-
-      // 1. まず既存の本を検索
-      const { data: existingBook, error: searchError } = await supabase
-        .from('books')
-        .select('id')
-        .eq('google_books_id', bookToCommit.id)
-        .single();
-
-      if (existingBook) {
-        bookId = existingBook.id;
-      } else {
-        // 2. なければ新規作成
-        const bookData = {
+      // Edge Function でコミットメント作成（RLS バイパス + サーバーサイドバリデーション）
+      // Edge Function が book の upsert も内部で処理する
+      const { data: commitmentData, error: commitError } = await supabase.functions.invoke('create-commitment', {
+        body: {
           google_books_id: bookToCommit.id,
-          title: bookToCommit.volumeInfo?.title || 'Unknown',
-          author: bookToCommit.volumeInfo?.authors?.join(', ') || 'Unknown',
-          cover_url: bookToCommit.volumeInfo?.imageLinks?.thumbnail || null,
-        };
+          book_title: bookToCommit.volumeInfo?.title || 'Unknown',
+          book_author: bookToCommit.volumeInfo?.authors?.join(', ') || 'Unknown',
+          book_cover_url: bookToCommit.volumeInfo?.imageLinks?.thumbnail || null,
+          book_total_pages: null, // オンボーディングでは未取得
+          is_manual_entry: false,
+          deadline: deadlineToCommit,
+          pledge_amount: pledgeToCommit,
+          currency: currencyToCommit,
+          target_pages: targetPagesToCommit,
+        },
+      });
 
-        const { data: newBook, error: insertError } = await supabase
-          .from('books')
-          .insert(bookData)
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Book insert error:', insertError);
-        } else if (newBook) {
-          bookId = newBook.id;
-        }
+      if (commitError) {
+        console.error('Commitment creation error:', commitError);
+        throw new Error(`Commitment creation failed: ${commitError.message}`);
       }
 
-      // 3. bookIdが取得できていればコミットメント作成
-      if (bookId) {
-        const { error: commitError } = await supabase
-          .from('commitments')
-          .insert({
-            user_id: user.id,
-            book_id: bookId,
-            deadline: deadlineToCommit,
-            pledge_amount: pledgeToCommit,
-            currency: currencyToCommit,
-            status: 'pending',
-            target_pages: targetPagesToCommit,
-          });
-
-        if (commitError) {
-          console.error('Commitment insert error:', commitError);
-          throw new Error(`Commitment creation failed: ${commitError.message}`);
-        } else {
-        }
-      } else {
-        console.error('Failed to get book ID');
-        throw new Error('Failed to retrieve or create book ID');
-      }
+      console.log('Commitment created via Edge Function:', commitmentData);
 
 
       // 5. Success (Cinematic COMMIT Reveal)

@@ -242,57 +242,58 @@ function NavigationContent() {
     }
   }
 
+  /**
+   * OAuth認証後にユーザーレコードを作成するヘルパー関数
+   * OnboardingScreen6で保存したusernameをAsyncStorageから取得し、
+   * usersテーブルにレコードを作成する
+   * 注意: useEffectの外に定義することでonAuthStateChangeからもアクセス可能
+   */
+  async function createUserRecordFromOnboardingData(session: Session): Promise<void> {
+    try {
+      const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
+      if (!onboardingDataStr) {
+        console.log('🔗 createUserRecord: No onboarding data found in AsyncStorage');
+        return;
+      }
+
+      const onboardingData = JSON.parse(onboardingDataStr);
+      const pendingUsername = onboardingData?.username;
+
+      if (!pendingUsername) {
+        console.log('🔗 createUserRecord: No username found in onboarding data');
+        return;
+      }
+
+      // emailが必須フィールドなので、存在しない場合はスキップ
+      if (!session.user.email) {
+        console.log('🔗 createUserRecord: No email in session, skipping');
+        return;
+      }
+
+      console.log('🔗 createUserRecord: Creating user record with username:', pendingUsername);
+
+      const { error } = await supabase.from('users').upsert(
+        {
+          id: session.user.id,
+          email: session.user.email,
+          username: pendingUsername,
+          subscription_status: 'inactive',
+        },
+        { onConflict: 'id' }
+      );
+
+      if (error) {
+        console.error('🔗 createUserRecord: Failed to create user record:', error.message);
+      } else {
+        console.log('🔗 createUserRecord: User record created successfully ✅');
+      }
+    } catch (err) {
+      console.error('🔗 createUserRecord: Unexpected error:', err);
+    }
+  }
+
   useEffect(() => {
     let isMounted = true;
-
-    /**
-     * OAuth認証後にユーザーレコードを作成するヘルパー関数
-     * OnboardingScreen6で保存したusernameをAsyncStorageから取得し、
-     * usersテーブルにレコードを作成する
-     */
-    async function createUserRecordFromOnboardingData(session: Session): Promise<void> {
-      try {
-        const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
-        if (!onboardingDataStr) {
-          console.log('🔗 createUserRecord: No onboarding data found in AsyncStorage');
-          return;
-        }
-
-        const onboardingData = JSON.parse(onboardingDataStr);
-        const pendingUsername = onboardingData?.username;
-
-        if (!pendingUsername) {
-          console.log('🔗 createUserRecord: No username found in onboarding data');
-          return;
-        }
-
-        // emailが必須フィールドなので、存在しない場合はスキップ
-        if (!session.user.email) {
-          console.log('🔗 createUserRecord: No email in session, skipping');
-          return;
-        }
-
-        console.log('🔗 createUserRecord: Creating user record with username:', pendingUsername);
-
-        const { error } = await supabase.from('users').upsert(
-          {
-            id: session.user.id,
-            email: session.user.email,
-            username: pendingUsername,
-            subscription_status: 'inactive',
-          },
-          { onConflict: 'id' }
-        );
-
-        if (error) {
-          console.error('🔗 createUserRecord: Failed to create user record:', error.message);
-        } else {
-          console.log('🔗 createUserRecord: User record created successfully ✅');
-        }
-      } catch (err) {
-        console.error('🔗 createUserRecord: Unexpected error:', err);
-      }
-    }
 
     // Deep Link Handler: Process OAuth callback URLs
     async function handleDeepLink(url: string | null) {
@@ -319,11 +320,7 @@ function NavigationContent() {
           }
           if (sessionData.session) {
             console.log('🔗 Deep Link: Session established via PKCE ✅', sessionData.session.user.email);
-
-            // OAuth後にユーザーレコードを作成（OnboardingScreen6で保存したusernameを使用）
-            await createUserRecordFromOnboardingData(sessionData.session);
-
-            // onAuthStateChange will handle the rest
+            // User record creation moved to onAuthStateChange (prevents race condition)
           } else {
             console.log('🔗 Deep Link: PKCE exchange returned no session');
           }
@@ -346,11 +343,7 @@ function NavigationContent() {
           }
           if (sessionData.session) {
             console.log('🔗 Deep Link: Session established via Implicit flow ✅', sessionData.session.user.email);
-
-            // OAuth後にユーザーレコードを作成（OnboardingScreen6で保存したusernameを使用）
-            await createUserRecordFromOnboardingData(sessionData.session);
-
-            // onAuthStateChange will handle the rest
+            // User record creation moved to onAuthStateChange (prevents race condition)
           } else {
             console.log('🔗 Deep Link: setSession returned no session');
           }
@@ -423,13 +416,17 @@ function NavigationContent() {
       if (isMounted) setAuthState({ status: 'loading' });
 
       try {
-        // 新規ユーザーの場合、usersテーブルレコード作成を待つため少し遅延
+        // 新規ユーザーの場合、ユーザーレコードを作成してからサブスクリプションチェック
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          console.log('✅ Auth: Waiting 300ms for user profile creation...');
+          console.log('✅ Auth: Waiting 300ms for auth trigger...');
           await new Promise(resolve => setTimeout(resolve, 300));
+
+          // ユーザーレコードを作成（AsyncStorageからusernameを取得）
+          // これをcheckSubscriptionStatusの前に実行することで、RLSエラーを防止
+          await createUserRecordFromOnboardingData(session);
         }
 
-        // サブスクリプションチェック完了後に状態を一括更新
+        // サブスクリプションチェック（ユーザーレコードが存在することが保証される）
         console.log('✅ Auth: Checking subscription status...');
         const isSubscribed = await checkSubscriptionStatus(session.user.id);
         console.log('✅ Auth: Subscription check complete, isSubscribed=', isSubscribed);

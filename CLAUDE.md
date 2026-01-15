@@ -428,6 +428,36 @@
     const { username } = JSON.parse(onboardingData);
     await supabase.from('users').upsert({ id, email, username });
     ```
+  - **User Record Creation Location (CRITICAL):** User record creation MUST happen inside `onAuthStateChange` (in the `SIGNED_IN` block), NOT in `handleDeepLink`. Deep link handlers and auth state listeners execute in parallel, causing race conditions where the app enters authenticated state before the user record exists.
+    ```typescript
+    // BAD - race condition with onAuthStateChange
+    async function handleDeepLink(url) {
+      await exchangeCodeForSession(code);
+      await createUserRecord(session); // May not complete before auth state updates
+    }
+
+    // GOOD - blocking execution in auth listener
+    onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        await createUserRecordFromOnboardingData(session); // Blocks until complete
+        const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        setAuthState({ status: 'authenticated', session, isSubscribed });
+      }
+    });
+    ```
+- **Commitment Creation via Edge Function (CRITICAL):** NEVER use direct `supabase.from('commitments').insert()` from client code. RLS policies may block inserts if user record doesn't exist or auth context is invalid. Always use the `create-commitment` Edge Function:
+  ```typescript
+  // BAD - blocked by RLS
+  await supabase.from('commitments').insert({ user_id, book_id, ... });
+
+  // GOOD - bypasses RLS with service_role, includes server-side validation
+  await supabase.functions.invoke('create-commitment', {
+    body: {
+      book_title, book_author, book_cover_url,
+      deadline, pledge_amount, currency, target_pages,
+    },
+  });
+  ```
 - **DB Trigger Race Condition:** NEVER use `setTimeout()` to wait for Supabase Auth Triggers to complete. Use `upsert` with `onConflict` and retry logic instead:
   ```typescript
   // BAD - flaky, fails under network latency
