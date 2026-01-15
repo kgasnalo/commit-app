@@ -63,7 +63,14 @@
 
 ## Immediate Next Steps
 
-### Option A: Production Build Test
+### ✅ DONE: Commit & Push
+```bash
+git commit -m "feat: Manual Book Entry + Google OAuth fix"
+git push origin main
+# Commit: 8297a3dd
+```
+
+### NEXT: Production Build Test
 ```bash
 # iOSビルド
 ./run-ios-manual.sh
@@ -72,13 +79,12 @@
 1. AuthScreen → Googleでログイン
 2. Google認証完了 → commitapp:// リダイレクト確認
 3. セッション確立・ユーザーレコード作成確認
-```
 
-### Option B: Commit & Deploy
-```bash
-git add -A
-git commit -m "fix: Google OAuth implementation (skipBrowserRedirect + PKCE)"
-git push origin main
+# Manual Entry テスト
+1. 本の検索 → 「見つからない？」ボタンタップ
+2. ManualBookEntryScreen → 情報入力
+3. カバー撮影/選択 → アップロード確認
+4. CreateCommitment/Onboarding4への遷移確認
 ```
 
 ---
@@ -89,7 +95,9 @@ git push origin main
 - [x] AuthScreen: `skipBrowserRedirect: true`
 - [x] AuthScreen: PKCE + Implicit 両フロー対応
 - [x] OnboardingScreen6: 正しい実装（参照実装）
+- [x] Git Commit & Push: `8297a3dd`
 - [ ] iOS Build Test: Google OAuth動作確認
+- [ ] iOS Build Test: Manual Entry動作確認
 
 ---
 
@@ -151,4 +159,5 @@ ensureUserRecord(userId, email)
 ## Git Status
 - Branch: `main`
 - TypeScript: ✅ Passing
-- Uncommitted Changes: Yes (OAuth fix + Book Search/Manual Entry)
+- Commit: ✅ `8297a3dd` - feat: Manual Book Entry + Google OAuth fix
+- Push: ✅ Pushed to origin/main
