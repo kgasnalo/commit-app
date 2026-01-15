@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -223,6 +223,62 @@ function NavigationContent() {
   useEffect(() => {
     let isMounted = true;
 
+    // Deep Link Handler: Process OAuth callback URLs
+    async function handleDeepLink(url: string | null) {
+      if (!url || !url.startsWith('commitapp://')) return;
+
+      try {
+        const urlObj = new URL(url);
+        const hashParams = new URLSearchParams(urlObj.hash.slice(1));
+        const queryParams = urlObj.searchParams;
+
+        // PKCE Flow: Check for code parameter
+        const code = queryParams.get('code');
+        if (code) {
+          console.log('Deep link: Processing PKCE code');
+          const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+          if (sessionError) {
+            console.error('Deep link: PKCE exchange failed:', sessionError);
+            return;
+          }
+          if (sessionData.session) {
+            console.log('Deep link: Session established via PKCE');
+            // onAuthStateChange will handle the rest
+          }
+          return;
+        }
+
+        // Implicit Flow: Check for access_token
+        const access_token = hashParams.get('access_token') || queryParams.get('access_token');
+        const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+        if (access_token && refresh_token) {
+          console.log('Deep link: Processing Implicit flow tokens');
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          if (sessionError) {
+            console.error('Deep link: setSession failed:', sessionError);
+            return;
+          }
+          if (sessionData.session) {
+            console.log('Deep link: Session established via Implicit flow');
+            // onAuthStateChange will handle the rest
+          }
+        }
+      } catch (error) {
+        console.error('Deep link processing error:', error);
+      }
+    }
+
+    // Check for initial URL (cold start)
+    Linking.getInitialURL().then(handleDeepLink);
+
+    // Listen for URL events (app already open)
+    const linkingSubscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
     // 初期化：セッションとサブスク状態を一括で確認・設定
     async function initializeAuth() {
       try {
@@ -331,6 +387,7 @@ function NavigationContent() {
 
     return () => {
       isMounted = false;
+      linkingSubscription.remove();
       authSubscription.unsubscribe();
       refreshListener.remove();
       if (realtimeSubscription) {
