@@ -251,7 +251,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUri,
+          redirectTo: 'commitapp://',
           // openAuthSessionAsyncがブラウザライフサイクルを管理するため、
           // Supabaseによる自動リダイレクトをスキップ
           skipBrowserRedirect: true,
