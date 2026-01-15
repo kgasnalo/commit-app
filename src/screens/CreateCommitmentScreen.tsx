@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  FlatList,
   Platform,
   Dimensions,
   KeyboardAvoidingView,
@@ -50,6 +51,8 @@ import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import * as AnalyticsService from '../lib/AnalyticsService';
+import { buildSearchQuery } from '../utils/searchQueryBuilder';
+import { filterAndRankResults, GoogleBook as GoogleBookFilter } from '../utils/searchResultFilter';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -118,12 +121,20 @@ interface GoogleBook {
   };
 }
 
+interface ManualBook {
+  title: string;
+  author: string;
+  totalPages: number;
+  coverUrl: string | null;
+}
+
 interface Props {
   navigation: any;
   route?: {
     params?: {
       preselectedBook?: Book;
       bookId?: string;
+      manualBook?: ManualBook;
     };
   };
 }
@@ -154,6 +165,11 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   const [totalPagesRead, setTotalPagesRead] = useState(0);
   const [continueInfoMessage, setContinueInfoMessage] = useState<string | null>(null);
   const [continueBookIdInternal, setContinueBookIdInternal] = useState<string | null>(null);
+
+  // Manual Book Entry state
+  const [isManualEntry, setIsManualEntry] = useState(false);
+  const [manualBookData, setManualBookData] = useState<ManualBook | null>(route?.params?.manualBook || null);
+  const [manualMaxPages, setManualMaxPages] = useState<number>(1000);
 
   // Vignette and Pulse Animation Shared Values
   const vignetteIntensity = useSharedValue(0);
@@ -214,6 +230,32 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     }
   }, [route?.params?.bookId]);
 
+  // Manual Book Entry initialization
+  useEffect(() => {
+    const manualBook = route?.params?.manualBook;
+    if (manualBook) {
+      setIsManualEntry(true);
+      setManualBookData(manualBook);
+      setManualMaxPages(manualBook.totalPages);
+
+      // Convert to GoogleBook format for UI compatibility
+      const googleBook: GoogleBook = {
+        id: `manual_${Date.now()}`, // Temporary ID for UI
+        volumeInfo: {
+          title: manualBook.title,
+          authors: [manualBook.author],
+          imageLinks: manualBook.coverUrl
+            ? { thumbnail: manualBook.coverUrl }
+            : undefined,
+        },
+      };
+      setSelectedBook(googleBook);
+
+      // Set page count to half of total pages as default
+      setPageCount(Math.min(Math.ceil(manualBook.totalPages / 2), manualBook.totalPages));
+    }
+  }, [route?.params?.manualBook]);
+
   async function initializeContinueFlow(bookId: string) {
     setLoadingContinueData(true);
     setIsContinueFlow(true);
@@ -229,12 +271,12 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       // Convert to GoogleBook format for compatibility
       const googleBook: GoogleBook = {
-        id: bookData.google_books_id,
+        id: bookData.google_books_id ?? '',
         volumeInfo: {
           title: bookData.title,
           authors: [bookData.author],
           imageLinks: {
-            thumbnail: bookData.cover_url || undefined,
+            thumbnail: bookData.cover_url ?? undefined,
           },
         },
       };
@@ -294,12 +336,12 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
   function convertToGoogleBook(book: Book): GoogleBook {
     return {
-      id: book.google_books_id,
+      id: book.google_books_id ?? '',
       volumeInfo: {
         title: book.title,
         authors: [book.author],
         imageLinks: {
-          thumbnail: book.cover_url
+          thumbnail: book.cover_url ?? undefined
         }
       }
     };
@@ -338,15 +380,48 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
     setSearching(true);
     try {
+      // Use smart query builder for better search accuracy
+      const parsedQuery = buildSearchQuery({ query: searchQuery });
+
+      // If ISBN detected, try direct lookup first
+      if (parsedQuery.type === 'isbn' && parsedQuery.isbnValue) {
+        const { data: isbnData } = await supabase.functions.invoke('isbn-lookup', {
+          body: { isbn: parsedQuery.isbnValue },
+        });
+        if (isbnData?.success && isbnData.book) {
+          // Convert ISBN lookup result to GoogleBook format
+          const googleBook: GoogleBook = {
+            id: isbnData.book.id,
+            volumeInfo: {
+              title: isbnData.book.title,
+              authors: isbnData.book.authors,
+              imageLinks: isbnData.book.thumbnail
+                ? { thumbnail: isbnData.book.thumbnail }
+                : undefined,
+            },
+          };
+          handleBookSelect(googleBook);
+          setSearching(false);
+          return;
+        }
+      }
+
+      // Standard Google Books search with optimized query
       const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&key=${GOOGLE_API_KEY}&maxResults=10`
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(parsedQuery.googleBooksQuery)}&key=${GOOGLE_API_KEY}&maxResults=15`
       );
       const data = await response.json();
 
       if (data.items && data.items.length > 0) {
-        setSearchResults(data.items);
+        // Filter and rank results for better quality
+        const filteredResults = filterAndRankResults(data.items as GoogleBookFilter[]);
+        setSearchResults(filteredResults as GoogleBook[]);
+
+        if (filteredResults.length === 0) {
+          // All results filtered out
+          setSearchResults([]);
+        }
       } else {
-        Alert.alert(i18n.t('errors.no_results'), i18n.t('errors.no_books_found'));
         setSearchResults([]);
       }
     } catch (error: unknown) {
@@ -408,23 +483,37 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       // Calculate pages to read (delta from current progress)
       const pagesToRead = Math.max(1, pageCount - totalPagesRead);
 
-      // Get cover URL
-      const coverUrl = selectedBook.volumeInfo.imageLinks?.thumbnail
-        || selectedBook.volumeInfo.imageLinks?.smallThumbnail
-        || null;
+      // Get cover URL - prefer manual book data if available
+      const coverUrl = isManualEntry && manualBookData
+        ? manualBookData.coverUrl
+        : (selectedBook.volumeInfo.imageLinks?.thumbnail
+          || selectedBook.volumeInfo.imageLinks?.smallThumbnail
+          || null);
+
+      // Build request body
+      const requestBody: Record<string, unknown> = {
+        book_title: selectedBook.volumeInfo.title,
+        book_author: selectedBook.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author'),
+        book_cover_url: coverUrl,
+        deadline: deadline.toISOString(),
+        pledge_amount: pledgeAmount,
+        currency: currency,
+        target_pages: pagesToRead,
+      };
+
+      // Add manual entry specific fields
+      if (isManualEntry && manualBookData) {
+        requestBody.is_manual_entry = true;
+        requestBody.book_total_pages = manualBookData.totalPages;
+        // google_books_id not needed for manual entries
+      } else {
+        requestBody.google_books_id = selectedBook.id;
+        requestBody.is_manual_entry = false;
+      }
 
       // Call Edge Function for server-side validation and creation
       const { data, error } = await supabase.functions.invoke('create-commitment', {
-        body: {
-          google_books_id: selectedBook.id,
-          book_title: selectedBook.volumeInfo.title,
-          book_author: selectedBook.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author'),
-          book_cover_url: coverUrl,
-          deadline: deadline.toISOString(),
-          pledge_amount: pledgeAmount,
-          currency: currency,
-          target_pages: pagesToRead,
-        },
+        body: requestBody,
       });
 
       if (error) {
@@ -596,14 +685,34 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
                 </TouchableOpacity>
               </View>
 
-              {searchResults.length > 0 && (
-                <View style={styles.searchResults}>
-                  {searchResults.map((item) => (
-                    <View key={item.id}>
-                      {renderBookItem({ item })}
+              {/* Search Results with FlatList */}
+              {searchQuery.length > 0 && !searching && (
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item) => item.id}
+                  renderItem={renderBookItem}
+                  scrollEnabled={false}
+                  style={styles.searchResultsList}
+                  contentContainerStyle={styles.searchResultsContent}
+                  ListEmptyComponent={
+                    <View style={styles.noResultsContainer}>
+                      <Text style={styles.noResultsText}>{i18n.t('errors.no_books_found')}</Text>
                     </View>
-                  ))}
-                </View>
+                  }
+                  ListFooterComponent={
+                    <View style={styles.manualEntryContainer}>
+                      <TouchableOpacity
+                        style={styles.manualEntryButtonOutlined}
+                        onPress={() => navigation.navigate('ManualBookEntry')}
+                      >
+                        <MaterialIcons name="add-circle-outline" size={20} color="#FF6B35" />
+                        <Text style={styles.manualEntryButtonOutlinedText}>
+                          {i18n.t('book_search.cant_find_book')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  }
+                />
               )}
             </>
           )}
@@ -645,7 +754,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
             value={pageCount}
             onValueChange={setPageCount}
             minValue={isContinueFlow && totalPagesRead > 0 ? totalPagesRead + 1 : 1}
-            maxValue={1000}
+            maxValue={isManualEntry ? manualMaxPages : 1000}
           />
         </View>
 
@@ -863,6 +972,12 @@ const styles = StyleSheet.create({
   },
   searchResults: {
     marginTop: 12,
+  },
+  searchResultsList: {
+    marginTop: 12,
+  },
+  searchResultsContent: {
+    paddingBottom: 16,
   },
   // Glassmorphism book item
   bookItem: {
@@ -1109,5 +1224,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4CAF50',
     marginTop: 6,
+  },
+  // Manual Entry CTA styles
+  manualEntryContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  manualEntryButtonOutlined: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    backgroundColor: 'transparent',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#FF6B35',
+    borderStyle: 'dashed',
+    gap: 10,
+  },
+  manualEntryButtonOutlinedText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6B35',
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.5)',
   },
 });

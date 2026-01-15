@@ -10,10 +10,12 @@ initSentry('create-commitment')
 // ============================================================
 
 interface CreateCommitmentRequest {
-  google_books_id: string
+  google_books_id?: string | null  // Optional for manual entries
   book_title: string
   book_author: string
   book_cover_url: string | null
+  book_total_pages?: number | null  // Total pages for manual entries (slider max)
+  is_manual_entry?: boolean         // Flag for manual book entries
   deadline: string // ISO 8601
   pledge_amount: number
   currency: string
@@ -158,6 +160,8 @@ Deno.serve(async (req) => {
       book_title,
       book_author,
       book_cover_url,
+      book_total_pages,
+      is_manual_entry,
       deadline,
       pledge_amount,
       currency,
@@ -165,8 +169,18 @@ Deno.serve(async (req) => {
     } = body
 
     // 3. Validate required fields
-    if (!google_books_id || !book_title || !deadline || !pledge_amount || !currency || !target_pages) {
+    if (!book_title || !deadline || !pledge_amount || !currency || !target_pages) {
       return errorResponse(400, 'MISSING_FIELDS')
+    }
+
+    // google_books_id is required for non-manual entries
+    if (!is_manual_entry && !google_books_id) {
+      return errorResponse(400, 'MISSING_GOOGLE_BOOKS_ID')
+    }
+
+    // For manual entries, book_total_pages should be provided
+    if (is_manual_entry && (!book_total_pages || book_total_pages < 1)) {
+      return errorResponse(400, 'MISSING_TOTAL_PAGES')
     }
 
     // 4. Validate amount
@@ -187,17 +201,28 @@ Deno.serve(async (req) => {
       return errorResponse(400, pageValidation.error!)
     }
 
-    // 7. Google Books page count validation (soft fail)
-    const bookPageCount = await fetchBookPageCount(google_books_id)
-    if (bookPageCount !== null) {
-      if (target_pages > bookPageCount + PAGE_COUNT_BUFFER) {
+    // 7. Page count validation
+    if (!is_manual_entry && google_books_id) {
+      // Google Books page count validation (soft fail)
+      const bookPageCount = await fetchBookPageCount(google_books_id)
+      if (bookPageCount !== null) {
+        if (target_pages > bookPageCount + PAGE_COUNT_BUFFER) {
+          console.warn(
+            `[create-commitment] Page count exceeds book: ${target_pages} > ${bookPageCount} + ${PAGE_COUNT_BUFFER}`
+          )
+          return errorResponse(400, 'PAGE_COUNT_EXCEEDS_BOOK')
+        }
+      } else {
+        console.warn('[create-commitment] Could not verify page count from Google Books, proceeding anyway')
+      }
+    } else if (is_manual_entry && book_total_pages) {
+      // For manual books, validate against user-provided total pages
+      if (target_pages > book_total_pages + PAGE_COUNT_BUFFER) {
         console.warn(
-          `[create-commitment] Page count exceeds book: ${target_pages} > ${bookPageCount} + ${PAGE_COUNT_BUFFER}`
+          `[create-commitment] Page count exceeds manual book: ${target_pages} > ${book_total_pages} + ${PAGE_COUNT_BUFFER}`
         )
         return errorResponse(400, 'PAGE_COUNT_EXCEEDS_BOOK')
       }
-    } else {
-      console.warn('[create-commitment] Could not verify page count from Google Books, proceeding anyway')
     }
 
     // 8. Use SERVICE_ROLE for database operations
@@ -209,40 +234,66 @@ Deno.serve(async (req) => {
     // 9. Book upsert
     let bookId: string
 
-    // Check if book exists
-    const { data: existingBook } = await supabaseAdmin
-      .from('books')
-      .select('id')
-      .eq('google_books_id', google_books_id)
-      .single()
+    // Ensure HTTPS for cover URL (iOS ATS requirement)
+    let sanitizedCoverUrl = book_cover_url
+    if (sanitizedCoverUrl) {
+      sanitizedCoverUrl = sanitizedCoverUrl
+        .replace('http:', 'https:')
+        .replace(/&edge=curl/g, '')
+    }
 
-    if (existingBook) {
-      bookId = existingBook.id
-    } else {
-      // Ensure HTTPS for cover URL (iOS ATS requirement)
-      let sanitizedCoverUrl = book_cover_url
-      if (sanitizedCoverUrl) {
-        sanitizedCoverUrl = sanitizedCoverUrl
-          .replace('http:', 'https:')
-          .replace(/&edge=curl/g, '')
-      }
+    if (is_manual_entry) {
+      // Manual book entry - always create new with generated ID
+      const manualId = `manual_${crypto.randomUUID()}`
 
       const { data: newBook, error: bookError } = await supabaseAdmin
         .from('books')
         .insert({
-          google_books_id,
+          google_books_id: manualId,  // Use generated ID for uniqueness
           title: book_title,
           author: book_author || 'Unknown Author',
           cover_url: sanitizedCoverUrl,
+          total_pages: book_total_pages,
+          is_manual: true,
         })
         .select('id')
         .single()
 
       if (bookError) {
-        console.error('[create-commitment] Book creation failed:', bookError)
+        console.error('[create-commitment] Manual book creation failed:', bookError)
         return errorResponse(500, 'BOOK_CREATION_FAILED')
       }
       bookId = newBook.id
+      console.log(`[create-commitment] Created manual book: ${bookId}, manualId: ${manualId}`)
+    } else {
+      // Google Books entry - check if exists first
+      const { data: existingBook } = await supabaseAdmin
+        .from('books')
+        .select('id')
+        .eq('google_books_id', google_books_id)
+        .single()
+
+      if (existingBook) {
+        bookId = existingBook.id
+      } else {
+        const { data: newBook, error: bookError } = await supabaseAdmin
+          .from('books')
+          .insert({
+            google_books_id,
+            title: book_title,
+            author: book_author || 'Unknown Author',
+            cover_url: sanitizedCoverUrl,
+            is_manual: false,
+          })
+          .select('id')
+          .single()
+
+        if (bookError) {
+          console.error('[create-commitment] Book creation failed:', bookError)
+          return errorResponse(500, 'BOOK_CREATION_FAILED')
+        }
+        bookId = newBook.id
+      }
     }
 
     // 10. Create commitment

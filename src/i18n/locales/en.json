@@ -396,6 +396,36 @@
     "unknown_author": "Unknown Author",
     "coming_soon": "Coming Soon"
   },
+  "book_search": {
+    "cant_find_book": "Can't find your book? Add it manually",
+    "add_manually": "Add Book Manually",
+    "advanced_search": "Advanced Search",
+    "simple_search": "Simple Search",
+    "title_placeholder": "Book title",
+    "author_placeholder": "Author name"
+  },
+  "manual_entry": {
+    "title": "Add Book Manually",
+    "title_label": "Book Title",
+    "title_placeholder": "Enter the book title",
+    "author_label": "Author",
+    "author_placeholder": "Enter the author's name",
+    "pages_label": "Total Pages",
+    "pages_placeholder": "Enter total page count",
+    "cover_label": "Cover Image (Optional)",
+    "take_photo": "Take Photo",
+    "choose_photo": "Choose from Library",
+    "remove_photo": "Remove",
+    "no_cover": "No Cover",
+    "add_button": "Add This Book",
+    "success_message": "Book added successfully!",
+    "validation": {
+      "title_required": "Book title is required",
+      "author_required": "Author name is required",
+      "pages_required": "Total pages is required",
+      "pages_invalid": "Please enter a valid page count (1-10000)"
+    }
+  },
   "errors": {
     "network": "Network error occurred",
     "auth": "Authentication error. Please log in again.",

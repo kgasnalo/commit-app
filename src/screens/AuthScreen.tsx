@@ -84,6 +84,27 @@ export default function AuthScreen({ navigation }: any) {
     setLoading(false);
   }
 
+  // Helper: Ensure user record exists in users table
+  const ensureUserRecord = async (userId: string, userEmail: string | undefined) => {
+    if (!userEmail) return;
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (!userData) {
+      await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          email: userEmail,
+          subscription_status: 'inactive'
+        });
+    }
+  };
+
   // Google Sign In
   async function handleGoogleSignIn() {
     try {
@@ -92,7 +113,9 @@ export default function AuthScreen({ navigation }: any) {
         provider: 'google',
         options: {
           redirectTo: redirectUri,
-          skipBrowserRedirect: false,
+          // openAuthSessionAsyncがブラウザライフサイクルを管理するため、
+          // Supabaseによる自動リダイレクトをスキップ
+          skipBrowserRedirect: true,
         },
       });
 
@@ -109,10 +132,29 @@ export default function AuthScreen({ navigation }: any) {
 
         if (result.type === 'success') {
           const url = result.url;
-          // URLからアクセストークンとリフレッシュトークンを抽出
-          const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1]);
-          const access_token = params.get('access_token');
-          const refresh_token = params.get('refresh_token');
+          const urlObj = new URL(url);
+          const hashParams = new URLSearchParams(urlObj.hash.slice(1));
+          const queryParams = urlObj.searchParams;
+
+          // PKCE Flow: codeパラメータをチェック（優先）
+          const code = queryParams.get('code');
+          if (code) {
+            const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+
+            if (sessionError) {
+              Alert.alert(i18n.t('auth.error_auth'), sessionError.message);
+              return;
+            }
+
+            if (sessionData.user) {
+              await ensureUserRecord(sessionData.user.id, sessionData.user.email);
+            }
+            return;
+          }
+
+          // Implicit Flow: access_token / refresh_token をチェック
+          const access_token = hashParams.get('access_token') || queryParams.get('access_token');
+          const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
 
           if (access_token && refresh_token) {
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -122,24 +164,11 @@ export default function AuthScreen({ navigation }: any) {
 
             if (sessionError) {
               Alert.alert(i18n.t('auth.error_auth'), sessionError.message);
-            } else if (sessionData.user) {
-              // usersテーブルにレコードが存在するか確認
-              const { data: userData, error: checkError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('id', sessionData.user.id)
-                .single();
+              return;
+            }
 
-              // レコードが存在しない場合は作成
-              if (!userData && !checkError && sessionData.user.email) {
-                await supabase
-                  .from('users')
-                  .insert({
-                    id: sessionData.user.id,
-                    email: sessionData.user.email,
-                    subscription_status: 'inactive'
-                  });
-              }
+            if (sessionData.user) {
+              await ensureUserRecord(sessionData.user.id, sessionData.user.email);
             }
           }
         }

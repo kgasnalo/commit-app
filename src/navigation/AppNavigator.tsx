@@ -39,6 +39,7 @@ import LibraryScreen from '../screens/LibraryScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
 import MonkModeScreen from '../screens/monkmode/MonkModeScreen';
 import MonkModeActiveScreen from '../screens/monkmode/MonkModeActiveScreen';
+import ManualBookEntryScreen from '../screens/ManualBookEntryScreen';
 
 // Onboarding screens
 import OnboardingScreen0 from '../screens/onboarding/OnboardingScreen0_Welcome';
@@ -67,6 +68,7 @@ function HomeStackNavigator() {
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
       <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
+      <Stack.Screen name="ManualBookEntry" component={ManualBookEntryScreen} />
       <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
       <Stack.Screen name="Verification" component={VerificationScreen} />
     </Stack.Navigator>
@@ -434,6 +436,7 @@ function NavigationContent() {
           <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
           <Stack.Screen name="Onboarding2" component={OnboardingScreen2} />
           <Stack.Screen name="Onboarding3" component={OnboardingScreen3} />
+          <Stack.Screen name="ManualBookEntry" component={ManualBookEntryScreen} />
           <Stack.Screen name="Onboarding4" component={OnboardingScreen4} />
           <Stack.Screen name="Onboarding5" component={OnboardingScreen5} />
           <Stack.Screen name="Onboarding6" component={OnboardingScreen6} />

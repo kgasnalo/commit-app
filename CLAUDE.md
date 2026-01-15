@@ -614,3 +614,42 @@
   <Image source={{ uri }} blurRadius={25} />
   ```
 - **i18n Key Duplication Prevention:** When adding new i18n keys, ALWAYS search for existing keys first using `grep '"key_name":' src/i18n/locales/`. Duplicate keys in JSON cause the last occurrence to silently override previous ones, leading to inconsistent behavior.
+- **Multi-Stack Screen Registration:** When a screen can be accessed from BOTH onboarding AND main app flows (e.g., ManualBookEntry), register it in ALL relevant navigation stacks in `AppNavigator.tsx`. The app has 3 conditional stack groups:
+  1. `!session` (unauthenticated): Onboarding0-13, WarpTransition, Auth
+  2. `!isSubscribed` (authenticated, not subscribed): Onboarding7-13, MainTabs
+  3. `isSubscribed` (authenticated, subscribed): MainTabs
+
+  If a screen is only registered in one group, navigating to it from another group causes `"NAVIGATE" action ... not handled` error.
+- **Search Results CTA Visibility:** For search results with a "Can't find? Add manually" type CTA button, use `FlatList` with `ListFooterComponent` instead of conditional rendering below the list. This ensures the CTA is always visible regardless of result count:
+  ```typescript
+  // BAD - Button disappears based on conditions
+  {searchResults.length > 0 && (
+    <View>{searchResults.map(...)}</View>
+    <ManualEntryButton />
+  )}
+  {searchResults.length === 0 && <ManualEntryButton />}
+
+  // GOOD - Footer always visible when query exists
+  <FlatList
+    data={searchResults}
+    ListEmptyComponent={<NoResultsMessage />}
+    ListFooterComponent={
+      searchQuery.length > 0 ? <ManualEntryButton /> : null
+    }
+    contentContainerStyle={{ paddingBottom: 150 }}
+  />
+  ```
+- **Multi-Flow Screen Navigation Pattern:** When a screen can be reached from multiple flows (onboarding vs main app), accept a `fromOnboarding` route param to determine the navigation destination after completion:
+  ```typescript
+  export default function SharedScreen({ navigation, route }: any) {
+    const { fromOnboarding, otherData } = route.params || {};
+
+    const handleComplete = () => {
+      if (fromOnboarding) {
+        navigation.navigate('OnboardingNextStep', { data });
+      } else {
+        navigation.navigate('MainAppScreen', { data });
+      }
+    };
+  }
+  ```

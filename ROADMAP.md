@@ -78,6 +78,14 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **2.1.1 Screen 0 (Welcome):** Kinetic Intro.
 - [x] **2.1.2 Screen 1 (Tsundoku):** Visual Weight Wheel Picker.
 - [ ] **2.1.3 Screen 3 (Selection):** The Anchor Object (Shared Element Transition).
+- [x] **2.1.4 Screen 3 (Manual Entry):** Manual book entry fallback for books not found in Google Books API.
+    - **Implementation:**
+      - `ManualBookEntryScreen.tsx` with Title/Author/Pages/Cover input
+      - Advanced search query builder (ISBN detection, intitle:/inauthor: operators)
+      - Search result filtering and ranking by quality score
+      - FlatList with ListFooterComponent for "Can't find?" CTA
+      - DB schema: `google_books_id` nullable, `total_pages`, `is_manual` columns
+      - Edge Function: `create-commitment` manual entry support
 
 ### Phase 2.2: Act 2 - The Crisis (Screens 5-10)
 - [x] **2.2.1 Screen 5 (Penalty):** Haptic Resistance Slider.
@@ -566,11 +574,26 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Risk:** Unnecessary re-renders of all consuming components on every state update.
     - **Fix:** Wrap `contextValue` in `useMemo`.
 
-- [x] **P.10 Missing Indexes (Database Performance)**
+- [ ] **P.10 Missing Indexes (Database Performance)**
     - **Problem:** `commitments` table lacks indexes on foreign keys (`user_id`, `book_id`) and status.
     - **Risk:** Full table scans causing slow dashboard loading as data grows.
     - **Fix:** Create a migration to add indexes for common query patterns.
     - **Implementation:** Created `20260114200000_add_missing_indexes.sql` with 9 indexes on commitments (user_id, book_id, status, user_status composite), verification_logs (commitment_id, created_at), tags (user_id), book_tags (tag_id, commitment_id).
+
+---
+
+## 🟢 Post-Release (Backlog)
+
+**Objective:** Continuous improvement of UX and trust.
+
+- [ ] **Improve Social Login Consent UX**
+    - **Status:** Added to Backlog (Post-Release)
+    - **Priority:** Medium (UX Trust Improvement)
+    - **Problem:** Currently, the iOS permission dialog says "Sign in with supabase.com", which might confuse some users compared to native app experiences.
+    - **Solution Candidates:**
+        - **Plan A (Easy):** Enable Supabase Custom Domain (e.g., auth.commit-app.com). Requires Pro Plan.
+        - **Plan B (Native):** Migrate to `react-native-google-signin` (Native SDK) to bypass the browser consent modal entirely.
+    - **Timing:** Phase 2 (After initial user acquisition).
 
 ---
 

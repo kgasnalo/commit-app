@@ -13,11 +13,13 @@ export interface User {
 
 export interface Book {
   id: string;
-  google_books_id: string;
+  google_books_id: string | null;
   title: string;
   author: string;
-  cover_url: string;
+  cover_url: string | null;
   amazon_link?: string;
+  total_pages?: number | null;
+  is_manual?: boolean;
 }
 
 export interface Commitment {

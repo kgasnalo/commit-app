@@ -69,7 +69,7 @@ export interface RawCommitmentWithBook {
 
 export interface BookMetadata {
   id: string;
-  google_books_id: string;
+  google_books_id: string | null;
   title: string;
   author: string;
   cover_url: string | null;

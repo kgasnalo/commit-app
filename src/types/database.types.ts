@@ -51,29 +51,35 @@ export interface Database {
       books: {
         Row: {
           id: string
-          google_books_id: string
+          google_books_id: string | null
           title: string
           author: string
           cover_url: string | null
           amazon_link: string | null
+          total_pages: number | null
+          is_manual: boolean
           created_at: string
         }
         Insert: {
           id?: string
-          google_books_id: string
+          google_books_id?: string | null
           title: string
           author: string
           cover_url?: string | null
           amazon_link?: string | null
+          total_pages?: number | null
+          is_manual?: boolean
           created_at?: string
         }
         Update: {
           id?: string
-          google_books_id?: string
+          google_books_id?: string | null
           title?: string
           author?: string
           cover_url?: string | null
           amazon_link?: string | null
+          total_pages?: number | null
+          is_manual?: boolean
           created_at?: string
         }
         Relationships: []

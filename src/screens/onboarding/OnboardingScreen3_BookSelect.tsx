@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { ScanBarcode } from 'lucide-react-native';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import BarcodeScannerModal from '../../components/BarcodeScannerModal';
@@ -146,6 +146,31 @@ export default function OnboardingScreen3({ navigation, route }: any) {
               <Ionicons name="add" size={20} color={colors.signal.active} />
             </TouchableOpacity>
           )}
+          ListEmptyComponent={
+            query.length > 0 && !loading ? (
+              <View style={styles.noResultsContainer}>
+                <Text style={styles.noResultsText}>{i18n.t('errors.no_books_found')}</Text>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            query.length > 0 && !loading ? (
+              <View style={styles.manualEntryContainer}>
+                <TouchableOpacity
+                  style={styles.manualEntryButtonOutlined}
+                  onPress={() => navigation.navigate('ManualBookEntry', {
+                    fromOnboarding: true,
+                    tsundokuCount,
+                  })}
+                >
+                  <MaterialIcons name="add-circle-outline" size={20} color="#FF6B35" />
+                  <Text style={styles.manualEntryButtonOutlinedText}>
+                    {i18n.t('book_search.cant_find_book')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -195,7 +220,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    paddingBottom: 40,
+    paddingBottom: 150,
   },
   bookItem: {
     flexDirection: 'row',
@@ -233,6 +258,42 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.heading,
     fontSize: 12,
     marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  // Empty state
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  emptyText: {
+    color: colors.text.muted,
+    fontFamily: typography.fontFamily.monospace,
+    fontSize: 12,
+  },
+  // Manual Entry CTA
+  manualEntryContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    marginTop: 8,
+  },
+  manualEntryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    backgroundColor: 'transparent',
+    borderRadius: 2,
+    borderWidth: 1.5,
+    borderColor: colors.signal.active,
+    borderStyle: 'dashed',
+    gap: 10,
+  },
+  manualEntryText: {
+    color: colors.signal.active,
+    fontFamily: typography.fontFamily.heading,
+    fontSize: 12,
+    fontWeight: '600',
     letterSpacing: 0.5,
   },
 });

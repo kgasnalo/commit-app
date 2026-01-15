@@ -64,7 +64,7 @@ export default function RoleSelectScreen({ navigation }: Props) {
 
     return (
       <View style={styles.bookCard}>
-        <BookThumbnail uri={item.cover_url} />
+        <BookThumbnail uri={item.cover_url ?? undefined} />
         <View style={styles.bookInfo}>
           <Text style={styles.bookTitle} numberOfLines={2}>{localizedTitle}</Text>
           <Text style={styles.bookAuthor}>{localizedAuthor}</Text>

@@ -396,6 +396,36 @@
     "unknown_author": "著者不明",
     "coming_soon": "準備中"
   },
+  "book_search": {
+    "cant_find_book": "見つからない？手動で追加",
+    "add_manually": "本を手動で追加",
+    "advanced_search": "詳細検索",
+    "simple_search": "簡易検索",
+    "title_placeholder": "書籍タイトル",
+    "author_placeholder": "著者名"
+  },
+  "manual_entry": {
+    "title": "本を手動で追加",
+    "title_label": "書籍タイトル",
+    "title_placeholder": "タイトルを入力",
+    "author_label": "著者",
+    "author_placeholder": "著者名を入力",
+    "pages_label": "総ページ数",
+    "pages_placeholder": "ページ数を入力",
+    "cover_label": "表紙画像（任意）",
+    "take_photo": "写真を撮る",
+    "choose_photo": "ライブラリから選択",
+    "remove_photo": "削除",
+    "no_cover": "表紙なし",
+    "add_button": "この本を追加",
+    "success_message": "本が追加されました！",
+    "validation": {
+      "title_required": "タイトルは必須です",
+      "author_required": "著者名は必須です",
+      "pages_required": "ページ数は必須です",
+      "pages_invalid": "有効なページ数を入力してください（1-10000）"
+    }
+  },
   "errors": {
     "network": "ネットワークエラーが発生しました",
     "auth": "認証エラーが発生しました。再度ログインしてください。",
