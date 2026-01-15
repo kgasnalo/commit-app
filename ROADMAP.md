@@ -107,6 +107,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - Commitment creation via Edge Function (not direct INSERT)
       - Edge Function handles book upsert + commitment insert
       - Bypasses RLS with service_role key
+      - **Deploy with `--no-verify-jwt`** (Gateway rejects ES256 tokens; function does internal auth)
 - [x] **2.3.3 Screen 15 (The Transition):** Warp Speed transition.
 
 ---

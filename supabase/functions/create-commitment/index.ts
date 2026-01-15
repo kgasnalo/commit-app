@@ -123,9 +123,21 @@ Deno.serve(async (req) => {
   try {
     // 1. Authenticate user
     const authHeader = req.headers.get('Authorization')
+    console.log('[create-commitment] Auth header present:', !!authHeader)
+    console.log('[create-commitment] Auth header length:', authHeader?.length || 0)
+
     if (!authHeader) {
-      return errorResponse(401, 'UNAUTHORIZED')
+      console.error('[create-commitment] No Authorization header received')
+      return errorResponse(401, 'UNAUTHORIZED', 'No Authorization header')
     }
+
+    // Validate Bearer prefix
+    if (!authHeader.startsWith('Bearer ')) {
+      console.error('[create-commitment] Invalid auth header format (missing Bearer prefix)')
+      return errorResponse(401, 'UNAUTHORIZED', 'Invalid auth header format')
+    }
+
+    console.log('[create-commitment] Token snippet:', authHeader.substring(7, 27) + '...')
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -139,9 +151,10 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
     if (authError || !user) {
-      console.warn('[create-commitment] Auth failed:', authError?.message)
+      console.error('[create-commitment] Auth verification failed:', authError?.message)
+      console.error('[create-commitment] Auth error code:', authError?.status)
       addBreadcrumb('Auth failed', 'auth', { error: authError?.message })
-      return errorResponse(401, 'UNAUTHORIZED')
+      return errorResponse(401, 'UNAUTHORIZED', authError?.message || 'Token validation failed')
     }
 
     // Set user context for Sentry

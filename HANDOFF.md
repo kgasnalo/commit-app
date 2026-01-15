@@ -1,95 +1,100 @@
-# Handoff: Session 2026-01-16
+# Handoff: Session 2026-01-15
 
 ## Current Goal
-**Release-Quality Auth Flow** - ゾンビ状態（無限ローディング）を防ぐため、認証フローにタイムアウトと try-finally パターンを実装完了。
+**Cinematic Animation Fix Complete** - サブスク契約後の `CinematicCommitReveal` アニメーションがスキップされる問題を修正。
 
 ---
 
 ## Current Critical Status
 
-### All Auth Flow Improvements Complete ✅
+### Animation Issue Fixed ✅
 
 | Task | Status | Details |
 |------|--------|---------|
-| **URL Polyfill** | ✅ | `index.js` の最初に配置 |
-| **Username Persistence** | ✅ | AsyncStorage 経由で OAuth 後も保持 |
-| **User Record Creation** | ✅ | `onAuthStateChange` 内でブロッキング実行 |
-| **Commitment via Edge Function** | ✅ | RLS バイパス + サーバーサイドバリデーション |
-| **Screen 12 Navigation Button** | ✅ | アニメーション完了後にボタン有効化 |
-| **Robust Auth Timeouts** | ✅ | `withTimeout` ヘルパー + try-finally パターン |
+| **Problem Identified** | ✅ | `subscription_status`更新がRealtimeをトリガーし、アニメーション前にスタック切替 |
+| **Root Cause #1** | ✅ | `handleSubscribe()`内でDB更新 → Realtime発火 → コンポーネントアンマウント |
+| **Root Cause #2** | ✅ | `TOKEN_REFRESHED`イベントでサブスクチェック → タイムアウト → Onboarding7に戻る |
+| **Fix Deployed** | ✅ | DB更新を`handleWarpComplete()`に移動、TOKEN_REFRESHED処理を修正 |
+| **iOS Test** | ✅ | アニメーション表示確認済み |
 
-### New Debug Logs (Remove Before Release)
-- `⏱️ [operationName]: Timed out after Xms` - タイムアウト発生時
-- `✅ Auth: Setting authenticated state (finally block)` - 保証されたUI解除
+### Debug Additions (Remove Before Release)
+- `OnboardingScreen7`: DEV用ログアウトボタン（`__DEV__`環境のみ表示）
 
-### Existing Debug Logs
-- `🔗 Deep Link:` / `🔗 createUserRecord:`
-- `🚀 initializeAuth:` / `✅ Auth State Changed:`
-- `📊 checkSubscriptionStatus:`
+---
+
+## What Worked (Solutions Applied)
+
+### 1. subscription_status更新タイミングの変更
+- **Before:** `handleSubscribe()` → コミットメント作成成功 → DB更新 → アニメーション開始（失敗）
+- **After:** `handleSubscribe()` → コミットメント作成成功 → アニメーション開始 → `handleWarpComplete()` → DB更新
+- **Result:** ✅ アニメーションが3.5秒間表示された後にダッシュボードに遷移
+
+### 2. TOKEN_REFRESHEDイベントの処理改善
+- **Problem:** `refreshSession()`呼び出し → `TOKEN_REFRESHED`発火 → サブスクチェック → タイムアウト → `isSubscribed: false` → Onboarding7に戻る
+- **Fix:** `TOKEN_REFRESHED`イベントでは`isSubscribed`状態を維持し、セッションのみ更新
+- **Result:** ✅ Screen13が維持され、アニメーションが正常に表示
+
+### 3. デバッグ用ログアウト機能
+- **Problem:** 認証済み・未サブスク状態でダッシュボードにアクセスできず、ログアウト不可
+- **Fix:** `OnboardingScreen7`に`__DEV__`限定のログアウトボタンを追加
+- **Result:** ✅ 開発時にいつでもクリーンな状態からテスト可能
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. URL Polyfill の読み込み位置
-- **Problem:** AppNavigator.tsx で import しても、Deep Link 処理時に `new URL()` が動作しない
-- **Solution:** `index.js` の**最初の行**で import
+### 1. Supabase CLIでのユーザー削除
+- **Attempted:** `supabase db execute` でリモートDBに直接SQL実行
+- **Result:** ❌ コマンドが存在しない、Management APIもアクセストークン不足
+- **Workaround:** デバッグ用ログアウトボタンをアプリに追加
 
-### 2. OAuth後にユーザー名が消失
-- **Problem:** Google Login 後に「SYSTEM INITIALIZING...」で停止
-- **Solution:** OAuth 前に `username` を AsyncStorage に保存
-
-### 3. レースコンディション: handleDeepLink vs onAuthStateChange
-- **Problem:** `handleDeepLink` でユーザーレコード作成 → `onAuthStateChange` が並行実行 → 認証状態が先に設定される
-- **Solution:** ユーザーレコード作成を `onAuthStateChange` の `SIGNED_IN` ブロック内に移動し、`checkSubscriptionStatus` の**前**に実行
-
-### 4. RLS エラー: OnboardingScreen13 の直接 INSERT
-- **Problem:** `supabase.from('commitments').insert()` が RLS でブロック
-- **Solution:** `supabase.functions.invoke('create-commitment', ...)` に置換
-
-### 5. ゾンビ状態（無限ローディング）
-- **Problem:** ネットワーク遅延時に `onAuthStateChange` 内の非同期処理がハングし、永久にローディング状態のまま
-- **Solution:** `withTimeout` ヘルパーで各操作に境界時間を設定 + `try-finally` で UI 解除を保証
+### 2. シミュレーターのタイムアウト
+- **Problem:** `npx expo run:ios` 後に `xcrun simctl openurl` がタイムアウト
+- **Workaround:** `./run-ios-manual.sh` またはシミュレーター再起動
 
 ---
 
 ## Immediate Next Steps
 
-### NEXT: iOS Build Test
+### NEXT: Commit Changes
 ```bash
-./run-ios-manual.sh
+# 変更をコミット
+git add -A
+git commit -m "fix: cinematic animation skipped after subscription
 
-# フルフローテスト (新規ユーザー)
-1. Onboarding開始 → Screen3: 本選択
-2. Screen6: ユーザー名入力 → Google Login
-3. Screen7-12: オンボーディング継続
-4. Screen12: アニメーション後「Activate」ボタン表示
-5. Screen13: Slide to Commit
-6. ログ確認:
-   - 🔗 createUserRecord: User record created successfully ✅
-   - ✅ Auth: Setting authenticated state (finally block)
-   - Commitment created via Edge Function: {...}
-7. Dashboard に遷移
+- Move subscription_status update to handleWarpComplete()
+- Preserve isSubscribed state on TOKEN_REFRESHED event
+- Add DEV-only logout button to Onboarding7 for testing"
 ```
 
-### Timeout Test (Optional)
-ネットワーク遅延をシミュレートして、タイムアウトが機能することを確認:
-1. `createUserRecordFromOnboardingData` に `await new Promise(r => setTimeout(r, 10000))` を追加
-2. OAuth完了後、5秒でタイムアウトログ `⏱️ createUserRecord: Timed out` が表示
-3. アプリはハングせず続行することを確認
+### If Testing Again
+```bash
+# 1. アプリ起動
+./run-ios-manual.sh
+
+# 2. テストフロー
+# - Onboarding7で「DEV: Logout」をタップ（必要に応じて）
+# - Onboarding0から最初から進める
+# - Screen13で「Slide to Commit」
+# - 黒背景に「COMMIT」テキストが表示されることを確認
+# - アニメーション完了後にDashboardに遷移
+
+# 3. ログ確認
+# [Screen13] Commitment created successfully
+# [Screen13] Updating subscription_status to active...
+# [Screen13] subscription_status updated to active ✅
+```
 
 ---
 
 ## Verification Checklist
 
-- [x] TypeScript: `npx tsc --noEmit` パス
-- [x] URL Polyfill: index.js の最初に配置
-- [x] Username: AsyncStorage に保存
-- [x] User Record: onAuthStateChange でブロッキング作成
-- [x] Commitment: Edge Function 経由
-- [x] Screen 12: Navigation Button 追加
-- [x] Auth Timeouts: withTimeout + try-finally
-- [ ] iOS Build Test: 新規ユーザーフルフロー
+- [x] Problem identified: Realtime triggers before animation
+- [x] TOKEN_REFRESHED handling fixed
+- [x] subscription_status moved to handleWarpComplete
+- [x] DEV logout button added to Onboarding7
+- [x] iOS Test: Animation displays correctly
+- [x] iOS Test: Dashboard transition after animation
 
 ---
 
@@ -97,37 +102,62 @@
 
 | Category | Files |
 |----------|-------|
-| **Entry Point** | `index.js` |
-| **Auth Flow** | `src/navigation/AppNavigator.tsx` |
-| **OAuth Screen** | `src/screens/onboarding/OnboardingScreen6_Account.tsx` |
 | **Paywall Screen** | `src/screens/onboarding/OnboardingScreen13_Paywall.tsx` |
-| **Custom Plan Screen** | `src/screens/onboarding/OnboardingScreen12_CustomPlan.tsx` |
+| **Navigation** | `src/navigation/AppNavigator.tsx` |
+| **Debug Tool** | `src/screens/onboarding/OnboardingScreen7_OpportunityCost.tsx` |
+
+### OnboardingScreen13 Changes
+1. `subscription_status`更新を`handleWarpComplete()`に移動
+2. コメント追加（Realtimeトリガーの説明）
+
+### AppNavigator Changes
+1. `TOKEN_REFRESHED`イベントで`isSubscribed`状態を維持
+2. セッションのみ更新するように変更
+
+### OnboardingScreen7 Changes
+1. `__DEV__`限定のログアウトボタン追加
+2. スタイル追加（`debugLogout`, `debugLogoutText`）
 
 ---
 
-## Technical Implementation Details
+## Technical Details
 
-### withTimeout Helper (AppNavigator.tsx:295-312)
-```typescript
-async function withTimeout<T>(
-  operation: Promise<T>,
-  timeoutMs: number,
-  fallback: T,
-  operationName: string
-): Promise<T>
+### Animation Flow (After Fix)
 ```
-- タイムアウト時はフォールバック値を返す（エラーをスローしない）
-- ログで `⏱️` プレフィックスを使用
+handleSubscribe()
+    ↓
+Commitment created successfully
+    ↓
+setShowWarpTransition(true)
+    ↓
+CinematicCommitReveal (3.5秒)
+    ↓
+handleWarpComplete()
+    ↓
+subscription_status = 'active' (DB UPDATE)
+    ↓
+triggerAuthRefresh()
+    ↓
+MainTabs/HomeTab
+```
 
-### Timeout Configuration
-| Operation | Timeout | Fallback |
-|-----------|---------|----------|
-| `createUserRecordFromOnboardingData` | 5s | `undefined` |
-| `checkSubscriptionStatus` (outer) | 8s | `false` |
-| `checkSubscriptionStatus` (inner) | 2s | `false` |
+### TOKEN_REFRESHED Handling
+```typescript
+if (event === 'TOKEN_REFRESHED') {
+  // セッションのみ更新、isSubscribedは維持
+  setAuthState(prev => {
+    if (prev.status !== 'authenticated') return prev;
+    return { ...prev, session };
+  });
+  return;
+}
+```
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Changes: Uncommitted (ready to commit)
+- Changes: Uncommitted
+  - `src/screens/onboarding/OnboardingScreen13_Paywall.tsx`
+  - `src/navigation/AppNavigator.tsx`
+  - `src/screens/onboarding/OnboardingScreen7_OpportunityCost.tsx`

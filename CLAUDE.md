@@ -48,6 +48,28 @@
   - **useDerivedValue:** Use v3 style (no dependency array). Write `useDerivedValue(() => x.value)` NOT `useDerivedValue(() => x.value, [x])`.
   - **Three-layer pattern for entering + transform:** Outer `<Animated.View entering={...}>` → Middle `<Animated.View style={transformStyle}>` → Inner plain `<Text>`.
 - **Navigation Stack Switching:** Do NOT use `navigation.reset()` to switch between authentication stacks (Onboarding vs MainTabs). Instead, update auth state in Supabase and call `triggerAuthRefresh()` from `src/lib/supabase.ts` to notify AppNavigator. The navigator will automatically switch stacks based on `isSubscribed` state.
+- **Realtime & Animation Timing (CRITICAL):** When updating `subscription_status` or other fields that trigger Supabase Realtime, the update causes immediate navigation stack switching via `onAuthStateChange` or Realtime subscriptions. If you need to show an animation/transition BEFORE the stack switch, update the DB AFTER the animation completes:
+  ```typescript
+  // BAD - Animation never shows (Realtime triggers stack switch immediately)
+  await supabase.from('users').update({ subscription_status: 'active' });
+  setShowAnimation(true);  // Component already unmounted!
+
+  // GOOD - Animation completes, then stack switches
+  setShowAnimation(true);
+  // ... in animation onComplete callback:
+  await supabase.from('users').update({ subscription_status: 'active' });
+  triggerAuthRefresh();
+  ```
+- **TOKEN_REFRESHED Event Handling:** In `onAuthStateChange`, the `TOKEN_REFRESHED` event should NOT trigger a full subscription status re-check. This can cause unexpected stack switches (e.g., timeout → `isSubscribed: false` → back to Onboarding). Preserve the existing `isSubscribed` state and only update the session:
+  ```typescript
+  if (event === 'TOKEN_REFRESHED') {
+    setAuthState(prev => {
+      if (prev.status !== 'authenticated') return prev;
+      return { ...prev, session }; // Keep isSubscribed unchanged
+    });
+    return;
+  }
+  ```
 - **Navigation & Screen Registration:** 
   - When calling `navigation.navigate('ScreenName')`, ALWAYS verify that `'ScreenName'` is registered in `src/navigation/AppNavigator.tsx`.
   - New screens MUST be added to the appropriate Stack/Tab navigator in `AppNavigator.tsx` before they can be used for navigation.
@@ -769,5 +791,36 @@
         navigation.navigate('MainAppScreen', { data });
       }
     };
+  }
+  ```
+- **Edge Function Gateway JWT Verification (CRITICAL):** When deploying Edge Functions that handle their own JWT verification via `auth.getUser()`, use `--no-verify-jwt` flag. Supabase Gateway may reject valid ES256 tokens before the function code executes.
+  ```bash
+  # BAD - Gateway rejects ES256 JWT with "Invalid JWT"
+  supabase functions deploy create-commitment
+
+  # GOOD - Skip gateway verification, rely on internal auth.getUser()
+  supabase functions deploy create-commitment --no-verify-jwt
+  ```
+  - Gateway errors have format `{"code":401,"message":"Invalid JWT"}`
+  - Function code errors have format `{"success": false, "error": "ERROR_CODE", "details": "..."}`
+  - If you see the gateway format, the function code never executed
+- **FunctionsHttpError Handling Pattern:** When using `supabase.functions.invoke()`, always check for `FunctionsHttpError` and extract the full error body to understand the actual error:
+  ```typescript
+  import { FunctionsHttpError } from '@supabase/supabase-js';
+
+  const { data, error } = await supabase.functions.invoke('my-function', { body });
+
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const errorBody = await error.context.json();
+        console.error('Full error body:', JSON.stringify(errorBody));
+        // errorBody may have: { code, message } (Gateway) or { success, error, details } (Function)
+      } catch {
+        const errorText = await error.context.text();
+        console.error('Error response (text):', errorText);
+      }
+    }
+    throw error;
   }
   ```

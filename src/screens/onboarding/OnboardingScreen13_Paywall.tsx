@@ -6,6 +6,7 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import SlideToCommit from '../../components/onboarding/SlideToCommit';
 import CinematicCommitReveal from '../../components/onboarding/CinematicCommitReveal';
 import { colors, typography, spacing, borderRadius } from '../../theme';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, triggerAuthRefresh } from '../../lib/supabase';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
@@ -68,16 +69,16 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const handleSubscribe = async () => {
     setLoading(true);
     try {
-      // 認証状態を確認
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('[Screen13] Starting subscription flow...');
 
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw new Error(i18n.t('paywall.auth_error'));
-      }
+      // Step 1: セッションをリフレッシュして最新のトークンを取得
+      // INITIAL_SESSION（AsyncStorageから復元）のトークンが期限切れの可能性があるため、
+      // functions.invoke()を呼ぶ前に明示的にリフレッシュする
+      console.log('[Screen13] Refreshing session to get fresh token...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
 
-      if (!user) {
-        console.error('No user found');
+      if (refreshError) {
+        console.error('[Screen13] Session refresh failed:', refreshError.message);
         Alert.alert(
           i18n.t('paywall.session_error'),
           i18n.t('paywall.session_invalid'),
@@ -86,20 +87,21 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-
-      // subscription_statusを更新
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ subscription_status: 'active' })
-        .eq('id', user.id);
-
-      if (updateError) {
-        console.error('Update error:', updateError);
-        throw updateError;
+      const session = refreshData.session;
+      if (!session?.user?.id) {
+        console.error('[Screen13] No valid session after refresh');
+        Alert.alert(
+          i18n.t('paywall.session_error'),
+          i18n.t('paywall.session_invalid'),
+          [{ text: i18n.t('common.ok'), onPress: () => navigation.navigate('Onboarding0') }]
+        );
+        return;
       }
 
+      console.log('[Screen13] Session refreshed, user:', session.user.id);
+      console.log('[Screen13] Token expires at:', new Date(session.expires_at! * 1000).toISOString());
 
-      // データソースを確定（stateよりもroute.paramsを優先、なければstate）
+      // Step 2: データソースを確定（stateよりもroute.paramsを優先、なければstate）
       const bookToCommit = route.params?.selectedBook || selectedBook;
       const deadlineToCommit = route.params?.deadline || deadline;
       const pledgeToCommit = route.params?.pledgeAmount || pledgeAmount;
@@ -108,37 +110,68 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       // コミットメント作成（bookToCommitがある場合のみ）
       if (!bookToCommit || !deadlineToCommit || !pledgeToCommit) {
-        console.error('Missing commitment data:', { bookToCommit, deadlineToCommit, pledgeToCommit });
+        console.error('[Screen13] Missing commitment data:', { bookToCommit, deadlineToCommit, pledgeToCommit });
         Alert.alert('Error', 'Commitment data is missing. Please restart onboarding.');
         return;
       }
 
-      // Edge Function でコミットメント作成（RLS バイパス + サーバーサイドバリデーション）
-      // Edge Function が book の upsert も内部で処理する
-      const { data: commitmentData, error: commitError } = await supabase.functions.invoke('create-commitment', {
-        body: {
-          google_books_id: bookToCommit.id,
-          book_title: bookToCommit.volumeInfo?.title || 'Unknown',
-          book_author: bookToCommit.volumeInfo?.authors?.join(', ') || 'Unknown',
-          book_cover_url: bookToCommit.volumeInfo?.imageLinks?.thumbnail || null,
-          book_total_pages: null, // オンボーディングでは未取得
-          is_manual_entry: false,
-          deadline: deadlineToCommit,
-          pledge_amount: pledgeToCommit,
-          currency: currencyToCommit,
-          target_pages: targetPagesToCommit,
-        },
-      });
+      // Step 3: Edge Function でコミットメント作成
+      // supabase.functions.invoke()を使用することで、SDKが内部でトークン管理を行う
+      // これにより、トークンのリフレッシュやヘッダー設定が自動的に処理される
 
-      if (commitError) {
-        console.error('Commitment creation error:', commitError);
-        throw new Error(`Commitment creation failed: ${commitError.message}`);
+      // リクエストボディをログ（デバッグ用）
+      const requestBody = {
+        google_books_id: bookToCommit.id,
+        book_title: bookToCommit.volumeInfo?.title || 'Unknown',
+        book_author: bookToCommit.volumeInfo?.authors?.join(', ') || 'Unknown',
+        book_cover_url: bookToCommit.volumeInfo?.imageLinks?.thumbnail || null,
+        book_total_pages: null, // オンボーディングでは未取得
+        is_manual_entry: false,
+        deadline: deadlineToCommit,
+        pledge_amount: pledgeToCommit,
+        currency: currencyToCommit,
+        target_pages: targetPagesToCommit,
+      };
+      console.log('[Screen13] Creating commitment via supabase.functions.invoke...');
+      console.log('[Screen13] Request body:', JSON.stringify(requestBody, null, 2));
+
+      // SDK の functions.invoke() を使用（トークン管理が自動化される）
+      const { data: commitmentData, error: invokeError } = await supabase.functions.invoke(
+        'create-commitment',
+        { body: requestBody }
+      );
+
+      if (invokeError) {
+        console.error('[Screen13] Commitment creation error:', invokeError);
+
+        // FunctionsHttpError から詳細なエラー情報を抽出
+        if (invokeError instanceof FunctionsHttpError) {
+          try {
+            const errorBody = await invokeError.context.json();
+            // 完全なエラーボディをログに出力して構造を確認
+            console.error('[Screen13] Full error body:', JSON.stringify(errorBody));
+            const errorCode = errorBody.error || errorBody.code || errorBody.message || 'UNKNOWN';
+            const errorDetails = errorBody.details || errorBody.msg || '';
+            throw new Error(`Commitment creation failed: ${errorCode} - ${errorDetails}`);
+          } catch (parseError) {
+            // JSON パースに失敗した場合、テキストとして取得を試みる
+            try {
+              const errorText = await invokeError.context.text();
+              console.error('[Screen13] Error response (text):', errorText);
+            } catch {
+              console.error('[Screen13] Failed to get error response');
+            }
+          }
+        }
+        throw new Error(`Commitment creation failed: ${invokeError.message}`);
       }
 
-      console.log('Commitment created via Edge Function:', commitmentData);
+      console.log('[Screen13] Commitment created successfully:', commitmentData);
 
+      // Note: subscription_status更新はhandleWarpComplete()で実行
+      // ここで更新するとRealtimeが発火し、アニメーション表示前にスタックが切り替わってしまう
 
-      // 5. Success (Cinematic COMMIT Reveal)
+      // Step 4: Success (Cinematic COMMIT Reveal)
       await AsyncStorage.removeItem('onboardingData');
 
       // Phase 8.3: Track onboarding completion
@@ -148,7 +181,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       setShowWarpTransition(true);
 
     } catch (error: unknown) {
-      console.error('Subscription error:', error);
+      console.error('[Screen13] Subscription error:', error);
       Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.subscription_failed'));
     } finally {
       setLoading(false);
@@ -157,9 +190,37 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
   // シネマティック遷移完了時のコールバック
   const handleWarpComplete = useCallback(async () => {
-    // Dashboard側でフェードインするためのフラグを設定
-    await AsyncStorage.setItem('showDashboardFadeIn', 'true');
-    // AppNavigatorに認証状態の再チェックを通知
+    try {
+      // Step 1: セッションを取得
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        console.error('[Screen13] No session in handleWarpComplete');
+        triggerAuthRefresh();
+        return;
+      }
+
+      // Step 2: subscription_statusを更新（アニメーション完了後に実行）
+      // Note: handleSubscribe()ではなくここで更新することで、
+      // Realtimeがアニメーション完了前に発火することを防ぐ
+      console.log('[Screen13] Updating subscription_status to active...');
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ subscription_status: 'active' })
+        .eq('id', session.user.id);
+
+      if (updateError) {
+        console.error('[Screen13] Update error:', updateError);
+      } else {
+        console.log('[Screen13] subscription_status updated to active ✅');
+      }
+
+      // Step 3: Dashboard側でフェードインするためのフラグを設定
+      await AsyncStorage.setItem('showDashboardFadeIn', 'true');
+    } catch (error) {
+      console.error('[Screen13] handleWarpComplete error:', error);
+    }
+
+    // Step 4: AppNavigatorに認証状態の再チェックを通知
     // これによりisSubscribedがtrueに更新され、MainTabsスタックに切り替わる
     triggerAuthRefresh();
   }, []);

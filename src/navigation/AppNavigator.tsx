@@ -331,18 +331,12 @@ function NavigationContent() {
         // PKCE Flow: Check for code parameter
         const code = queryParams.get('code');
         if (code) {
-          console.log('🔗 Deep Link: Found PKCE code, exchanging for session...');
-          const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-          if (sessionError) {
-            console.error('🔗 Deep Link: PKCE exchange FAILED:', sessionError.message);
-            return;
-          }
-          if (sessionData.session) {
-            console.log('🔗 Deep Link: Session established via PKCE ✅', sessionData.session.user.email);
-            // User record creation moved to onAuthStateChange (prevents race condition)
-          } else {
-            console.log('🔗 Deep Link: PKCE exchange returned no session');
-          }
+          // PKCEコードはScreen6のhandleOAuthCallbackで既に処理済み
+          // ここで再度exchangeCodeForSessionを呼ぶとコード再利用エラーが発生し、
+          // セッション状態が破損してScreen13で"Invalid JWT"エラーが発生する
+          // Screen6がセッションを確立した後、onAuthStateChangeが自動的に発火するため、
+          // AppNavigatorでの重複処理は不要
+          console.log('🔗 Deep Link: PKCE code detected, skipping (handled by Screen6)');
           return;
         }
 
@@ -435,6 +429,23 @@ function NavigationContent() {
 
       if (!session) {
         if (isMounted) setAuthState({ status: 'unauthenticated' });
+        return;
+      }
+
+      // TOKEN_REFRESHED: セッションのみ更新し、既存のisSubscribed状態を維持
+      // これにより、Screen13でrefreshSession()を呼んでもスタックが切り替わらない
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('✅ Auth: TOKEN_REFRESHED - preserving current isSubscribed state');
+        if (isMounted) {
+          setAuthState(prev => {
+            if (prev.status !== 'authenticated') {
+              // 認証状態でなかった場合は現状維持（通常はここに来ない）
+              return prev;
+            }
+            // セッションのみ更新、isSubscribedは維持
+            return { ...prev, session };
+          });
+        }
         return;
       }
 
