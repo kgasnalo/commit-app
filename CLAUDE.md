@@ -364,9 +364,9 @@
   - **Good:** `rgba(10, 8, 6, 0.1)` to `rgba(8, 6, 4, 0.4)` gradient.
 - **Hall of Fame / Archive Design Patterns (Phase 4.7):**
   - **Glass Panel:** Use top/left highlight edges only (0.5px), no bottom/right border. This creates a subtle 3D effect without looking like a bordered card.
-  - **Ultra-thin Typography:** Use `fontWeight: '100'` for hero titles to convey refined confidence.
-  - **Self-glow Numbers:** Add `textShadowColor: 'rgba(255, 140, 80, 0.5)'` with `textShadowRadius: 12` for luxury gauge effect on metrics.
-  - **Micro Labels:** Use `fontSize: 10` with `opacity: 0.4` for subtle metric labels.
+  - **Typography on Dynamic Backgrounds:** Use `fontWeight: '600'` with black text shadows for text over book covers. See "Text Visibility on Dynamic Image Backgrounds" rule for full pattern.
+  - **Self-glow Numbers:** For metrics on solid backgrounds, add `textShadowColor: 'rgba(255, 140, 80, 0.5)'` with `textShadowRadius: 12` for luxury gauge effect. For dynamic backgrounds, use black shadows instead.
+  - **Micro Labels:** Use `fontSize: 11` with `fontWeight: '600'` and black shadows for guaranteed visibility.
   - **Metallic Badge:** SecuredBadge "metallic" variant uses `backgroundColor: 'rgba(20, 20, 18, 0.95)'` with top highlight only.
   - **Filter Bar Visibility:** When showing filter bars conditionally, use `>= 1` not `> 1` to ensure bar appears even with single item.
 - **BookDetailScreen Tag Section:** Place interactive elements (like tag add button) OUTSIDE hero containers. Elements inside `ImageBackground` with `LinearGradient` overlay may have visibility/touch issues. Move to separate section below hero for reliable visibility and interaction.
@@ -878,3 +878,53 @@
   # Redeploy to pick up new variables
   npx vercel --prod --yes
   ```
+- **adjustsFontSizeToFit with Dynamic numberOfLines:** When using `adjustsFontSizeToFit` on Text components, `numberOfLines` must match the actual line count in the text. For i18n strings that may contain explicit `\n`, calculate dynamically:
+  ```typescript
+  // BAD - fixed numberOfLines ignores explicit line breaks in translations
+  <Text adjustsFontSizeToFit numberOfLines={2}>
+    {i18n.t('title')}  // May have \n in Japanese but not English
+  </Text>
+
+  // GOOD - dynamic calculation respects translation structure
+  <Text
+    adjustsFontSizeToFit
+    numberOfLines={title.split('\n').length}
+  >
+    {title}
+  </Text>
+  ```
+  - Without `numberOfLines`, `adjustsFontSizeToFit` has no effect
+  - Fixed values like `numberOfLines={2}` may cause text to wrap incorrectly if the translation has explicit `\n`
+- **Text Visibility on Dynamic Image Backgrounds (CRITICAL):** For text overlaid on book covers or user-uploaded images (HeroBillboard, Archive), use a multi-layer approach to guarantee readability regardless of image brightness:
+  ```typescript
+  // Layer 1: Darken the background image
+  coverImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(8, 6, 4, 0.45)', // 45% dark overlay
+  }
+
+  // Layer 2: Text backdrop gradient (behind text container)
+  <LinearGradient
+    colors={[
+      'transparent',
+      'rgba(0, 0, 0, 0.4)',
+      'rgba(0, 0, 0, 0.6)',
+      'rgba(0, 0, 0, 0.4)',
+      'transparent',
+    ]}
+    locations={[0, 0.2, 0.5, 0.8, 1]}
+    style={styles.titleBackdrop}
+  />
+
+  // Layer 3: Bold text with strong black shadow
+  title: {
+    fontWeight: '600',        // Bold, not ultra-thin
+    color: '#FFFFFF',         // Pure white
+    textShadowColor: 'rgba(0, 0, 0, 1)',  // Solid black shadow
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
+  }
+  ```
+  - DO NOT use `fontWeight: '100'` (ultra-thin) for text on dynamic backgrounds - visibility is unpredictable
+  - DO NOT use white/orange text shadows on dynamic backgrounds - only black shadows provide consistent contrast
+  - The 3-layer approach (overlay + backdrop + shadow) ensures readability on any image

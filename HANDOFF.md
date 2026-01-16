@@ -1,7 +1,7 @@
 # Handoff: Session 2026-01-17
 
 ## Current Goal
-**Web Portal Billing Page完成** - カード登録UIの改善とカード削除機能の実装完了。
+**UI改善セッション完了** - テキスト改行問題、パスワードバリデーション強化、アーカイブ画面のテキスト視認性改善
 
 ---
 
@@ -11,28 +11,46 @@
 
 | Issue | Status | Fix |
 |-------|--------|-----|
-| **Billing Page "Internal Server Error"** | ✅ Resolved | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`をVercelに追加 |
-| **カード入力フィールドが見づらい** | ✅ Resolved | 個別フィールドに分離（番号/有効期限/CVC） |
-| **カード削除機能がない** | ✅ Resolved | 削除API + 確認モーダル実装 |
+| **オンボーディング見出しの改行問題** | ✅ Resolved | `adjustsFontSizeToFit` + 動的 `numberOfLines` |
+| **パスワードが1文字でも登録可能** | ✅ Resolved | 8文字以上 + 英数字必須に強化 |
+| **Screen7のデータが表示されない** | ✅ Resolved | AsyncStorageからのフォールバック読み込み追加 |
+| **OnboardingScreen3が英語のまま** | ✅ Resolved | i18nキー追加 (3言語同期) |
+| **HeroBillboardのテキスト視認性** | ✅ Resolved | 多層アプローチ (背景+ボールド+シャドウ) |
+| **VerificationSuccessModalの改行** | ✅ Resolved | fontSize/paddingの調整 |
 
 ---
 
 ## What Worked (Solutions Applied)
 
-### 1. Vercel環境変数の追加
-- **Problem:** `.env.local`はVercel本番環境にデプロイされない
-- **Fix:** `npx vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production`
-- **Learning:** Vercel本番では必ずCLIで環境変数を設定すること
+### 1. テキスト改行問題 (adjustsFontSizeToFit)
+- **Problem:** 日本語見出し「読まなかった1冊は...」で「つ」だけ改行される
+- **Attempted:** フォントサイズ縮小 (32→30→28) - 効果なし
+- **Fix:** `adjustsFontSizeToFit` + 動的 `numberOfLines={title.split('\n').length}`
+- **Learning:** `numberOfLines` は固定値ではなく、テキスト内の実際の改行数から計算すること
 
-### 2. Stripe Elementsの分離
-- **Problem:** `CardElement`（オールインワン）では何を入力しているか判別しにくい
-- **Fix:** `CardNumberElement`, `CardExpiryElement`, `CardCvcElement`に分離
-- **Benefit:** 各フィールドにラベル付き、カードブランドアイコン表示
+### 2. OAuth後のデータ消失問題
+- **Problem:** Screen7でtsundokuCount等が常にデフォルト値 (3000, 5, 10)
+- **Cause:** OAuth認証でナビゲーションスタックが完全置換され、route.paramsが消失
+- **Fix:** AsyncStorageからのフォールバック読み込み追加
+- **Pattern:** OAuth前にAsyncStorageに保存 → OAuth後に読み込み
 
-### 3. カード削除機能
-- **API:** `POST /api/stripe/delete-payment-method`
-- **UI:** 海外SaaS風の確認モーダル（警告アイコン + 説明文）
-- **Stripe:** `stripe.paymentMethods.detach()` でカード解除
+### 3. 画像上テキストの視認性 (HeroBillboard)
+- **Problem:** 明るい表紙画像で白テキストが見えない
+- **Fix:** Netflix/Spotify風の多層アプローチ:
+  - グラデーションオーバーレイ強化 (0.35→0.6)
+  - テキストバックドロップ追加 (黒グラデ背景)
+  - フォント太さ増加 (100→600)
+  - 黒シャドウ追加 (`rgba(0,0,0,1)`)
+- **Files Modified:**
+  - `HeroBillboard.tsx`: タイトル/著者/日付スタイル
+  - `AutomotiveMetrics.tsx`: ラベル/値スタイル
+
+### 4. パスワードバリデーション強化
+- **Problem:** 1文字のパスワードでも登録可能
+- **Fix:**
+  - 最低8文字に変更
+  - 英字 + 数字の両方必須
+- **i18n Keys Added:** `password_too_short`, `password_requirements`
 
 ---
 
@@ -40,10 +58,11 @@
 
 | Category | Files |
 |----------|-------|
-| **Web Billing API** | `src/app/api/stripe/delete-payment-method/route.ts` (new) |
-| **Web Billing Page** | `src/app/billing/page.tsx` |
-| **Web Card Form** | `src/components/billing/CardSetupForm.tsx` |
-| **Web i18n** | `src/i18n/locales/{ja,en,ko}.json` |
+| **Onboarding Layout** | `src/components/onboarding/OnboardingLayout.tsx` |
+| **Onboarding Screens** | `OnboardingScreen3_BookSelect.tsx`, `OnboardingScreen6_Account.tsx`, `OnboardingScreen7_OpportunityCost.tsx` |
+| **Hall of Fame** | `src/components/hall-of-fame/HeroBillboard.tsx`, `AutomotiveMetrics.tsx` |
+| **Modals** | `src/components/VerificationSuccessModal.tsx` |
+| **i18n** | `src/i18n/locales/{ja,en,ko}.json` |
 
 ---
 
@@ -51,28 +70,57 @@
 
 ### Mobile App (commit-app)
 - Branch: `main`
-- Last Commit: `56f8095e` (fix: improve onboarding screen copy for better readability)
-- Status: Pushed to origin
-
-### Web Portal (commit-app-web)
-- Branch: `main`
-- Last Commit: `b90dbab` (feat: improve billing page UI with separate card fields and delete functionality)
-- Status: Pushed to origin
-- Deployed: https://commit-app-web.vercel.app
+- Last Commit: `9ac9b8c3` (docs: update HANDOFF, CLAUDE.md, and ROADMAP for billing UI session)
+- Status: Clean, pushed to origin
 
 ---
 
-## Vercel Environment Variables (commit-app-web)
+## Key Patterns Learned
 
-| Variable | Status |
-|----------|--------|
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | ✅ 設定済み |
-| `STRIPE_SECRET_KEY` | ✅ 設定済み |
-| `ADMIN_EMAILS` | ✅ 設定済み |
-| `NEXT_PUBLIC_APP_SCHEME` | ✅ 設定済み |
-| `NEXT_PUBLIC_APP_URL` | ✅ 設定済み |
-| `NEXT_PUBLIC_SUPABASE_URL` | ✅ 設定済み |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ 設定済み |
+### 1. Dynamic numberOfLines for adjustsFontSizeToFit
+```typescript
+// GOOD - respects explicit \n in translation strings
+<Text
+  adjustsFontSizeToFit
+  numberOfLines={title.split('\n').length}
+>
+  {title}
+</Text>
+```
+
+### 2. Text Visibility on Dynamic Backgrounds
+```typescript
+// Multi-layer approach for guaranteed readability
+// Layer 1: Darkened overlay on image
+coverImageOverlay: { backgroundColor: 'rgba(8, 6, 4, 0.45)' }
+
+// Layer 2: Text backdrop gradient
+<LinearGradient
+  colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.4)', 'transparent']}
+/>
+
+// Layer 3: Bold text with black shadow
+title: {
+  fontWeight: '600',
+  color: '#FFFFFF',
+  textShadowColor: 'rgba(0, 0, 0, 1)',
+  textShadowOffset: { width: 0, height: 2 },
+  textShadowRadius: 12,
+}
+```
+
+### 3. OAuth Data Persistence Pattern
+```typescript
+// Before OAuth (in Screen6)
+await AsyncStorage.setItem('onboardingData', JSON.stringify({
+  selectedBook, deadline, pledgeAmount, currency, tsundokuCount
+}));
+
+// After OAuth (in Screen7)
+const onboardingData = await AsyncStorage.getItem('onboardingData');
+const data = JSON.parse(onboardingData);
+// Use data.tsundokuCount, etc.
+```
 
 ---
 
@@ -84,7 +132,7 @@
 
 2. **Stripe Webhook設定** (optional)
    - `payment_method.attached`イベントでフラグ自動更新
-   - Webhookなしでも手動リフレッシュで対応可能
 
 3. **E2Eテスト**
-   - マジックリンクログイン → カード登録 → カード削除 の一連フロー確認
+   - オンボーディング完全フロー確認
+   - アーカイブ画面での視認性確認
