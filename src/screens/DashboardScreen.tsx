@@ -40,6 +40,7 @@ import { GlassTile } from '../components/titan/GlassTile';
 import { MetricDisplay } from '../components/titan/MetricDisplay';
 import { StatusIndicator } from '../components/titan/StatusIndicator';
 import { MonkModeService, StreakStats } from '../lib/MonkModeService';
+import { CardRegistrationBanner } from '../components/CardRegistrationBanner';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -85,6 +86,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [currentLocale, setCurrentLocale] = useState(i18n.locale);
   const [userName, setUserName] = useState<string>('Guest');
   const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
+  const [paymentMethodRegistered, setPaymentMethodRegistered] = useState<boolean>(true); // Default true to avoid flash
 
   // Cinematic fade-in from black
   const [showFadeOverlay, setShowFadeOverlay] = useState(false);
@@ -147,12 +149,18 @@ export default function DashboardScreen({ navigation }: any) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('users').select('username').eq('id', user.id).single();
+        const { data } = await supabase
+          .from('users')
+          .select('username, payment_method_registered')
+          .eq('id', user.id)
+          .single();
         let name = data?.username;
         if (!name) name = user.email?.split('@')[0];
         setUserName(name || 'Guest');
+        setPaymentMethodRegistered(data?.payment_method_registered ?? false);
       }
     } catch (e) {
+      // Silently fail for profile fetch
     }
   };
 
@@ -358,6 +366,9 @@ export default function DashboardScreen({ navigation }: any) {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Card Registration Banner - Non-dismissable */}
+        {!paymentMethodRegistered && <CardRegistrationBanner />}
+
         {/* Streak Counter - Duolingo Style */}
         {streakStats && streakStats.currentStreak > 0 && (
           <TouchableOpacity

@@ -303,6 +303,32 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - `admin_audit_logs` table for action tracking
     - **DoD:** Ability to Refund/Complete commitments manually.
 
+- [ ] **7.8 Payment Method Registration Flow (カード登録フロー)**
+    - **Role:** `[Fullstack Engineer]`
+    - **Priority:** HIGH (ペナルティシステムの有効化に必須)
+    - **Problem:** オンボーディングでコミットメント作成時、カード未登録のためペナルティが機能しない
+    - **Solution:** サブスク後にダッシュボードでカード登録を促すバナーを常時表示
+    - **Implementation:**
+      1. **DB Migration:** `users`テーブルに`payment_method_registered BOOLEAN DEFAULT false`追加
+      2. **Onboarding説明文:** 金額設定画面（Screen10）に「サブスク後にカード登録が必要」の説明追加
+      3. **Dashboard Banner:** カード未登録時に常時表示（dismiss不可）のバナーコンポーネント
+      4. **Web Portal:** Stripe Elementsでカード登録ページ追加（`/billing/setup-card`）
+      5. **Stripe Webhook:** `payment_method.attached`イベントで`payment_method_registered = true`に更新
+      6. **Deep Link:** Web→App遷移でバナー非表示化
+    - **UX Flow:**
+      ```
+      オンボーディング → サブスク登録 → 初回コミットメント作成
+           ↓
+      ダッシュボード（カード未登録バナー常時表示）
+           ↓
+      バナータップ → Web Portal (Stripe) でカード登録
+           ↓
+      Webhook → フラグ更新 → アプリに戻る → バナー消滅
+      ```
+    - **DoD:**
+      - カード未登録ユーザーにバナー常時表示
+      - カード登録後、バナーが消え、ペナルティが有効化
+
 ---
 
 ## 🛡️ Phase 8: Reliability, Ops & Analytics (Pro-Grade)

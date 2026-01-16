@@ -1,68 +1,71 @@
-# Handoff: Session 2026-01-15 (Night)
+# Handoff: Session 2026-01-16
 
 ## Current Goal
-**Multiple Bug Fixes Complete** - Auth画面ログイン、i18n重複、Edge Function 401エラーを修正。
+**Tab Navigation Fix Complete** - タブ再タップでスタックがリセットされない問題を修正。
 
 ---
 
 ## Current Critical Status
 
-### All Issues Resolved ✅
+### Resolved This Session ✅
 
 | Issue | Status | Fix |
 |-------|--------|-----|
-| **Auth画面ログインでOnboarding7表示** | ✅ | `loginSource`フラグ + ローディング状態維持 |
-| **i18n book_search missing translation** | ✅ | JSONの重複`book_search`セクションをマージ |
-| **create-commitment 401エラー** | ✅ | `--no-verify-jwt`フラグで再デプロイ |
+| **タブ再タップでスタックがリセットされない** | ✅ | `screenListeners`を`Tab.Navigator`に追加 |
+| **ProfileScreenの戻るボタンが反応しない** | ✅ | `hitSlop`と`padding`を追加 |
 
 ---
 
 ## What Worked (Solutions Applied)
 
-### 1. Auth画面ログインのUIフリッカー修正
-- **Problem:** タイムアウト時に`isSubscribed=false`で状態設定 → Onboarding7が一瞬表示
-- **Fix:**
-  - AuthScreen: `AsyncStorage.setItem('loginSource', 'auth_screen')`
-  - AppNavigator: Auth画面ログイン検知時、finally blockで状態設定スキップ
-  - バックグラウンドチェック完了後に状態設定
-- **Result:** ✅ ローディング画面維持 → 直接MainTabsに遷移
+### 1. タブ再タップでスタックリセット
+- **Problem:** ProfileScreenに遷移後、SYSTEMタブを再タップしてもSettingsScreenに戻れない
+- **Root Cause:** React Navigation v7では`tabPress`リスナーが設定されていないと、同じタブを再タップしてもスタックが自動リセットされない
+- **Fix:** `AppNavigator.tsx`に`screenListeners`を追加
+  ```tsx
+  screenListeners={({ navigation, route }) => ({
+    tabPress: () => {
+      const state = navigation.getState();
+      const currentRoute = state.routes[state.index];
+      if (route.key === currentRoute?.key) {
+        const screenMap = { HomeTab: 'Dashboard', ... };
+        navigation.navigate(tabName, { screen: screenMap[tabName] });
+      }
+    },
+  })}
+  ```
+- **Result:** ✅ タブ再タップで最初の画面に戻る
 
-### 2. i18n book_search キー重複修正
-- **Problem:** `ja.json`と`en.json`に`book_search`が2回定義、後の定義が前を上書き
-- **Fix:** 2つのセクションを1つにマージ（全16キー）
-- **Files:** `ja.json`, `en.json`, `ko.json`（不足キー追加）
-- **Result:** ✅ RoleSelectScreenで`[missing translation]`解消
-
-### 3. create-commitment Edge Function 401エラー
-- **Problem:** Supabase GatewayがES256 JWTを拒否
-- **Fix:** `supabase functions deploy create-commitment --no-verify-jwt`
-- **Result:** ✅ 本の登録が正常に動作
+### 2. 戻るボタンのタッチ領域拡大
+- **Problem:** ProfileScreenの戻るボタン（←）が見えるのにタッチしても反応しない
+- **Root Cause:** 24x24pxのアイコンをピンポイントで押す必要があった
+- **Fix:** `hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}`と`style={{ padding: 4 }}`を追加
+- **Result:** ✅ タッチ領域が拡大され、反応するように
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. 最初のAuth画面修正アプローチ
-- **Attempted:** バックグラウンドチェックで`setAuthState(prev => ...)`のみ
-- **Result:** ❌ finally blockで先に状態設定され、一瞬Onboarding7表示
-- **Solution:** finally blockで状態設定をスキップ
-
-### 2. Edge Function通常デプロイ
-- **Attempted:** `supabase functions deploy create-commitment`（フラグなし）
-- **Result:** ❌ Gateway JWT検証で401エラー
-- **Solution:** `--no-verify-jwt`フラグ必須
+### 1. 最初の原因推測
+- **Attempted:** zIndex問題やpointerEvents問題を疑った
+- **Result:** ❌ 実際はReact Navigationのデフォルト動作の問題だった
+- **Lesson:** タブナビゲーションの挙動はフレームワークのバージョンで異なる
 
 ---
 
 ## Immediate Next Steps
 
-### Commit Changes
-```bash
-git add -A && git commit -m "fix: i18n book_search duplicate keys and Edge Function deploy
+### Priority: 7.8 カード登録フロー
+- 未コミットの変更あり（`CardRegistrationBanner.tsx`、migration等）
+- ダッシュボードにカード未登録バナーを表示
+- Web Portalでカード登録ページを追加
 
-- Merge duplicate book_search sections in ja.json and en.json
-- Add missing book_search keys to ko.json
-- Redeploy create-commitment with --no-verify-jwt flag
+### Commit This Session's Changes
+```bash
+git add -A && git commit -m "fix: tab re-tap navigation and back button touch area
+
+- Add screenListeners to Tab.Navigator for stack reset on tab re-tap
+- Add hitSlop to ProfileScreen back button for better touch response
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
@@ -73,48 +76,14 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 | Category | Files |
 |----------|-------|
-| **Auth** | `src/screens/AuthScreen.tsx`, `src/navigation/AppNavigator.tsx` |
-| **i18n** | `src/i18n/locales/ja.json`, `en.json`, `ko.json` |
-| **Edge Function** | `create-commitment` (redeployed with `--no-verify-jwt`) |
-
----
-
-## Technical Notes
-
-### Auth Screen Login Flow (Final)
-```
-AuthScreen: handleGoogleSignIn()
-    ↓
-AsyncStorage.setItem('loginSource', 'auth_screen')
-    ↓
-OAuth → SIGNED_IN event
-    ↓
-AppNavigator: loginSource === 'auth_screen' 検知
-    ↓
-checkSubscriptionStatus() タイムアウト
-    ↓
-finally block: 状態設定スキップ（ローディング維持）
-    ↓
-Background check完了
-    ↓
-setAuthState({ isSubscribed: result })
-    ↓
-MainTabs
-```
-
-### i18n book_search Keys (Complete Set)
-```json
-"book_search": {
-  "title", "subtitle", "search_title", "search_subtitle",
-  "recommended", "role_prompt", "recommendations_for", "change",
-  "select", "buy_on_amazon", "cant_find_book", "add_manually",
-  "advanced_search", "simple_search", "title_placeholder", "author_placeholder"
-}
-```
+| **Navigation** | `src/navigation/AppNavigator.tsx` |
+| **Screens** | `src/screens/ProfileScreen.tsx` |
 
 ---
 
 ## Git Status
 - Branch: `main`
-- Last Commit: `9f6294de` (fix: prevent UI flicker on Auth screen login)
-- Uncommitted: i18n locale file changes
+- Last Commit: `126d381b` (fix: resolve Edge Function JWT error and remove dev logout button)
+- Uncommitted:
+  - Tab navigation fix (this session)
+  - 7.8 Card registration flow (in progress from previous session)

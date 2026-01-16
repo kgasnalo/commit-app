@@ -89,6 +89,7 @@
     "screen5_slider_hint": "スライドして金額を設定",
     "screen5_rule_text_line1": "期限までに読み切れなかった場合、",
     "screen5_rule_text_line2": "この金額は寄付されます",
+    "screen5_card_notice": "※ 寄付を有効にするには、登録後にカード登録が必要です",
     "screen5_donation_label": "寄付先",
     "screen5_donation_info": "寄付先：Room to Read（子どもの教育支援）",
     "screen6_title": "COMMITに参加する",
@@ -602,5 +603,9 @@
     "update_title": "アップデートが必要です",
     "update_message": "最新バージョンにアップデートしてご利用ください。",
     "update_button": "アップデート"
+  },
+  "card_registration": {
+    "banner_title": "カード登録が必要です",
+    "banner_description": "コミットメント失敗時の寄附を有効にするには、お支払い方法の登録が必要です"
   }
 }

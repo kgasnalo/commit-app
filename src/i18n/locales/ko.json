@@ -89,6 +89,7 @@
     "screen5_slider_hint": "슬라이드하여 금액 설정",
     "screen5_rule_text_line1": "기한까지 다 읽지 못하면",
     "screen5_rule_text_line2": "이 금액은 기부됩니다",
+    "screen5_card_notice": "* 기부를 활성화하려면 가입 후 카드 등록이 필요합니다",
     "screen5_donation_label": "기부처",
     "screen5_donation_info": "기부처: Room to Read (어린이 교육 지원)",
     "screen6_title": "COMMIT에 참여하기",
@@ -599,5 +600,9 @@
     "update_title": "업데이트 필요",
     "update_message": "앱을 계속 사용하려면 최신 버전으로 업데이트해 주세요.",
     "update_button": "업데이트"
+  },
+  "card_registration": {
+    "banner_title": "카드 등록 필요",
+    "banner_description": "실패한 커밋에 대한 기부를 활성화하려면 결제 수단을 등록하세요"
   }
 }

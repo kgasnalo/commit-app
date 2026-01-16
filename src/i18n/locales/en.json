@@ -89,6 +89,7 @@
     "screen5_slider_hint": "Slide to set amount",
     "screen5_rule_text_line1": "If you don't finish reading by the deadline,",
     "screen5_rule_text_line2": "this amount will be donated",
+    "screen5_card_notice": "* Card registration required after signup to enable donations",
     "screen5_donation_label": "Donation to",
     "screen5_donation_info": "Donation to: Room to Read (Supporting children's education)",
     "screen6_title": "Join COMMIT",
@@ -602,5 +603,9 @@
     "update_title": "Update Required",
     "update_message": "Please update to the latest version to continue using the app.",
     "update_button": "Update"
+  },
+  "card_registration": {
+    "banner_title": "Card Registration Required",
+    "banner_description": "Register a payment method to enable donations for failed commitments"
   }
 }

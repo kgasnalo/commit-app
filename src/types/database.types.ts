@@ -20,6 +20,7 @@ export interface Database {
           card_brand: string | null
           role: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status: 'active' | 'inactive'
+          payment_method_registered: boolean
           created_at: string
         }
         Insert: {
@@ -32,6 +33,7 @@ export interface Database {
           card_brand?: string | null
           role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
+          payment_method_registered?: boolean
           created_at?: string
         }
         Update: {
@@ -44,6 +46,7 @@ export interface Database {
           card_brand?: string | null
           role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
+          payment_method_registered?: boolean
           created_at?: string
         }
         Relationships: []

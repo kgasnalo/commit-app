@@ -138,6 +138,13 @@ export default function OnboardingScreen5({ navigation, route }: any) {
                   {'\n'}
                   {i18n.t('onboarding.screen5_rule_text_line2')}
                 </Text>
+                {/* Card registration notice */}
+                <Text
+                  style={styles.cardNoticeText}
+                  numberOfLines={0}
+                >
+                  {i18n.t('onboarding.screen5_card_notice')}
+                </Text>
               </View>
             </View>
             <PrimaryButton
@@ -248,6 +255,14 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 18,
     marginTop: GRID, // 8
+  },
+  // Card registration notice
+  cardNoticeText: {
+    color: 'rgba(255, 200, 100, 0.7)',
+    fontSize: 11,
+    fontWeight: '400',
+    lineHeight: 16,
+    marginTop: GRID / 2, // 4
   },
 
   // Footer Section

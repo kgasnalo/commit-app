@@ -824,3 +824,34 @@
     throw error;
   }
   ```
+- **React Navigation v7 Tab Re-tap (CRITICAL):** By default, tapping the same tab does NOT reset the stack to the first screen. You MUST add `screenListeners` to `Tab.Navigator`:
+  ```typescript
+  <Tab.Navigator
+    screenListeners={({ navigation, route }) => ({
+      tabPress: () => {
+        const state = navigation.getState();
+        const currentRoute = state.routes[state.index];
+        if (route.key === currentRoute?.key) {
+          // Already on this tab, navigate to first screen
+          const screenMap: Record<string, string> = {
+            HomeTab: 'Dashboard',
+            MonkModeTab: 'MonkMode',
+            LibraryTab: 'Library',
+            SettingsTab: 'Settings',
+          };
+          navigation.navigate(route.name, { screen: screenMap[route.name] });
+        }
+      },
+    })}
+  >
+  ```
+- **TouchableOpacity hitSlop for Icon Buttons:** Small icon buttons (24x24px) are hard to tap accurately. Always add `hitSlop` and padding:
+  ```typescript
+  <TouchableOpacity
+    onPress={onPress}
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    style={{ padding: 4 }}
+  >
+    <Ionicons name="arrow-back" size={24} />
+  </TouchableOpacity>
+  ```

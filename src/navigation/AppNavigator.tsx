@@ -133,6 +133,26 @@ function MainTabs() {
           marginTop: 2,
         },
       }}
+      screenListeners={({ navigation, route }) => ({
+        tabPress: () => {
+          const state = navigation.getState();
+          const currentRoute = state.routes[state.index];
+          if (route.key === currentRoute?.key) {
+            // 既にそのタブにいる場合、最初の画面に戻る
+            const tabName = route.name;
+            const screenMap: Record<string, string> = {
+              HomeTab: 'Dashboard',
+              MonkModeTab: 'MonkMode',
+              LibraryTab: 'Library',
+              SettingsTab: 'Settings',
+            };
+            const screenName = screenMap[tabName];
+            if (screenName) {
+              navigation.navigate(tabName, { screen: screenName });
+            }
+          }
+        },
+      })}
     >
       <Tab.Screen
         name="HomeTab"
