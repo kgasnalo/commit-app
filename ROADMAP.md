@@ -330,32 +330,30 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - カード登録後、バナーが消え、ペナルティが有効化
 
     ---
-    ### 🔴 進行中メモ (2026-01-16)
+    ### 🟢 進捗メモ (2026-01-17更新)
 
     **完了済み:**
     - ✅ Web Portal i18n実装 (日本語・英語・韓国語)
     - ✅ `/billing` ページ: Stripe Elements カード登録フォーム
     - ✅ PKCE認証エラー修正: `/auth/callback` Route Handler追加
-    - ✅ Stripe APIバージョン修正: `2025-12-15.clover` → SDKデフォルト
+    - ✅ Stripe APIバージョン修正: SDKデフォルト使用
     - ✅ ユーザーレコード自動作成: `auth/callback`でupsert追加
+    - ✅ **Vercel環境変数設定:** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`追加
+    - ✅ **カード入力UI改善:** 個別フィールド分離 (CardNumber/Expiry/CVC)
+    - ✅ **カード削除機能:** `DELETE /api/stripe/delete-payment-method` + 確認モーダル
+    - ✅ **カードブランドアイコン:** Visa/Mastercard/Amex対応
 
-    **次のテストステップ:**
+    **テスト手順:**
     1. https://commit-app-web.vercel.app/login にアクセス
-    2. **一度ログアウト**してから再度マジックリンクでログイン
+    2. マジックリンクでログイン
     3. `/billing` でカード登録フォームが表示されることを確認
     4. テストカード `4242 4242 4242 4242` で登録テスト
-
-    **まだInternal Server Errorが出る場合:**
-    - Vercelログを確認: `npx vercel logs https://commit-app-web.vercel.app`
-    - 原因候補:
-      1. Stripe APIキーが正しくない
-      2. `users`テーブルにレコードがない（再ログインで解決するはず）
-      3. Supabase RLS問題
+    5. 「カードを削除」リンクで削除テスト
 
     **未完了タスク:**
     - [ ] Dashboard Banner (モバイルアプリ)
-    - [ ] Stripe Webhook (`payment_method.attached`)
-    - [ ] `payment_method_registered`フラグ更新ロジック
+    - [ ] Stripe Webhook (`payment_method.attached`) - optional
+    - [ ] `payment_method_registered`フラグ管理
     ---
 
 ---

@@ -855,3 +855,26 @@
     <Ionicons name="arrow-back" size={24} />
   </TouchableOpacity>
   ```
+- **Web Portal Stripe Client:** In `commit-app-web`, NEVER create new Stripe instances with explicit `apiVersion`. Always use the centralized instance from `@/lib/stripe/server`:
+  ```typescript
+  // BAD - TypeScript version mismatch errors
+  import Stripe from 'stripe';
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-01-27.acacia', // May conflict with installed types
+  });
+
+  // GOOD - use centralized instance
+  import { stripe } from '@/lib/stripe/server';
+  await stripe.paymentMethods.detach(paymentMethodId);
+  ```
+- **Vercel Environment Variables (CRITICAL):** `.env.local` is NOT deployed to Vercel production. `NEXT_PUBLIC_*` variables MUST be added via CLI:
+  ```bash
+  # Add environment variable to production
+  echo "pk_test_xxx" | npx vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
+
+  # Verify it's set
+  npx vercel env ls
+
+  # Redeploy to pick up new variables
+  npx vercel --prod --yes
+  ```
