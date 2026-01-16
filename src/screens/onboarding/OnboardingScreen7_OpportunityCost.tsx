@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import Animated, {
   useSharedValue,
@@ -61,17 +62,58 @@ const COUNT_UP_DURATION = 1000; // ms for count-up animation
 const COUNT_UP_DELAY_BASE = 600; // ms before count-up starts (after reveal)
 
 export default function OnboardingScreen7({ navigation, route }: any) {
-  // Get data from route params with fallback defaults for data integrity
-  const params = route.params || {};
-  const pledgeAmount = typeof params.pledgeAmount === 'number' && params.pledgeAmount > 0
-    ? params.pledgeAmount
-    : DEFAULT_PLEDGE_AMOUNT;
-  const currency = (params.currency as Currency) || DEFAULT_CURRENCY;
-  const tsundokuCount = typeof params.tsundokuCount === 'number' && params.tsundokuCount > 0
-    ? params.tsundokuCount
-    : DEFAULT_TSUNDOKU_COUNT;
+  // State for data (loaded from route.params or AsyncStorage)
+  const [pledgeAmount, setPledgeAmount] = useState(DEFAULT_PLEDGE_AMOUNT);
+  const [currency, setCurrency] = useState<Currency>(DEFAULT_CURRENCY);
+  const [tsundokuCount, setTsundokuCount] = useState(DEFAULT_TSUNDOKU_COUNT);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const [burnPhase, setBurnPhase] = useState<BurnPhase>('intro');
+
+  // Load data from route.params or AsyncStorage
+  useEffect(() => {
+    const loadData = async () => {
+      const params = route.params || {};
+
+      // First try route.params
+      let loadedPledgeAmount = typeof params.pledgeAmount === 'number' && params.pledgeAmount > 0
+        ? params.pledgeAmount
+        : null;
+      let loadedCurrency = params.currency as Currency || null;
+      let loadedTsundokuCount = typeof params.tsundokuCount === 'number' && params.tsundokuCount > 0
+        ? params.tsundokuCount
+        : null;
+
+      // If not in route.params, try AsyncStorage (OAuth flow)
+      if (!loadedPledgeAmount || !loadedTsundokuCount) {
+        try {
+          const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
+          if (onboardingDataStr) {
+            const onboardingData = JSON.parse(onboardingDataStr);
+            if (!loadedPledgeAmount && typeof onboardingData.pledgeAmount === 'number') {
+              loadedPledgeAmount = onboardingData.pledgeAmount;
+            }
+            if (!loadedCurrency && onboardingData.currency) {
+              loadedCurrency = onboardingData.currency;
+            }
+            if (!loadedTsundokuCount && typeof onboardingData.tsundokuCount === 'number') {
+              loadedTsundokuCount = onboardingData.tsundokuCount;
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to load onboarding data from AsyncStorage:', error);
+        }
+      }
+
+      // Apply loaded values or defaults
+      setPledgeAmount(loadedPledgeAmount || DEFAULT_PLEDGE_AMOUNT);
+      setCurrency(loadedCurrency || DEFAULT_CURRENCY);
+      setTsundokuCount(loadedTsundokuCount || DEFAULT_TSUNDOKU_COUNT);
+      setDataLoaded(true);
+    };
+
+    loadData();
+  }, [route.params]);
   const [countUpComplete, setCountUpComplete] = useState([false, false, false]);
   const { showToast } = useOnboardingAtmosphere();
   const burnProgress = useSharedValue(0);

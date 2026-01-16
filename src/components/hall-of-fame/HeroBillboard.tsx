@@ -120,12 +120,12 @@ export function HeroBillboard({
             </View>
           )}
 
-          {/* Dark overlay gradient for text readability - lightened */}
+          {/* Dark overlay gradient for text readability - strengthened for visibility */}
           <LinearGradient
             colors={[
-              'rgba(10, 8, 6, 0.1)',
-              'rgba(16, 10, 6, 0.25)',
-              'rgba(8, 6, 4, 0.4)',
+              'rgba(10, 8, 6, 0.35)',
+              'rgba(16, 10, 6, 0.45)',
+              'rgba(8, 6, 4, 0.6)',
             ]}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
@@ -146,11 +146,23 @@ export function HeroBillboard({
 
         {/* Hero Content - Vertical flow with proper spacing */}
         <View style={styles.content}>
-          {/* Billboard Title - Movie poster style */}
+          {/* Billboard Title - Movie poster style with backdrop for visibility */}
           <Animated.View
             entering={FadeInDown.delay(200).duration(500)}
             style={styles.titleContainer}
           >
+            {/* Text backdrop gradient - ensures readability on ANY background */}
+            <LinearGradient
+              colors={[
+                'transparent',
+                'rgba(0, 0, 0, 0.4)',
+                'rgba(0, 0, 0, 0.6)',
+                'rgba(0, 0, 0, 0.4)',
+                'transparent',
+              ]}
+              locations={[0, 0.2, 0.5, 0.8, 1]}
+              style={styles.titleBackdrop}
+            />
             <Text style={styles.title} numberOfLines={2}>
               {book.title}
             </Text>
@@ -222,7 +234,7 @@ const styles = StyleSheet.create({
   },
   coverImageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(8, 6, 4, 0.2)', // Reduced from 0.4 for better cover visibility
+    backgroundColor: 'rgba(8, 6, 4, 0.45)', // Darkened for text visibility
   },
   content: {
     flex: 1,
@@ -232,29 +244,44 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingHorizontal: 24,
   },
-  // Billboard Title - Movie poster typography
+  // Billboard Title - Movie poster typography with guaranteed visibility
   titleContainer: {
     alignItems: 'center',
     marginBottom: 48, // Luxury vertical spacing
     paddingHorizontal: 16,
+    position: 'relative',
+  },
+  // Backdrop gradient behind text - Netflix/Spotify style
+  titleBackdrop: {
+    position: 'absolute',
+    top: -40,
+    left: -60,
+    right: -60,
+    bottom: -30,
+    borderRadius: 20,
   },
   title: {
-    fontSize: 32, // Larger for billboard impact
-    fontWeight: '100', // Ultra-thin for refined confidence
-    color: titanColors.text.primary,
+    fontSize: 28, // Slightly smaller for better fit
+    fontWeight: '600', // Bolder for visibility (was 100)
+    color: '#FFFFFF', // Pure white for max contrast
     textAlign: 'center',
-    letterSpacing: -0.5, // Tighter tracking for heavyweight feel
-    lineHeight: 40,
-    textShadowColor: 'rgba(255, 255, 255, 0.2)',
-    textShadowOffset: { width: 0, height: 0 },
+    letterSpacing: 0, // Normal tracking
+    lineHeight: 36,
+    // Strong multi-layer shadow effect
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,
   },
   author: {
     fontSize: 14,
-    fontWeight: '400',
-    color: titanColors.text.secondary,
+    fontWeight: '500', // Slightly bolder (was 400)
+    color: 'rgba(255, 255, 255, 0.9)', // Brighter
     marginTop: 12,
     letterSpacing: 0.5,
+    // Strong shadow for visibility
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
   },
   // Thick Glass Panel - Physical glass block appearance
   glassPanel: {
@@ -301,10 +328,14 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   date: {
-    fontSize: 12,
-    color: titanColors.text.secondary,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
     letterSpacing: 0.5,
-    opacity: 0.9, // Ensure visibility
+    // Strong shadow for visibility
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   // Backlight effect - Strong bokeh behind content
   backlightContainer: {

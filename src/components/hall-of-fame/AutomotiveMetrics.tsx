@@ -87,31 +87,34 @@ const styles = StyleSheet.create({
   metricBoxCompact: {
     flex: 1,
   },
-  // Micro label - visible but subtle
+  // Micro label - guaranteed visibility with shadow
   label: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.5,
-    color: titanColors.text.secondary,
-    fontWeight: '400',
+    color: '#FFFFFF',
+    fontWeight: '600',
     marginBottom: 8,
     textTransform: 'uppercase',
-    opacity: 0.8, // More visible
+    // Strong shadow for visibility on any background
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   labelCompact: {
-    fontSize: 8,
+    fontSize: 9,
     marginBottom: 4,
   },
-  // Precision instrument number with Self-Glow
+  // Precision instrument number - bolder with guaranteed visibility
   value: {
     fontSize: 48, // Giant gauge number
-    fontWeight: '200', // Ultra-thin
-    color: '#FAFAFA',
+    fontWeight: '600', // Bolder for visibility (was 200)
+    color: '#FFFFFF',
     letterSpacing: -1,
     fontVariant: ['tabular-nums'],
-    // Self-glow effect - orange ambient light
-    textShadowColor: 'rgba(255, 140, 80, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+    // Strong black shadow + subtle orange glow
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
   },
   valueCompact: {
     fontSize: 24,

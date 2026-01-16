@@ -91,9 +91,15 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       return;
     }
 
-    // パスワードの長さチェック
-    if (password.length < 6) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.password_length'));
+    // パスワードバリデーション: 8文字以上、英字と数字の両方を含む
+    if (password.length < 8) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.password_too_short'));
+      return;
+    }
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.password_requirements'));
       return;
     }
 

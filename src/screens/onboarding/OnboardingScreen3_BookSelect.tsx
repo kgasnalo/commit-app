@@ -67,13 +67,13 @@ export default function OnboardingScreen3({ navigation, route }: any) {
     <OnboardingLayout
       currentStep={3}
       totalSteps={14}
-      title="TARGET IDENTIFICATION"
-      subtitle="Select the first book to secure."
+      title={i18n.t('onboarding.screen3_title')}
+      subtitle={i18n.t('onboarding.screen3_subtitle')}
     >
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="ENTER TITLE / AUTHOR / ISBN"
+          placeholder={i18n.t('onboarding.screen3_search_placeholder')}
           placeholderTextColor={colors.text.muted}
           value={query}
           onChangeText={setQuery}
@@ -110,7 +110,7 @@ export default function OnboardingScreen3({ navigation, route }: any) {
       {loading ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator color={colors.signal.active} />
-          <MicroLabel style={{ marginTop: 8 }}>SEARCHING DATABASE...</MicroLabel>
+          <MicroLabel style={{ marginTop: 8 }}>{i18n.t('onboarding.screen3_searching')}</MicroLabel>
         </View>
       ) : (
         <FlatList
@@ -137,10 +137,10 @@ export default function OnboardingScreen3({ navigation, route }: any) {
               )}
               <View style={styles.bookInfo}>
                 <Text style={styles.bookTitle} numberOfLines={2}>
-                  {(item.volumeInfo.title ?? 'NO TITLE').toUpperCase()}
+                  {(item.volumeInfo.title ?? i18n.t('onboarding.screen3_no_title')).toUpperCase()}
                 </Text>
                 <TacticalText size={10} color={colors.text.muted} numberOfLines={1}>
-                  {item.volumeInfo.authors?.join(', ').toUpperCase() || 'UNKNOWN AUTHOR'}
+                  {item.volumeInfo.authors?.join(', ').toUpperCase() || i18n.t('onboarding.screen3_unknown_author')}
                 </TacticalText>
               </View>
               <Ionicons name="add" size={20} color={colors.signal.active} />

@@ -64,7 +64,7 @@ export default function OnboardingLayout({
         style={styles.content}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title} adjustsFontSizeToFit numberOfLines={title.split('\n').length}>{title}</Text>
           {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
         <View style={styles.body}>{children}</View>

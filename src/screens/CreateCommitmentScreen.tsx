@@ -518,6 +518,15 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       if (error) {
         console.error('[CreateCommitment] Edge Function error:', error);
+        // Extract detailed error from response body
+        if (error.context) {
+          try {
+            const errorBody = await error.context.json();
+            console.error('[CreateCommitment] Error details:', JSON.stringify(errorBody));
+          } catch {
+            console.error('[CreateCommitment] Could not parse error body');
+          }
+        }
         throw new Error(i18n.t('errors.create_commitment_failed'));
       }
 

@@ -384,13 +384,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   motivationText: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'rgba(255, 255, 255, 0.35)',
     textAlign: 'center',
     fontStyle: 'italic',
-    lineHeight: 20,
+    lineHeight: 18,
     marginVertical: 12,
-    paddingHorizontal: 24,
   },
   // 報酬表示 - Giant Glowing Numbers
   savedContainer: {
