@@ -362,19 +362,6 @@ export default function OnboardingScreen7({ navigation, route }: any) {
             </Text>
           </Animated.View>
         )}
-
-        {/* DEV: Debug Logout Button - Only visible in development */}
-        {__DEV__ && (
-          <TouchableOpacity
-            style={styles.debugLogout}
-            onPress={async () => {
-              console.log('[DEV] Logging out...');
-              await supabase.auth.signOut();
-            }}
-          >
-            <Text style={styles.debugLogoutText}>DEV: Logout</Text>
-          </TouchableOpacity>
-        )}
       </View>
     </OnboardingLayout>
   );
@@ -485,23 +472,5 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
     lineHeight: typography.fontSize.body * 1.6,
-  },
-
-  // DEV: Debug Logout Button
-  debugLogout: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(255, 0, 0, 0.3)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 0, 0, 0.5)',
-  },
-  debugLogoutText: {
-    color: '#ff6666',
-    fontSize: 10,
-    fontWeight: '600',
   },
 });

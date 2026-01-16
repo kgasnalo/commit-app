@@ -47,7 +47,16 @@ jobs:
       - name: Deploy all Edge Functions
         run: |
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-          for func in admin-actions create-commitment delete-account isbn-lookup process-expired-commitments send-push-notification use-lifeline; do
+
+          # User-authenticated functions (use --no-verify-jwt to skip Gateway JWT check)
+          # These functions perform their own JWT verification via auth.getUser()
+          for func in create-commitment delete-account use-lifeline; do
+            echo "Deploying $func with --no-verify-jwt..."
+            supabase functions deploy $func --no-verify-jwt
+          done
+
+          # System/public functions (standard deployment with Gateway JWT verification)
+          for func in admin-actions isbn-lookup process-expired-commitments send-push-notification; do
             echo "Deploying $func..."
             supabase functions deploy $func
           done
