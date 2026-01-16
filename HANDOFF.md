@@ -1,18 +1,20 @@
 # Handoff: Session 2026-01-16
 
 ## Current Goal
-**Tab Navigation Fix Complete** - タブ再タップでスタックがリセットされない問題を修正。
+**Web Portal i18n Complete** - 多言語対応（日本語・英語・韓国語）をWeb Portalに実装完了。
 
 ---
 
 ## Current Critical Status
 
-### Resolved This Session ✅
+### Resolved This Session
 
 | Issue | Status | Fix |
 |-------|--------|-----|
-| **タブ再タップでスタックがリセットされない** | ✅ | `screenListeners`を`Tab.Navigator`に追加 |
-| **ProfileScreenの戻るボタンが反応しない** | ✅ | `hitSlop`と`padding`を追加 |
+| **タブ再タップでスタックがリセットされない** | Pushed | `screenListeners`を`Tab.Navigator`に追加 |
+| **ProfileScreenの戻るボタンが反応しない** | Pushed | `hitSlop`と`padding`を追加 |
+| **7.8 カード登録フロー** | Pushed | バナー、Web Portal、migration追加 |
+| **Web Portal多言語対応** | Deployed | react-i18next + 言語選択UI |
 
 ---
 
@@ -20,55 +22,49 @@
 
 ### 1. タブ再タップでスタックリセット
 - **Problem:** ProfileScreenに遷移後、SYSTEMタブを再タップしてもSettingsScreenに戻れない
-- **Root Cause:** React Navigation v7では`tabPress`リスナーが設定されていないと、同じタブを再タップしてもスタックが自動リセットされない
 - **Fix:** `AppNavigator.tsx`に`screenListeners`を追加
-  ```tsx
-  screenListeners={({ navigation, route }) => ({
-    tabPress: () => {
-      const state = navigation.getState();
-      const currentRoute = state.routes[state.index];
-      if (route.key === currentRoute?.key) {
-        const screenMap = { HomeTab: 'Dashboard', ... };
-        navigation.navigate(tabName, { screen: screenMap[tabName] });
-      }
-    },
-  })}
-  ```
-- **Result:** ✅ タブ再タップで最初の画面に戻る
+- **Commit:** `71d20cc5`
 
 ### 2. 戻るボタンのタッチ領域拡大
-- **Problem:** ProfileScreenの戻るボタン（←）が見えるのにタッチしても反応しない
-- **Root Cause:** 24x24pxのアイコンをピンポイントで押す必要があった
-- **Fix:** `hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}`と`style={{ padding: 4 }}`を追加
-- **Result:** ✅ タッチ領域が拡大され、反応するように
+- **Problem:** 24x24pxのアイコンがピンポイントでないと反応しない
+- **Fix:** `hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}`追加
+- **Commit:** `71d20cc5`
+
+### 3. Web Portal i18n実装
+- **Framework:** react-i18next (Next.js App Router対応)
+- **対応言語:** 日本語（デフォルト）、英語、韓国語
+- **言語選択:** ドロップダウンUI、localStorageに永続化
+- **Deployed:** https://commit-app-web.vercel.app
+- **Commit:** `f47e0f0` (ローカルのみ、remoteなし)
 
 ---
 
-## What Didn't Work (Lessons Learned)
+## Web Portal i18n Architecture
 
-### 1. 最初の原因推測
-- **Attempted:** zIndex問題やpointerEvents問題を疑った
-- **Result:** ❌ 実際はReact Navigationのデフォルト動作の問題だった
-- **Lesson:** タブナビゲーションの挙動はフレームワークのバージョンで異なる
-
----
-
-## Immediate Next Steps
-
-### Priority: 7.8 カード登録フロー
-- 未コミットの変更あり（`CardRegistrationBanner.tsx`、migration等）
-- ダッシュボードにカード未登録バナーを表示
-- Web Portalでカード登録ページを追加
-
-### Commit This Session's Changes
-```bash
-git add -A && git commit -m "fix: tab re-tap navigation and back button touch area
-
-- Add screenListeners to Tab.Navigator for stack reset on tab re-tap
-- Add hitSlop to ProfileScreen back button for better touch response
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
+commit-app-web/src/i18n/
+├── config.ts           # i18next初期化、changeLanguage関数
+├── I18nProvider.tsx    # Client Componentラッパー
+└── locales/
+    ├── ja.json         # 日本語（デフォルト）
+    ├── en.json         # 英語
+    └── ko.json         # 韓国語
+
+commit-app-web/src/components/
+└── LanguageSelector.tsx  # 言語選択ドロップダウン
+```
+
+### 対応済みページ
+- `page.tsx` (ホーム)
+- `(auth)/login/page.tsx`
+- `billing/page.tsx`
+- `billing/success/page.tsx`
+- `components/billing/CardSetupForm.tsx`
+
+### 未対応ページ（将来対応）
+- `terms/page.tsx` (利用規約)
+- `privacy/page.tsx` (プライバシーポリシー)
+- `tokushoho/page.tsx` (特定商取引法)
 
 ---
 
@@ -76,14 +72,38 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 | Category | Files |
 |----------|-------|
-| **Navigation** | `src/navigation/AppNavigator.tsx` |
-| **Screens** | `src/screens/ProfileScreen.tsx` |
+| **Mobile Navigation** | `src/navigation/AppNavigator.tsx` |
+| **Mobile Screens** | `src/screens/ProfileScreen.tsx`, `DashboardScreen.tsx` |
+| **Mobile Components** | `src/components/CardRegistrationBanner.tsx` (new) |
+| **Web i18n** | `src/i18n/config.ts`, `I18nProvider.tsx`, `locales/*.json` |
+| **Web Components** | `src/components/LanguageSelector.tsx` (new) |
+| **Web Pages** | `page.tsx`, `login/page.tsx`, `billing/*.tsx` |
 
 ---
 
 ## Git Status
+
+### Mobile App (commit-app)
 - Branch: `main`
-- Last Commit: `126d381b` (fix: resolve Edge Function JWT error and remove dev logout button)
-- Uncommitted:
-  - Tab navigation fix (this session)
-  - 7.8 Card registration flow (in progress from previous session)
+- Last Commit: `71d20cc5` (feat: payment method registration flow + tab navigation fix)
+- Status: Pushed to origin
+
+### Web Portal (commit-app-web)
+- Branch: `main`
+- Last Commit: `f47e0f0` (feat: add i18n multilingual support)
+- Status: **ローカルのみ** (git remoteが設定されていない)
+- Deployed: Vercel経由でデプロイ済み
+
+---
+
+## Immediate Next Steps
+
+1. **Web Portal GitHub連携** (optional)
+   - `git remote add origin https://github.com/kgasnalo/commit-app-web.git`
+   - `git push -u origin main`
+
+2. **Terms/Privacy/Tokushoho i18n対応**
+   - 法的文書の翻訳版追加
+
+3. **本番テスト**
+   - カード登録フロー全体のE2Eテスト
