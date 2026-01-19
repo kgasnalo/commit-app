@@ -948,3 +948,21 @@
   - `subscription_status` is a **state flag** managed by Apple/Google webhooks, NOT a Stripe subscription
   - Web Portal `/billing` is ONLY for penalty payment card management
   - `react-native-iap` or `expo-in-app-purchases` should be used for subscription purchases
+- **Admin-Only Tables RLS Pattern (CRITICAL):** When creating tables that only admins should write to (e.g., `donations`, `announcements`), do NOT rely on comments like "service_role can modify". The Web Portal's Admin Dashboard uses authenticated user sessions (NOT service_role). You MUST:
+  1. Create explicit RLS policies checking `users.role = 'Founder'` for INSERT/UPDATE/DELETE
+  2. Ensure the admin user's `role` column is actually set to `'Founder'` in the database
+  3. If using client-side Supabase calls (not Edge Functions), RLS policies are ALWAYS enforced
+  ```sql
+  -- Example: Admin INSERT policy
+  CREATE POLICY "Admin can insert"
+    ON my_table FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM users
+        WHERE users.id = auth.uid()
+        AND users.role = 'Founder'
+      )
+    );
+  ```
+- **TypeScript Types vs DB Schema Sync:** When manually editing `src/types/database.types.ts`, ensure column names and types EXACTLY match the actual database schema. Mismatches cause runtime errors like "Could not find column X in schema cache". Always verify with the corresponding migration file in `supabase/migrations/`.
