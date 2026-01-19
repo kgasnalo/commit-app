@@ -966,3 +966,22 @@
     );
   ```
 - **TypeScript Types vs DB Schema Sync:** When manually editing `src/types/database.types.ts`, ensure column names and types EXACTLY match the actual database schema. Mismatches cause runtime errors like "Could not find column X in schema cache". Always verify with the corresponding migration file in `supabase/migrations/`.
+- **Supabase Auto-Managed Secrets:** Secrets prefixed with `SUPABASE_` cannot be set via `supabase secrets set`. They are automatically managed by Supabase and updated when rotated in the Dashboard.
+  ```bash
+  # BAD - Will fail with "Env name cannot start with SUPABASE_"
+  supabase secrets set SUPABASE_SERVICE_ROLE_KEY='...'
+
+  # These secrets are auto-managed:
+  # - SUPABASE_SERVICE_ROLE_KEY
+  # - SUPABASE_ANON_KEY
+  # - SUPABASE_URL
+  # - SUPABASE_DB_URL
+  ```
+  When rotating `SERVICE_ROLE_KEY`:
+  1. Regenerate in Supabase Dashboard (Settings > API > service_role)
+  2. Edge Functions: **Automatically updated** (no action needed)
+  3. Vercel (Web Portal): **Manual update required**
+     ```bash
+     echo "NEW_KEY" | npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
+     npx vercel --prod --yes  # Redeploy
+     ```
