@@ -1,7 +1,7 @@
 # Handoff: Session 2026-01-19
 
 ## Current Goal
-**Web Portal モバイルUI最適化完了** - 寄付バナーとフッターのレスポンシブ改善
+**Phase 3 品質改善タスク完了** - リリース前の品質向上タスクを完了
 
 ---
 
@@ -9,69 +9,103 @@
 
 ### ✅ Completed This Session
 
-| Task | Status | Details |
-|------|--------|---------|
-| **寄付報告バナー モバイルUI** | ✅ 完了 | モバイル: 縦積み、デスクトップ: 横並び維持 |
-| **フッターリンク一文化** | ✅ 完了 | `利用規約・プライバシー・特商法` 形式 |
-| **Vercel デプロイ** | ✅ 完了 | https://commit-app-web.vercel.app |
-
-### 寄付バナー レスポンシブ構造
-
-**モバイル (`<md`):**
-```
-[アイコン48px] [タイトル]        [→]
-[説明文（フル幅、アイコン分インデント）    ]
-```
-
-**デスクトップ (`≥md`):**
-```
-[アイコン64px] [タイトル + 説明] [ボタン→]
-```
-
-### フッター構造
-
-**変更前:** `gap-6` でリンク間に大きな間隔（モバイルで折り返し問題）
-**変更後:** 区切り文字「・」で一文に連結 (`利用規約・プライバシー・特商法`)
+| Task ID | Task | Status | Details |
+|---------|------|--------|---------|
+| **I.3** | Accessibility (a11y) | ✅ 完了 | VoiceOver対応 (accessibilityRole, accessibilityLabel, accessibilityState) |
+| **A.2** | Sentry Capture監査 | ✅ 完了 | captureError/captureWarning ヘルパー追加、catch ブロック更新 |
+| **P.4** | Unit Testing | ✅ 完了 | Jest + jest-expo セットアップ、commitmentHelpers テスト15件 |
+| **S.8** | Deep Link Validation | ✅ 完了 | linkingUtils.ts 作成、safeOpenURL + canOpenURL チェック |
+| **D.3** | Magic Numbers | ✅ 完了 | MonkModeService 閾値定数化 (HEATMAP_THRESHOLDS等) |
+| **P.6** | List key修正 | ✅ 完了 | OnboardingScreen9/11 の index → 一意ID |
+| **D.1** | TitanBackground抽出 | ✅ 完了 | コンポーネント作成、3ファイル適用済み |
 
 ---
 
-## Key Files Modified This Session
+## Key Files Created/Modified This Session
 
 | Category | Files | Status |
 |----------|-------|--------|
-| **Web Portal** | `commit-app-web/src/app/page.tsx` | ✅ 更新済み |
+| **New: Testing** | `jest.config.js`, `jest.setup.js`, `jest.env.setup.js` | ✅ 作成 |
+| **New: Tests** | `src/__tests__/commitmentHelpers.test.ts` | ✅ 作成 (15 tests) |
+| **New: Utils** | `src/utils/linkingUtils.ts` | ✅ 作成 (safeOpenURL, openAppStore) |
+| **New: Components** | `src/components/titan/TitanBackground.tsx` | ✅ 作成 |
+| **Modified: i18n** | `src/i18n/locales/{ja,en,ko}.json` | ✅ 更新 (accessibility section) |
+| **Modified: Error** | `src/utils/errorLogger.ts` | ✅ 更新 (captureError, captureWarning) |
+| **Modified: Services** | `src/lib/MonkModeService.ts` | ✅ 更新 (constants extraction) |
+| **Modified: Screens** | ManualBookEntryScreen, ForceUpdateScreen, ProfileScreen | ✅ TitanBackground適用 |
 
 ---
 
 ## Git Status
 
-### Web Portal (commit-app-web)
-- 変更あり（未コミット）: `src/app/page.tsx`
-- デプロイ済み: https://commit-app-web.vercel.app
+**Latest Commit:**
+```
+863ea840 feat: implement pre-release quality improvements (Phase 3)
+```
+
+31 files changed, 3,822 insertions(+), 219 deletions(-)
+
+---
+
+## TitanBackground 適用状況
+
+### ✅ 適用済み (3/14):
+- `ManualBookEntryScreen.tsx`
+- `ForceUpdateScreen.tsx`
+- `ProfileScreen.tsx`
+
+### ⏳ 未適用 (11/14):
+- `RoleSelectScreen.tsx`
+- `DashboardScreen.tsx`
+- `LibraryScreen.tsx`
+- `CreateCommitmentScreen.tsx`
+- `CommitmentDetailScreen.tsx`
+- `VerificationScreen.tsx`
+- `MonkModeScreen.tsx`
+- `MaintenanceScreen.tsx`
+- `DonationAnnouncementModal.tsx`
+- `HeroBillboard.tsx`
+- `CommitmentReceipt.tsx`
 
 ---
 
 ## Immediate Next Steps
 
-### 🚀 Phase 7.8: Payment Method Registration Flow (残タスク)
+### 🚀 Phase 7.9: Apple IAP / Google Play Billing (ストア登録後)
 
-- [x] Dashboard Banner (モバイルアプリ) - カード未登録時に常時表示 ✅
-- [ ] Stripe Webhook (`payment_method.attached`) - optional
-- [ ] `payment_method_registered` フラグ管理
+1. **ライブラリ選定**
+   - `react-native-iap` または `expo-in-app-purchases`
 
-### 🚀 Phase 7.9: Apple IAP / Google Play Billing
+2. **ストア設定**
+   - Apple App Store Connect: Auto-Renewable Subscription
+   - Google Play Console: Subscription product
 
-1. **調査 & 設計**
-   - `react-native-iap` または `expo-in-app-purchases` の選定
-   - Apple App Store Connect でサブスクリプション商品設定
-   - Google Play Console で定期購入商品設定
-
-2. **Onboarding Paywall更新**
+3. **Onboarding Paywall更新**
    - `OnboardingScreen13_Paywall.tsx` をIAP対応に変更
 
-3. **Webhook実装**
+4. **Webhook実装**
    - Apple Server-to-Server Notifications
    - Google Real-time Developer Notifications
+
+---
+
+## Testing Infrastructure
+
+### Jest Setup
+```bash
+# Run tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+```
+
+### Test Files
+- `src/__tests__/commitmentHelpers.test.ts` (15 tests)
+  - `calculateSliderStartPage`: 4 tests
+  - `calculateSuggestedDeadline`: 3 tests
+  - `calculatePageRangesForAll`: 4 tests
+  - `groupCommitmentsByBook`: 4 tests
 
 ---
 

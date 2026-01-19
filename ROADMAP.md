@@ -527,18 +527,20 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Move all styles to `StyleSheet.create`.
 
 ### Level 3: Debt (Architecture) - メンテナンス性
-- [ ] **D.1 DRY: Background Component Extraction**
+- [x] **D.1 DRY: Background Component Extraction**
     - **Problem:** Complex `Titan Background` logic (LinearGradients) duplicated across multiple screens.
     - **Fix:** Create reusable `TitanBackground` component.
+    - **Implementation:** Created `src/components/titan/TitanBackground.tsx` with props for ambientColor and showAmbient. Applied to 3 screens (ManualBookEntry, ForceUpdate, Profile). Remaining 11 screens can be updated incrementally.
 
 - [x] **D.2 Console Log Cleanup**
     - **Problem:** 200+ `console.log` calls remaining in production code.
     - **Locations:** `MetricsService.ts`, `MonkModeService.ts`, `LiveActivityService.ts`, `AppNavigator.tsx`, and Onboarding screens.
     - **Fix:** Replace with structured `Logger` utility and ensure removal in production builds.
 
-- [ ] **D.3 Magic Numbers Refactoring**
+- [x] **D.3 Magic Numbers Refactoring**
     - **Problem:** Hardcoded confidence scores (30, 50, 95) and logic thresholds in `MonkModeService.ts`.
     - **Fix:** Extract to `src/config/constants.ts` or top-level constants.
+    - **Implementation:** Extracted to top-level constants: `HEATMAP_THRESHOLDS`, `READER_TYPE_THRESHOLDS`, `DEFAULTS`, `MS_PER_DAY`, `SECONDS_PER_HOUR`. Updated all usages in MonkModeService.ts.
 
 - [ ] **D.5 God Component Refactoring (High Priority)**
     - **Problem:** Massive components handling mixed concerns (UI, State, API).
@@ -570,15 +572,17 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Problem:** Over-reliance on blocking `Alert.alert` for minor errors.
     - **Fix:** Transition to non-blocking Toast notifications or inline error messages.
 
-- [ ] **I.3 Accessibility (a11y) Implementation**
+- [x] **I.3 Accessibility (a11y) Implementation**
     - **Problem:** No `accessibilityLabel` or `accessibilityRole` found. App is unusable for VoiceOver users.
     - **Fix:** Add a11y props to all interactive elements (`CommitmentCard`, Buttons, Inputs).
+    - **Implementation:** Added accessibilityRole, accessibilityLabel, accessibilityState to PrimaryButton, SecondaryButton, OrangeButton, CommitmentCard, OnboardingLayout, BarcodeScannerModal, AuthScreen. Added accessibility i18n keys to all locales.
 
-- [ ] **P.6 List Performance Anti-pattern**
+- [x] **P.6 List Performance Anti-pattern**
     - **Problem:** Using array index as `key` in lists.
     - **Locations:** `src/screens/onboarding/OnboardingScreen11.tsx`, `OnboardingScreen9.tsx`.
     - **Risk:** Performance degradation and state bugs when list items change order.
     - **Fix:** Use stable unique IDs for keys.
+    - **Implementation:** Added `id` field to FEATURES and TESTIMONIALS arrays, updated map to use `feature.id` and `testimonial.id` as keys.
 
 - [ ] **P.8 Unawaited Promises in Loops**
     - **Problem:** `secureUrls.map(async ...)` in `useImageColors.ts` creates unhandled promises.
@@ -618,9 +622,10 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Replace with `Alert.alert()` for consistent native behavior.
     - **Implementation:** Changed to `Alert.alert(i18n.t('common.error'), i18n.t('bookDetail.memo_update_failed'))`.
 
-- [ ] **P.4 Unit Testing Foundation**
+- [x] **P.4 Unit Testing Foundation**
     - **Problem:** Zero test files found. Critical business logic is untested.
     - **Fix:** Setup `jest` and add unit tests for `commitmentHelpers.ts` and `MonkModeService`.
+    - **Implementation:** Installed jest-expo, created jest.config.js, jest.setup.js, jest.env.setup.js. Added 15 tests for commitmentHelpers (calculateSliderStartPage, calculateSuggestedDeadline, calculatePageRangesForAll, groupCommitmentsByBook). All tests passing.
 
 - [x] **P.5 Forced Dark Theme (Design Integrity)**
     - **Problem:** `app.json` is set to `userInterfaceStyle: "light"`.
@@ -651,18 +656,20 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Check `asset.fileSize` before upload and limit to 5MB.
     - **Implementation:** Changed state from URI string to `ImagePickerAsset`, added 5MB validation before upload.
 
-- [ ] **S.8 Deep Link Validation**
+- [x] **S.8 Deep Link Validation**
     - **Problem:** `Linking.openURL` lacks pre-check and error feedback.
     - **Risk:** Silent failures or handling of malicious schemes.
     - **Fix:** Use `Linking.canOpenURL` and show Toast on failure.
+    - **Implementation:** Created `src/utils/linkingUtils.ts` with `safeOpenURL` and `openAppStore` functions. Updated all screens using Linking.openURL (SettingsScreen, ForceUpdateScreen, CardRegistrationBanner, DonationAnnouncementModal, RoleSelectScreen).
 
 - [ ] **A.1 Granular Error Boundaries**
     - **Problem:** Global ErrorBoundary only. One screen crash breaks the entire app.
     - **Fix:** Implement sub-boundaries for MainTabs and critical screens (`CreateCommitment`, `Verification`).
 
-- [ ] **A.2 Sentry Capture Consistency Audit**
+- [x] **A.2 Sentry Capture Consistency Audit**
     - **Problem:** 90+ `catch` blocks, but many only `console.error`.
     - **Fix:** Ensure `Sentry.captureException(error)` is present in all critical API and logic failures.
+    - **Implementation:** Added `captureError` and `captureWarning` helper functions to `src/utils/errorLogger.ts`. Updated commitmentHelpers.ts, MonkModeService.ts, NotificationService.ts with proper Sentry reporting.
 
 - [ ] **A.3 Provider Optimization**
     - **Problem:** `OnboardingAtmosphereProvider` wraps the entire app, causing root re-renders on every atmosphere change.
