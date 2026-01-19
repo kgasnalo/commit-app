@@ -1,138 +1,99 @@
-# Handoff: Session 2026-01-17
+# Handoff: Session 2026-01-19
 
 ## Current Goal
-**UI改善セッション完了** - テキスト改行問題、パスワードバリデーション強化、アーカイブ画面のテキスト視認性改善
+**Web Portal モバイルUI最適化完了** - 寄付バナーとフッターのレスポンシブ改善
 
 ---
 
 ## Current Critical Status
 
-### Resolved This Session
+### ✅ Completed This Session
 
-| Issue | Status | Fix |
-|-------|--------|-----|
-| **オンボーディング見出しの改行問題** | ✅ Resolved | `adjustsFontSizeToFit` + 動的 `numberOfLines` |
-| **パスワードが1文字でも登録可能** | ✅ Resolved | 8文字以上 + 英数字必須に強化 |
-| **Screen7のデータが表示されない** | ✅ Resolved | AsyncStorageからのフォールバック読み込み追加 |
-| **OnboardingScreen3が英語のまま** | ✅ Resolved | i18nキー追加 (3言語同期) |
-| **HeroBillboardのテキスト視認性** | ✅ Resolved | 多層アプローチ (背景+ボールド+シャドウ) |
-| **VerificationSuccessModalの改行** | ✅ Resolved | fontSize/paddingの調整 |
+| Task | Status | Details |
+|------|--------|---------|
+| **寄付報告バナー モバイルUI** | ✅ 完了 | モバイル: 縦積み、デスクトップ: 横並び維持 |
+| **フッターリンク一文化** | ✅ 完了 | `利用規約・プライバシー・特商法` 形式 |
+| **Vercel デプロイ** | ✅ 完了 | https://commit-app-web.vercel.app |
 
----
+### 寄付バナー レスポンシブ構造
 
-## What Worked (Solutions Applied)
+**モバイル (`<md`):**
+```
+[アイコン48px] [タイトル]        [→]
+[説明文（フル幅、アイコン分インデント）    ]
+```
 
-### 1. テキスト改行問題 (adjustsFontSizeToFit)
-- **Problem:** 日本語見出し「読まなかった1冊は...」で「つ」だけ改行される
-- **Attempted:** フォントサイズ縮小 (32→30→28) - 効果なし
-- **Fix:** `adjustsFontSizeToFit` + 動的 `numberOfLines={title.split('\n').length}`
-- **Learning:** `numberOfLines` は固定値ではなく、テキスト内の実際の改行数から計算すること
+**デスクトップ (`≥md`):**
+```
+[アイコン64px] [タイトル + 説明] [ボタン→]
+```
 
-### 2. OAuth後のデータ消失問題
-- **Problem:** Screen7でtsundokuCount等が常にデフォルト値 (3000, 5, 10)
-- **Cause:** OAuth認証でナビゲーションスタックが完全置換され、route.paramsが消失
-- **Fix:** AsyncStorageからのフォールバック読み込み追加
-- **Pattern:** OAuth前にAsyncStorageに保存 → OAuth後に読み込み
+### フッター構造
 
-### 3. 画像上テキストの視認性 (HeroBillboard)
-- **Problem:** 明るい表紙画像で白テキストが見えない
-- **Fix:** Netflix/Spotify風の多層アプローチ:
-  - グラデーションオーバーレイ強化 (0.35→0.6)
-  - テキストバックドロップ追加 (黒グラデ背景)
-  - フォント太さ増加 (100→600)
-  - 黒シャドウ追加 (`rgba(0,0,0,1)`)
-- **Files Modified:**
-  - `HeroBillboard.tsx`: タイトル/著者/日付スタイル
-  - `AutomotiveMetrics.tsx`: ラベル/値スタイル
-
-### 4. パスワードバリデーション強化
-- **Problem:** 1文字のパスワードでも登録可能
-- **Fix:**
-  - 最低8文字に変更
-  - 英字 + 数字の両方必須
-- **i18n Keys Added:** `password_too_short`, `password_requirements`
+**変更前:** `gap-6` でリンク間に大きな間隔（モバイルで折り返し問題）
+**変更後:** 区切り文字「・」で一文に連結 (`利用規約・プライバシー・特商法`)
 
 ---
 
 ## Key Files Modified This Session
 
-| Category | Files |
-|----------|-------|
-| **Onboarding Layout** | `src/components/onboarding/OnboardingLayout.tsx` |
-| **Onboarding Screens** | `OnboardingScreen3_BookSelect.tsx`, `OnboardingScreen6_Account.tsx`, `OnboardingScreen7_OpportunityCost.tsx` |
-| **Hall of Fame** | `src/components/hall-of-fame/HeroBillboard.tsx`, `AutomotiveMetrics.tsx` |
-| **Modals** | `src/components/VerificationSuccessModal.tsx` |
-| **i18n** | `src/i18n/locales/{ja,en,ko}.json` |
+| Category | Files | Status |
+|----------|-------|--------|
+| **Web Portal** | `commit-app-web/src/app/page.tsx` | ✅ 更新済み |
 
 ---
 
 ## Git Status
 
-### Mobile App (commit-app)
-- Branch: `main`
-- Last Commit: `9ac9b8c3` (docs: update HANDOFF, CLAUDE.md, and ROADMAP for billing UI session)
-- Status: Clean, pushed to origin
-
----
-
-## Key Patterns Learned
-
-### 1. Dynamic numberOfLines for adjustsFontSizeToFit
-```typescript
-// GOOD - respects explicit \n in translation strings
-<Text
-  adjustsFontSizeToFit
-  numberOfLines={title.split('\n').length}
->
-  {title}
-</Text>
-```
-
-### 2. Text Visibility on Dynamic Backgrounds
-```typescript
-// Multi-layer approach for guaranteed readability
-// Layer 1: Darkened overlay on image
-coverImageOverlay: { backgroundColor: 'rgba(8, 6, 4, 0.45)' }
-
-// Layer 2: Text backdrop gradient
-<LinearGradient
-  colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.4)', 'transparent']}
-/>
-
-// Layer 3: Bold text with black shadow
-title: {
-  fontWeight: '600',
-  color: '#FFFFFF',
-  textShadowColor: 'rgba(0, 0, 0, 1)',
-  textShadowOffset: { width: 0, height: 2 },
-  textShadowRadius: 12,
-}
-```
-
-### 3. OAuth Data Persistence Pattern
-```typescript
-// Before OAuth (in Screen6)
-await AsyncStorage.setItem('onboardingData', JSON.stringify({
-  selectedBook, deadline, pledgeAmount, currency, tsundokuCount
-}));
-
-// After OAuth (in Screen7)
-const onboardingData = await AsyncStorage.getItem('onboardingData');
-const data = JSON.parse(onboardingData);
-// Use data.tsundokuCount, etc.
-```
+### Web Portal (commit-app-web)
+- 変更あり（未コミット）: `src/app/page.tsx`
+- デプロイ済み: https://commit-app-web.vercel.app
 
 ---
 
 ## Immediate Next Steps
 
-1. **Mobile Dashboard Banner** (7.8続き)
-   - カード未登録時のバナー表示
-   - `payment_method_registered`フラグの管理
+### 🚀 Phase 7.8: Payment Method Registration Flow (残タスク)
 
-2. **Stripe Webhook設定** (optional)
-   - `payment_method.attached`イベントでフラグ自動更新
+- [ ] Dashboard Banner (モバイルアプリ) - カード未登録時に常時表示
+- [ ] Stripe Webhook (`payment_method.attached`) - optional
+- [ ] `payment_method_registered` フラグ管理
 
-3. **E2Eテスト**
-   - オンボーディング完全フロー確認
-   - アーカイブ画面での視認性確認
+### 🚀 Phase 7.9: Apple IAP / Google Play Billing
+
+1. **調査 & 設計**
+   - `react-native-iap` または `expo-in-app-purchases` の選定
+   - Apple App Store Connect でサブスクリプション商品設定
+   - Google Play Console で定期購入商品設定
+
+2. **Onboarding Paywall更新**
+   - `OnboardingScreen13_Paywall.tsx` をIAP対応に変更
+
+3. **Webhook実装**
+   - Apple Server-to-Server Notifications
+   - Google Real-time Developer Notifications
+
+---
+
+## Critical Architecture Rule
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    COMMIT App                           │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   サブスクリプション              ペナルティ (寄付)      │
+│   ┌─────────────────┐          ┌─────────────────┐     │
+│   │ Apple IAP       │          │ Stripe          │     │
+│   │ Google Play     │          │ (Web Portal)    │     │
+│   │ Billing         │          │                 │     │
+│   └────────┬────────┘          └────────┬────────┘     │
+│            │                            │              │
+│            ▼                            ▼              │
+│   ストアアプリで解約            カード登録 & 課金       │
+│   (設定 > サブスクリプション)    (/billing ページ)      │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**絶対にWeb Portalでサブスクリプション解約を実装しないこと！**
