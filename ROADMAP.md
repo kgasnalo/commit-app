@@ -267,6 +267,13 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - DB: `expo_push_tokens` table with RLS
       - Mobile: `NotificationService.registerForPushNotifications()` (auto-called on auth)
       - Server: `send-push-notification` Edge Function deployed
+    - **7.3.1 Announcements/Donations Push Notifications (2026-01-20):** ✅
+      - DB Triggers: `notify_announcement_published()`, `notify_donation_posted()`
+      - pg_net calls `send-push-notification` Edge Function on publish/insert
+      - `UnreadService.ts`: AsyncStorage-based unread count management
+      - `UnreadContext.tsx`: Global state with Supabase Realtime subscription
+      - Settings tab badge shows unread count
+      - AnnouncementsScreen/DonationHistoryScreen mark as read on focus
 
 - [x] **7.4 "The Reaper" (Automated Deadline Enforcer)**
     - **Role:** `[Backend Engineer]`

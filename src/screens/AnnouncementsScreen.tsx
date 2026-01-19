@@ -12,9 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronLeft, Bell, Info, Wrench, AlertTriangle, Sparkles } from 'lucide-react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUnread } from '../contexts/UnreadContext';
 
 interface Announcement {
   id: string;
@@ -31,6 +33,14 @@ export default function AnnouncementsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { language } = useLanguage();
+  const { markAsRead } = useUnread();
+
+  // Mark announcements as read when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      markAsRead('announcements');
+    }, [markAsRead])
+  );
 
   const fetchAnnouncements = useCallback(async () => {
     try {

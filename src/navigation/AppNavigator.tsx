@@ -13,6 +13,7 @@ import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsProvider, useAnalytics } from '../contexts/AnalyticsContext';
 import { OfflineProvider } from '../contexts/OfflineContext';
+import { UnreadProvider, useUnread } from '../contexts/UnreadContext';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
@@ -127,6 +128,8 @@ function SettingsStackNavigator() {
 function MainTabs() {
   // Subscribe to language changes to re-render tab labels
   const { language } = useLanguage();
+  // Get unread counts for badge display
+  const { unreadCounts } = useUnread();
 
   return (
     <Tab.Navigator
@@ -207,6 +210,15 @@ function MainTabs() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "construct" : "construct-outline"} size={size} color={color} />
           ),
+          tabBarBadge: unreadCounts.total > 0 ? unreadCounts.total : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: colors.signal.danger,
+            fontSize: 10,
+            fontWeight: '600',
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+          },
         }}
       />
     </Tab.Navigator>
@@ -891,7 +903,9 @@ function AppNavigatorInner() {
         }}
       >
         <AnalyticsProvider>
-          <NavigationContent />
+          <UnreadProvider>
+            <NavigationContent />
+          </UnreadProvider>
         </AnalyticsProvider>
       </NavigationContainer>
       <OfflineBanner />

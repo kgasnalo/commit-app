@@ -1,20 +1,23 @@
-# Handoff: Session 2026-01-19 (Evening)
+# Handoff: Session 2026-01-20
 
 ## Current Goal
-**Admin Dashboard バグ修正完了** - Donations & Announcements のスキーマ・RLS問題解決
+**お知らせ・寄付のプッシュ通知 & バッジ表示 実装完了**
 
 ---
 
 ## Current Critical Status
 
-### ✅ Completed This Session (2026-01-19 Evening)
+### ✅ Completed This Session (2026-01-20)
 
 | Task | Status | Details |
 |------|--------|---------|
-| **Donations Schema Fix** | ✅ 完了 | `transfer_date` カラム追加、`quarter` を INTEGER に変更 |
-| **Donations RLS Fix** | ✅ 完了 | Admin ユーザーの `role` を `Founder` に設定 |
-| **donated_at Constraint Fix** | ✅ 完了 | NOT NULL 制約解除、トリガーで自動設定 |
-| **Announcements RLS Fix** | ✅ 完了 | Admin 用 INSERT/UPDATE/DELETE ポリシー追加 |
+| **DB Triggers** | ✅ 完了 | announcements/donations → プッシュ通知 |
+| **UnreadService** | ✅ 完了 | AsyncStorage + Supabaseで未読管理 |
+| **UnreadContext** | ✅ 完了 | Realtime監視付きグローバル状態 |
+| **Badge Display** | ✅ 完了 | SettingsTab に未読バッジ表示 |
+| **Mark as Read** | ✅ 完了 | 画面表示時に自動クリア |
+| **Migration Deploy** | ✅ 完了 | `supabase db push` 成功 |
+| **TypeCheck** | ✅ 完了 | エラーなし |
 
 ---
 
@@ -22,32 +25,61 @@
 
 | File | Purpose |
 |------|---------|
-| `supabase/migrations/20260119170000_fix_donations_schema.sql` | transfer_date追加、quarter型変更 |
-| `supabase/migrations/20260119180000_fix_donations_donated_at.sql` | donated_at制約解除、トリガー追加 |
-| `supabase/migrations/20260119190000_add_admin_announcements_policies.sql` | Admin用RLSポリシー |
+| `supabase/migrations/20260120100000_add_push_notification_triggers.sql` | DBトリガー（pg_net経由でEdge Function呼出） |
+| `src/lib/UnreadService.ts` | 未読数管理（AsyncStorage + Supabase） |
+| `src/contexts/UnreadContext.tsx` | 未読状態Context（Realtime監視付き） |
+
+## Key Files Modified This Session
+
+| File | Changes |
+|------|---------|
+| `src/navigation/AppNavigator.tsx` | UnreadProvider追加、SettingsTabにバッジ |
+| `src/screens/AnnouncementsScreen.tsx` | markAsRead('announcements') 追加 |
+| `src/screens/DonationHistoryScreen.tsx` | markAsRead('donations') 追加 |
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. Schema/TypeScript Type Mismatch
-**Problem:** `database.types.ts` で `transfer_date` と `quarter: number` を定義したが、実際のDB schema には存在しなかった
+### 1. Admin Dashboard Timezone Issue (PENDING)
+**Problem:** 日本時間22:38を「Expires At」に設定したが、07:39と表示される
 
-**Solution:**
-- DB schema に `transfer_date DATE` カラムを追加
-- `quarter` を TEXT → INTEGER に変更（`quarter_number` をリネーム）
+**Root Cause:**
+- Admin Dashboard (commit-app-web) のタイムゾーン処理の問題
+- datetime-local入力 → DB保存 → 表示の変換チェーンに問題あり
 
-### 2. RLS Policy Without Admin Check
-**Problem:** `donations` テーブルの INSERT ポリシーが `users.role = 'Founder'` をチェックしていたが、ユーザーの `role` が `NULL` だった
+**Next Step:**
+- commit-app-web のAdmin Dashboard日時入力/表示コードを確認
+- UTC/JST変換ロジックを修正
 
-**Solution:**
-- SQL で `UPDATE users SET role = 'Founder' WHERE email = 'admin@example.com'`
+### 2. Draft vs Published Confusion
+**Clarification:**
+- 「Expires At」を設定しただけでは公開されない
+- **「Publish」ボタンをクリック** → `published_at`がセット → トリガー発火 → プッシュ通知送信
+- Draft状態ではトリガーは発火しない
 
-### 3. Missing Admin Policies for Announcements
-**Problem:** `announcements` テーブルに INSERT/UPDATE/DELETE ポリシーがなく、コメントで「service_role でバイパス」と書いてあったが、クライアントは authenticated ユーザーとしてアクセス
+---
 
-**Solution:**
-- Admin 用の RLS ポリシーを明示的に追加
+## Architecture Overview
+
+```
+[Admin Dashboard] → INSERT/UPDATE → [announcements/donations テーブル]
+                                            ↓
+                                 [Database Trigger (pg_net)]
+                                            ↓
+                      [send-push-notification Edge Function]
+                                            ↓
+                                 [全ユーザーにプッシュ通知]
+
+[Mobile App]
+    ├── UnreadContext (Realtime監視)
+    │       ↓
+    ├── SettingsTab Badge (unreadCounts.total)
+    │
+    └── AnnouncementsScreen / DonationHistoryScreen
+            ↓ (useFocusEffect)
+        markAsRead() → AsyncStorage更新 → Badge減少
+```
 
 ---
 
@@ -55,17 +87,12 @@
 
 **Uncommitted Files:**
 ```
-supabase/migrations/20260119140000_add_admin_donation_policies.sql
-supabase/migrations/20260119170000_fix_donations_schema.sql
-supabase/migrations/20260119180000_fix_donations_donated_at.sql
-supabase/migrations/20260119190000_add_admin_announcements_policies.sql
-```
-
-**Latest Commits:**
-```
-d92c5c33 fix: add storage policy for donation proof uploads
-b075594b feat: add announcements feature and donation description
-0f99ac23 feat: add donation history screen
+src/contexts/UnreadContext.tsx (new)
+src/lib/UnreadService.ts (new)
+src/navigation/AppNavigator.tsx (modified)
+src/screens/AnnouncementsScreen.tsx (modified)
+src/screens/DonationHistoryScreen.tsx (modified)
+supabase/migrations/20260120100000_add_push_notification_triggers.sql (new)
 ```
 
 ---
@@ -74,26 +101,40 @@ b075594b feat: add announcements feature and donation description
 
 ### 🚀 Recommended Actions
 
-1. **Git Commit**: 今回のマイグレーションをコミット
+1. **Git Commit**: 今回の変更をコミット
    ```bash
-   git add supabase/migrations/
-   git commit -m "fix: resolve donations and announcements RLS/schema issues"
+   git add .
+   git commit -m "feat: add push notifications and badge for announcements/donations"
    ```
 
-2. **Admin Dashboard 検証**:
-   - Donation レポート投稿テスト
-   - Announcement 作成テスト
-   - `/donations` ページでの表示確認
+2. **Admin Dashboard タイムゾーン修正** (commit-app-web):
+   - datetime-local入力のUTC変換を確認
+   - 表示時のタイムゾーン処理を確認
 
-3. **Phase 7.9 (Apple IAP)**: ストア申請準備
+3. **動作検証**:
+   - Admin Dashboardで「Publish」ボタンをクリック
+   - モバイルアプリにプッシュ通知が届くことを確認
+   - SettingsTabにバッジが表示されることを確認
+   - Announcements/DonationHistory画面を開いてバッジが減ることを確認
+
+4. **Phase 7.9 (Apple IAP)**: ストア申請準備
 
 ---
 
-## Admin Dashboard Access
+## Testing Checklist
 
-- **URL:** https://commit-app-web.vercel.app/admin/dashboard
-- **Required:** `role = 'Founder'` in users table
-- **Features:** Commitments管理、Penalty Charges、Donations、Announcements
+### プッシュ通知テスト
+- [ ] Admin Dashboardでお知らせ作成 → 「Publish」クリック
+- [ ] モバイルアプリにプッシュ通知が届く
+- [ ] Admin Dashboardで寄付投稿を作成
+- [ ] モバイルアプリにプッシュ通知が届く
+
+### バッジ表示テスト
+- [ ] 新規お知らせ/寄付がある状態でアプリ起動
+- [ ] SettingsTab（SYSTEM）にバッジ表示
+- [ ] 「運営からのお知らせ」画面を開く → バッジ減少
+- [ ] 「寄付履歴」画面を開く → バッジ減少
+- [ ] 全て見た後 → バッジ消滅
 
 ---
 

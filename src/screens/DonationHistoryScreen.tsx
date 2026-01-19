@@ -13,6 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUnread } from '../contexts/UnreadContext';
 import { colors } from '../theme';
 import { TitanBackground } from '../components/titan/TitanBackground';
 import { MicroLabel } from '../components/titan/MicroLabel';
@@ -72,9 +73,17 @@ function formatDate(dateString: string, language: string): string {
 
 export default function DonationHistoryScreen({ navigation }: any) {
   const { language } = useLanguage();
+  const { markAsRead } = useUnread();
   const [charges, setCharges] = useState<PenaltyChargeWithBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Mark donations as read when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      markAsRead('donations');
+    }, [markAsRead])
+  );
 
   const fetchDonationHistory = useCallback(async () => {
     try {
