@@ -16,13 +16,23 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate Authorization header exists
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      addBreadcrumb('Missing Authorization header', 'auth')
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Create Supabase client with auth context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     )
@@ -108,6 +118,7 @@ Deno.serve(async (req) => {
     const newDeadline = new Date(currentDeadline.getTime() + 7 * 24 * 60 * 60 * 1000)
 
     // Update commitment: extend deadline and mark lifeline as used
+    // Optimistic locking: only update if is_freeze_used is still false (prevents race condition)
     const { data: updatedCommitment, error: updateError } = await supabaseClient
       .from('commitments')
       .update({
@@ -116,14 +127,32 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', commitment_id)
+      .eq('is_freeze_used', false) // Optimistic lock: ensures no concurrent update
       .select()
       .single()
 
     if (updateError) {
+      // Check if error is due to no rows matched (race condition - lifeline already used)
+      if (updateError.code === 'PGRST116') {
+        console.warn('Race condition detected: lifeline already used by concurrent request')
+        return new Response(
+          JSON.stringify({ error: 'Lifeline already used (concurrent request)' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       console.error('Error updating commitment:', updateError)
       return new Response(
         JSON.stringify({ error: 'Failed to use lifeline' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Additional safety check: if no rows were updated
+    if (!updatedCommitment) {
+      console.warn('No rows updated - lifeline may have been used concurrently')
+      return new Response(
+        JSON.stringify({ error: 'Lifeline already used (concurrent request)' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

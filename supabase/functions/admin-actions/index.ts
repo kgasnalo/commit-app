@@ -103,11 +103,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 5. Handle Actions
+    // 5. Extract client IP address from headers
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || 'unknown'
+
+    // 6. Handle Actions
     if (action === 'REFUND') {
-      return await handleRefund(supabaseAdmin, user, target_id, reason)
+      return await handleRefund(supabaseAdmin, user, target_id, reason, ipAddress)
     } else if (action === 'MARK_COMPLETE') {
-      return await handleMarkComplete(supabaseAdmin, user, target_id, reason)
+      return await handleMarkComplete(supabaseAdmin, user, target_id, reason, ipAddress)
     } else {
       return errorResponse(400, 'INVALID_ACTION')
     }
@@ -126,7 +131,7 @@ Deno.serve(async (req) => {
 // Action Handlers
 // ============================================================
 
-async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: string, reason?: string) {
+async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: string, reason: string | undefined, ipAddress: string) {
   addBreadcrumb('Refund action started', 'admin', { penaltyChargeId, adminUserId: adminUser.id })
 
   // 1. Fetch Charge
@@ -148,12 +153,17 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     return errorResponse(400, 'NO_PAYMENT_INTENT', 'Cannot refund a charge without a Stripe Payment Intent')
   }
 
-  // 2. Process Stripe Refund
+  // 2. Process Stripe Refund with idempotency key to prevent duplicate refunds
   try {
-    await getStripe().refunds.create({
-      payment_intent: charge.stripe_payment_intent_id,
-      reason: 'requested_by_customer', // or 'duplicate', 'fraudulent'
-    })
+    await getStripe().refunds.create(
+      {
+        payment_intent: charge.stripe_payment_intent_id,
+        reason: 'requested_by_customer', // or 'duplicate', 'fraudulent'
+      },
+      {
+        idempotencyKey: `refund_${penaltyChargeId}`,
+      }
+    )
     addBreadcrumb('Stripe refund processed', 'payment', {
       paymentIntentId: charge.stripe_payment_intent_id,
       amount: charge.amount,
@@ -189,7 +199,7 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     currency: charge.currency,
     reason,
     stripe_pi: charge.stripe_payment_intent_id
-  })
+  }, ipAddress)
 
   // Log successful refund (always recorded)
   logBusinessEvent('admin_refund_success', {
@@ -205,7 +215,7 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
   )
 }
 
-async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: string, reason?: string) {
+async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: string, reason: string | undefined, ipAddress: string) {
   addBreadcrumb('Mark complete action started', 'admin', { commitmentId, adminUserId: adminUser.id })
 
   // 1. Fetch Commitment
@@ -236,7 +246,7 @@ async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: s
   await logAudit(supabase, adminUser, 'MARK_COMPLETE', 'commitments', commitmentId, {
     previous_status: commitment.status,
     reason
-  })
+  }, ipAddress)
 
   // Log successful mark complete (always recorded)
   logBusinessEvent('admin_mark_complete_success', {
@@ -251,7 +261,7 @@ async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: s
   )
 }
 
-async function logAudit(supabase: any, adminUser: any, action: string, table: string, id: string, details: any) {
+async function logAudit(supabase: any, adminUser: any, action: string, table: string, id: string, details: any, ipAddress: string) {
   await supabase.from('admin_audit_logs').insert({
     admin_user_id: adminUser.id,
     admin_email: adminUser.email,
@@ -259,6 +269,6 @@ async function logAudit(supabase: any, adminUser: any, action: string, table: st
     target_resource_table: table,
     target_resource_id: id,
     details,
-    ip_address: '0.0.0.0' // Edge function context might not expose IP easily without extra headers
+    ip_address: ipAddress,
   })
 }

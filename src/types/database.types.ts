@@ -18,7 +18,7 @@ export interface Database {
           stripe_payment_method_id: string | null
           card_last_four: string | null
           card_brand: string | null
-          role: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
+          role: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other'
           subscription_status: 'active' | 'inactive'
           payment_method_registered: boolean
           onboarding_completed: boolean
@@ -33,7 +33,7 @@ export interface Database {
           stripe_payment_method_id?: string | null
           card_last_four?: string | null
           card_brand?: string | null
-          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
+          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other'
           subscription_status?: 'active' | 'inactive'
           payment_method_registered?: boolean
           onboarding_completed?: boolean
@@ -48,7 +48,7 @@ export interface Database {
           stripe_payment_method_id?: string | null
           card_last_four?: string | null
           card_brand?: string | null
-          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
+          role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other'
           subscription_status?: 'active' | 'inactive'
           payment_method_registered?: boolean
           onboarding_completed?: boolean
@@ -423,35 +423,35 @@ export interface Database {
       admin_audit_logs: {
         Row: {
           id: string
+          admin_user_id: string | null
           admin_email: string
-          action: string
-          target_type: string
-          target_id: string
+          action_type: string
+          target_resource_table: string
+          target_resource_id: string
           details: Json | null
-          result: string
-          error_message: string | null
+          ip_address: string | null
           created_at: string
         }
         Insert: {
           id?: string
+          admin_user_id?: string | null
           admin_email: string
-          action: string
-          target_type: string
-          target_id: string
+          action_type: string
+          target_resource_table: string
+          target_resource_id: string
           details?: Json | null
-          result: string
-          error_message?: string | null
+          ip_address?: string | null
           created_at?: string
         }
         Update: {
           id?: string
+          admin_user_id?: string | null
           admin_email?: string
-          action?: string
-          target_type?: string
-          target_id?: string
+          action_type?: string
+          target_resource_table?: string
+          target_resource_id?: string
           details?: Json | null
-          result?: string
-          error_message?: string | null
+          ip_address?: string | null
           created_at?: string
         }
         Relationships: []
@@ -495,10 +495,14 @@ export interface Database {
           year: number
           amount: number
           currency: string
-          transfer_date: string
+          recipient_name: string
+          recipient_url: string | null
+          transfer_date: string | null
+          donated_at: string | null
           proof_image_url: string | null
           description: string | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -506,10 +510,14 @@ export interface Database {
           year: number
           amount: number
           currency?: string
-          transfer_date: string
+          recipient_name: string
+          recipient_url?: string | null
+          transfer_date?: string | null
+          donated_at?: string | null
           proof_image_url?: string | null
           description?: string | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -517,10 +525,14 @@ export interface Database {
           year?: number
           amount?: number
           currency?: string
-          transfer_date?: string
+          recipient_name?: string
+          recipient_url?: string | null
+          transfer_date?: string | null
+          donated_at?: string | null
           proof_image_url?: string | null
           description?: string | null
           created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
