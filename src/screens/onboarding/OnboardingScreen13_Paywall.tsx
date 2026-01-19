@@ -199,19 +199,22 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-      // Step 2: subscription_statusを更新（アニメーション完了後に実行）
+      // Step 2: subscription_statusとonboarding_completedを更新（アニメーション完了後に実行）
       // Note: handleSubscribe()ではなくここで更新することで、
       // Realtimeがアニメーション完了前に発火することを防ぐ
-      console.log('[Screen13] Updating subscription_status to active...');
+      console.log('[Screen13] Updating subscription_status to active and onboarding_completed to true...');
       const { error: updateError } = await supabase
         .from('users')
-        .update({ subscription_status: 'active' })
+        .update({
+          subscription_status: 'active',
+          onboarding_completed: true,
+        })
         .eq('id', session.user.id);
 
       if (updateError) {
         console.error('[Screen13] Update error:', updateError);
       } else {
-        console.log('[Screen13] subscription_status updated to active ✅');
+        console.log('[Screen13] subscription_status=active, onboarding_completed=true ✅');
       }
 
       // Step 3: Dashboard側でフェードインするためのフラグを設定

@@ -21,6 +21,7 @@ export interface Database {
           role: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status: 'active' | 'inactive'
           payment_method_registered: boolean
+          onboarding_completed: boolean
           created_at: string
         }
         Insert: {
@@ -34,6 +35,7 @@ export interface Database {
           role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
           payment_method_registered?: boolean
+          onboarding_completed?: boolean
           created_at?: string
         }
         Update: {
@@ -47,6 +49,7 @@ export interface Database {
           role?: 'Founder' | 'HR' | 'Manager' | 'Specialist' | 'Other' | null
           subscription_status?: 'active' | 'inactive'
           payment_method_registered?: boolean
+          onboarding_completed?: boolean
           created_at?: string
         }
         Relationships: []
@@ -92,7 +95,7 @@ export interface Database {
           id: string
           user_id: string
           book_id: string
-          status: 'pending' | 'completed' | 'defaulted'
+          status: 'pending' | 'completed' | 'defaulted' | 'cancelled'
           deadline: string
           pledge_amount: number
           currency: string
@@ -106,7 +109,7 @@ export interface Database {
           id?: string
           user_id: string
           book_id: string
-          status?: 'pending' | 'completed' | 'defaulted'
+          status?: 'pending' | 'completed' | 'defaulted' | 'cancelled'
           deadline: string
           pledge_amount: number
           currency?: string
@@ -120,7 +123,7 @@ export interface Database {
           id?: string
           user_id?: string
           book_id?: string
-          status?: 'pending' | 'completed' | 'defaulted'
+          status?: 'pending' | 'completed' | 'defaulted' | 'cancelled'
           deadline?: string
           pledge_amount?: number
           currency?: string
@@ -446,6 +449,71 @@ export interface Database {
           details?: Json | null
           result?: string
           error_message?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      subscription_cancellations: {
+        Row: {
+          id: string
+          user_id: string
+          reason: string | null
+          cancelled_commitments: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          reason?: string | null
+          cancelled_commitments?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          reason?: string | null
+          cancelled_commitments?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_cancellations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      donations: {
+        Row: {
+          id: string
+          quarter: number
+          year: number
+          amount: number
+          currency: string
+          transfer_date: string
+          proof_image_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          quarter: number
+          year: number
+          amount: number
+          currency?: string
+          transfer_date: string
+          proof_image_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          quarter?: number
+          year?: number
+          amount?: number
+          currency?: string
+          transfer_date?: string
+          proof_image_url?: string | null
           created_at?: string
         }
         Relationships: []

@@ -41,6 +41,7 @@ import { MetricDisplay } from '../components/titan/MetricDisplay';
 import { StatusIndicator } from '../components/titan/StatusIndicator';
 import { MonkModeService, StreakStats } from '../lib/MonkModeService';
 import { CardRegistrationBanner } from '../components/CardRegistrationBanner';
+import { DonationAnnouncementModal, useUnreadDonation } from '../components/DonationAnnouncementModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -87,6 +88,10 @@ export default function DashboardScreen({ navigation }: any) {
   const [userName, setUserName] = useState<string>('Guest');
   const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
   const [paymentMethodRegistered, setPaymentMethodRegistered] = useState<boolean>(true); // Default true to avoid flash
+  const [showDonationModal, setShowDonationModal] = useState(false);
+
+  // Donation announcement
+  const { unreadDonation, markAsRead } = useUnreadDonation();
 
   // Cinematic fade-in from black
   const [showFadeOverlay, setShowFadeOverlay] = useState(false);
@@ -143,7 +148,17 @@ export default function DashboardScreen({ navigation }: any) {
       }
     };
     initNotifications();
-  }, []);
+
+    // Show donation modal if there's an unread donation
+    // Small delay to not interrupt initial load
+    const donationTimer = setTimeout(() => {
+      if (unreadDonation) {
+        setShowDonationModal(true);
+      }
+    }, 1500);
+
+    return () => clearTimeout(donationTimer);
+  }, [unreadDonation]);
 
   const fetchUserProfile = async () => {
     try {
@@ -510,6 +525,16 @@ export default function DashboardScreen({ navigation }: any) {
       {showFadeOverlay && (
         <Animated.View style={[styles.fadeOverlay, fadeOverlayStyle]} pointerEvents="none" />
       )}
+
+      {/* Donation Announcement Modal */}
+      <DonationAnnouncementModal
+        visible={showDonationModal}
+        donation={unreadDonation}
+        onClose={() => {
+          setShowDonationModal(false);
+          markAsRead();
+        }}
+      />
     </SafeAreaView>
   );
 }

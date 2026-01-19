@@ -54,7 +54,7 @@ interface Commitment {
   pledge_amount: number;
   currency: string;
   target_pages: number;
-  status: 'pending' | 'completed' | 'defaulted';
+  status: 'pending' | 'completed' | 'defaulted' | 'cancelled';
   created_at: string;
   updated_at: string | null;
   books: Book;

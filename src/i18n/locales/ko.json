@@ -609,5 +609,16 @@
   "card_registration": {
     "banner_title": "카드 등록 필요",
     "banner_description": "실패한 커밋에 대한 기부를 활성화하려면 결제 수단을 등록하세요"
+  },
+  "donations": {
+    "announcement_title": "기부 보고",
+    "announcement_subtitle": "여러분의 각오금이 전달되었습니다",
+    "quarter_format": "{{year}}년 {{quarter}}분기",
+    "amount_donated": "기부액",
+    "destination": "기부처",
+    "destination_name": "Room to Read (어린이 교육 지원)",
+    "view_proof": "이체 증명 보기",
+    "close": "닫기",
+    "settings_link": "기부 보고"
   }
 }

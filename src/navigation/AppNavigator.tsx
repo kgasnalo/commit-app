@@ -23,7 +23,7 @@ import { trackScreenView } from '../lib/AnalyticsService';
 type AuthState =
   | { status: 'loading' }
   | { status: 'unauthenticated' }
-  | { status: 'authenticated'; session: Session; isSubscribed: boolean };
+  | { status: 'authenticated'; session: Session; isSubscribed: boolean; hasCompletedOnboarding: boolean };
 
 import { useBlockingStatus } from '../lib/RemoteConfigService';
 import MaintenanceScreen from '../screens/blocking/MaintenanceScreen';
@@ -211,15 +211,21 @@ function NavigationContent() {
   // 統一された認証状態（フリッカー防止のためアトミックに更新）
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
-  // サブスクリプション状態を確認する純粋関数（boolean を返す）
+  // ユーザーステータスを確認する純粋関数
+  // isSubscribed と hasCompletedOnboarding の両方を返す
   // 新規ユーザーの場合はプロファイルがまだ存在しない可能性があるため、
-  // リトライは1回のみで、素早くfalseを返してアプリに入れるようにする
-  // 修正: タイムアウト（2秒）を導入し、DB応答がない場合も強制的に次に進む
-  async function checkSubscriptionStatus(userId: string, retryCount = 0): Promise<boolean> {
+  // リトライは1回のみで、素早くデフォルト値を返してアプリに入れるようにする
+  interface UserStatus {
+    isSubscribed: boolean;
+    hasCompletedOnboarding: boolean;
+  }
+
+  async function checkUserStatus(userId: string, retryCount = 0): Promise<UserStatus> {
     const maxRetries = 2; // 2回リトライ（合計3回試行）
     const TIMEOUT_MS = 4000; // 4秒のタイムアウト（OAuth後のセッション確立に時間がかかるため）
+    const defaultStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false };
 
-    console.log(`📊 checkSubscriptionStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
+    console.log(`📊 checkUserStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
 
     try {
       // OAuth後にSupabaseクライアントのセッション状態が更新されていない可能性があるため、
@@ -229,14 +235,14 @@ function NavigationContent() {
       // DBリクエストのPromise
       const dbRequest = supabase
         .from('users')
-        .select('subscription_status')
+        .select('subscription_status, onboarding_completed')
         .eq('id', userId)
         .single();
 
       // タイムアウト時はrejectではなくnullをresolveする（catchブロックに入らないように）
       const timeoutPromise = new Promise<null>((resolve) =>
         setTimeout(() => {
-          console.log('📊 checkSubscriptionStatus: Request timed out');
+          console.log('📊 checkUserStatus: Request timed out');
           resolve(null);
         }, TIMEOUT_MS)
       );
@@ -247,38 +253,41 @@ function NavigationContent() {
       // タイムアウトした場合（resultがnull）
       if (result === null) {
         if (retryCount < maxRetries) {
-          console.log(`📊 checkSubscriptionStatus: Timeout, waiting 500ms before retry...`);
+          console.log(`📊 checkUserStatus: Timeout, waiting 500ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, 500)); // セッション安定化待機
-          return checkSubscriptionStatus(userId, retryCount + 1);
+          return checkUserStatus(userId, retryCount + 1);
         }
-        // 最大リトライ後もタイムアウト → falseを返す（新規ユーザー扱い）
-        console.log('📊 checkSubscriptionStatus: Max retries reached after timeout');
-        return false;
+        // 最大リトライ後もタイムアウト → デフォルト値を返す（新規ユーザー扱い）
+        console.log('📊 checkUserStatus: Max retries reached after timeout');
+        return defaultStatus;
       }
 
       const { data, error } = result;
 
       if (error) {
-        console.log(`📊 checkSubscriptionStatus: Error code=${error.code}, message=${error.message}`);
+        console.log(`📊 checkUserStatus: Error code=${error.code}, message=${error.message}`);
 
         // usersテーブルにレコードが見つからない場合（PGRST116）、短めのリトライ
         if (error.code === 'PGRST116' && retryCount < maxRetries) {
-          console.log(`📊 checkSubscriptionStatus: User profile not found, retrying in 500ms...`);
+          console.log(`📊 checkUserStatus: User profile not found, retrying in 500ms...`);
           await new Promise(resolve => setTimeout(resolve, 500));
-          return checkSubscriptionStatus(userId, retryCount + 1);
+          return checkUserStatus(userId, retryCount + 1);
         }
 
-        // プロファイルが見つからない = 新規ユーザー = サブスクリプションなし
-        console.log(`📊 checkSubscriptionStatus: Returning false (no profile or error)`);
-        return false;
+        // プロファイルが見つからない = 新規ユーザー = オンボーディング未完了
+        console.log(`📊 checkUserStatus: Returning default (no profile or error)`);
+        return defaultStatus;
       }
 
-      const isActive = data?.subscription_status === 'active';
-      console.log(`📊 checkSubscriptionStatus: Found profile, subscription_status=${data?.subscription_status}, isActive=${isActive}`);
-      return isActive;
+      const status: UserStatus = {
+        isSubscribed: data?.subscription_status === 'active',
+        hasCompletedOnboarding: data?.onboarding_completed ?? false,
+      };
+      console.log(`📊 checkUserStatus: Found profile, subscription_status=${data?.subscription_status}, onboarding_completed=${data?.onboarding_completed}`);
+      return status;
     } catch (err) {
-      console.error('📊 checkSubscriptionStatus: Unexpected error:', err);
-      return false;
+      console.error('📊 checkUserStatus: Unexpected error:', err);
+      return defaultStatus;
     }
   }
 
@@ -430,22 +439,23 @@ function NavigationContent() {
           return;
         }
 
-        // サブスクリプションチェック with outer timeout (8s safety net)
-        console.log('🚀 initializeAuth: Checking subscription status...');
-        const isSubscribed = await withTimeout(
-          checkSubscriptionStatus(session.user.id),
+        // ユーザーステータスチェック with outer timeout (8s safety net)
+        console.log('🚀 initializeAuth: Checking user status...');
+        const userStatus = await withTimeout(
+          checkUserStatus(session.user.id),
           8000,
-          false,
-          'initializeAuth.checkSubscription'
+          { isSubscribed: false, hasCompletedOnboarding: false },
+          'initializeAuth.checkUserStatus'
         );
-        console.log('🚀 initializeAuth: Subscription status:', isSubscribed);
+        console.log('🚀 initializeAuth: User status:', userStatus);
 
         if (isMounted) {
           console.log('🚀 initializeAuth: Setting authenticated state');
           setAuthState({
             status: 'authenticated',
             session,
-            isSubscribed,
+            isSubscribed: userStatus.isSubscribed,
+            hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
           });
         }
       } catch (error) {
@@ -472,17 +482,17 @@ function NavigationContent() {
         return;
       }
 
-      // TOKEN_REFRESHED: セッションのみ更新し、既存のisSubscribed状態を維持
+      // TOKEN_REFRESHED: セッションのみ更新し、既存のisSubscribed/hasCompletedOnboarding状態を維持
       // これにより、Screen13でrefreshSession()を呼んでもスタックが切り替わらない
       if (event === 'TOKEN_REFRESHED') {
-        console.log('✅ Auth: TOKEN_REFRESHED - preserving current isSubscribed state');
+        console.log('✅ Auth: TOKEN_REFRESHED - preserving current state');
         if (isMounted) {
           setAuthState(prev => {
             if (prev.status !== 'authenticated') {
               // 認証状態でなかった場合は現状維持（通常はここに来ない）
               return prev;
             }
-            // セッションのみ更新、isSubscribedは維持
+            // セッションのみ更新、isSubscribed/hasCompletedOnboardingは維持
             return { ...prev, session };
           });
         }
@@ -493,7 +503,7 @@ function NavigationContent() {
       if (isMounted) setAuthState({ status: 'loading' });
 
       // フェイルセーフのためのデフォルト値
-      let isSubscribed = false;
+      let userStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false };
 
       // Auth画面からのログインかどうかを判定
       const loginSource = await AsyncStorage.getItem('loginSource');
@@ -503,8 +513,8 @@ function NavigationContent() {
         await AsyncStorage.removeItem('loginSource');
       }
 
-      // サブスクリプションチェック用のPromise（バックグラウンド継続用）
-      let subscriptionPromise: Promise<boolean> | null = null;
+      // ユーザーステータスチェック用のPromise（バックグラウンド継続用）
+      let statusPromise: Promise<UserStatus> | null = null;
 
       try {
         // SIGNED_IN: ユーザーレコード作成（5秒タイムアウト）
@@ -523,40 +533,42 @@ function NavigationContent() {
           );
         }
 
-        // サブスクリプションチェック（15秒の外部タイムアウト）
-        // 内側のcheckSubscriptionStatusが最大13秒かかる可能性があるため余裕を持たせる
-        console.log('✅ Auth: Checking subscription status...');
-        subscriptionPromise = checkSubscriptionStatus(session.user.id);
-        isSubscribed = await withTimeout(
-          subscriptionPromise,
+        // ユーザーステータスチェック（15秒の外部タイムアウト）
+        // 内側のcheckUserStatusが最大13秒かかる可能性があるため余裕を持たせる
+        console.log('✅ Auth: Checking user status...');
+        statusPromise = checkUserStatus(session.user.id);
+        userStatus = await withTimeout(
+          statusPromise,
           15000,
-          false,
-          'checkSubscriptionStatus'
+          { isSubscribed: false, hasCompletedOnboarding: false },
+          'checkUserStatus'
         );
-        console.log('✅ Auth: Subscription check complete, isSubscribed=', isSubscribed);
+        console.log('✅ Auth: User status check complete:', userStatus);
 
         // Auth画面からのログインでタイムアウトした場合、バックグラウンドで結果を待つ
         // ローディング状態を維持し、結果が来てから状態を設定（Onboarding7のチラつき防止）
-        if (!isSubscribed && isFromAuthScreen && subscriptionPromise) {
-          console.log('✅ Auth: Waiting for background subscription check (Auth screen login)...');
-          subscriptionPromise.then((result) => {
+        if (!userStatus.hasCompletedOnboarding && isFromAuthScreen && statusPromise) {
+          console.log('✅ Auth: Waiting for background user status check (Auth screen login)...');
+          statusPromise.then((result) => {
             console.log('✅ Auth: Background check complete, result:', result);
             if (isMounted) {
               // バックグラウンドチェック完了後に状態を設定
               setAuthState({
                 status: 'authenticated',
                 session,
-                isSubscribed: result,
+                isSubscribed: result.isSubscribed,
+                hasCompletedOnboarding: result.hasCompletedOnboarding,
               });
             }
           }).catch((err) => {
             console.log('✅ Auth: Background check error:', err);
-            // エラー時はfalseで状態を設定
+            // エラー時はデフォルト値で状態を設定
             if (isMounted) {
               setAuthState({
                 status: 'authenticated',
                 session,
                 isSubscribed: false,
+                hasCompletedOnboarding: false,
               });
             }
           });
@@ -564,13 +576,13 @@ function NavigationContent() {
 
       } catch (error) {
         console.error('❌ Auth State Change Error:', error);
-        // デフォルト値（isSubscribed = false）で続行
+        // デフォルト値で続行
       } finally {
         // 保証: 必ずローディング状態を終了
         // ただし、Auth画面からのログインでタイムアウトした場合は、
         // バックグラウンドチェックの結果を待つ（ローディング状態維持）
         if (isMounted) {
-          if (isFromAuthScreen && !isSubscribed && subscriptionPromise) {
+          if (isFromAuthScreen && !userStatus.hasCompletedOnboarding && statusPromise) {
             console.log('✅ Auth: Waiting for background check (Auth screen login), keeping loading state...');
             // finally blockでは状態を設定しない
             // バックグラウンドチェックの.then()で状態を設定する
@@ -579,21 +591,22 @@ function NavigationContent() {
             setAuthState({
               status: 'authenticated',
               session,
-              isSubscribed,
+              isSubscribed: userStatus.isSubscribed,
+              hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
             });
           }
         }
       }
     });
 
-    // usersテーブルのsubscription_statusの変更を監視
+    // usersテーブルのsubscription_status/onboarding_completedの変更を監視
     let realtimeSubscription: any = null;
 
     async function setupRealtimeSubscription() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
         realtimeSubscription = supabase
-          .channel('subscription-changes')
+          .channel('user-status-changes')
           .on(
             'postgres_changes',
             {
@@ -604,11 +617,16 @@ function NavigationContent() {
             },
             (payload) => {
               const newSubscriptionStatus = payload.new.subscription_status === 'active';
+              const newOnboardingCompleted = payload.new.onboarding_completed ?? false;
 
-              // 既存の認証状態を維持しつつサブスク状態のみ更新
+              // 既存の認証状態を維持しつつユーザーステータスを更新
               setAuthState(prev => {
                 if (prev.status !== 'authenticated') return prev;
-                return { ...prev, isSubscribed: newSubscriptionStatus };
+                return {
+                  ...prev,
+                  isSubscribed: newSubscriptionStatus,
+                  hasCompletedOnboarding: newOnboardingCompleted,
+                };
               });
             }
           )
@@ -623,12 +641,13 @@ function NavigationContent() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session && isMounted) {
-        const isSubscribed = await checkSubscriptionStatus(session.user.id);
+        const userStatus = await checkUserStatus(session.user.id);
 
         setAuthState({
           status: 'authenticated',
           session,
-          isSubscribed,
+          isSubscribed: userStatus.isSubscribed,
+          hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
         });
       }
     });
@@ -648,6 +667,7 @@ function NavigationContent() {
   const isLoading = authState.status === 'loading';
   const session = authState.status === 'authenticated' ? authState.session : null;
   const isSubscribed = authState.status === 'authenticated' ? authState.isSubscribed : false;
+  const hasCompletedOnboarding = authState.status === 'authenticated' ? authState.hasCompletedOnboarding : false;
 
   // Phase 8.1: Set Sentry user context for crash monitoring
   // Phase 8.3: Set PostHog user identification
@@ -759,9 +779,9 @@ function NavigationContent() {
           {/* Legacy auth screen (for existing users or testing) */}
           <Stack.Screen name="Auth" component={AuthScreen} />
         </>
-      ) : !isSubscribed ? (
+      ) : !hasCompletedOnboarding ? (
         <>
-          {/* Authenticated but not subscribed - show Onboarding7-13 + MainTabs for transition */}
+          {/* Authenticated but onboarding not completed - show Onboarding7-13 + MainTabs for transition */}
           <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
           <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
           <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
@@ -771,13 +791,12 @@ function NavigationContent() {
           <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
           <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
 
-          {/* Legacy auth screen (for existing users or testing) */}
           {/* Main tabs for direct navigation after subscription */}
           <Stack.Screen name="MainTabs" component={MainTabs} />
         </>
       ) : (
         <>
-          {/* Authenticated and subscribed - show MainTabs */}
+          {/* Authenticated and onboarding completed - show MainTabs (regardless of subscription status) */}
           <Stack.Screen name="MainTabs" component={MainTabs} />
         </>
       )}

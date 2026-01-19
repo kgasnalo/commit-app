@@ -306,6 +306,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [ ] **7.8 Payment Method Registration Flow (カード登録フロー)**
     - **Role:** `[Fullstack Engineer]`
     - **Priority:** HIGH (ペナルティシステムの有効化に必須)
+    - **Note:** カード登録はペナルティ用。サブスクリプションはApple IAP/Google Play Billing経由。
     - **Problem:** オンボーディングでコミットメント作成時、カード未登録のためペナルティが機能しない
     - **Solution:** サブスク後にダッシュボードでカード登録を促すバナーを常時表示
     - **Implementation:**
@@ -355,6 +356,38 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - [ ] Stripe Webhook (`payment_method.attached`) - optional
     - [ ] `payment_method_registered`フラグ管理
     ---
+
+- [ ] **7.9 Apple IAP / Google Play Billing (サブスクリプション課金)**
+    - **Role:** `[Mobile Engineer]`
+    - **Priority:** CRITICAL (App Store審査必須)
+    - **Problem:** 現在サブスクリプション課金が未実装。`subscription_status`は手動フラグのまま。
+    - **Architecture Decision (2026-01-17):**
+      - ❌ ~~Web Portal (Stripe) でサブスク解約~~ → App Store Guidelines 3.1.1違反
+      - ✅ Apple IAP / Google Play Billing でサブスク管理
+      - ✅ ユーザーはストアアプリから解約 (設定 > サブスクリプション)
+    - **Implementation:**
+      1. **ライブラリ選定:** `react-native-iap` or `expo-in-app-purchases`
+      2. **ストア設定:**
+         - Apple App Store Connect: Auto-Renewable Subscription設定
+         - Google Play Console: Subscription product設定
+      3. **Onboarding Paywall更新:**
+         - `OnboardingScreen13_Paywall.tsx` をIAP対応に変更
+         - 購入成功時に `subscription_status = 'active'`
+      4. **Webhook実装:**
+         - Apple Server-to-Server Notifications (Edge Function)
+         - Google Real-time Developer Notifications (Edge Function)
+         - 受信時: `subscription_status` / `subscription_cancellations` 更新
+         - pending コミットメントを `cancelled` に変更
+      5. **Receipt Validation:**
+         - サーバーサイドでレシート検証 (Edge Function)
+         - 不正購入防止
+    - **DB準備済み (2026-01-17):**
+      - ✅ `commitments.status` に `'cancelled'` 追加済み
+      - ✅ `subscription_cancellations` テーブル作成済み
+    - **DoD:**
+      - ユーザーがアプリ内でサブスク購入可能
+      - ストアアプリから解約可能
+      - Webhook経由で `subscription_status` 自動更新
 
 ---
 

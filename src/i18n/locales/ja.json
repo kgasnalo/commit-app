@@ -612,5 +612,16 @@
   "card_registration": {
     "banner_title": "カード登録が必要です",
     "banner_description": "コミットメント失敗時の寄附を有効にするには、お支払い方法の登録が必要です"
+  },
+  "donations": {
+    "announcement_title": "寄付報告",
+    "announcement_subtitle": "皆さまの覚悟金が届けられました",
+    "quarter_format": "{{year}}年 第{{quarter}}四半期",
+    "amount_donated": "寄付額",
+    "destination": "寄付先",
+    "destination_name": "Room to Read（子どもの教育支援）",
+    "view_proof": "振込証明を見る",
+    "close": "閉じる",
+    "settings_link": "寄付報告"
   }
 }

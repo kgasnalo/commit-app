@@ -26,7 +26,7 @@ export interface Commitment {
   id: string;
   user_id: string;
   book_id: string;
-  status: 'pending' | 'completed' | 'defaulted';
+  status: 'pending' | 'completed' | 'defaulted' | 'cancelled';
   deadline: string;
   pledge_amount: number;
   currency: string;

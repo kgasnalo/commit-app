@@ -146,10 +146,10 @@ export default function SettingsScreen({ navigation }: any) {
           label={i18n.t('profile.title')} 
           onPress={() => navigation.navigate('Profile')} 
         />
-        <MenuItem 
-          icon="card-outline" 
-          label={i18n.t('settings.manage_payment')} 
-          onPress={() => openURL('https://commit-app-web.vercel.app/billing')} 
+        <MenuItem
+          icon="card-outline"
+          label={i18n.t('settings.manage_payment')}
+          onPress={() => openURL('https://commit-app-web.vercel.app/billing')}
         />
 
         <SectionHeader title={i18n.t('settings.language')} />
@@ -180,10 +180,15 @@ export default function SettingsScreen({ navigation }: any) {
         />
 
         <SectionHeader title={i18n.t('settings.support')} />
-        <MenuItem 
-          icon="mail-outline" 
-          label={i18n.t('settings.contact_support')} 
-          onPress={() => openURL('mailto:support@commit-app.com')} 
+        <MenuItem
+          icon="heart-outline"
+          label={i18n.t('donations.settings_link')}
+          onPress={() => openURL('https://commit-app-web.vercel.app/donations')}
+        />
+        <MenuItem
+          icon="mail-outline"
+          label={i18n.t('settings.contact_support')}
+          onPress={() => openURL('https://commit-app-web.vercel.app/support')}
         />
 
         <View style={styles.bottomSection}>

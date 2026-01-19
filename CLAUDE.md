@@ -928,3 +928,23 @@
   - DO NOT use `fontWeight: '100'` (ultra-thin) for text on dynamic backgrounds - visibility is unpredictable
   - DO NOT use white/orange text shadows on dynamic backgrounds - only black shadows provide consistent contrast
   - The 3-layer approach (overlay + backdrop + shadow) ensures readability on any image
+- **Subscription vs Penalty Architecture (CRITICAL):** This app has TWO separate payment systems. NEVER confuse them:
+  ```
+  ┌────────────────────────────────────────────────────────────────┐
+  │ サブスクリプション (月額/年額課金)                              │
+  │ ────────────────────────────────────────────────────────────── │
+  │ 実装: Apple IAP / Google Play Billing (ネイティブ)             │
+  │ 解約: ストアアプリから (設定 > サブスクリプション)               │
+  │ 理由: App Store Guidelines 3.1.1 - デジタル商品はIAP必須       │
+  ├────────────────────────────────────────────────────────────────┤
+  │ ペナルティ (寄付/読めなかった時の課金)                          │
+  │ ────────────────────────────────────────────────────────────── │
+  │ 実装: Stripe via Web Portal (/billing)                        │
+  │ 理由: 物理的な行為(読書)に紐づく課金はIAP対象外                  │
+  │ 用途: カード登録、ペナルティ課金、カード管理                     │
+  └────────────────────────────────────────────────────────────────┘
+  ```
+  - **NEVER implement subscription cancellation in Web Portal** - users cancel via App Store/Play Store
+  - `subscription_status` is a **state flag** managed by Apple/Google webhooks, NOT a Stripe subscription
+  - Web Portal `/billing` is ONLY for penalty payment card management
+  - `react-native-iap` or `expo-in-app-purchases` should be used for subscription purchases
