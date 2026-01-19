@@ -352,7 +352,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
     5. 「カードを削除」リンクで削除テスト
 
     **未完了タスク:**
-    - [ ] Dashboard Banner (モバイルアプリ)
+    - [x] Dashboard Banner (モバイルアプリ) ✅
     - [ ] Stripe Webhook (`payment_method.attached`) - optional
     - [ ] `payment_method_registered`フラグ管理
     ---

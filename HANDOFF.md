@@ -55,7 +55,7 @@
 
 ### 🚀 Phase 7.8: Payment Method Registration Flow (残タスク)
 
-- [ ] Dashboard Banner (モバイルアプリ) - カード未登録時に常時表示
+- [x] Dashboard Banner (モバイルアプリ) - カード未登録時に常時表示 ✅
 - [ ] Stripe Webhook (`payment_method.attached`) - optional
 - [ ] `payment_method_registered` フラグ管理
 
