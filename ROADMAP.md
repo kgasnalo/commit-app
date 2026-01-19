@@ -223,11 +223,18 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - Tokushoho (特商法) (Japanese Web Payment requirement)
     - **DoD:** Legal footer exists on Web Payment Portal.
 
-- [ ] **6.7 Legal Consent Versioning (Compliance)**
+- [x] **6.7 Legal Consent Versioning (Compliance)**
     - **Role:** `[Backend Engineer]`
-    - **Action:** Store `agreed_tos_version` in user profile.
-    - **Logic:** If `app_tos_version > user_agreed_version`, force show a "Terms Updated" modal on launch blocking usage until agreed.
-    - **DoD:** Infrastructure to force-renew consent when legal terms change.
+    - **Action:** Store `legal_consent_version` in user profile.
+    - **Logic:** If `CURRENT_LEGAL_VERSION > user_consent_version`, force show LegalConsentScreen on launch blocking usage until agreed.
+    - **Implementation (2026-01-19):**
+      - DB Migration: `legal_consent_version TEXT` column added to users table
+      - `src/config/legalVersions.ts`: Version management with `needsLegalConsent()` helper
+      - `src/screens/LegalConsentScreen.tsx`: Full consent UI with checkbox + agree button
+      - `src/components/LegalBottomSheet.tsx`: WebView-based in-app document viewer
+      - AppNavigator: Checks consent status, shows LegalConsentScreen before MainTabs
+      - SettingsScreen: Uses LegalBottomSheet for terms/privacy (no external browser)
+    - **DoD:** Infrastructure to force-renew consent when legal terms change. ✅
 
 ---
 
@@ -303,7 +310,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - `admin_audit_logs` table for action tracking
     - **DoD:** Ability to Refund/Complete commitments manually.
 
-- [ ] **7.8 Payment Method Registration Flow (カード登録フロー)**
+- [x] **7.8 Payment Method Registration Flow (カード登録フロー)**
     - **Role:** `[Fullstack Engineer]`
     - **Priority:** HIGH (ペナルティシステムの有効化に必須)
     - **Note:** カード登録はペナルティ用。サブスクリプションはApple IAP/Google Play Billing経由。
@@ -351,10 +358,12 @@ Each task is atomic, role-specific, and has a clear definition of done.
     4. テストカード `4242 4242 4242 4242` で登録テスト
     5. 「カードを削除」リンクで削除テスト
 
-    **未完了タスク:**
+    **完了タスク:**
     - [x] Dashboard Banner (モバイルアプリ) ✅
-    - [ ] Stripe Webhook (`payment_method.attached`) - optional
-    - [ ] `payment_method_registered`フラグ管理
+    - [x] `payment_method_registered`フラグ管理 ✅
+      - `save-payment-method`: `payment_method_registered: true` 設定済み
+      - `delete-payment-method`: `payment_method_registered: false` 設定済み (2026-01-19)
+    - [x] Stripe Webhook不要 - APIルートで直接フラグ更新
     ---
 
 - [ ] **7.9 Apple IAP / Google Play Billing (サブスクリプション課金)**
@@ -662,9 +671,15 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Use `Linking.canOpenURL` and show Toast on failure.
     - **Implementation:** Created `src/utils/linkingUtils.ts` with `safeOpenURL` and `openAppStore` functions. Updated all screens using Linking.openURL (SettingsScreen, ForceUpdateScreen, CardRegistrationBanner, DonationAnnouncementModal, RoleSelectScreen).
 
-- [ ] **A.1 Granular Error Boundaries**
+- [x] **A.1 Granular Error Boundaries**
     - **Problem:** Global ErrorBoundary only. One screen crash breaks the entire app.
-    - **Fix:** Implement sub-boundaries for MainTabs and critical screens (`CreateCommitment`, `Verification`).
+    - **Fix:** Implement sub-boundaries for MainTabs and critical screens.
+    - **Implementation (2026-01-19):**
+      - `src/components/TabErrorBoundary.tsx`: Error boundary with tab-specific error UI
+      - All 4 tab navigators (HomeStack, MonkModeStack, LibraryStack, SettingsStack) wrapped
+      - Logs errors with tab name context for debugging
+      - i18n support for error messages (ja/en/ko)
+    - **DoD:** One tab crash does not break other tabs. ✅
 
 - [x] **A.2 Sentry Capture Consistency Audit**
     - **Problem:** 90+ `catch` blocks, but many only `console.error`.

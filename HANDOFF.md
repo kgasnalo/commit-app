@@ -1,13 +1,22 @@
-# Handoff: Session 2026-01-19
+# Handoff: Session 2026-01-19 (Updated)
 
 ## Current Goal
-**Phase 3 品質改善タスク完了** - リリース前の品質向上タスクを完了
+**ストア申請前の最終品質改善完了** - Legal Consent、Error Boundaries、In-App Legal Viewer実装
 
 ---
 
 ## Current Critical Status
 
-### ✅ Completed This Session
+### ✅ Completed This Session (2026-01-19)
+
+| Task ID | Task | Status | Details |
+|---------|------|--------|---------|
+| **6.7** | Legal Consent Versioning | ✅ 完了 | DBマイグレーション、LegalConsentScreen、AppNavigator統合 |
+| **A.1** | Granular Error Boundaries | ✅ 完了 | TabErrorBoundary作成、全4タブをラップ |
+| **7.8** | Payment Method Flow修正 | ✅ 完了 | delete-payment-methodで`payment_method_registered: false`設定 |
+| **NEW** | In-App Legal Viewer | ✅ 完了 | LegalBottomSheet (WebView) で利用規約/プライバシーをアプリ内表示 |
+
+### ✅ Completed Earlier (2026-01-19 AM)
 
 | Task ID | Task | Status | Details |
 |---------|------|--------|---------|
@@ -25,47 +34,46 @@
 
 | Category | Files | Status |
 |----------|-------|--------|
-| **New: Testing** | `jest.config.js`, `jest.setup.js`, `jest.env.setup.js` | ✅ 作成 |
-| **New: Tests** | `src/__tests__/commitmentHelpers.test.ts` | ✅ 作成 (15 tests) |
-| **New: Utils** | `src/utils/linkingUtils.ts` | ✅ 作成 (safeOpenURL, openAppStore) |
-| **New: Components** | `src/components/titan/TitanBackground.tsx` | ✅ 作成 |
-| **Modified: i18n** | `src/i18n/locales/{ja,en,ko}.json` | ✅ 更新 (accessibility section) |
-| **Modified: Error** | `src/utils/errorLogger.ts` | ✅ 更新 (captureError, captureWarning) |
-| **Modified: Services** | `src/lib/MonkModeService.ts` | ✅ 更新 (constants extraction) |
-| **Modified: Screens** | ManualBookEntryScreen, ForceUpdateScreen, ProfileScreen | ✅ TitanBackground適用 |
+| **New: Legal** | `src/screens/LegalConsentScreen.tsx` | ✅ 作成 |
+| **New: Legal** | `src/components/LegalBottomSheet.tsx` | ✅ 作成 (WebView) |
+| **New: Config** | `src/config/legalVersions.ts` | ✅ 作成 |
+| **New: Error** | `src/components/TabErrorBoundary.tsx` | ✅ 作成 |
+| **New: Migration** | `supabase/migrations/20260119110000_add_legal_consent_version.sql` | ✅ デプロイ済み |
+| **Modified: Nav** | `src/navigation/AppNavigator.tsx` | ✅ Legal consent check + TabErrorBoundary |
+| **Modified: Settings** | `src/screens/SettingsScreen.tsx` | ✅ LegalBottomSheet統合 |
+| **Modified: Types** | `src/types/database.types.ts` | ✅ legal_consent_version追加 |
+| **Modified: i18n** | `src/i18n/locales/{ja,en,ko}.json` | ✅ legal_consent, legal_sheet, tabError セクション追加 |
+| **Modified: Web** | `commit-app-web/.../delete-payment-method/route.ts` | ✅ payment_method_registered: false |
 
 ---
 
 ## Git Status
 
-**Latest Commit:**
+**Latest Commits:**
 ```
+fc0ba4e0 feat: add legal consent versioning, tab error boundaries, and in-app legal viewer
+d0523ee2 docs: update HANDOFF and ROADMAP for Phase 3 completion
 863ea840 feat: implement pre-release quality improvements (Phase 3)
 ```
 
-31 files changed, 3,822 insertions(+), 219 deletions(-)
-
 ---
 
-## TitanBackground 適用状況
+## ストア申請前の残タスク
 
-### ✅ 適用済み (3/14):
-- `ManualBookEntryScreen.tsx`
-- `ForceUpdateScreen.tsx`
-- `ProfileScreen.tsx`
+### 🚨 CRITICAL (ブロック中 - ストア登録後に実装)
 
-### ⏳ 未適用 (11/14):
-- `RoleSelectScreen.tsx`
-- `DashboardScreen.tsx`
-- `LibraryScreen.tsx`
-- `CreateCommitmentScreen.tsx`
-- `CommitmentDetailScreen.tsx`
-- `VerificationScreen.tsx`
-- `MonkModeScreen.tsx`
-- `MaintenanceScreen.tsx`
-- `DonationAnnouncementModal.tsx`
-- `HeroBillboard.tsx`
-- `CommitmentReceipt.tsx`
+| Task | 状態 | 理由 |
+|------|------|------|
+| **7.9 Apple IAP** | ブロック | App Store Connect登録後 |
+| **7.9 Google Play Billing** | ブロック | Play Console登録後 |
+
+### ✅ 全て完了済み
+
+- Legal Consent Versioning (6.7)
+- Granular Error Boundaries (A.1)
+- Payment Method Flow (7.8)
+- In-App Legal Viewer
+- DBインデックス (P.10)
 
 ---
 
@@ -106,6 +114,28 @@ npm run test:coverage
   - `calculateSuggestedDeadline`: 3 tests
   - `calculatePageRangesForAll`: 4 tests
   - `groupCommitmentsByBook`: 4 tests
+
+---
+
+## TitanBackground 適用状況
+
+### ✅ 適用済み (3/14):
+- `ManualBookEntryScreen.tsx`
+- `ForceUpdateScreen.tsx`
+- `ProfileScreen.tsx`
+
+### ⏳ 未適用 (11/14) - ローンチ後対応可:
+- `RoleSelectScreen.tsx`
+- `DashboardScreen.tsx`
+- `LibraryScreen.tsx`
+- `CreateCommitmentScreen.tsx`
+- `CommitmentDetailScreen.tsx`
+- `VerificationScreen.tsx`
+- `MonkModeScreen.tsx`
+- `MaintenanceScreen.tsx`
+- `DonationAnnouncementModal.tsx`
+- `HeroBillboard.tsx`
+- `CommitmentReceipt.tsx`
 
 ---
 
