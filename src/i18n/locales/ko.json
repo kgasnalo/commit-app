@@ -560,6 +560,12 @@
     "message": "앱에서 예기치 않은 오류가 발생했습니다. 다시 시도해주세요.",
     "retry": "다시 시도"
   },
+  "tabError": {
+    "title": "이 탭에서 오류가 발생했습니다",
+    "message": "문제가 발생했지만, 다른 탭은 정상적으로 작동합니다.",
+    "retry": "새로고침",
+    "hint": "문제가 계속되면 앱을 다시 시작해 주세요"
+  },
   "bookDetail": {
     "loading": "책 상세 로딩 중...",
     "error_title": "로드 실패",
@@ -674,5 +680,21 @@
       "amount": "금액 슬라이더, 현재 {{amount}}",
       "duration": "시간 슬라이더, 현재 {{duration}}분"
     }
+  },
+  "legal_consent": {
+    "title": "이용약관 업데이트",
+    "subtitle": "서비스를 계속 이용하시려면 업데이트된 이용약관과 개인정보 처리방침에 동의해 주세요.",
+    "update_summary": "변경 내용",
+    "update_description": "이용약관과 개인정보 처리방침이 업데이트되었습니다. 자세한 내용은 아래 링크에서 확인해 주세요.",
+    "version_label": "버전",
+    "terms_link": "이용약관 확인",
+    "privacy_link": "개인정보 처리방침 확인",
+    "checkbox_label": "이용약관 및 개인정보 처리방침에 동의합니다",
+    "agree_button": "동의 후 계속"
+  },
+  "legal_sheet": {
+    "terms_title": "이용약관",
+    "privacy_title": "개인정보 처리방침",
+    "loading": "로딩 중..."
   }
 }

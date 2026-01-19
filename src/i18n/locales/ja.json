@@ -563,6 +563,12 @@
     "message": "アプリで予期しないエラーが発生しました。もう一度お試しください。",
     "retry": "再試行"
   },
+  "tabError": {
+    "title": "このタブでエラーが発生しました",
+    "message": "問題が発生しましたが、他のタブは正常に動作しています。",
+    "retry": "再読み込み",
+    "hint": "問題が続く場合は、アプリを再起動してください"
+  },
   "bookDetail": {
     "loading": "書籍詳細を読み込み中...",
     "error_title": "読み込み失敗",
@@ -677,5 +683,21 @@
       "amount": "金額スライダー、現在{{amount}}",
       "duration": "時間スライダー、現在{{duration}}分"
     }
+  },
+  "legal_consent": {
+    "title": "利用規約の更新",
+    "subtitle": "サービスをご利用いただくには、更新された利用規約とプライバシーポリシーへの同意が必要です。",
+    "update_summary": "更新内容",
+    "update_description": "利用規約とプライバシーポリシーが更新されました。主な変更点についてはリンク先でご確認ください。",
+    "version_label": "バージョン",
+    "terms_link": "利用規約を確認する",
+    "privacy_link": "プライバシーポリシーを確認する",
+    "checkbox_label": "利用規約およびプライバシーポリシーに同意します",
+    "agree_button": "同意して続ける"
+  },
+  "legal_sheet": {
+    "terms_title": "利用規約",
+    "privacy_title": "プライバシーポリシー",
+    "loading": "読み込み中..."
   }
 }

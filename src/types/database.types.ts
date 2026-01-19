@@ -22,6 +22,7 @@ export interface Database {
           subscription_status: 'active' | 'inactive'
           payment_method_registered: boolean
           onboarding_completed: boolean
+          legal_consent_version: string | null
           created_at: string
         }
         Insert: {
@@ -36,6 +37,7 @@ export interface Database {
           subscription_status?: 'active' | 'inactive'
           payment_method_registered?: boolean
           onboarding_completed?: boolean
+          legal_consent_version?: string | null
           created_at?: string
         }
         Update: {
@@ -50,6 +52,7 @@ export interface Database {
           subscription_status?: 'active' | 'inactive'
           payment_method_registered?: boolean
           onboarding_completed?: boolean
+          legal_consent_version?: string | null
           created_at?: string
         }
         Relationships: []

@@ -563,6 +563,12 @@
     "message": "The app encountered an unexpected error. Please try again.",
     "retry": "Retry"
   },
+  "tabError": {
+    "title": "Error in this tab",
+    "message": "Something went wrong, but other tabs are still working.",
+    "retry": "Reload",
+    "hint": "If the problem persists, please restart the app"
+  },
   "bookDetail": {
     "loading": "Loading book details...",
     "error_title": "Failed to load",
@@ -677,5 +683,21 @@
       "amount": "Amount slider, currently {{amount}}",
       "duration": "Duration slider, currently {{duration}} minutes"
     }
+  },
+  "legal_consent": {
+    "title": "Terms Updated",
+    "subtitle": "To continue using the service, please review and agree to the updated Terms of Service and Privacy Policy.",
+    "update_summary": "What's Changed",
+    "update_description": "Our Terms of Service and Privacy Policy have been updated. Please review the documents via the links below for details.",
+    "version_label": "Version",
+    "terms_link": "View Terms of Service",
+    "privacy_link": "View Privacy Policy",
+    "checkbox_label": "I agree to the Terms of Service and Privacy Policy",
+    "agree_button": "Agree & Continue"
+  },
+  "legal_sheet": {
+    "terms_title": "Terms of Service",
+    "privacy_title": "Privacy Policy",
+    "loading": "Loading..."
   }
 }

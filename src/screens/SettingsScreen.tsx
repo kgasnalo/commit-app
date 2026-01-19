@@ -19,10 +19,18 @@ import { MicroLabel } from '../components/titan/MicroLabel';
 import * as AnalyticsService from '../lib/AnalyticsService';
 import { safeOpenURL } from '../utils/linkingUtils';
 import { captureError } from '../utils/errorLogger';
+import LegalBottomSheet, { LegalDocumentType } from '../components/LegalBottomSheet';
 
 export default function SettingsScreen({ navigation }: any) {
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [legalSheetVisible, setLegalSheetVisible] = useState(false);
+  const [legalDocumentType, setLegalDocumentType] = useState<LegalDocumentType>('terms');
   const { language: currentLanguage, setLanguage } = useLanguage();
+
+  const handleOpenLegalSheet = (type: LegalDocumentType) => {
+    setLegalDocumentType(type);
+    setLegalSheetVisible(true);
+  };
 
   const handleLanguageChange = async (languageCode: string) => {
     await setLanguage(languageCode);
@@ -169,15 +177,15 @@ export default function SettingsScreen({ navigation }: any) {
         />
 
         <SectionHeader title={i18n.t('settings.legal')} />
-        <MenuItem 
-          icon="document-text-outline" 
-          label={i18n.t('settings.terms')} 
-          onPress={() => openURL('https://commit-app-web.vercel.app/terms')} 
+        <MenuItem
+          icon="document-text-outline"
+          label={i18n.t('settings.terms')}
+          onPress={() => handleOpenLegalSheet('terms')}
         />
-        <MenuItem 
-          icon="shield-checkmark-outline" 
-          label={i18n.t('settings.privacy')} 
-          onPress={() => openURL('https://commit-app-web.vercel.app/privacy')} 
+        <MenuItem
+          icon="shield-checkmark-outline"
+          label={i18n.t('settings.privacy')}
+          onPress={() => handleOpenLegalSheet('privacy')}
         />
 
         <SectionHeader title={i18n.t('settings.support')} />
@@ -249,6 +257,13 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Legal Document Bottom Sheet */}
+      <LegalBottomSheet
+        visible={legalSheetVisible}
+        documentType={legalDocumentType}
+        onClose={() => setLegalSheetVisible(false)}
+      />
     </SafeAreaView>
   );
 }

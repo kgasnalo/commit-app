@@ -23,7 +23,7 @@ import { trackScreenView } from '../lib/AnalyticsService';
 type AuthState =
   | { status: 'loading' }
   | { status: 'unauthenticated' }
-  | { status: 'authenticated'; session: Session; isSubscribed: boolean; hasCompletedOnboarding: boolean };
+  | { status: 'authenticated'; session: Session; isSubscribed: boolean; hasCompletedOnboarding: boolean; legalConsentVersion: string | null };
 
 import { useBlockingStatus } from '../lib/RemoteConfigService';
 import MaintenanceScreen from '../screens/blocking/MaintenanceScreen';
@@ -42,6 +42,9 @@ import BookDetailScreen from '../screens/BookDetailScreen';
 import MonkModeScreen from '../screens/monkmode/MonkModeScreen';
 import MonkModeActiveScreen from '../screens/monkmode/MonkModeActiveScreen';
 import ManualBookEntryScreen from '../screens/ManualBookEntryScreen';
+import LegalConsentScreen from '../screens/LegalConsentScreen';
+import { needsLegalConsent, CURRENT_LEGAL_VERSION } from '../config/legalVersions';
+import TabErrorBoundary from '../components/TabErrorBoundary';
 
 // Onboarding screens
 import OnboardingScreen0 from '../screens/onboarding/OnboardingScreen0_Welcome';
@@ -66,45 +69,53 @@ const Tab = createBottomTabNavigator();
 // Home Stack Navigator
 function HomeStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Dashboard" component={DashboardScreen} />
-      <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
-      <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
-      <Stack.Screen name="ManualBookEntry" component={ManualBookEntryScreen} />
-      <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
-      <Stack.Screen name="Verification" component={VerificationScreen} />
-    </Stack.Navigator>
+    <TabErrorBoundary tabName="Home">
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Dashboard" component={DashboardScreen} />
+        <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
+        <Stack.Screen name="CreateCommitment" component={CreateCommitmentScreen} />
+        <Stack.Screen name="ManualBookEntry" component={ManualBookEntryScreen} />
+        <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
+        <Stack.Screen name="Verification" component={VerificationScreen} />
+      </Stack.Navigator>
+    </TabErrorBoundary>
   );
 }
 
 // Library Stack Navigator
 function LibraryStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Library" component={LibraryScreen} />
-      <Stack.Screen name="BookDetail" component={BookDetailScreen} />
-    </Stack.Navigator>
+    <TabErrorBoundary tabName="Library">
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Library" component={LibraryScreen} />
+        <Stack.Screen name="BookDetail" component={BookDetailScreen} />
+      </Stack.Navigator>
+    </TabErrorBoundary>
   );
 }
 
 // Monk Mode Stack Navigator
 function MonkModeStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MonkMode" component={MonkModeScreen} />
-      <Stack.Screen name="MonkModeActive" component={MonkModeActiveScreen} />
-    </Stack.Navigator>
+    <TabErrorBoundary tabName="MonkMode">
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MonkMode" component={MonkModeScreen} />
+        <Stack.Screen name="MonkModeActive" component={MonkModeActiveScreen} />
+      </Stack.Navigator>
+    </TabErrorBoundary>
   );
 }
 
 // Settings Stack Navigator
 function SettingsStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
-    </Stack.Navigator>
+    <TabErrorBoundary tabName="Settings">
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+      </Stack.Navigator>
+    </TabErrorBoundary>
   );
 }
 
@@ -218,12 +229,13 @@ function NavigationContent() {
   interface UserStatus {
     isSubscribed: boolean;
     hasCompletedOnboarding: boolean;
+    legalConsentVersion: string | null;
   }
 
   async function checkUserStatus(userId: string, retryCount = 0): Promise<UserStatus> {
     const maxRetries = 2; // 2回リトライ（合計3回試行）
     const TIMEOUT_MS = 4000; // 4秒のタイムアウト（OAuth後のセッション確立に時間がかかるため）
-    const defaultStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false };
+    const defaultStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null };
 
     console.log(`📊 checkUserStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
 
@@ -235,7 +247,7 @@ function NavigationContent() {
       // DBリクエストのPromise
       const dbRequest = supabase
         .from('users')
-        .select('subscription_status, onboarding_completed')
+        .select('subscription_status, onboarding_completed, legal_consent_version')
         .eq('id', userId)
         .single();
 
@@ -282,8 +294,9 @@ function NavigationContent() {
       const status: UserStatus = {
         isSubscribed: data?.subscription_status === 'active',
         hasCompletedOnboarding: data?.onboarding_completed ?? false,
+        legalConsentVersion: data?.legal_consent_version ?? null,
       };
-      console.log(`📊 checkUserStatus: Found profile, subscription_status=${data?.subscription_status}, onboarding_completed=${data?.onboarding_completed}`);
+      console.log(`📊 checkUserStatus: Found profile, subscription_status=${data?.subscription_status}, onboarding_completed=${data?.onboarding_completed}, legal_consent_version=${data?.legal_consent_version}`);
       return status;
     } catch (err) {
       console.error('📊 checkUserStatus: Unexpected error:', err);
@@ -444,7 +457,7 @@ function NavigationContent() {
         const userStatus = await withTimeout(
           checkUserStatus(session.user.id),
           8000,
-          { isSubscribed: false, hasCompletedOnboarding: false },
+          { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'initializeAuth.checkUserStatus'
         );
         console.log('🚀 initializeAuth: User status:', userStatus);
@@ -456,6 +469,7 @@ function NavigationContent() {
             session,
             isSubscribed: userStatus.isSubscribed,
             hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
+            legalConsentVersion: userStatus.legalConsentVersion,
           });
         }
       } catch (error) {
@@ -503,7 +517,7 @@ function NavigationContent() {
       if (isMounted) setAuthState({ status: 'loading' });
 
       // フェイルセーフのためのデフォルト値
-      let userStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false };
+      let userStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null };
 
       // Auth画面からのログインかどうかを判定
       const loginSource = await AsyncStorage.getItem('loginSource');
@@ -540,7 +554,7 @@ function NavigationContent() {
         userStatus = await withTimeout(
           statusPromise,
           15000,
-          { isSubscribed: false, hasCompletedOnboarding: false },
+          { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'checkUserStatus'
         );
         console.log('✅ Auth: User status check complete:', userStatus);
@@ -558,6 +572,7 @@ function NavigationContent() {
                 session,
                 isSubscribed: result.isSubscribed,
                 hasCompletedOnboarding: result.hasCompletedOnboarding,
+                legalConsentVersion: result.legalConsentVersion,
               });
             }
           }).catch((err) => {
@@ -569,6 +584,7 @@ function NavigationContent() {
                 session,
                 isSubscribed: false,
                 hasCompletedOnboarding: false,
+                legalConsentVersion: null,
               });
             }
           });
@@ -593,6 +609,7 @@ function NavigationContent() {
               session,
               isSubscribed: userStatus.isSubscribed,
               hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
+              legalConsentVersion: userStatus.legalConsentVersion,
             });
           }
         }
@@ -618,6 +635,7 @@ function NavigationContent() {
             (payload) => {
               const newSubscriptionStatus = payload.new.subscription_status === 'active';
               const newOnboardingCompleted = payload.new.onboarding_completed ?? false;
+              const newLegalConsentVersion = payload.new.legal_consent_version ?? null;
 
               // 既存の認証状態を維持しつつユーザーステータスを更新
               setAuthState(prev => {
@@ -626,6 +644,7 @@ function NavigationContent() {
                   ...prev,
                   isSubscribed: newSubscriptionStatus,
                   hasCompletedOnboarding: newOnboardingCompleted,
+                  legalConsentVersion: newLegalConsentVersion,
                 };
               });
             }
@@ -648,6 +667,7 @@ function NavigationContent() {
           session,
           isSubscribed: userStatus.isSubscribed,
           hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
+          legalConsentVersion: userStatus.legalConsentVersion,
         });
       }
     });
@@ -668,6 +688,8 @@ function NavigationContent() {
   const session = authState.status === 'authenticated' ? authState.session : null;
   const isSubscribed = authState.status === 'authenticated' ? authState.isSubscribed : false;
   const hasCompletedOnboarding = authState.status === 'authenticated' ? authState.hasCompletedOnboarding : false;
+  const legalConsentVersion = authState.status === 'authenticated' ? authState.legalConsentVersion : null;
+  const showLegalConsentScreen = authState.status === 'authenticated' && hasCompletedOnboarding && needsLegalConsent(legalConsentVersion);
 
   // Phase 8.1: Set Sentry user context for crash monitoring
   // Phase 8.3: Set PostHog user identification
@@ -749,6 +771,29 @@ function NavigationContent() {
           <Text style={loadingStyles.subtitle}>SYSTEM INITIALIZING...</Text>
         </View>
       </View>
+    );
+  }
+
+  // 法的同意が必要な場合（オンボーディング完了済みユーザーのみ）
+  // LegalConsentScreenはStack.Navigatorの外で表示（フルスクリーンモーダル）
+  if (showLegalConsentScreen && session) {
+    const handleLegalConsentComplete = () => {
+      // Realtime subscription will update the state automatically
+      // Just force a refresh to ensure immediate UI update
+      setAuthState(prev => {
+        if (prev.status !== 'authenticated') return prev;
+        return {
+          ...prev,
+          legalConsentVersion: CURRENT_LEGAL_VERSION,
+        };
+      });
+    };
+
+    return (
+      <LegalConsentScreen
+        userId={session.user.id}
+        onConsentComplete={handleLegalConsentComplete}
+      />
     );
   }
 
