@@ -298,6 +298,18 @@
     "contact_support": "サポートにお問い合わせ",
     "manage_payment": "支払い管理（Web）"
   },
+  "announcements": {
+    "title": "お知らせ",
+    "menu_item": "運営からのお知らせ",
+    "empty_title": "お知らせはありません",
+    "empty_subtitle": "新しいお知らせがあればここに表示されます",
+    "type_info": "お知らせ",
+    "type_update": "アップデート",
+    "type_maintenance": "メンテナンス",
+    "type_important": "重要",
+    "expand": "もっと見る",
+    "collapse": "閉じる"
+  },
   "profile": {
     "title": "プロフィール",
     "username": "ユーザーネーム",

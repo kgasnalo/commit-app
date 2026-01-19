@@ -317,6 +317,18 @@
     "contact_support": "지원팀에 문의",
     "manage_payment": "결제 관리 (Web)"
   },
+  "announcements": {
+    "title": "공지사항",
+    "menu_item": "운영팀 공지사항",
+    "empty_title": "공지사항이 없습니다",
+    "empty_subtitle": "새 공지사항이 여기에 표시됩니다",
+    "type_info": "안내",
+    "type_update": "업데이트",
+    "type_maintenance": "점검",
+    "type_important": "중요",
+    "expand": "더 보기",
+    "collapse": "접기"
+  },
   "profile": {
     "title": "프로필",
     "username": "사용자명",

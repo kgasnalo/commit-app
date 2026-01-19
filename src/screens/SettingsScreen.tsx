@@ -190,6 +190,11 @@ export default function SettingsScreen({ navigation }: any) {
 
         <SectionHeader title={i18n.t('settings.support')} />
         <MenuItem
+          icon="megaphone-outline"
+          label={i18n.t('announcements.menu_item')}
+          onPress={() => navigation.navigate('Announcements')}
+        />
+        <MenuItem
           icon="heart-outline"
           label={i18n.t('donations.settings_link')}
           onPress={() => openURL('https://commit-app-web.vercel.app/donations')}

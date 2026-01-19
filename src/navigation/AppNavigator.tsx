@@ -38,6 +38,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import DonationHistoryScreen from '../screens/DonationHistoryScreen';
+import AnnouncementsScreen from '../screens/AnnouncementsScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
 import MonkModeScreen from '../screens/monkmode/MonkModeScreen';
@@ -116,6 +117,7 @@ function SettingsStackNavigator() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
         <Stack.Screen name="DonationHistory" component={DonationHistoryScreen} />
+        <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
       </Stack.Navigator>
     </TabErrorBoundary>
   );

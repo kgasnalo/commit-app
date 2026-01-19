@@ -497,6 +497,7 @@ export interface Database {
           currency: string
           transfer_date: string
           proof_image_url: string | null
+          description: string | null
           created_at: string
         }
         Insert: {
@@ -507,6 +508,7 @@ export interface Database {
           currency?: string
           transfer_date: string
           proof_image_url?: string | null
+          description?: string | null
           created_at?: string
         }
         Update: {
@@ -517,6 +519,37 @@ export interface Database {
           currency?: string
           transfer_date?: string
           proof_image_url?: string | null
+          description?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          id: string
+          title: string
+          body: string
+          type: 'info' | 'update' | 'maintenance' | 'important'
+          published_at: string | null
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          body: string
+          type?: 'info' | 'update' | 'maintenance' | 'important'
+          published_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          body?: string
+          type?: 'info' | 'update' | 'maintenance' | 'important'
+          published_at?: string | null
+          expires_at?: string | null
           created_at?: string
         }
         Relationships: []

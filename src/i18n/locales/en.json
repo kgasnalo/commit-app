@@ -298,6 +298,18 @@
     "contact_support": "Contact Support",
     "manage_payment": "Manage Payment (Web)"
   },
+  "announcements": {
+    "title": "Announcements",
+    "menu_item": "Announcements from Team",
+    "empty_title": "No announcements",
+    "empty_subtitle": "New announcements will appear here",
+    "type_info": "Info",
+    "type_update": "Update",
+    "type_maintenance": "Maintenance",
+    "type_important": "Important",
+    "expand": "Read more",
+    "collapse": "Show less"
+  },
   "profile": {
     "title": "Profile",
     "username": "Username",
