@@ -632,6 +632,19 @@
     "close": "Close",
     "settings_link": "Donation Report"
   },
+  "donation_history": {
+    "title": "Donation History",
+    "menu_item": "Donation History",
+    "empty_title": "No donation history",
+    "empty_subtitle": "When you fail a commitment, your donation history will appear here",
+    "total_donated": "Total Donated",
+    "status_succeeded": "Donated",
+    "status_failed": "Failed",
+    "status_refunded": "Refunded",
+    "status_pending": "Pending",
+    "status_processing": "Processing",
+    "status_requires_action": "Action Required"
+  },
   "accessibility": {
     "button": {
       "back": "Go back",

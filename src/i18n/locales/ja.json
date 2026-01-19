@@ -632,6 +632,19 @@
     "close": "閉じる",
     "settings_link": "寄付報告"
   },
+  "donation_history": {
+    "title": "寄付履歴",
+    "menu_item": "寄付履歴",
+    "empty_title": "寄付履歴はありません",
+    "empty_subtitle": "コミットメントに失敗した場合、ここに寄付履歴が表示されます",
+    "total_donated": "累計寄付額",
+    "status_succeeded": "寄付完了",
+    "status_failed": "失敗",
+    "status_refunded": "返金済み",
+    "status_pending": "処理待ち",
+    "status_processing": "処理中",
+    "status_requires_action": "要対応"
+  },
   "accessibility": {
     "button": {
       "back": "戻る",

@@ -195,6 +195,11 @@ export default function SettingsScreen({ navigation }: any) {
           onPress={() => openURL('https://commit-app-web.vercel.app/donations')}
         />
         <MenuItem
+          icon="receipt-outline"
+          label={i18n.t('donation_history.menu_item')}
+          onPress={() => navigation.navigate('DonationHistory')}
+        />
+        <MenuItem
           icon="mail-outline"
           label={i18n.t('settings.contact_support')}
           onPress={() => openURL('https://commit-app-web.vercel.app/support')}

@@ -629,6 +629,19 @@
     "close": "닫기",
     "settings_link": "기부 보고"
   },
+  "donation_history": {
+    "title": "기부 내역",
+    "menu_item": "기부 내역",
+    "empty_title": "기부 내역이 없습니다",
+    "empty_subtitle": "커밋먼트에 실패하면 여기에 기부 내역이 표시됩니다",
+    "total_donated": "총 기부액",
+    "status_succeeded": "기부 완료",
+    "status_failed": "실패",
+    "status_refunded": "환불됨",
+    "status_pending": "대기 중",
+    "status_processing": "처리 중",
+    "status_requires_action": "조치 필요"
+  },
   "accessibility": {
     "button": {
       "back": "뒤로 가기",
