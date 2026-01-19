@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  Linking,
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +15,7 @@ import i18n from '../i18n';
 import { useLanguage } from '../contexts/LanguageContext';
 import { colors } from '../theme';
 import { Tables } from '../types/database.types';
+import { safeOpenURL } from '../utils/linkingUtils';
 
 const LAST_SEEN_DONATION_KEY = 'lastSeenDonationId';
 const WEB_PORTAL_URL = 'https://commit-app-web.vercel.app/donations';
@@ -55,11 +55,7 @@ export function DonationAnnouncementModal({
   };
 
   const handleViewProof = async () => {
-    try {
-      await Linking.openURL(WEB_PORTAL_URL);
-    } catch (err) {
-      console.error('Failed to open URL:', err);
-    }
+    await safeOpenURL(WEB_PORTAL_URL);
   };
 
   const handleClose = async () => {

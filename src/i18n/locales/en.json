@@ -430,6 +430,8 @@
     }
   },
   "errors": {
+    "cannot_open_url": "Cannot open this link",
+    "failed_to_open_url": "Failed to open the link",
     "network": "Network error occurred",
     "auth": "Authentication error. Please log in again.",
     "unknown": "An error occurred",
@@ -623,5 +625,57 @@
     "view_proof": "View Transfer Proof",
     "close": "Close",
     "settings_link": "Donation Report"
+  },
+  "accessibility": {
+    "button": {
+      "back": "Go back",
+      "close": "Close",
+      "search": "Search",
+      "menu": "Menu",
+      "settings": "Settings",
+      "delete": "Delete",
+      "edit": "Edit",
+      "share": "Share",
+      "refresh": "Refresh"
+    },
+    "input": {
+      "email": "Enter email address",
+      "password": "Enter password",
+      "username": "Enter username",
+      "search_books": "Search for books",
+      "memo": "Enter memo",
+      "tag": "Enter tag"
+    },
+    "card": {
+      "commitment": "{{title}}, penalty {{amount}}, {{days}} days {{hours}} hours remaining",
+      "commitment_completed": "{{title}}, completed",
+      "commitment_expired": "{{title}}, expired",
+      "book": "{{title}} by {{author}}"
+    },
+    "image": {
+      "book_cover": "Cover of {{title}}",
+      "user_avatar": "User avatar",
+      "photo_preview": "Photo preview"
+    },
+    "state": {
+      "loading": "Loading",
+      "disabled": "Disabled",
+      "selected": "Selected",
+      "expanded": "Expanded",
+      "collapsed": "Collapsed"
+    },
+    "hint": {
+      "double_tap_to_activate": "Double tap to activate",
+      "double_tap_to_select": "Double tap to select",
+      "double_tap_to_edit": "Double tap to edit",
+      "swipe_to_delete": "Swipe to delete"
+    },
+    "scanner": {
+      "camera_viewfinder": "Camera viewfinder for barcode scanning"
+    },
+    "slider": {
+      "amount": "Amount slider, currently {{amount}}",
+      "duration": "Duration slider, currently {{duration}} minutes"
+    }
   }
 }

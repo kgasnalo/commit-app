@@ -50,6 +50,9 @@ export default function SecondaryButton({ label, onPress, disabled }: Props) {
       onPressOut={handlePressOut}
       disabled={disabled}
       activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
     >
       <Text style={styles.label}>{label}</Text>
     </AnimatedTouchable>

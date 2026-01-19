@@ -187,7 +187,13 @@ export default function AuthScreen({ navigation }: any) {
     <SafeAreaView style={styles.container}>
       {/* 戻るボタン */}
       <View style={styles.backButtonContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t('accessibility.button.back')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
       </View>
@@ -207,6 +213,8 @@ export default function AuthScreen({ navigation }: any) {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
+            accessibilityLabel={i18n.t('accessibility.input.email')}
+            accessibilityRole="none"
           />
 
           <Text style={styles.label}>{i18n.t('auth.password_label')}</Text>
@@ -216,12 +224,17 @@ export default function AuthScreen({ navigation }: any) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            accessibilityLabel={i18n.t('accessibility.input.password')}
+            accessibilityRole="none"
           />
 
-          <TouchableOpacity 
-            style={styles.authButton} 
+          <TouchableOpacity
+            style={styles.authButton}
             onPress={handleAuth}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel={isSignUp ? i18n.t('auth.create_account') : i18n.t('auth.login')}
+            accessibilityState={{ disabled: loading }}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -235,6 +248,8 @@ export default function AuthScreen({ navigation }: any) {
           <TouchableOpacity
             style={styles.switchButton}
             onPress={() => setIsSignUp(!isSignUp)}
+            accessibilityRole="button"
+            accessibilityLabel={isSignUp ? i18n.t('auth.have_account') : i18n.t('auth.new_user')}
           >
             <Text style={styles.switchButtonText}>
               {isSignUp ? i18n.t('auth.have_account') : i18n.t('auth.new_user')}
@@ -253,6 +268,9 @@ export default function AuthScreen({ navigation }: any) {
             style={styles.googleButton}
             onPress={handleGoogleSignIn}
             disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel={i18n.t('auth.google_login')}
+            accessibilityState={{ disabled: loading }}
           >
             <MaterialIcons name="login" size={20} color="#4285F4" />
             <Text style={styles.googleButtonText}>{i18n.t('auth.google_login')}</Text>

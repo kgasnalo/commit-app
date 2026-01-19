@@ -51,6 +51,9 @@ export default function PrimaryButton({ label, onPress, disabled, loading }: Pro
       onPressOut={handlePressOut}
       disabled={disabled || loading}
       activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || loading }}
     >
       {loading ? (
         <ActivityIndicator color={colors.text.primary} />

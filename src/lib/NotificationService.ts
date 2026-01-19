@@ -15,6 +15,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import i18n from '../i18n';
+import { captureError, captureWarning } from '../utils/errorLogger';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -73,7 +74,10 @@ class NotificationServiceClass {
       this.isInitialized = true;
       return true;
     } catch (error) {
-      console.warn('[NotificationService] Initialization failed:', error);
+      captureWarning('NotificationService initialization failed', {
+        location: 'NotificationService.initialize',
+        extra: { error },
+      });
       return false;
     }
   }
@@ -92,7 +96,10 @@ class NotificationServiceClass {
       const { status } = await Notifications.requestPermissionsAsync();
       return status === 'granted';
     } catch (error) {
-      console.warn('[NotificationService] Permission request failed:', error);
+      captureWarning('NotificationService permission request failed', {
+        location: 'NotificationService.requestPermissions',
+        extra: { error },
+      });
       return false;
     }
   }

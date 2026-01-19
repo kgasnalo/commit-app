@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { getNowDate } from './DateUtils';
+import { captureError } from '../utils/errorLogger';
 
 export interface BookProgress {
   totalPagesRead: number;
@@ -112,7 +113,10 @@ export async function getBookProgress(bookId: string, userId: string): Promise<B
       lastCommitment: commitments[0] as BookProgress['lastCommitment'],
     };
   } catch (error) {
-    console.error('[getBookProgress] Error:', error);
+    captureError(error, {
+      location: 'getBookProgress',
+      extra: { bookId, userId },
+    });
     return {
       totalPagesRead: 0,
       lastCommitment: null,
@@ -134,7 +138,10 @@ export async function getBookById(bookId: string): Promise<BookMetadata | null> 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('[getBookById] Error:', error);
+    captureError(error, {
+      location: 'getBookById',
+      extra: { bookId },
+    });
     return null;
   }
 }

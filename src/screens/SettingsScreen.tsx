@@ -7,7 +7,6 @@ import {
   Alert,
   Modal,
   ScrollView,
-  Linking,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { colors, typography } from '../theme';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import * as AnalyticsService from '../lib/AnalyticsService';
+import { safeOpenURL } from '../utils/linkingUtils';
+import { captureError } from '../utils/errorLogger';
 
 export default function SettingsScreen({ navigation }: any) {
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
@@ -103,14 +104,14 @@ export default function SettingsScreen({ navigation }: any) {
   const openURL = async (url: string) => {
     try {
       if (url.startsWith('mailto:')) {
-        // Email links open in external mail app
-        await Linking.openURL(url);
+        // Email links open in external mail app with validation
+        await safeOpenURL(url);
       } else {
         // Web URLs open in-app browser (SFSafariViewController on iOS)
         await WebBrowser.openBrowserAsync(url);
       }
     } catch (err) {
-      console.error('An error occurred', err);
+      captureError(err, { location: 'SettingsScreen.openURL', extra: { url } });
     }
   };
 

@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { TitanBackground } from '../components/titan/TitanBackground';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
@@ -200,20 +200,7 @@ export default function ManualBookEntryScreen({ navigation, route }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Titan Background */}
-      <View style={styles.backgroundContainer} pointerEvents="none">
-        <LinearGradient
-          colors={['#1A1008', '#100A06', '#080604']}
-          locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <LinearGradient
-          colors={['rgba(255, 160, 120, 0.15)', 'rgba(255, 160, 120, 0.06)', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.8, y: 0.7 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
+      <TitanBackground />
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <KeyboardAvoidingView

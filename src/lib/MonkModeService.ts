@@ -12,12 +12,60 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { Database } from '../types/database.types';
 import { getNowUTC, getTodayUTC, getYesterdayUTC } from './DateUtils';
+import { captureError, captureWarning } from '../utils/errorLogger';
 
 // Storage keys for timer state persistence
 const STORAGE_KEYS = {
   TIMER_STATE: 'monk_mode_timer_state',
   LAST_DURATION: 'monk_mode_last_duration',
 };
+
+// ========================================
+// Constants - Reading Thresholds & Defaults
+// ========================================
+
+/** Heatmap level thresholds (in minutes) */
+const HEATMAP_THRESHOLDS = {
+  /** Level 3: Heavy reading day (46+ minutes) */
+  LEVEL_3_MIN: 46,
+  /** Level 2: Moderate reading day (16-45 minutes) */
+  LEVEL_2_MIN: 16,
+  /** Level 1: Light reading day (1-15 minutes) */
+  LEVEL_1_MIN: 1,
+} as const;
+
+/** Reader type detection thresholds */
+const READER_TYPE_THRESHOLDS = {
+  /** Morning hours (5:00 - 11:59) */
+  MORNING_START_HOUR: 5,
+  MORNING_END_HOUR: 12,
+  /** Night hours (19:00+ or before 3:00) */
+  NIGHT_START_HOUR: 19,
+  NIGHT_END_HOUR: 3,
+  /** Ratio thresholds for classification (0.0 - 1.0) */
+  TIME_OF_DAY_RATIO: 0.5,
+  WEEKEND_RATIO: 0.6,
+  /** Session duration thresholds (in minutes) */
+  SPRINTER_MAX_MINUTES: 20,
+  MARATHON_MIN_MINUTES: 45,
+  /** Streak days required for streak_reader classification */
+  STREAK_READER_MIN_DAYS: 7,
+  /** Minimum sessions required for reliable detection */
+  MIN_SESSIONS_FOR_DETECTION: 3,
+} as const;
+
+/** Default values for data fetching */
+const DEFAULTS = {
+  RECENT_SESSIONS_LIMIT: 5,
+  MONTHLY_STATS_MONTHS: 6,
+  HEATMAP_DAYS: 30,
+} as const;
+
+/** Milliseconds per day (24 * 60 * 60 * 1000) */
+const MS_PER_DAY = 86400000;
+
+/** Seconds per hour */
+const SECONDS_PER_HOUR = 3600;
 
 // Database types
 type ReadingSession = Database['public']['Tables']['reading_sessions']['Row'];
@@ -107,13 +155,19 @@ class MonkModeServiceClass {
         .single();
 
       if (error) {
-        console.error('[MonkModeService] Failed to save session:', error);
+        captureError(error, {
+          location: 'MonkModeService.saveSession',
+          extra: { durationSeconds: params.durationSeconds, bookId: params.bookId },
+        });
         return { success: false, error: error.message };
       }
 
       return { success: true, sessionId: data.id };
     } catch (error) {
-      console.error('[MonkModeService] Unexpected error saving session:', error);
+      captureError(error, {
+        location: 'MonkModeService.saveSession',
+        extra: { durationSeconds: params.durationSeconds, bookId: params.bookId },
+      });
       return { success: false, error: 'Unexpected error' };
     }
   }
@@ -132,14 +186,17 @@ class MonkModeServiceClass {
         .eq('user_id', user.id);
 
       if (error || !data) {
-        console.error('[MonkModeService] Failed to get total reading time:', error);
+        captureWarning('Failed to get total reading time', {
+          location: 'MonkModeService.getTotalReadingTime',
+          extra: { error },
+        });
         return 0;
       }
 
       const totalSeconds = data.reduce((sum, session) => sum + session.duration_seconds, 0);
       return totalSeconds;
     } catch (error) {
-      console.error('[MonkModeService] Unexpected error getting total reading time:', error);
+      captureError(error, { location: 'MonkModeService.getTotalReadingTime' });
       return 0;
     }
   }
@@ -147,7 +204,7 @@ class MonkModeServiceClass {
   /**
    * Get recent reading sessions
    */
-  async getRecentSessions(limit: number = 5): Promise<SessionSummary[]> {
+  async getRecentSessions(limit: number = DEFAULTS.RECENT_SESSIONS_LIMIT): Promise<SessionSummary[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
@@ -165,7 +222,10 @@ class MonkModeServiceClass {
         .limit(limit);
 
       if (error || !data) {
-        console.error('[MonkModeService] Failed to get recent sessions:', error);
+        captureWarning('Failed to get recent sessions', {
+          location: 'MonkModeService.getRecentSessions',
+          extra: { error, limit },
+        });
         return [];
       }
 
@@ -184,7 +244,7 @@ class MonkModeServiceClass {
         };
       });
     } catch (error) {
-      console.error('[MonkModeService] Unexpected error getting recent sessions:', error);
+      captureError(error, { location: 'MonkModeService.getRecentSessions' });
       return [];
     }
   }
@@ -192,7 +252,7 @@ class MonkModeServiceClass {
   /**
    * Get monthly reading stats for the last n months
    */
-  async getMonthlyStats(months: number = 6): Promise<{ labels: string[]; data: number[] }> {
+  async getMonthlyStats(months: number = DEFAULTS.MONTHLY_STATS_MONTHS): Promise<{ labels: string[]; data: number[] }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { labels: [], data: [] };
@@ -247,7 +307,7 @@ class MonkModeServiceClass {
       statsMap.forEach((seconds, key) => {
         const [year, month] = key.split('-');
         resultLabels.push(month); // Just month number for brevity
-        resultData.push(Math.round(seconds / 3600 * 10) / 10); // Convert to hours with 1 decimal
+        resultData.push(Math.round(seconds / SECONDS_PER_HOUR * 10) / 10); // Convert to hours with 1 decimal
       });
 
       return { labels: resultLabels, data: resultData };
@@ -323,8 +383,8 @@ class MonkModeServiceClass {
    * Format duration for display (returns hours and minutes)
    */
   formatDuration(totalSeconds: number): { hours: number; minutes: number } {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
+    const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / 60);
     return { hours, minutes };
   }
 
@@ -361,7 +421,7 @@ class MonkModeServiceClass {
    * Get heatmap data for the last N days
    * Level: 0=0min, 1=1-15min, 2=16-45min, 3=46min+
    */
-  async getHeatmapData(days: number = 30): Promise<HeatmapDay[]> {
+  async getHeatmapData(days: number = DEFAULTS.HEATMAP_DAYS): Promise<HeatmapDay[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
@@ -401,9 +461,9 @@ class MonkModeServiceClass {
         const totalMinutes = totalSeconds / 60;
 
         let level: 0 | 1 | 2 | 3 = 0;
-        if (totalMinutes >= 46) level = 3;
-        else if (totalMinutes >= 16) level = 2;
-        else if (totalMinutes >= 1) level = 1;
+        if (totalMinutes >= HEATMAP_THRESHOLDS.LEVEL_3_MIN) level = 3;
+        else if (totalMinutes >= HEATMAP_THRESHOLDS.LEVEL_2_MIN) level = 2;
+        else if (totalMinutes >= HEATMAP_THRESHOLDS.LEVEL_1_MIN) level = 1;
 
         result.push({
           date: dateStr,
@@ -462,7 +522,7 @@ class MonkModeServiceClass {
       for (let i = 1; i < uniqueDates.length; i++) {
         const prevDate = new Date(uniqueDates[i - 1]);
         const currDate = new Date(uniqueDates[i]);
-        const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000);
+        const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / MS_PER_DAY);
 
         if (diffDays === 1) {
           tempStreak++;
@@ -479,7 +539,7 @@ class MonkModeServiceClass {
         for (let i = uniqueDates.length - 2; i >= 0; i--) {
           const currDate = new Date(uniqueDates[i + 1]);
           const prevDate = new Date(uniqueDates[i]);
-          const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000);
+          const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / MS_PER_DAY);
 
           if (diffDays === 1) {
             currentStreak++;
@@ -511,7 +571,7 @@ class MonkModeServiceClass {
         .select('duration_seconds, completed_at')
         .eq('user_id', user.id);
 
-      if (error || !data || data.length < 3) {
+      if (error || !data || data.length < READER_TYPE_THRESHOLDS.MIN_SESSIONS_FOR_DETECTION) {
         return { primary: 'balanced_reader', confidence: data?.length ? 30 : 0 };
       }
 
@@ -527,8 +587,8 @@ class MonkModeServiceClass {
         const dayOfWeek = date.getDay();
 
         // Time of day analysis
-        if (hour >= 5 && hour < 12) morningCount++;
-        else if (hour >= 19 || hour < 3) nightCount++;
+        if (hour >= READER_TYPE_THRESHOLDS.MORNING_START_HOUR && hour < READER_TYPE_THRESHOLDS.MORNING_END_HOUR) morningCount++;
+        else if (hour >= READER_TYPE_THRESHOLDS.NIGHT_START_HOUR || hour < READER_TYPE_THRESHOLDS.NIGHT_END_HOUR) nightCount++;
 
         // Weekend analysis
         if (dayOfWeek === 0 || dayOfWeek === 6) weekendCount++;
@@ -548,28 +608,28 @@ class MonkModeServiceClass {
       const scores: { type: ReaderType; score: number }[] = [];
 
       // Morning vs Night reader
-      if (morningRatio > 0.5) {
+      if (morningRatio > READER_TYPE_THRESHOLDS.TIME_OF_DAY_RATIO) {
         scores.push({ type: 'morning_reader', score: morningRatio * 100 });
       }
-      if (nightRatio > 0.5) {
+      if (nightRatio > READER_TYPE_THRESHOLDS.TIME_OF_DAY_RATIO) {
         scores.push({ type: 'night_reader', score: nightRatio * 100 });
       }
 
       // Sprinter vs Marathon runner
-      if (avgSessionMinutes < 20) {
-        scores.push({ type: 'sprinter', score: (20 - avgSessionMinutes) * 3 });
+      if (avgSessionMinutes < READER_TYPE_THRESHOLDS.SPRINTER_MAX_MINUTES) {
+        scores.push({ type: 'sprinter', score: (READER_TYPE_THRESHOLDS.SPRINTER_MAX_MINUTES - avgSessionMinutes) * 3 });
       }
-      if (avgSessionMinutes > 45) {
-        scores.push({ type: 'marathon_runner', score: (avgSessionMinutes - 45) * 2 });
+      if (avgSessionMinutes > READER_TYPE_THRESHOLDS.MARATHON_MIN_MINUTES) {
+        scores.push({ type: 'marathon_runner', score: (avgSessionMinutes - READER_TYPE_THRESHOLDS.MARATHON_MIN_MINUTES) * 2 });
       }
 
       // Weekend warrior
-      if (weekendRatio > 0.6) {
+      if (weekendRatio > READER_TYPE_THRESHOLDS.WEEKEND_RATIO) {
         scores.push({ type: 'weekend_warrior', score: weekendRatio * 100 });
       }
 
       // Streak reader
-      if (streakStats.currentStreak >= 7) {
+      if (streakStats.currentStreak >= READER_TYPE_THRESHOLDS.STREAK_READER_MIN_DAYS) {
         scores.push({ type: 'streak_reader', score: streakStats.currentStreak * 10 });
       }
 

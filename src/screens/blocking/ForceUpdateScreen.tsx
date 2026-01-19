@@ -12,11 +12,10 @@ import {
   StyleSheet,
   StatusBar,
   TouchableOpacity,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { TitanBackground } from '../../components/titan/TitanBackground';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,6 +24,7 @@ import Animated, {
 import { HapticsService } from '../../lib/HapticsService';
 import { HAPTIC_BUTTON_SCALES } from '../../config/haptics';
 import i18n from '../../i18n';
+import { safeOpenURL } from '../../utils/linkingUtils';
 
 interface ForceUpdateScreenProps {
   route?: {
@@ -58,11 +58,7 @@ export default function ForceUpdateScreen({ route }: ForceUpdateScreenProps) {
   const handleUpdatePress = async () => {
     HapticsService.feedbackHeavy();
     if (storeUrl) {
-      try {
-        await Linking.openURL(storeUrl);
-      } catch (error) {
-        // Silently fail - user can manually go to store
-      }
+      await safeOpenURL(storeUrl, { showErrorAlert: false });
     }
   };
 
@@ -70,24 +66,7 @@ export default function ForceUpdateScreen({ route }: ForceUpdateScreenProps) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Titan Background */}
-      <View style={styles.backgroundContainer} pointerEvents="none">
-        <LinearGradient
-          colors={['#1A1008', '#100A06', '#080604']}
-          locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <LinearGradient
-          colors={[
-            'rgba(255, 160, 120, 0.15)',
-            'rgba(255, 160, 120, 0.06)',
-            'transparent',
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.8, y: 0.7 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
+      <TitanBackground />
 
       <SafeAreaView style={styles.content}>
         {/* Icon */}

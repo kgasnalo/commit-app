@@ -194,7 +194,12 @@ export default function BarcodeScannerModal({
       <Modal visible={visible} animationType="slide" transparent={false}>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeButton}
+              accessibilityRole="button"
+              accessibilityLabel={i18n.t('accessibility.button.close')}
+            >
               <X size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.title}>{i18n.t('scanner.title')}</Text>
@@ -223,7 +228,12 @@ export default function BarcodeScannerModal({
     <Modal visible={visible} animationType="slide" transparent={false}>
       <View style={styles.container}>
         {/* Camera View - wrapped in View with pointerEvents="none" to prevent touch capture */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+          accessible={true}
+          accessibilityLabel={i18n.t('accessibility.scanner.camera_viewfinder')}
+        >
           <CameraView
             style={StyleSheet.absoluteFill}
             facing="back"
@@ -248,6 +258,8 @@ export default function BarcodeScannerModal({
                 style={styles.closeButton}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                 activeOpacity={0.6}
+                accessibilityRole="button"
+                accessibilityLabel={i18n.t('accessibility.button.close')}
               >
                 <X size={24} color="#fff" />
               </GHTouchableOpacity>
@@ -302,6 +314,8 @@ export default function BarcodeScannerModal({
                   <TouchableOpacity
                     style={styles.actionButton}
                     onPress={handleRescan}
+                    accessibilityRole="button"
+                    accessibilityLabel={i18n.t('scanner.rescan')}
                   >
                     <RefreshCw size={20} color="#fff" />
                     <Text style={styles.actionButtonText}>
@@ -311,6 +325,8 @@ export default function BarcodeScannerModal({
                   <TouchableOpacity
                     style={[styles.actionButton, styles.secondaryButton]}
                     onPress={handleManualSearch}
+                    accessibilityRole="button"
+                    accessibilityLabel={i18n.t('scanner.manual_search')}
                   >
                     <Search size={20} color="#333" />
                     <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>

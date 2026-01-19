@@ -8,6 +8,7 @@ import ProgressBar from './ProgressBar';
 import LivingBackground from './LivingBackground';
 import ReactiveToastManager from './ReactiveToastManager';
 import { useOnboardingAtmosphere } from '../../hooks/useOnboardingAtmosphere';
+import i18n from '../../i18n';
 
 type Props = {
   currentStep: number;
@@ -49,6 +50,9 @@ export default function OnboardingLayout({
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={i18n.t('accessibility.button.back')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>

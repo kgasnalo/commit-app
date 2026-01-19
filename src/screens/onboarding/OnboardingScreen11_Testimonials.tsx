@@ -8,16 +8,19 @@ import i18n from '../../i18n';
 
 const getTESTIMONIALS = () => [
   {
+    id: 'founder',
     nameKey: 'onboarding.screen11_testimonial1_name',
     roleKey: 'onboarding.screen11_testimonial1_role',
     textKey: 'onboarding.screen11_testimonial1_text',
   },
   {
+    id: 'hr_manager',
     nameKey: 'onboarding.screen11_testimonial2_name',
     roleKey: 'onboarding.screen11_testimonial2_role',
     textKey: 'onboarding.screen11_testimonial2_text',
   },
   {
+    id: 'specialist',
     nameKey: 'onboarding.screen11_testimonial3_name',
     roleKey: 'onboarding.screen11_testimonial3_role',
     textKey: 'onboarding.screen11_testimonial3_text',
@@ -38,8 +41,8 @@ export default function OnboardingScreen11({ navigation }: any) {
       }
     >
       <ScrollView showsVerticalScrollIndicator={false}>
-        {getTESTIMONIALS().map((testimonial, index) => (
-          <View key={index} style={styles.testimonialCard}>
+        {getTESTIMONIALS().map((testimonial) => (
+          <View key={testimonial.id} style={styles.testimonialCard}>
             <View style={styles.header}>
               <View style={styles.avatar}>
                 <Ionicons name="person" size={20} color={colors.text.muted} />

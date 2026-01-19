@@ -17,8 +17,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BarChart } from 'react-native-chart-kit';
+import { TitanBackground } from '../components/titan/TitanBackground';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
@@ -161,25 +161,7 @@ export default function ProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Titan Background */}
-      <View style={styles.backgroundContainer} pointerEvents="none">
-        <LinearGradient
-          colors={['#1A1008', '#100A06', '#080604']}
-          locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <LinearGradient
-          colors={[
-            'rgba(255, 160, 120, 0.15)',
-            'rgba(255, 160, 120, 0.06)',
-            'transparent',
-          ]}
-          locations={[0, 0.4, 0.8]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.8, y: 0.7 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
+      <TitanBackground />
 
       <View style={styles.header}>
         <TouchableOpacity

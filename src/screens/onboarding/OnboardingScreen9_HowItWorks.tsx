@@ -8,16 +8,19 @@ import i18n from '../../i18n';
 
 const getFEATURES = () => [
   {
+    id: 'deadline',
     icon: 'time-outline',
     titleKey: 'onboarding.screen9_feature1_title',
     descriptionKey: 'onboarding.screen9_feature1_desc',
   },
   {
+    id: 'penalty',
     icon: 'flame-outline',
     titleKey: 'onboarding.screen9_feature2_title',
     descriptionKey: 'onboarding.screen9_feature2_desc',
   },
   {
+    id: 'donation',
     icon: 'heart-outline',
     titleKey: 'onboarding.screen9_feature3_title',
     descriptionKey: 'onboarding.screen9_feature3_desc',
@@ -38,8 +41,8 @@ export default function OnboardingScreen9({ navigation }: any) {
       }
     >
       <View style={styles.features}>
-        {getFEATURES().map((feature, index) => (
-          <View key={index} style={styles.featureCard}>
+        {getFEATURES().map((feature) => (
+          <View key={feature.id} style={styles.featureCard}>
             <View style={styles.iconContainer}>
               <Ionicons
                 name={feature.icon as any}

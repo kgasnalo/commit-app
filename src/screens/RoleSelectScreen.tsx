@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Linking, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView, Dimensions } from 'react-native';
+import { safeOpenURL } from '../utils/linkingUtils';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,9 +28,9 @@ export default function RoleSelectScreen({ navigation }: Props) {
     navigation.navigate('CreateCommitment');
   };
 
-  const openAmazon = (url?: string) => {
+  const openAmazon = async (url?: string) => {
     if (url) {
-      Linking.openURL(url);
+      await safeOpenURL(url);
     }
   };
 

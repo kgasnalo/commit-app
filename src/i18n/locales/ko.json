@@ -427,6 +427,8 @@
     "coming_soon": "준비 중"
   },
   "errors": {
+    "cannot_open_url": "이 링크를 열 수 없습니다",
+    "failed_to_open_url": "링크를 여는 데 실패했습니다",
     "network": "네트워크 오류가 발생했습니다",
     "auth": "인증 오류가 발생했습니다. 다시 로그인해주세요.",
     "unknown": "오류가 발생했습니다",
@@ -620,5 +622,57 @@
     "view_proof": "이체 증명 보기",
     "close": "닫기",
     "settings_link": "기부 보고"
+  },
+  "accessibility": {
+    "button": {
+      "back": "뒤로 가기",
+      "close": "닫기",
+      "search": "검색",
+      "menu": "메뉴",
+      "settings": "설정",
+      "delete": "삭제",
+      "edit": "편집",
+      "share": "공유",
+      "refresh": "새로고침"
+    },
+    "input": {
+      "email": "이메일 주소 입력",
+      "password": "비밀번호 입력",
+      "username": "사용자명 입력",
+      "search_books": "책 검색",
+      "memo": "메모 입력",
+      "tag": "태그 입력"
+    },
+    "card": {
+      "commitment": "{{title}}, 페널티 {{amount}}, {{days}}일 {{hours}}시간 남음",
+      "commitment_completed": "{{title}}, 완료됨",
+      "commitment_expired": "{{title}}, 만료됨",
+      "book": "{{title}}, {{author}}"
+    },
+    "image": {
+      "book_cover": "{{title}} 표지",
+      "user_avatar": "사용자 아바타",
+      "photo_preview": "촬영한 사진 미리보기"
+    },
+    "state": {
+      "loading": "로딩 중",
+      "disabled": "비활성화됨",
+      "selected": "선택됨",
+      "expanded": "펼쳐짐",
+      "collapsed": "접힘"
+    },
+    "hint": {
+      "double_tap_to_activate": "두 번 탭하여 실행",
+      "double_tap_to_select": "두 번 탭하여 선택",
+      "double_tap_to_edit": "두 번 탭하여 편집",
+      "swipe_to_delete": "스와이프하여 삭제"
+    },
+    "scanner": {
+      "camera_viewfinder": "바코드 스캔용 카메라 뷰"
+    },
+    "slider": {
+      "amount": "금액 슬라이더, 현재 {{amount}}",
+      "duration": "시간 슬라이더, 현재 {{duration}}분"
+    }
   }
 }

@@ -79,3 +79,52 @@ export function addBreadcrumb(
     });
   }
 }
+
+/**
+ * Captures an exception with context.
+ * Always logs to console. Sends to Sentry in production.
+ * Use this in catch blocks throughout the app.
+ */
+export function captureError(
+  error: unknown,
+  context: {
+    location: string;
+    extra?: Record<string, unknown>;
+    level?: Sentry.SeverityLevel;
+  }
+): void {
+  // Always log to console for development
+  console.error(`[${context.location}]`, error);
+
+  // Send to Sentry in production
+  if (SENTRY_DSN && !__DEV__) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    Sentry.captureException(errorObj, {
+      tags: { location: context.location },
+      extra: context.extra,
+      level: context.level || 'error',
+    });
+  }
+}
+
+/**
+ * Captures a warning-level error.
+ * Use for recoverable errors that should still be tracked.
+ */
+export function captureWarning(
+  message: string,
+  context: {
+    location: string;
+    extra?: Record<string, unknown>;
+  }
+): void {
+  console.warn(`[${context.location}]`, message);
+
+  if (SENTRY_DSN && !__DEV__) {
+    Sentry.captureMessage(message, {
+      level: 'warning',
+      tags: { location: context.location },
+      extra: context.extra,
+    });
+  }
+}

@@ -93,6 +93,9 @@ export function OrangeButton({
       onPressOut={handlePressOut}
       activeOpacity={0.9}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled }}
       style={[
         styles.base,
         currentVariant.container,

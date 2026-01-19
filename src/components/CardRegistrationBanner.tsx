@@ -9,11 +9,12 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { CreditCard, ChevronRight } from 'lucide-react-native';
 import { colors } from '../theme';
 import i18n from '../i18n';
+import { safeOpenURL } from '../utils/linkingUtils';
 
 interface CardRegistrationBannerProps {
   onPress?: () => void;
@@ -22,12 +23,12 @@ interface CardRegistrationBannerProps {
 const WEB_PORTAL_URL = 'https://commit-app-web.vercel.app';
 
 export const CardRegistrationBanner: React.FC<CardRegistrationBannerProps> = ({ onPress }) => {
-  const handlePress = () => {
+  const handlePress = async () => {
     if (onPress) {
       onPress();
     } else {
-      // Default: Open Web Portal billing page
-      Linking.openURL(`${WEB_PORTAL_URL}/billing`);
+      // Default: Open Web Portal billing page with validation
+      await safeOpenURL(`${WEB_PORTAL_URL}/billing`);
     }
   };
 

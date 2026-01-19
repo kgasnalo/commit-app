@@ -62,11 +62,39 @@ export default function CommitmentCard({
   const isUrgent = countdown.days <= 1 && !countdown.expired && commitment.status === 'pending';
   const showPageRange = commitment.startPage > 0 && commitment.endPage > 0;
 
+  // Build accessibility label
+  const getAccessibilityLabel = () => {
+    const currencySymbol = commitment.currency === 'JPY' ? '¥' : commitment.currency;
+    const amount = `${currencySymbol}${commitment.pledge_amount.toLocaleString()}`;
+
+    if (commitment.status === 'completed') {
+      return i18n.t('accessibility.card.commitment_completed', {
+        title: commitment.book.title,
+      });
+    }
+
+    if (countdown.expired) {
+      return i18n.t('accessibility.card.commitment_expired', {
+        title: commitment.book.title,
+      });
+    }
+
+    return i18n.t('accessibility.card.commitment', {
+      title: commitment.book.title,
+      amount,
+      days: countdown.days,
+      hours: countdown.hours,
+    });
+  };
+
   return (
     <Pressable
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
+      accessibilityRole="button"
+      accessibilityLabel={getAccessibilityLabel()}
+      accessibilityHint={i18n.t('accessibility.hint.double_tap_to_activate')}
     >
       <Animated.View
         style={[

@@ -430,6 +430,8 @@
     }
   },
   "errors": {
+    "cannot_open_url": "このリンクを開けません",
+    "failed_to_open_url": "リンクを開くことができませんでした",
     "network": "ネットワークエラーが発生しました",
     "auth": "認証エラーが発生しました。再度ログインしてください。",
     "unknown": "エラーが発生しました",
@@ -623,5 +625,57 @@
     "view_proof": "振込証明を見る",
     "close": "閉じる",
     "settings_link": "寄付報告"
+  },
+  "accessibility": {
+    "button": {
+      "back": "戻る",
+      "close": "閉じる",
+      "search": "検索",
+      "menu": "メニュー",
+      "settings": "設定",
+      "delete": "削除",
+      "edit": "編集",
+      "share": "シェア",
+      "refresh": "更新"
+    },
+    "input": {
+      "email": "メールアドレスを入力",
+      "password": "パスワードを入力",
+      "username": "ユーザーネームを入力",
+      "search_books": "本を検索",
+      "memo": "メモを入力",
+      "tag": "タグを入力"
+    },
+    "card": {
+      "commitment": "{{title}}、ペナルティ{{amount}}、残り{{days}}日{{hours}}時間",
+      "commitment_completed": "{{title}}、達成済み",
+      "commitment_expired": "{{title}}、期限切れ",
+      "book": "{{title}}、{{author}}"
+    },
+    "image": {
+      "book_cover": "{{title}}の表紙",
+      "user_avatar": "ユーザーアバター",
+      "photo_preview": "撮影した写真のプレビュー"
+    },
+    "state": {
+      "loading": "読み込み中",
+      "disabled": "無効",
+      "selected": "選択中",
+      "expanded": "展開中",
+      "collapsed": "折りたたみ中"
+    },
+    "hint": {
+      "double_tap_to_activate": "ダブルタップで実行",
+      "double_tap_to_select": "ダブルタップで選択",
+      "double_tap_to_edit": "ダブルタップで編集",
+      "swipe_to_delete": "スワイプで削除"
+    },
+    "scanner": {
+      "camera_viewfinder": "バーコードスキャン用カメラビュー"
+    },
+    "slider": {
+      "amount": "金額スライダー、現在{{amount}}",
+      "duration": "時間スライダー、現在{{duration}}分"
+    }
   }
 }
