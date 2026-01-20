@@ -44,3 +44,6 @@ build/
 ios/build/
 .idea/
 smoke_test_welcome_screen.png
+
+# Memory MCP data (personal context, do not commit)
+.claude/memory.jsonl
