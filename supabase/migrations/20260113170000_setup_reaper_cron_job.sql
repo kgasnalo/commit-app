@@ -12,8 +12,12 @@ SELECT vault.create_secret(
   'supabase_url'
 );
 
+-- IMPORTANT: The service_role_key secret was created manually in the Supabase Vault.
+-- The actual key value must NEVER be committed to version control.
+-- To update this secret, use the Supabase Dashboard > Database > Vault
+-- or run: SELECT vault.update_secret('[REDACTED]', 'service_role_key');
 SELECT vault.create_secret(
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJua3N2ampjc253bHF1YXluZHV1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjYzMzQ5MywiZXhwIjoyMDgyMjA5NDkzfQ.N5_N1zSyXBZRa88AvspAe5PT9Eu63l8TxHv7EPfXNHE',
+  '[REDACTED - Set via Supabase Dashboard Vault]',
   'service_role_key'
 );
 
