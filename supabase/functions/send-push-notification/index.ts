@@ -49,13 +49,14 @@ interface ExpoPushTicket {
 
 /**
  * Timing-safe string comparison to prevent timing attacks
+ * Fixed: XOR lengths first to avoid early return that leaks length info
  */
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false
-  }
-  let result = 0
-  for (let i = 0; i < a.length; i++) {
+  // XOR lengths first - if different, result will be non-zero
+  let result = a.length ^ b.length
+  // Always iterate over the shorter string to avoid out-of-bounds
+  const minLength = Math.min(a.length, b.length)
+  for (let i = 0; i < minLength; i++) {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i)
   }
   return result === 0

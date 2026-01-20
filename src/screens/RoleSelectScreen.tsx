@@ -58,10 +58,9 @@ export default function RoleSelectScreen({ navigation }: Props) {
   };
 
   const renderBookItem = ({ item }: { item: Book }) => {
-    // Try to get localized title/author using the ID
-    // If not found, fall back to the item's properties
-    const localizedTitle = i18n.t(`recommendations.books.${item.id}.title`, { defaultValue: item.title });
-    const localizedAuthor = i18n.t(`recommendations.books.${item.id}.author`, { defaultValue: item.author });
+    // Get localized title/author using the ID
+    const localizedTitle = i18n.t(`recommendations.books.${item.id}.title`);
+    const localizedAuthor = i18n.t(`recommendations.books.${item.id}.author`);
 
     return (
       <View style={styles.bookCard}>

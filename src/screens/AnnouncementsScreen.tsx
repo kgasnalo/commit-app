@@ -25,6 +25,7 @@ interface Announcement {
   type: 'info' | 'update' | 'maintenance' | 'important';
   published_at: string | null;
   created_at: string;
+  expires_at: string | null;
 }
 
 export default function AnnouncementsScreen({ navigation }: any) {
@@ -32,6 +33,7 @@ export default function AnnouncementsScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { language } = useLanguage();
   const { markAsRead } = useUnread();
 
@@ -44,19 +46,21 @@ export default function AnnouncementsScreen({ navigation }: any) {
 
   const fetchAnnouncements = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      setError(null);
+      const { data, error: fetchError } = await supabase
         .from('announcements')
-        .select('id, title, body, type, published_at, created_at')
+        .select('id, title, body, type, published_at, created_at, expires_at')
         .not('published_at', 'is', null)
         .lte('published_at', new Date().toISOString())
         .order('published_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching announcements:', error);
+      if (fetchError) {
+        console.error('Error fetching announcements:', fetchError);
+        setError(i18n.t('errors.network'));
       } else {
         // Filter out expired announcements client-side
         const now = new Date();
-        const filtered = (data || []).filter((a: any) => {
+        const filtered = (data || []).filter((a: Announcement) => {
           if (!a.expires_at) return true;
           return new Date(a.expires_at) > now;
         });
@@ -64,6 +68,7 @@ export default function AnnouncementsScreen({ navigation }: any) {
       }
     } catch (err) {
       console.error('Unexpected error:', err);
+      setError(i18n.t('errors.unknown'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -193,6 +198,14 @@ export default function AnnouncementsScreen({ navigation }: any) {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#FF6B35" />
           </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <AlertTriangle size={48} color="rgba(255, 68, 68, 0.6)" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
+              <Text style={styles.retryButtonText}>{i18n.t('common.ok')}</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <FlatList
             data={announcements}
@@ -251,6 +264,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 107, 53, 0.2)',
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: '#FF6B35',
+    fontSize: 14,
+    fontWeight: '600',
   },
   listContent: {
     padding: 16,

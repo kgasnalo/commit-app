@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -119,22 +119,33 @@ export default function DashboardScreen({ navigation }: any) {
     }
   };
 
+  // Track all timers for cleanup
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+
   useEffect(() => {
+    // Clear any existing timers from previous renders
+    timersRef.current.forEach(timer => clearTimeout(timer));
+    timersRef.current = [];
+
     const checkFadeIn = async () => {
       const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
       if (shouldFade === 'true') {
         await AsyncStorage.removeItem('showDashboardFadeIn');
         setShowFadeOverlay(true);
         fadeOverlayOpacity.value = 1;
-        setTimeout(() => {
+
+        const fadeStartTimer = setTimeout(() => {
           fadeOverlayOpacity.value = withTiming(0, {
             duration: 1000,
             easing: Easing.out(Easing.cubic),
           });
         }, 200);
-        setTimeout(() => {
+        timersRef.current.push(fadeStartTimer);
+
+        const fadeEndTimer = setTimeout(() => {
           setShowFadeOverlay(false);
         }, 1200);
+        timersRef.current.push(fadeEndTimer);
       }
     };
     checkFadeIn();
@@ -156,8 +167,12 @@ export default function DashboardScreen({ navigation }: any) {
         setShowDonationModal(true);
       }
     }, 1500);
+    timersRef.current.push(donationTimer);
 
-    return () => clearTimeout(donationTimer);
+    return () => {
+      timersRef.current.forEach(timer => clearTimeout(timer));
+      timersRef.current = [];
+    };
   }, [unreadDonation]);
 
   const fetchUserProfile = async () => {
