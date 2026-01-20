@@ -491,7 +491,11 @@
     "home": "홈",
     "monkmode": "집중",
     "library": "서재",
-    "settings": "설정"
+    "settings": "설정",
+    "mission": "MISSION",
+    "focus": "FOCUS",
+    "archive": "ARCHIVE",
+    "system": "SYSTEM"
   },
   "offline": {
     "banner_message": "인터넷 연결 없음"

@@ -494,7 +494,11 @@
     "home": "Home",
     "monkmode": "Focus",
     "library": "Library",
-    "settings": "Settings"
+    "settings": "Settings",
+    "mission": "MISSION",
+    "focus": "FOCUS",
+    "archive": "ARCHIVE",
+    "system": "SYSTEM"
   },
   "offline": {
     "banner_message": "No Internet Connection"

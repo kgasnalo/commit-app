@@ -17,6 +17,7 @@ import { UnreadProvider, useUnread } from '../contexts/UnreadContext';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
+import i18n from '../i18n';
 import { setUserContext, clearUserContext } from '../utils/errorLogger';
 import { trackScreenView } from '../lib/AnalyticsService';
 
@@ -176,7 +177,7 @@ function MainTabs() {
         name="HomeTab"
         component={HomeStackNavigator}
         options={{
-          tabBarLabel: 'MISSION',
+          tabBarLabel: i18n.t('tabs.mission'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "planet" : "planet-outline"} size={size} color={color} />
           ),
@@ -186,7 +187,7 @@ function MainTabs() {
         name="MonkModeTab"
         component={MonkModeStackNavigator}
         options={{
-          tabBarLabel: 'FOCUS',
+          tabBarLabel: i18n.t('tabs.focus'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "timer" : "timer-outline"} size={size} color={color} />
           ),
@@ -196,7 +197,7 @@ function MainTabs() {
         name="LibraryTab"
         component={LibraryStackNavigator}
         options={{
-          tabBarLabel: 'ARCHIVE',
+          tabBarLabel: i18n.t('tabs.archive'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "albums" : "albums-outline"} size={size} color={color} />
           ),
@@ -206,7 +207,7 @@ function MainTabs() {
         name="SettingsTab"
         component={SettingsStackNavigator}
         options={{
-          tabBarLabel: 'SYSTEM',
+          tabBarLabel: i18n.t('tabs.system'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "construct" : "construct-outline"} size={size} color={color} />
           ),

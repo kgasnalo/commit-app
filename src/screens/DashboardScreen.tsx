@@ -103,10 +103,15 @@ export default function DashboardScreen({ navigation }: any) {
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchCommitments();
-      fetchUserProfile();
-      fetchStreakStats();
-      setCurrentLocale(i18n.locale);
+      const loadData = async () => {
+        await Promise.all([
+          fetchCommitments(),
+          fetchUserProfile(),
+          fetchStreakStats(),
+        ]);
+        setCurrentLocale(i18n.locale);
+      };
+      loadData();
     }, [])
   );
 
@@ -132,30 +137,34 @@ export default function DashboardScreen({ navigation }: any) {
     timersRef.current = [];
 
     const checkFadeIn = async () => {
-      const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
-      if (!isMountedRef.current) return;
-
-      if (shouldFade === 'true') {
-        await AsyncStorage.removeItem('showDashboardFadeIn');
+      try {
+        const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
         if (!isMountedRef.current) return;
 
-        setShowFadeOverlay(true);
-        fadeOverlayOpacity.value = 1;
-
-        const fadeStartTimer = setTimeout(() => {
+        if (shouldFade === 'true') {
+          await AsyncStorage.removeItem('showDashboardFadeIn');
           if (!isMountedRef.current) return;
-          fadeOverlayOpacity.value = withTiming(0, {
-            duration: 1000,
-            easing: Easing.out(Easing.cubic),
-          });
-        }, 200);
-        timersRef.current.push(fadeStartTimer);
 
-        const fadeEndTimer = setTimeout(() => {
-          if (!isMountedRef.current) return;
-          setShowFadeOverlay(false);
-        }, 1200);
-        timersRef.current.push(fadeEndTimer);
+          setShowFadeOverlay(true);
+          fadeOverlayOpacity.value = 1;
+
+          const fadeStartTimer = setTimeout(() => {
+            if (!isMountedRef.current) return;
+            fadeOverlayOpacity.value = withTiming(0, {
+              duration: 1000,
+              easing: Easing.out(Easing.cubic),
+            });
+          }, 200);
+          timersRef.current.push(fadeStartTimer);
+
+          const fadeEndTimer = setTimeout(() => {
+            if (!isMountedRef.current) return;
+            setShowFadeOverlay(false);
+          }, 1200);
+          timersRef.current.push(fadeEndTimer);
+        }
+      } catch (error) {
+        console.warn('[Dashboard] checkFadeIn error:', error);
       }
     };
     checkFadeIn();
