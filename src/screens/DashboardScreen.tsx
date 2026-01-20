@@ -121,20 +121,29 @@ export default function DashboardScreen({ navigation }: any) {
 
   // Track all timers for cleanup
   const timersRef = useRef<NodeJS.Timeout[]>([]);
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     // Clear any existing timers from previous renders
     timersRef.current.forEach(timer => clearTimeout(timer));
     timersRef.current = [];
 
     const checkFadeIn = async () => {
       const shouldFade = await AsyncStorage.getItem('showDashboardFadeIn');
+      if (!isMountedRef.current) return;
+
       if (shouldFade === 'true') {
         await AsyncStorage.removeItem('showDashboardFadeIn');
+        if (!isMountedRef.current) return;
+
         setShowFadeOverlay(true);
         fadeOverlayOpacity.value = 1;
 
         const fadeStartTimer = setTimeout(() => {
+          if (!isMountedRef.current) return;
           fadeOverlayOpacity.value = withTiming(0, {
             duration: 1000,
             easing: Easing.out(Easing.cubic),
@@ -143,6 +152,7 @@ export default function DashboardScreen({ navigation }: any) {
         timersRef.current.push(fadeStartTimer);
 
         const fadeEndTimer = setTimeout(() => {
+          if (!isMountedRef.current) return;
           setShowFadeOverlay(false);
         }, 1200);
         timersRef.current.push(fadeEndTimer);
@@ -153,6 +163,7 @@ export default function DashboardScreen({ navigation }: any) {
     const initNotifications = async () => {
       try {
         await NotificationService.initialize();
+        if (!isMountedRef.current) return;
         await NotificationService.scheduleAllNotifications();
       } catch (error) {
         console.warn('[Dashboard] Notification initialization failed:', error);
@@ -163,6 +174,7 @@ export default function DashboardScreen({ navigation }: any) {
     // Show donation modal if there's an unread donation
     // Small delay to not interrupt initial load
     const donationTimer = setTimeout(() => {
+      if (!isMountedRef.current) return;
       if (unreadDonation) {
         setShowDonationModal(true);
       }
@@ -170,6 +182,7 @@ export default function DashboardScreen({ navigation }: any) {
     timersRef.current.push(donationTimer);
 
     return () => {
+      isMountedRef.current = false;
       timersRef.current.forEach(timer => clearTimeout(timer));
       timersRef.current = [];
     };

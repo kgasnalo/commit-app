@@ -53,6 +53,7 @@ import { MicroLabel } from '../components/titan/MicroLabel';
 import * as AnalyticsService from '../lib/AnalyticsService';
 import { buildSearchQuery } from '../utils/searchQueryBuilder';
 import { filterAndRankResults, GoogleBook as GoogleBookFilter } from '../utils/searchResultFilter';
+import { getNowDate } from '../lib/DateUtils';
 
 type Currency = 'JPY' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
@@ -461,7 +462,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       return;
     }
 
-    if (deadline < new Date()) {
+    if (deadline < getNowDate()) {
       Alert.alert(i18n.t('common.error'), i18n.t('errors.deadline_future'));
       return;
     }

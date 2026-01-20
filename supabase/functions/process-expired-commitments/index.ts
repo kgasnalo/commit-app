@@ -116,6 +116,31 @@ function verifySystemAuthorization(authHeader: string): boolean {
 }
 
 // ==========================================
+// Currency Handling
+// ==========================================
+
+/**
+ * Currencies that don't use decimal places (amount in smallest unit = amount in base unit)
+ * https://docs.stripe.com/currencies#zero-decimal
+ */
+const ZERO_DECIMAL_CURRENCIES = [
+  'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
+  'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF',
+];
+
+/**
+ * Convert amount to Stripe's smallest currency unit
+ * - JPY, KRW, etc: amount stays the same (¥1000 → 1000)
+ * - USD, EUR, GBP, etc: multiply by 100 ($10 → 1000 cents)
+ */
+function toStripeAmount(amount: number, currency: string): number {
+  if (ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase())) {
+    return Math.round(amount);
+  }
+  return Math.round(amount * 100);
+}
+
+// ==========================================
 // Stripe Client
 // ==========================================
 
@@ -166,17 +191,16 @@ async function sendPushNotification(
 
 /**
  * Format currency amount for display
+ * Note: DB stores amounts in base currency units (e.g., $20 as "20", ¥1000 as "1000")
  */
 function formatAmount(amount: number, currency: string): string {
-  // For JPY, amount is already in yen (no decimal places)
-  if (currency.toUpperCase() === 'JPY') {
-    return `¥${amount.toLocaleString()}`
-  }
-  // For other currencies, assume amount is in cents
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency.toUpperCase(),
-  }).format(amount / 100)
+    // Zero-decimal currencies don't show decimal places
+    minimumFractionDigits: ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase()) ? 0 : 2,
+    maximumFractionDigits: ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase()) ? 0 : 2,
+  }).format(amount)
 }
 
 // ==========================================
@@ -626,11 +650,12 @@ async function attemptStripeCharge(
   }
 
   try {
-    console.log(`[Reaper] Creating PaymentIntent for ${amount} ${currency}`)
+    const stripeAmount = toStripeAmount(amount, currency)
+    console.log(`[Reaper] Creating PaymentIntent for ${amount} ${currency} → ${stripeAmount} (smallest unit)`)
 
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: amount,
+        amount: stripeAmount,
         currency: currency.toLowerCase(),
         customer: customerId,
         payment_method: paymentMethodId,

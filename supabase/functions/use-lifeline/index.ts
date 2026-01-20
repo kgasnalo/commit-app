@@ -113,6 +113,35 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check global cooldown: lifeline can only be used once every 30 days (across all books)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: recentLifeline, error: globalCheckError } = await supabaseClient
+      .from('commitments')
+      .select('id, updated_at')
+      .eq('user_id', user.id)
+      .eq('is_freeze_used', true)
+      .gte('updated_at', thirtyDaysAgo)
+      .limit(1)
+
+    if (globalCheckError) {
+      console.error('Error checking global lifeline cooldown:', globalCheckError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to check lifeline cooldown' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (recentLifeline && recentLifeline.length > 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'Lifeline cooldown active',
+          error_code: 'GLOBAL_COOLDOWN',
+          message: 'Lifeline can only be used once every 30 days',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Calculate new deadline (+7 days)
     const currentDeadline = new Date(commitment.deadline)
     const newDeadline = new Date(currentDeadline.getTime() + 7 * 24 * 60 * 60 * 1000)

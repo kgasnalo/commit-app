@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     // CRITICAL: Verify the user's email against the allowlist
     if (!ADMIN_EMAILS.includes(user.email.toLowerCase())) {
       console.warn(`[admin-actions] Unauthorized access attempt by user: ${user.id}`)
-      addBreadcrumb('Admin access denied', 'security', { userId: user.id })
+      addBreadcrumb('Admin access denied (email not in whitelist)', 'security', { userId: user.id })
       captureException(new Error('Unauthorized admin access attempt'), {
         functionName: 'admin-actions',
         userId: user.id,
@@ -81,10 +81,37 @@ Deno.serve(async (req) => {
       return errorResponse(403, 'FORBIDDEN', 'User is not an admin')
     }
 
-    // Admin authenticated (log user ID only, not email for privacy)
-    addBreadcrumb('Admin authenticated', 'auth', { adminUserId: user.id })
+    // 3. Admin Check (Layer 3: Database Role Verification)
+    // CRITICAL: Additional defense - verify user's role in database
+    const supabaseAdminForRoleCheck = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    // 3. Parse Request
+    const { data: userRecord, error: roleError } = await supabaseAdminForRoleCheck
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (roleError || !userRecord || userRecord.role !== 'Founder') {
+      console.warn(`[admin-actions] Role check failed for user: ${user.id}, role: ${userRecord?.role}`)
+      addBreadcrumb('Admin access denied (role mismatch)', 'security', {
+        userId: user.id,
+        actualRole: userRecord?.role ?? 'unknown'
+      })
+      captureException(new Error('Admin role verification failed'), {
+        functionName: 'admin-actions',
+        userId: user.id,
+        extra: { actualRole: userRecord?.role },
+      })
+      return errorResponse(403, 'FORBIDDEN', 'User does not have admin role')
+    }
+
+    // Admin authenticated (log user ID only, not email for privacy)
+    addBreadcrumb('Admin authenticated', 'auth', { adminUserId: user.id, role: userRecord.role })
+
+    // 4. Parse Request
     let body: AdminActionRequest
     try {
       body = await req.json()
@@ -97,18 +124,18 @@ Deno.serve(async (req) => {
       return errorResponse(400, 'MISSING_FIELDS')
     }
 
-    // 4. Use Service Role for Admin Operations
+    // 5. Use Service Role for Admin Operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 5. Extract client IP address from headers
+    // 6. Extract client IP address from headers
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || req.headers.get('x-real-ip')
       || 'unknown'
 
-    // 6. Handle Actions
+    // 7. Handle Actions
     if (action === 'REFUND') {
       return await handleRefund(supabaseAdmin, user, target_id, reason, ipAddress)
     } else if (action === 'MARK_COMPLETE') {
@@ -153,7 +180,22 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     return errorResponse(400, 'NO_PAYMENT_INTENT', 'Cannot refund a charge without a Stripe Payment Intent')
   }
 
-  // 2. Process Stripe Refund with idempotency key to prevent duplicate refunds
+  // 2. Set DB status to 'refund_pending' BEFORE attempting Stripe refund
+  // This ensures consistency: even if later steps fail, we know a refund was attempted
+  const { error: pendingError } = await supabase
+    .from('penalty_charges')
+    .update({
+      charge_status: 'refund_pending',
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', penaltyChargeId)
+
+  if (pendingError) {
+    console.error('[admin-actions] Failed to set refund_pending:', pendingError)
+    return errorResponse(500, 'DB_UPDATE_FAILED', 'Failed to prepare refund')
+  }
+
+  // 3. Process Stripe Refund with idempotency key to prevent duplicate refunds
   try {
     await getStripe().refunds.create(
       {
@@ -171,6 +213,15 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     })
   } catch (stripeError) {
     console.error('[admin-actions] Stripe Refund Failed:', stripeError)
+    // Revert DB status back to 'succeeded' since refund failed
+    await supabase
+      .from('penalty_charges')
+      .update({
+        charge_status: 'succeeded', // Revert to original status
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', penaltyChargeId)
+
     captureException(stripeError, {
       functionName: 'admin-actions',
       extra: { action: 'REFUND', penaltyChargeId, stripeError: stripeError.message },
@@ -178,22 +229,32 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     return errorResponse(500, 'STRIPE_REFUND_FAILED', stripeError.message)
   }
 
-  // 3. Update DB Status
+  // 4. Update DB status to 'refunded' after successful Stripe refund
   const { error: updateError } = await supabase
     .from('penalty_charges')
-    .update({ 
+    .update({
       charge_status: 'refunded',
       updated_at: new Date().toISOString()
     })
     .eq('id', penaltyChargeId)
 
   if (updateError) {
-    console.error('[admin-actions] DB Update Failed:', updateError)
-    // Critical: Money refunded but DB not updated. Should log severe alert.
+    console.error('[admin-actions] DB Update Failed after Stripe refund:', updateError)
+    // Critical: Money refunded but DB shows 'refund_pending' - log severe alert
+    // This state can be investigated and fixed manually
+    captureException(new Error('DB update failed after successful Stripe refund'), {
+      functionName: 'admin-actions',
+      extra: {
+        penaltyChargeId,
+        stripePaymentIntentId: charge.stripe_payment_intent_id,
+        currentDbStatus: 'refund_pending',
+        expectedDbStatus: 'refunded',
+      },
+    })
     return errorResponse(500, 'DB_UPDATE_FAILED_AFTER_REFUND')
   }
 
-  // 4. Audit Log
+  // 5. Audit Log
   await logAudit(supabase, adminUser, 'REFUND', 'penalty_charges', penaltyChargeId, {
     amount: charge.amount,
     currency: charge.currency,

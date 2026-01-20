@@ -522,7 +522,7 @@ class MonkModeServiceClass {
       for (let i = 1; i < uniqueDates.length; i++) {
         const prevDate = new Date(uniqueDates[i - 1]);
         const currDate = new Date(uniqueDates[i]);
-        const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / MS_PER_DAY);
+        const diffDays = Math.floor((currDate.getTime() - prevDate.getTime()) / MS_PER_DAY);
 
         if (diffDays === 1) {
           tempStreak++;
@@ -539,7 +539,7 @@ class MonkModeServiceClass {
         for (let i = uniqueDates.length - 2; i >= 0; i--) {
           const currDate = new Date(uniqueDates[i + 1]);
           const prevDate = new Date(uniqueDates[i]);
-          const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / MS_PER_DAY);
+          const diffDays = Math.floor((currDate.getTime() - prevDate.getTime()) / MS_PER_DAY);
 
           if (diffDays === 1) {
             currentStreak++;

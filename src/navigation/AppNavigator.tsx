@@ -7,7 +7,7 @@ import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
-import { Session } from '@supabase/supabase-js';
+import { Session, RealtimeChannel } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
@@ -582,26 +582,34 @@ function NavigationContent() {
           statusPromise.then((result) => {
             console.log('✅ Auth: Background check complete, result:', result);
             if (isMounted) {
-              // バックグラウンドチェック完了後に状態を設定
-              setAuthState({
-                status: 'authenticated',
-                session,
-                isSubscribed: result.isSubscribed,
-                hasCompletedOnboarding: result.hasCompletedOnboarding,
-                legalConsentVersion: result.legalConsentVersion,
-              });
+              try {
+                // バックグラウンドチェック完了後に状態を設定
+                setAuthState({
+                  status: 'authenticated',
+                  session,
+                  isSubscribed: result.isSubscribed,
+                  hasCompletedOnboarding: result.hasCompletedOnboarding,
+                  legalConsentVersion: result.legalConsentVersion,
+                });
+              } catch (stateError) {
+                console.error('✅ Auth: Failed to set auth state in background callback:', stateError);
+              }
             }
           }).catch((err) => {
-            console.log('✅ Auth: Background check error:', err);
+            console.error('✅ Auth: Background check error:', err);
             // エラー時はデフォルト値で状態を設定
             if (isMounted) {
-              setAuthState({
-                status: 'authenticated',
-                session,
-                isSubscribed: false,
-                hasCompletedOnboarding: false,
-                legalConsentVersion: null,
-              });
+              try {
+                setAuthState({
+                  status: 'authenticated',
+                  session,
+                  isSubscribed: false,
+                  hasCompletedOnboarding: false,
+                  legalConsentVersion: null,
+                });
+              } catch (stateError) {
+                console.error('✅ Auth: Failed to set fallback auth state:', stateError);
+              }
             }
           });
         }
@@ -633,7 +641,7 @@ function NavigationContent() {
     });
 
     // usersテーブルのsubscription_status/onboarding_completedの変更を監視
-    let realtimeSubscription: any = null;
+    let realtimeSubscription: RealtimeChannel | null = null;
 
     async function setupRealtimeSubscription() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -694,7 +702,11 @@ function NavigationContent() {
       authSubscription.unsubscribe();
       refreshListener.remove();
       if (realtimeSubscription) {
-        realtimeSubscription.unsubscribe();
+        try {
+          realtimeSubscription.unsubscribe();
+        } catch (unsubError) {
+          console.error('Failed to unsubscribe from realtime channel:', unsubError);
+        }
       }
     };
   }, []);

@@ -28,6 +28,7 @@ import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { ensureHttps } from '../utils/googleBooks';
 import * as AnalyticsService from '../lib/AnalyticsService';
+import { getNowDate } from '../lib/DateUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -122,9 +123,17 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 
       if (data) {
         const queryResult = data as CommitmentQueryResult;
+        const bookData = Array.isArray(queryResult.book) ? queryResult.book?.[0] : queryResult.book;
+
+        // Handle case where book data is missing (should not happen, but be defensive)
+        if (!bookData) {
+          console.error('[CommitmentDetailScreen] Book data is missing for commitment:', queryResult.id);
+          throw new Error('Book data not found');
+        }
+
         const normalizedData: CommitmentDetail = {
           ...queryResult,
-          book: Array.isArray(queryResult.book) ? queryResult.book[0] : queryResult.book,
+          book: bookData,
         };
         setCommitment(normalizedData);
       }
@@ -145,7 +154,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   }, [fetchCommitment]);
 
   const getCountdown = (deadline: string) => {
-    const now = new Date();
+    const now = getNowDate();
     const end = new Date(deadline);
     const diff = end.getTime() - now.getTime();
 
