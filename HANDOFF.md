@@ -1,7 +1,7 @@
-# Handoff: Session 2026-01-20 (夜)
+# Handoff: Session 2026-01-20 (深夜 - バグ監査完了)
 
 ## Current Goal
-**セキュリティ監査対応完了 + Stripe Webhook修正**
+**包括的バグ・エラー監査完了 - 12件のバグ修正済み・デプロイ済み**
 
 ---
 
@@ -9,44 +9,66 @@
 
 ### ✅ Completed This Session
 
-| Task | Status | Details |
-|------|--------|---------|
-| **Stripe Webhook 署名検証** | ✅ 修正完了 | 環境変数を `printf '%s'` で再設定、テスト成功 |
-| **Storage Policy 修正** | ✅ デプロイ済み | Founderのみに制限（20260120110000） |
-| **RoleSelectScreen defaultValue** | ✅ 既に修正済み | 使用されていない |
-| **AnnouncementsScreen expires_at** | ✅ 既に修正済み | SELECT/フィルタ実装済み |
-| **DashboardScreen setTimeout** | ✅ 既に修正済み | `timersRef` でクリーンアップ実装済み |
-| **AnnouncementsScreen エラー状態** | ✅ 既に修正済み | error state + UI実装済み |
-| **timingSafeEqual 長さチェック** | ✅ 既に修正済み | XOR方式で実装済み |
+| Bug ID | Severity | Description | File(s) |
+|--------|----------|-------------|---------|
+| BUG-001 | 🚨 CRITICAL | Stripe金額変換（非JPY通貨が99%アンダーチャージ） | `process-expired-commitments/index.ts` |
+| BUG-002 | 🚨 CRITICAL | STRIPE_SECRET_KEYを.envから削除 | `.env` |
+| BUG-003 | 🔴 HIGH | タイムゾーン不整合（new Date() → getNowDate()） | `CommitmentDetailScreen.tsx`, `CreateCommitmentScreen.tsx` |
+| BUG-004 | 🔴 HIGH | Admin-actionsにDBロールチェック追加 | `admin-actions/index.ts` |
+| BUG-005 | 🔴 HIGH | Bookオブジェクトのnullアクセス | `CommitmentDetailScreen.tsx` |
+| BUG-006 | 🟠 MEDIUM | Lifeline 30日グローバルクールダウン追加 | `use-lifeline/index.ts` |
+| BUG-007 | 🟠 MEDIUM | Refund 3段階トランザクション（pending→stripe→success） | `admin-actions/index.ts` |
+| BUG-008 | 🟠 MEDIUM | AppNavigator非同期エラーハンドリング | `AppNavigator.tsx` |
+| BUG-009 | 🟠 MEDIUM | Realtime Subscription型安全+エラーハンドリング | `AppNavigator.tsx` |
+| BUG-010 | 🟠 MEDIUM | DashboardScreenタイマーメモリリーク対策 | `DashboardScreen.tsx` |
+| BUG-011 | 🟡 LOW | Streak計算の日付丸め（Math.round→Math.floor） | `MonkModeService.ts` |
+| BUG-012 | 🟡 LOW | useImageColors Hook検証済み（問題なし） | - |
+
+**Git Commit:** `fb2014c7` - fix: comprehensive bug fixes from security and code audit
+
+**Edge Functions Deployed:**
+- ✅ `process-expired-commitments` (Stripe金額変換修正)
+- ✅ `admin-actions` (ロールチェック+Refund順序修正)
+- ✅ `use-lifeline` (グローバルクールダウン追加)
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. `echo` コマンドは環境変数に改行を追加する
-**Problem:** Stripe Webhook が 400 エラー（`The provided signing secret contains whitespace`）
+### 1. Stripe Zero-Decimal Currencies
+**Problem:** USD $20のコミットメントが$0.20として課金されていた
 
 **Root Cause:**
-```bash
-# BAD - 末尾に改行 (\n) が含まれる
-echo "whsec_xxx" | npx vercel env add STRIPE_WEBHOOK_SECRET production
-
-# GOOD - 改行なし
-printf '%s' 'whsec_xxx' | npx vercel env add STRIPE_WEBHOOK_SECRET production
-```
+- Stripeは最小通貨単位を使用（USD: cents, JPY: 円）
+- JPYは「ゼロデシマル通貨」なので金額そのまま
+- USD/EUR/GBPは×100してcents/penceに変換が必要
 
 **Fix Applied:**
-```bash
-npx vercel env rm STRIPE_WEBHOOK_SECRET production --yes
-printf '%s' '[REDACTED]' | npx vercel env add STRIPE_WEBHOOK_SECRET production
-npx vercel --prod --yes --force
+```typescript
+const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', ...];
+
+function toStripeAmount(amount: number, currency: string): number {
+  if (ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase())) {
+    return Math.round(amount);
+  }
+  return Math.round(amount * 100); // Convert to cents
+}
 ```
 
-**Verification:**
-```bash
-stripe trigger payment_intent.succeeded
-# Output: Trigger succeeded!
-```
+### 2. Admin Authorization was Email-Only
+**Problem:** メールホワイトリストのみで管理者チェック → メール偽装リスク
+
+**Fix Applied:**
+- Layer 2: メールホワイトリストチェック
+- Layer 3: DBロールチェック（`users.role = 'Founder'`）
+
+### 3. Refund Transaction Inconsistency
+**Problem:** Stripe返金後にDB更新 → DB更新失敗で不整合状態
+
+**Fix Applied (3-Phase Pattern):**
+1. DB: `charge_status = 'refund_pending'`
+2. Stripe: refund処理
+3. DB: `charge_status = 'refunded'` (失敗時は'succeeded'にリバート)
 
 ---
 
@@ -54,25 +76,22 @@ stripe trigger payment_intent.succeeded
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│              セキュリティ監査 (2026-01-20)                   │
+│            バグ監査完了 (2026-01-20)                          │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  Phase 1 (Critical) - 全完了 ✅                             │
-│  ├─ Stripe Webhook 署名検証                                 │
-│  ├─ Storage Policy 権限過剰                                 │
-│  ├─ RoleSelectScreen defaultValue                          │
-│  └─ AnnouncementsScreen expires_at                         │
+│  修正済みの重要パターン:                                      │
 │                                                             │
-│  Phase 2 (High) - 全完了 ✅                                 │
-│  ├─ DashboardScreen setTimeout クリーンアップ               │
-│  ├─ AnnouncementsScreen エラー状態                          │
-│  └─ timingSafeEqual 長さチェック                            │
+│  1. Stripe金額変換                                           │
+│     └─ toStripeAmount(amount, currency) を必ず使用          │
 │                                                             │
-│  Phase 3 (Medium) - 次のイテレーション                       │
-│  ├─ pg_cron Secret ハードコード                             │
-│  ├─ process-expired-commitments N+1 クエリ                  │
-│  ├─ DB 更新失敗後の資金不一致リスク                          │
-│  └─ Admin Email vs Role 二重認可                            │
+│  2. 管理者認証 (Multi-Layer)                                 │
+│     └─ Email Whitelist + DB Role Check                      │
+│                                                             │
+│  3. Refund Transaction (3-Phase)                            │
+│     └─ pending → stripe → success/revert                    │
+│                                                             │
+│  4. Lifeline制限 (Dual Limit)                               │
+│     └─ Per-book (1回) + Global (30日)                       │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -81,11 +100,13 @@ stripe trigger payment_intent.succeeded
 
 ## Git Status
 
-**Current Branch:** main (clean)
+**Current Branch:** main (clean, pushed)
 
 **Recent Commits:**
-- `94352893` fix: security and code quality improvements from audit
-- `474ce582` feat: add users.role NOT NULL constraint and improve edge function security
+- `fb2014c7` fix: comprehensive bug fixes from security and code audit
+- `0542ea49` security: redact leaked service_role_key from migration file
+- `48e90cb4` security: remove exposed Stripe webhook secret from HANDOFF.md
+- `c354d5e1` docs: fix Vercel env var command to prevent trailing newline
 
 ---
 
@@ -97,26 +118,30 @@ stripe trigger payment_intent.succeeded
    - `react-native-iap` or `expo-in-app-purchases` 導入
    - App Store Connect / Google Play Console 設定
 
-2. **Phase 3 (Medium) 監査項目**: 次のイテレーションで対応
-   - pg_cron Secret 管理改善
-   - Reaper N+1 クエリ最適化
+2. **モバイルアプリテスト**: バグ修正後の動作確認
+   ```bash
+   npx expo start
+   # または
+   ./run-ios-manual.sh
+   ```
+
+3. **USD/EUR課金テスト**: Stripe Dashboardで金額確認
+   - USD $5 → 500 cents として処理されることを確認
 
 ---
 
 ## Testing Checklist
 
-### Stripe Webhook 検証
-- [x] 環境変数を `printf '%s'` で再設定
-- [x] Vercel 強制再デプロイ
-- [x] `stripe trigger payment_intent.succeeded` テスト成功
-
-### Storage Policy 検証
-- [x] マイグレーション `20260120110000` デプロイ済み
-- [ ] 一般ユーザーで donation-proofs アップロード拒否確認
+### バグ修正検証
+- [x] TypeScript typecheck 成功
+- [x] Edge Functions デプロイ成功
+- [ ] USD課金テスト（$5 → 500 cents）
+- [ ] Lifeline 30日クールダウン動作確認
+- [ ] 管理者ダッシュボードからRefund実行テスト
 
 ---
 
-## Critical Architecture Rule
+## Critical Architecture Rules
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

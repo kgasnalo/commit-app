@@ -985,3 +985,101 @@
      printf '%s' 'NEW_KEY' | npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
      npx vercel --prod --yes  # Redeploy
      ```
+- **Stripe Zero-Decimal Currency Handling (CRITICAL):** Stripe uses the smallest currency unit (cents for USD, yen for JPY). JPY is a "zero-decimal currency" where the amount is passed directly. USD/EUR/GBP must be multiplied by 100. ALWAYS use the `toStripeAmount()` helper:
+  ```typescript
+  const ZERO_DECIMAL_CURRENCIES = [
+    'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
+    'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF',
+  ];
+
+  function toStripeAmount(amount: number, currency: string): number {
+    if (ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase())) {
+      return Math.round(amount);
+    }
+    return Math.round(amount * 100); // Convert to cents
+  }
+
+  // BAD - $20 becomes $0.20 (99% undercharge!)
+  amount: pledgeAmount,
+
+  // GOOD - $20 becomes 2000 cents
+  amount: toStripeAmount(pledgeAmount, currency),
+  ```
+  - This applies to ALL Stripe operations: PaymentIntent creation, refunds, amount displays
+  - When displaying amounts FROM Stripe, reverse the conversion (divide by 100 for non-zero-decimal)
+- **Admin Multi-Layer Authorization (CRITICAL):** Admin endpoints MUST verify authorization using BOTH email whitelist AND database role check. Email-only verification is vulnerable to email spoofing:
+  ```typescript
+  // Layer 1: Valid JWT (handled by Supabase)
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Layer 2: Email Whitelist
+  if (!ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+    return errorResponse(403, 'FORBIDDEN');
+  }
+
+  // Layer 3: Database Role Verification (CRITICAL!)
+  const { data: userRecord } = await supabaseAdmin
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (userRecord?.role !== 'Founder') {
+    return errorResponse(403, 'FORBIDDEN', 'User does not have admin role');
+  }
+  ```
+  - NEVER rely on email whitelist alone - emails can be spoofed
+  - Always log unauthorized access attempts to Sentry for security monitoring
+- **Refund 3-Phase Transaction Pattern (CRITICAL):** When performing financial operations that span DB and external services (Stripe), use the 3-phase pattern to maintain consistency:
+  ```typescript
+  // Phase 1: Mark DB as "pending" BEFORE external call
+  await supabase.from('penalty_charges').update({
+    charge_status: 'refund_pending',
+  }).eq('id', chargeId);
+
+  // Phase 2: External service call (Stripe)
+  try {
+    await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+    }, {
+      idempotencyKey: `refund_${chargeId}`, // Prevent duplicates!
+    });
+  } catch (error) {
+    // REVERT: External call failed, restore original status
+    await supabase.from('penalty_charges').update({
+      charge_status: 'succeeded', // Revert to original
+    }).eq('id', chargeId);
+    throw error;
+  }
+
+  // Phase 3: Mark DB as "complete" AFTER successful external call
+  await supabase.from('penalty_charges').update({
+    charge_status: 'refunded',
+  }).eq('id', chargeId);
+  ```
+  - The intermediate "pending" state allows manual investigation if Phase 3 fails
+  - ALWAYS use idempotency keys for Stripe operations to prevent duplicate charges
+- **Lifeline Dual Limit Pattern:** When implementing user-benefiting features that could be abused, apply dual limits:
+  ```typescript
+  // Limit 1: Per-resource limit (once per book)
+  if (commitment.is_freeze_used) {
+    return errorResponse(400, 'LIFELINE_ALREADY_USED');
+  }
+
+  // Limit 2: Global cooldown (once per 30 days across ALL resources)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentUsage } = await supabase
+    .from('commitments')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_freeze_used', true)
+    .gte('updated_at', thirtyDaysAgo)
+    .limit(1);
+
+  if (recentUsage && recentUsage.length > 0) {
+    return errorResponse(400, 'GLOBAL_COOLDOWN_ACTIVE');
+  }
+  ```
+  - Per-resource limits prevent repeated abuse on the same item
+  - Global cooldowns prevent abuse by creating many resources
+  - Both limits are checked server-side (Edge Function) - never trust client
