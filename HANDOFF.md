@@ -38,7 +38,7 @@ printf '%s' 'whsec_xxx' | npx vercel env add STRIPE_WEBHOOK_SECRET production
 **Fix Applied:**
 ```bash
 npx vercel env rm STRIPE_WEBHOOK_SECRET production --yes
-printf '%s' 'whsec_szLrAdrqbL20zIzhrxmNYTrlDCMNYzb3' | npx vercel env add STRIPE_WEBHOOK_SECRET production
+printf '%s' '[REDACTED]' | npx vercel env add STRIPE_WEBHOOK_SECRET production
 npx vercel --prod --yes --force
 ```
 
