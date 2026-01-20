@@ -552,9 +552,9 @@
 - **Vercel Deployment Workflow:** When deploying to Vercel:
   1. First-time: Run `npx vercel login` (opens browser for auth)
   2. Deploy: `npx vercel --prod --yes`
-  3. **CRITICAL:** `.env.local` is NOT deployed. Set env vars via CLI:
+  3. **CRITICAL:** `.env.local` is NOT deployed. Set env vars via CLI. Use `printf '%s'` (NOT `echo`) to avoid trailing newline which causes signature verification failures:
      ```bash
-     echo "VALUE" | npx vercel env add VAR_NAME production
+     printf '%s' 'VALUE' | npx vercel env add VAR_NAME production
      npx vercel env ls  # Verify
      npx vercel --prod  # Redeploy to pick up new vars
      ```
@@ -867,10 +867,10 @@
   import { stripe } from '@/lib/stripe/server';
   await stripe.paymentMethods.detach(paymentMethodId);
   ```
-- **Vercel Environment Variables (CRITICAL):** `.env.local` is NOT deployed to Vercel production. `NEXT_PUBLIC_*` variables MUST be added via CLI:
+- **Vercel Environment Variables (CRITICAL):** `.env.local` is NOT deployed to Vercel production. `NEXT_PUBLIC_*` variables MUST be added via CLI. Use `printf '%s'` (NOT `echo`) to avoid trailing newline:
   ```bash
-  # Add environment variable to production
-  echo "pk_test_xxx" | npx vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
+  # Add environment variable to production (printf avoids trailing newline)
+  printf '%s' 'pk_test_xxx' | npx vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production
 
   # Verify it's set
   npx vercel env ls
@@ -980,8 +980,8 @@
   When rotating `SERVICE_ROLE_KEY`:
   1. Regenerate in Supabase Dashboard (Settings > API > service_role)
   2. Edge Functions: **Automatically updated** (no action needed)
-  3. Vercel (Web Portal): **Manual update required**
+  3. Vercel (Web Portal): **Manual update required** (use `printf` to avoid trailing newline)
      ```bash
-     echo "NEW_KEY" | npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
+     printf '%s' 'NEW_KEY' | npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
      npx vercel --prod --yes  # Redeploy
      ```

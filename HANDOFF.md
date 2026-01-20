@@ -1,7 +1,7 @@
-# Handoff: Session 2026-01-20 (午後)
+# Handoff: Session 2026-01-20 (夜)
 
 ## Current Goal
-**SERVICE_ROLE_KEY ローテーション完了**
+**セキュリティ監査対応完了 + Stripe Webhook修正**
 
 ---
 
@@ -11,33 +11,42 @@
 
 | Task | Status | Details |
 |------|--------|---------|
-| **Edge Functions シークレット** | ✅ 自動更新 | Dashboard でローテーション時に自動反映 |
-| **Vercel 環境変数** | ✅ 更新完了 | `npx vercel env add` で設定 |
-| **Vercel 再デプロイ** | ✅ 完了 | https://commit-app-web.vercel.app |
+| **Stripe Webhook 署名検証** | ✅ 修正完了 | 環境変数を `printf '%s'` で再設定、テスト成功 |
+| **Storage Policy 修正** | ✅ デプロイ済み | Founderのみに制限（20260120110000） |
+| **RoleSelectScreen defaultValue** | ✅ 既に修正済み | 使用されていない |
+| **AnnouncementsScreen expires_at** | ✅ 既に修正済み | SELECT/フィルタ実装済み |
+| **DashboardScreen setTimeout** | ✅ 既に修正済み | `timersRef` でクリーンアップ実装済み |
+| **AnnouncementsScreen エラー状態** | ✅ 既に修正済み | error state + UI実装済み |
+| **timingSafeEqual 長さチェック** | ✅ 既に修正済み | XOR方式で実装済み |
 
 ---
 
 ## What Didn't Work (Lessons Learned)
 
-### 1. `supabase secrets set SUPABASE_SERVICE_ROLE_KEY` は使えない
-**Problem:** `supabase secrets set SUPABASE_SERVICE_ROLE_KEY='...'` を実行したところエラー
-
-**Error:**
-```
-Env name cannot start with SUPABASE_, skipping: SUPABASE_SERVICE_ROLE_KEY
-No arguments found.
-```
+### 1. `echo` コマンドは環境変数に改行を追加する
+**Problem:** Stripe Webhook が 400 エラー（`The provided signing secret contains whitespace`）
 
 **Root Cause:**
-- `SUPABASE_` プレフィックスのシークレットは Supabase が自動管理
-- Dashboard でキーをローテーションすると Edge Functions に自動反映される
-- 手動設定は不要（というより不可能）
+```bash
+# BAD - 末尾に改行 (\n) が含まれる
+echo "whsec_xxx" | npx vercel env add STRIPE_WEBHOOK_SECRET production
 
-**Auto-Managed Secrets:**
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_URL`
-- `SUPABASE_DB_URL`
+# GOOD - 改行なし
+printf '%s' 'whsec_xxx' | npx vercel env add STRIPE_WEBHOOK_SECRET production
+```
+
+**Fix Applied:**
+```bash
+npx vercel env rm STRIPE_WEBHOOK_SECRET production --yes
+printf '%s' 'whsec_szLrAdrqbL20zIzhrxmNYTrlDCMNYzb3' | npx vercel env add STRIPE_WEBHOOK_SECRET production
+npx vercel --prod --yes --force
+```
+
+**Verification:**
+```bash
+stripe trigger payment_intent.succeeded
+# Output: Trigger succeeded!
+```
 
 ---
 
@@ -45,19 +54,25 @@ No arguments found.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                SERVICE_ROLE_KEY ローテーション               │
+│              セキュリティ監査 (2026-01-20)                   │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│   Supabase Dashboard                                        │
-│   └── API Keys → service_role → Regenerate                  │
-│           ↓                                                 │
-│   Edge Functions (自動反映)                                  │
-│           ↓                                                 │
-│   ┌─────────────────────────────────────────────────────┐  │
-│   │ Vercel (手動更新が必要)                              │  │
-│   │   echo "KEY" | npx vercel env add VAR production    │  │
-│   │   npx vercel --prod --yes                           │  │
-│   └─────────────────────────────────────────────────────┘  │
+│  Phase 1 (Critical) - 全完了 ✅                             │
+│  ├─ Stripe Webhook 署名検証                                 │
+│  ├─ Storage Policy 権限過剰                                 │
+│  ├─ RoleSelectScreen defaultValue                          │
+│  └─ AnnouncementsScreen expires_at                         │
+│                                                             │
+│  Phase 2 (High) - 全完了 ✅                                 │
+│  ├─ DashboardScreen setTimeout クリーンアップ               │
+│  ├─ AnnouncementsScreen エラー状態                          │
+│  └─ timingSafeEqual 長さチェック                            │
+│                                                             │
+│  Phase 3 (Medium) - 次のイテレーション                       │
+│  ├─ pg_cron Secret ハードコード                             │
+│  ├─ process-expired-commitments N+1 クエリ                  │
+│  ├─ DB 更新失敗後の資金不一致リスク                          │
+│  └─ Admin Email vs Role 二重認可                            │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -66,14 +81,11 @@ No arguments found.
 
 ## Git Status
 
-**Uncommitted Files:**
-```
-M src/types/database.types.ts
-M supabase/functions/admin-actions/index.ts
-M supabase/functions/use-lifeline/index.ts
-?? supabase/migrations/20260119200000_add_users_role_not_null_constraint.sql
-?? supabase/migrations/20260119210000_rotate_cron_secret.sql
-```
+**Current Branch:** main (clean)
+
+**Recent Commits:**
+- `94352893` fix: security and code quality improvements from audit
+- `474ce582` feat: add users.role NOT NULL constraint and improve edge function security
 
 ---
 
@@ -81,35 +93,26 @@ M supabase/functions/use-lifeline/index.ts
 
 ### 🚀 Recommended Actions
 
-1. **未コミットファイルの確認・コミット**
-   - 新しいマイグレーションファイルの内容を確認
-   - 必要に応じてコミット
+1. **Phase 7.9 (Apple IAP)**: ストア申請準備
+   - `react-native-iap` or `expo-in-app-purchases` 導入
+   - App Store Connect / Google Play Console 設定
 
-2. **動作検証**
-   - Edge Functions が正常動作するか確認
-   - Web Portal (Admin Dashboard) が正常動作するか確認
-
-3. **Phase 7.9 (Apple IAP)**: ストア申請準備
+2. **Phase 3 (Medium) 監査項目**: 次のイテレーションで対応
+   - pg_cron Secret 管理改善
+   - Reaper N+1 クエリ最適化
 
 ---
 
 ## Testing Checklist
 
-### SERVICE_ROLE_KEY ローテーション検証
-- [x] `supabase secrets list` で SUPABASE_SERVICE_ROLE_KEY 確認
-- [x] `npx vercel env ls` で Vercel 環境変数確認
-- [ ] Edge Function 動作確認 (例: `create-commitment`)
-- [ ] Admin Dashboard 動作確認 (例: refund/complete)
+### Stripe Webhook 検証
+- [x] 環境変数を `printf '%s'` で再設定
+- [x] Vercel 強制再デプロイ
+- [x] `stripe trigger payment_intent.succeeded` テスト成功
 
----
-
-## Previous Session Summary (午前)
-
-**お知らせ・寄付のプッシュ通知 & バッジ表示を実装**
-- DB Triggers (`notify_announcement_published`, `notify_donation_posted`)
-- UnreadService / UnreadContext
-- SettingsTab バッジ表示
-- コミット済み: `feat: add push notifications and badge for announcements/donations`
+### Storage Policy 検証
+- [x] マイグレーション `20260120110000` デプロイ済み
+- [ ] 一般ユーザーで donation-proofs アップロード拒否確認
 
 ---
 
