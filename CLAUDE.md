@@ -1142,3 +1142,22 @@
     );
   }
   ```
+- **captureError Function Signature:** When using `captureError` from `src/utils/errorLogger.ts`, use the correct signature with `location` property (format: `'ScreenName.functionName'`). Do NOT use `context` or `screen` properties:
+  ```typescript
+  import { captureError } from '../utils/errorLogger';
+
+  // BAD - TypeScript error: 'context' and 'screen' don't exist
+  captureError(error, { context: 'fetchData', screen: 'DashboardScreen' });
+
+  // GOOD - correct signature
+  captureError(error, { location: 'DashboardScreen.fetchData' });
+
+  // GOOD - with optional extra data
+  captureError(error, {
+    location: 'BookDetailScreen.handleSave',
+    extra: { bookId, commitmentId },
+  });
+  ```
+  - The `location` format should be `ScreenName.functionName` for easy debugging
+  - Optional `extra` object for additional context (no PII - use IDs, not emails)
+  - Optional `level` for severity (`'error'`, `'warning'`, `'info'`)
