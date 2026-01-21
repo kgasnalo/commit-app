@@ -1,48 +1,39 @@
-# Handoff: Session 2026-01-21 (コードベース監査 Phase 3 E2Eテスト完了)
+# Handoff: Session 2026-01-21 (PAGE_COUNT_EXCEEDS_BOOK バグ修正)
 
 ## Current Goal
-**コードベース監査 Phase 1-3 すべて完了＆検証済み。本番リリース準備完了。**
+**PAGE_COUNT_EXCEEDS_BOOK バグ修正完了。本に設定された最大ページ数でコミットメントを作成可能に。**
 
 ---
 
 ## Current Critical Status
 
-### ✅ Completed This Session (Phase 3 E2E Verification)
+### ✅ Completed This Session
 
 | ステップ | 内容 | 結果 |
 |---------|------|------|
-| 1 | TypeScript型チェック (`npx tsc --noEmit`) | ✅ パス |
-| 2 | iOSビルド (`./run-ios-manual.sh`) | ✅ 成功 |
-| 3 | E2Eテスト (8シナリオ) | ✅ 全パス |
+| 1 | 問題の原因特定 | ✅ Google Books API の検索結果 vs 個別取得で異なるページ数 |
+| 2 | クライアント側修正 (`CreateCommitmentScreen.tsx`) | ✅ `book_total_pages` を常に送信 |
+| 3 | サーバー側修正 (`create-commitment/index.ts`) | ✅ クライアント提供値を優先 |
+| 4 | Edge Function デプロイ | ✅ `--no-verify-jwt` でデプロイ済み |
 
-### E2Eテスト結果
+### 修正内容
 
-| # | テストシナリオ | 対象修正 | 結果 |
-|---|---------------|---------|------|
-| 1 | 認証フロー (AuthScreen) | `.maybeSingle()` x2 | ✅ |
-| 2 | ダッシュボード (DashboardScreen) | `.maybeSingle()` + cleanup | ✅ |
-| 3 | 書籍詳細 (BookDetailScreen) | `.maybeSingle()` + cleanup x4 | ✅ |
-| 4 | コミットメント作成 (CreateCommitmentScreen) | `DateTimePickerEvent`型 | ✅ |
-| 5 | 通知設定 (NotificationSettingsScreen) | `DateTimePickerEvent`型 + cleanup | ✅ |
-| 6 | コミットメント詳細 (CommitmentDetailScreen) | エラーハンドリング + cleanup | ✅ |
-| 7 | 設定画面 (SettingsScreen) | 型安全エラーハンドリング | ✅ |
-| 8 | ヘルパー関数 (commitmentHelpers.ts) | `.maybeSingle()` | ✅ |
+**問題:** 449ページの本で449ページを目標設定すると `PAGE_COUNT_EXCEEDS_BOOK` エラー発生
+
+**原因:**
+- クライアント: Google Books検索API (`/volumes?q=...`) から `pageCount` 取得
+- サーバー: 個別取得API (`/volumes/{id}`) から再取得して検証
+- 同じ本でも異なるエディション情報が返される場合がある
+
+**解決策:**
+- クライアントから `book_total_pages` を常に送信
+- サーバーはクライアント提供値を優先（APIフォールバックは補助的に使用）
 
 ---
 
 ## What Didn't Work (This Session)
 
-**特筆すべき問題なし。** すべてのテストが正常に完了。
-
----
-
-## 監査進捗サマリ (全完了＆検証済み)
-
-| フェーズ | ステータス | 完了日 | 検証 |
-|---------|----------|--------|------|
-| Phase 1 (CRITICAL) | ✅ 完了 | 2026-01-21 | ✅ |
-| Phase 2 (HIGH) | ✅ 完了 | 2026-01-21 | ✅ |
-| Phase 3 (MEDIUM) | ✅ 完了 | 2026-01-21 | ✅ E2Eテスト済 |
+**特筆すべき問題なし。** プラン通りに修正完了。
 
 ---
 
@@ -73,43 +64,29 @@
 
 ### 🚀 Recommended Actions
 
-1. **本番リリース準備:**
-   - App Store Connect / Google Play Consoleでのビルドアップロード
-   - 審査提出
+1. **動作確認:**
+   - 新規検索から本を選択（pageCountあり）
+   - スライダーを最大値に設定
+   - コミットメント作成が成功することを確認
 
 2. **残タスク確認:**
    - Apple IAP / Google Play Billing (Phase 7.9) - サブスク課金実装
 
 ---
 
-## Testing Checklist (All Complete)
-
-### Phase 3 検証
-- [x] TypeScript typecheck 成功
-- [x] Supabaseクエリ修正 (5箇所)
-- [x] 型安全性改善 (6箇所)
-- [x] console.error削除 (9箇所)
-- [x] E2Eテスト (8シナリオ)
-
----
-
 ## Previous Sessions Summary
 
-**Phase 1 CRITICAL (2026-01-21 早朝):**
-- 6件のCRITICAL修正
-- Edge Functions JSONパース、環境変数検証、FunctionsHttpError型チェック
-- Commit: `8cca444c`
+**Phase 1-3 監査完了 (2026-01-21 早朝〜午後):**
+- Phase 1 CRITICAL: 6件修正、Commit `8cca444c`
+- Phase 2 HIGH: Edge Functions + Sentry + DB Indexes、Commit `896bf363`
+- Phase 3 MEDIUM: Supabaseクエリ + 型安全性 + console.error削除、Commit `0660cdaa`
+- E2Eテスト: 8シナリオ全パス
+- ドキュメント: `d17ab830`
 
-**Phase 2 HIGH (2026-01-21 午前):**
-- Edge Functions軽微修正 (7ファイル)
-- Sentry統合 (15ファイル)
-- DBインデックス最適化 (6件)
-- 型定義の整合性修正
-- Commit: `896bf363`
+**Tesla UI実装 (2026-01-21):**
+- Dashboard + MonkMode に ambient glow UI 追加
+- Commit: `736998e1`
 
-**Phase 3 MEDIUM (2026-01-21 午後):**
-- Supabaseクエリ修正 (5箇所)
-- 型安全性改善 (6箇所)
-- console.error削除 (9箇所)
-- Commit: `0660cdaa`
-- E2Eテスト: ✅ 全パス
+**PAGE_COUNT_EXCEEDS_BOOK修正 (2026-01-21 本セッション):**
+- Google Books API 不整合問題を解決
+- クライアント→サーバーで `book_total_pages` を信頼

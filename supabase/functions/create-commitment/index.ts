@@ -226,8 +226,9 @@ Deno.serve(async (req) => {
 
     // 7. Page count validation
     if (!is_manual_entry && google_books_id) {
-      // Google Books page count validation (soft fail)
-      const bookPageCount = await fetchBookPageCount(google_books_id)
+      // Use client-provided book_total_pages if available (more reliable than re-fetching)
+      // Google Books search API vs individual lookup may return different page counts
+      const bookPageCount = book_total_pages ?? await fetchBookPageCount(google_books_id)
       if (bookPageCount !== null) {
         if (target_pages > bookPageCount + PAGE_COUNT_BUFFER) {
           console.warn(
@@ -236,7 +237,7 @@ Deno.serve(async (req) => {
           return errorResponse(400, 'PAGE_COUNT_EXCEEDS_BOOK')
         }
       } else {
-        console.warn('[create-commitment] Could not verify page count from Google Books, proceeding anyway')
+        console.warn('[create-commitment] Could not verify page count, proceeding anyway')
       }
     } else if (is_manual_entry && book_total_pages) {
       // For manual books, validate against user-provided total pages

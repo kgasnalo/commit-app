@@ -305,6 +305,9 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - Multi-currency amount limits (JPY: 50-50000, USD: 1-350, etc.)
       - Deadline must be 24+ hours in future
       - RLS INSERT policy removed (forces Edge Function usage)
+    - **Bugfix (2026-01-21):** PAGE_COUNT_EXCEEDS_BOOK error when setting max pages
+      - Root cause: Google Books Search API vs Individual Lookup API return different pageCount
+      - Fix: Client sends `book_total_pages`, server trusts client value over re-fetching
     - **DoD:** All commitment creation goes through server-side validation.
 
 - [x] **7.7 Internal Admin Dashboard (Ops)**

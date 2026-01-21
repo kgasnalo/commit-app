@@ -359,6 +359,16 @@
     {(item.volumeInfo.title ?? i18n.t('common.untitled')).toUpperCase()}
     {item.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author')}
     ```
+  - **Search vs Individual Lookup Inconsistency (CRITICAL):** Google Books Search API (`/volumes?q=...`) and Individual Lookup API (`/volumes/{id}`) may return DIFFERENT `pageCount` values for the same book (different editions, metadata discrepancies). When validating page counts server-side, ALWAYS trust the client-provided value (from search results) rather than re-fetching:
+    ```typescript
+    // BAD - re-fetch may return different pageCount
+    const bookPageCount = await fetchBookPageCount(google_books_id);
+    if (target_pages > bookPageCount) return error;
+
+    // GOOD - trust client-provided value, use API as fallback only
+    const bookPageCount = book_total_pages ?? await fetchBookPageCount(google_books_id);
+    if (target_pages > bookPageCount + BUFFER) return error;
+    ```
 - **Hero/Billboard Overlays:** When placing text over images (HeroBillboard), keep overlay opacity low to ensure the image remains visible.
   - **Bad:** `rgba(0,0,0,0.7)` (Too dark, hides image)
   - **Good:** `rgba(10, 8, 6, 0.1)` to `rgba(8, 6, 4, 0.4)` gradient.

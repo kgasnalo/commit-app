@@ -116,6 +116,7 @@ interface GoogleBook {
   volumeInfo: {
     title: string;
     authors?: string[];
+    pageCount?: number;
     imageLinks?: {
       thumbnail?: string;
       smallThumbnail?: string;
@@ -172,6 +173,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBookData, setManualBookData] = useState<ManualBook | null>(route?.params?.manualBook || null);
   const [manualMaxPages, setManualMaxPages] = useState<number>(1000);
+
+  // Book total pages (for slider max value)
+  const [bookTotalPages, setBookTotalPages] = useState<number | null>(null);
 
   // Vignette and Pulse Animation Shared Values
   const vignetteIntensity = useSharedValue(0);
@@ -271,6 +275,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       const bookData = await getBookById(bookId);
       if (!bookData) throw new Error('Book not found');
 
+      // Store total pages for slider max value
+      setBookTotalPages(bookData.total_pages);
+
       // Convert to GoogleBook format for compatibility
       const googleBook: GoogleBook = {
         id: bookData.google_books_id ?? '',
@@ -289,11 +296,12 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       setTotalPagesRead(progress.totalPagesRead);
 
       // Calculate and set slider start position
-      const sliderStart = calculateSliderStartPage(progress.totalPagesRead);
+      const maxPages = bookData.total_pages || 1000;
+      const sliderStart = calculateSliderStartPage(progress.totalPagesRead, maxPages);
       setPageCount(sliderStart);
 
-      // Show info message if near max
-      if (progress.totalPagesRead >= 950) {
+      // Show info message if near max (within 50 pages of total)
+      if (progress.totalPagesRead >= maxPages - 50) {
         setContinueInfoMessage(
           i18n.t('commitment.progress_near_max', {
             pages: progress.totalPagesRead,
@@ -438,6 +446,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     setSelectedBook(book);
     setSearchResults([]);
     setSearchQuery('');
+    // Set total pages from Google Books API if available
+    if (book.volumeInfo.pageCount) {
+      setBookTotalPages(book.volumeInfo.pageCount);
+    }
   };
 
   const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -516,6 +528,11 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       } else {
         requestBody.google_books_id = selectedBook.id;
         requestBody.is_manual_entry = false;
+        // Send book_total_pages from client for validation consistency
+        // (Google Books search API vs individual lookup may return different page counts)
+        if (bookTotalPages) {
+          requestBody.book_total_pages = bookTotalPages;
+        }
       }
 
       // Call Edge Function for server-side validation and creation
@@ -786,12 +803,19 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
         {/* SECTION 3: SCOPE (Page Count) */}
         <View style={styles.section}>
-          <MicroLabel style={styles.sectionTitle}>3. SCOPE (PAGES)</MicroLabel>
+          <View style={styles.sectionHeader}>
+            <MicroLabel style={[styles.sectionTitle, { marginBottom: 0 }]}>3. SCOPE (PAGES)</MicroLabel>
+            {(bookTotalPages || (isManualEntry && manualMaxPages)) && (
+              <MicroLabel style={styles.totalPagesLabel}>
+                TOTAL: {isManualEntry ? manualMaxPages : bookTotalPages} PGS
+              </MicroLabel>
+            )}
+          </View>
           <AnimatedPageSlider
             value={pageCount}
             onValueChange={setPageCount}
             minValue={isContinueFlow && totalPagesRead > 0 ? totalPagesRead + 1 : 1}
-            maxValue={isManualEntry ? manualMaxPages : 1000}
+            maxValue={isManualEntry ? manualMaxPages : (bookTotalPages || 1000)}
           />
         </View>
 
@@ -965,6 +989,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255, 160, 120, 0.6)',
     letterSpacing: 1.5,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  totalPagesLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.5)',
+    letterSpacing: 1,
   },
   // Deep Optical Glass search container
   searchContainer: {

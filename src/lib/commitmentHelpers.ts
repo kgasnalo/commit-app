@@ -74,6 +74,7 @@ export interface BookMetadata {
   title: string;
   author: string;
   cover_url: string | null;
+  total_pages: number | null;
 }
 
 /**
@@ -131,7 +132,7 @@ export async function getBookById(bookId: string): Promise<BookMetadata | null> 
   try {
     const { data, error } = await supabase
       .from('books')
-      .select('id, google_books_id, title, author, cover_url')
+      .select('id, google_books_id, title, author, cover_url, total_pages')
       .eq('id', bookId)
       .maybeSingle();
 
