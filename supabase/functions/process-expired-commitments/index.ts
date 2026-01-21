@@ -246,7 +246,10 @@ Deno.serve(async (req) => {
     console.log('[SECURITY] System authorization verified successfully')
 
     // Parse request body
-    const body: ProcessRequest = await req.json().catch(() => ({}))
+    const body: ProcessRequest = await req.json().catch(() => {
+      console.warn('[Reaper] Empty or invalid request body received')
+      return {}
+    })
     const isRetryMode = body.retry_mode === true
 
     console.log(`[Reaper] Starting ${isRetryMode ? 'RETRY' : 'NORMAL'} mode. Source: ${body.source || 'unknown'}`)

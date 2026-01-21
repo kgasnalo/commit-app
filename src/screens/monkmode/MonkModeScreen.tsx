@@ -36,6 +36,7 @@ import { MonkModeService, SessionSummary } from '../../lib/MonkModeService';
 import DurationSlider from '../../components/monkmode/DurationSlider';
 import BookSelector, { BookOption } from '../../components/monkmode/BookSelector';
 import * as AnalyticsService from '../../lib/AnalyticsService';
+import { captureError } from '../../utils/errorLogger';
 
 interface MonkModeScreenProps {
   navigation: any;
@@ -103,6 +104,7 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
       const total = await MonkModeService.getTotalReadingTime();
       setTotalReadingTime(total);
     } catch (error) {
+      captureError(error, { location: 'MonkModeScreen.fetchData' });
       console.error('[MonkModeScreen] Error fetching data:', error);
     } finally {
       setLoading(false);
@@ -141,6 +143,7 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
         bookTitle: selectedBook?.title,
       });
     } catch (error) {
+      captureError(error, { location: 'MonkModeScreen.handleStartSession' });
       console.error('[MonkModeScreen] Navigation failed:', error);
     }
   };

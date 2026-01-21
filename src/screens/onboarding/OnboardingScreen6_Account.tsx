@@ -10,6 +10,7 @@ import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
+import { captureError } from '../../utils/errorLogger';
 
 // WebBrowserの結果を適切に処理するために必要
 WebBrowser.maybeCompleteAuthSession();
@@ -144,6 +145,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         });
       }
     } catch (error: unknown) {
+      captureError(error, { location: 'OnboardingScreen6.handleSignUp' });
       console.error('Signup flow error:', error);
       Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.account_creation'));
     } finally {

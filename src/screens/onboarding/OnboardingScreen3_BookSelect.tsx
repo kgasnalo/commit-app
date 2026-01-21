@@ -19,6 +19,7 @@ import { MicroLabel } from '../../components/titan/MicroLabel';
 import i18n from '../../i18n';
 import { GOOGLE_API_KEY } from '../../config/env';
 import { ensureHttps } from '../../utils/googleBooks';
+import { captureError } from '../../utils/errorLogger';
 
 type Book = {
   id: string;
@@ -53,6 +54,7 @@ export default function OnboardingScreen3({ navigation, route }: any) {
       const data = await response.json();
       setResults(data.items || []);
     } catch (error) {
+      captureError(error, { location: 'OnboardingScreen3.searchBooks' });
       console.error('Book search error:', error);
     } finally {
       setLoading(false);

@@ -24,6 +24,7 @@ import { HapticsService } from '../lib/HapticsService';
 import { CURRENT_LEGAL_VERSION, LEGAL_VERSION_DATES } from '../config/legalVersions';
 import LegalBottomSheet, { LegalDocumentType } from '../components/LegalBottomSheet';
 import i18n from '../i18n';
+import { captureError } from '../utils/errorLogger';
 
 interface Props {
   userId: string;
@@ -78,6 +79,7 @@ export default function LegalConsentScreen({ userId, onConsentComplete }: Props)
       HapticsService.feedbackSuccess();
       onConsentComplete();
     } catch (err) {
+      captureError(err, { location: 'LegalConsentScreen.handleAgree' });
       console.error('Unexpected error updating legal consent:', err);
       HapticsService.feedbackError();
     } finally {

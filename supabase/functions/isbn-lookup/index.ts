@@ -86,7 +86,18 @@ Deno.serve(async (req) => {
       )
     }
 
-    const data = await response.json()
+    // Parse Google Books API response with error handling
+    let data: any
+    try {
+      data = await response.json()
+    } catch (parseError) {
+      console.error('Google Books API JSON parse error:', parseError)
+      addBreadcrumb('Google Books API JSON parse failed', 'error', { parseError: String(parseError) })
+      return new Response(
+        JSON.stringify({ success: false, error: 'API_PARSE_ERROR' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Check if book was found
     if (!data.items || data.items.length === 0) {

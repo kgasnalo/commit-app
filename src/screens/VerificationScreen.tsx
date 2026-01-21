@@ -22,6 +22,7 @@ import i18n from '../i18n';
 import VerificationSuccessModal from '../components/VerificationSuccessModal';
 import * as AnalyticsService from '../lib/AnalyticsService';
 import { ReviewService } from '../lib/ReviewService';
+import { captureError } from '../utils/errorLogger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -211,6 +212,7 @@ export default function VerificationScreen({ route, navigation }: any) {
       setCurrency(commitmentData.currency);
       setShowSuccessModal(true);
     } catch (error) {
+      captureError(error, { location: 'VerificationScreen.handleSubmit', extra: { commitmentId } });
       console.error('Verification error:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('errors.verification_failed'));
     } finally {

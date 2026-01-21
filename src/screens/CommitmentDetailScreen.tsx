@@ -29,6 +29,7 @@ import { MicroLabel } from '../components/titan/MicroLabel';
 import { ensureHttps } from '../utils/googleBooks';
 import * as AnalyticsService from '../lib/AnalyticsService';
 import { getNowDate } from '../lib/DateUtils';
+import { captureError } from '../utils/errorLogger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -138,6 +139,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
         setCommitment(normalizedData);
       }
     } catch (error) {
+      captureError(error, { location: 'CommitmentDetailScreen.fetchCommitment', extra: { commitmentId: id } });
       console.error('[CommitmentDetailScreen] Fetch error:', error);
       Alert.alert(
         i18n.t('common.error'),
@@ -229,6 +231,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
                 Alert.alert(i18n.t('common.error'), data.error);
               }
             } catch (error: any) {
+              captureError(error, { location: 'CommitmentDetailScreen.handleUseLifeline', extra: { commitmentId: commitment.id } });
               console.error('[CommitmentDetailScreen] Lifeline error:', error);
               Alert.alert(
                 i18n.t('common.error'),

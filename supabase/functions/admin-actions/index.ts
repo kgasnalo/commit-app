@@ -58,9 +58,19 @@ Deno.serve(async (req) => {
       return errorResponse(401, 'UNAUTHORIZED')
     }
 
+    // Validate environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+      console.error('[admin-actions] Missing required environment variables')
+      return errorResponse(500, 'CONFIGURATION_ERROR', 'Missing Supabase credentials')
+    }
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseAnonKey,
       { global: { headers: { Authorization: authHeader } } }
     )
 
@@ -84,8 +94,8 @@ Deno.serve(async (req) => {
     // 3. Admin Check (Layer 3: Database Role Verification)
     // CRITICAL: Additional defense - verify user's role in database
     const supabaseAdminForRoleCheck = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      supabaseUrl,
+      supabaseServiceRoleKey
     )
 
     const { data: userRecord, error: roleError } = await supabaseAdminForRoleCheck
@@ -126,8 +136,8 @@ Deno.serve(async (req) => {
 
     // 5. Use Service Role for Admin Operations
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      supabaseUrl,
+      supabaseServiceRoleKey
     )
 
     // 6. Extract client IP address from headers

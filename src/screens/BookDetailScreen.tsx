@@ -25,6 +25,7 @@ import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { LinearGradient } from 'expo-linear-gradient';
+import { captureError } from '../utils/errorLogger';
 
 interface Book {
   id: string;
@@ -155,6 +156,7 @@ export default function BookDetailScreen() {
 
       setAllTags(tagsData || []);
     } catch (err) {
+      captureError(err, { location: 'BookDetailScreen.loadBookDetail', extra: { commitmentId } });
       console.error('Error loading book detail:', err);
       setError(i18n.t('bookDetail.error_message'));
     } finally {
@@ -181,6 +183,7 @@ export default function BookDetailScreen() {
       }
       await loadBookDetail();
     } catch (error) {
+      captureError(error, { location: 'BookDetailScreen.toggleTag' });
       console.error('Error toggling tag:', error);
     }
   }
@@ -215,6 +218,7 @@ export default function BookDetailScreen() {
       setShowTagModal(false);
       await loadBookDetail();
     } catch (error) {
+      captureError(error, { location: 'BookDetailScreen.createNewTag' });
       console.error('Error creating tag:', error);
     }
   }
@@ -231,6 +235,7 @@ export default function BookDetailScreen() {
       setVerificationLog({ ...verificationLog, memo_text: editedMemo });
       setShowMemoModal(false);
     } catch (error) {
+      captureError(error, { location: 'BookDetailScreen.updateMemo' });
       console.error('Error updating memo:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('bookDetail.memo_update_failed'));
     }

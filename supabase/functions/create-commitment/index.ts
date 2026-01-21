@@ -139,9 +139,19 @@ Deno.serve(async (req) => {
 
     console.log('[create-commitment] Token snippet:', authHeader.substring(7, 27) + '...')
 
+    // Validate environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+      console.error('[create-commitment] Missing required environment variables')
+      return errorResponse(500, 'CONFIGURATION_ERROR', 'Missing Supabase credentials')
+    }
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
           headers: { Authorization: authHeader },
@@ -240,8 +250,8 @@ Deno.serve(async (req) => {
 
     // 8. Use SERVICE_ROLE for database operations
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      supabaseUrl,
+      supabaseServiceRoleKey
     )
 
     // 9. Book upsert

@@ -19,6 +19,7 @@ import {
 import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { colors } from '../theme/colors';
+import { captureError } from '../utils/errorLogger';
 
 interface PreviewData {
   bookTitle: string;
@@ -49,6 +50,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
       const permission = await NotificationService.hasPermissions();
       setHasPermission(permission);
     } catch (error) {
+      captureError(error, { location: 'NotificationSettingsScreen.loadSettings' });
       console.error('[NotificationSettings] Failed to load settings:', error);
     } finally {
       setIsLoading(false);
@@ -102,6 +104,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
         dailyTarget,
       });
     } catch (error) {
+      captureError(error, { location: 'NotificationSettingsScreen.loadActiveCommitment' });
       console.error('[NotificationSettings] Failed to load commitment:', error);
     }
   };

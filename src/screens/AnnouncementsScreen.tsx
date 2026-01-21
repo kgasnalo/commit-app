@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUnread } from '../contexts/UnreadContext';
+import { captureError } from '../utils/errorLogger';
 
 interface Announcement {
   id: string;
@@ -67,6 +68,7 @@ export default function AnnouncementsScreen({ navigation }: any) {
         setAnnouncements(filtered);
       }
     } catch (err) {
+      captureError(err, { location: 'AnnouncementsScreen.fetchAnnouncements' });
       console.error('Unexpected error:', err);
       setError(i18n.t('errors.unknown'));
     } finally {

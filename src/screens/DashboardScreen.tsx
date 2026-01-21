@@ -42,6 +42,7 @@ import { StatusIndicator } from '../components/titan/StatusIndicator';
 import { MonkModeService, StreakStats } from '../lib/MonkModeService';
 import { CardRegistrationBanner } from '../components/CardRegistrationBanner';
 import { DonationAnnouncementModal, useUnreadDonation } from '../components/DonationAnnouncementModal';
+import { captureError } from '../utils/errorLogger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -275,6 +276,7 @@ export default function DashboardScreen({ navigation }: any) {
         setDonatedByCurrency(donatedByC);
       }
     } catch (error) {
+      captureError(error, { location: 'DashboardScreen.fetchCommitments' });
       console.error('Error fetching commitments:', error);
     } finally {
       setRefreshing(false);

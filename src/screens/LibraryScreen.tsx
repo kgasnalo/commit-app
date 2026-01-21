@@ -32,6 +32,7 @@ import {
   CinematicBookCard,
   GlassFilterBar,
 } from '../components/hall-of-fame';
+import { captureError } from '../utils/errorLogger';
 
 interface Book {
   id: string;
@@ -149,6 +150,7 @@ export default function LibraryScreen() {
       const colors = await extractColorsFromUrls(allCoverUrls);
       setColorCache(prev => ({ ...prev, ...colors }));
     } catch (error) {
+      captureError(error, { location: 'LibraryScreen.loadLibraryData' });
       console.error('Error loading library data:', error);
     } finally {
       setLoading(false);

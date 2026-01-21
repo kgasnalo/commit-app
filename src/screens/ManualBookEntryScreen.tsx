@@ -21,6 +21,7 @@ import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { HapticsService } from '../lib/HapticsService';
 import { colors } from '../theme';
+import { captureError } from '../utils/errorLogger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -191,6 +192,7 @@ export default function ManualBookEntryScreen({ navigation, route }: any) {
         });
       }
     } catch (error) {
+      captureError(error, { location: 'ManualBookEntryScreen.handleSubmit' });
       console.error('Manual book entry error:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('errors.generic'));
     } finally {

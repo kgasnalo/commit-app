@@ -35,6 +35,7 @@ import {
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { ReadingDNASection } from '../components/reading-dna';
+import { captureError } from '../utils/errorLogger';
 
 type UserProfile = Database['public']['Tables']['users']['Row'];
 
@@ -103,6 +104,7 @@ export default function ProfileScreen({ navigation }: any) {
         setDnaLoading(false);
       }
     } catch (error) {
+      captureError(error, { location: 'ProfileScreen.fetchProfile' });
       console.error('Error fetching profile:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('errors.unknown'));
     } finally {
@@ -131,6 +133,7 @@ export default function ProfileScreen({ navigation }: any) {
       setProfile(prev => prev ? { ...prev, username: newUsername.trim() } : null);
       setEditModalVisible(false);
     } catch (error) {
+      captureError(error, { location: 'ProfileScreen.handleUpdateUsername' });
       console.error('Error updating username:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('profile.username_update_error'));
     } finally {
