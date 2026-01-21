@@ -1,73 +1,48 @@
-# Handoff: Session 2026-01-21 (コードベース監査 Phase 3完了)
+# Handoff: Session 2026-01-21 (コードベース監査 Phase 3 E2Eテスト完了)
 
 ## Current Goal
-**コードベース監査 Phase 1-3 すべて完了。本番リリース準備完了。**
+**コードベース監査 Phase 1-3 すべて完了＆検証済み。本番リリース準備完了。**
 
 ---
 
 ## Current Critical Status
 
-### ✅ Completed This Session (Phase 3 - MEDIUM Issues)
+### ✅ Completed This Session (Phase 3 E2E Verification)
 
-| Batch | 内容 | 件数 | ステータス |
-|-------|------|------|-----------|
-| Batch 1 | Supabaseクエリ修正 (.single()→.maybeSingle()) | 5箇所 | ✅ 完了 |
-| Batch 2 | 型安全性改善 (DateTimePickerEvent, error handling) | 6箇所 | ✅ 完了 |
-| Batch 3 | console.error削除 (captureError重複) | 9箇所 | ✅ 完了 |
+| ステップ | 内容 | 結果 |
+|---------|------|------|
+| 1 | TypeScript型チェック (`npx tsc --noEmit`) | ✅ パス |
+| 2 | iOSビルド (`./run-ios-manual.sh`) | ✅ 成功 |
+| 3 | E2Eテスト (8シナリオ) | ✅ 全パス |
 
-**TypeScript検証:** ✅ パス (`npx tsc --noEmit`)
+### E2Eテスト結果
 
----
-
-## Phase 3 修正詳細
-
-### Batch 1: Supabaseクエリ修正
-
-| ファイル | 修正内容 |
-|---------|---------|
-| `AuthScreen.tsx` | `.single()` → `.maybeSingle()` (2箇所) |
-| `BookDetailScreen.tsx` | `.single()` → `.maybeSingle()` (verification_logs取得) |
-| `DashboardScreen.tsx` | `.single()` → `.maybeSingle()` (ユーザープロファイル取得) |
-| `commitmentHelpers.ts` | `.single()` → `.maybeSingle()` (getBookById関数) |
-
-**理由:** `.single()`は行が存在しない場合にエラーをスロー。nullを期待する箇所では`.maybeSingle()`を使用。
-
-### Batch 2: 型安全性改善
-
-| ファイル | 修正内容 |
-|---------|---------|
-| `CreateCommitmentScreen.tsx` | `DateTimePickerEvent`型をインポート・使用 |
-| `NotificationSettingsScreen.tsx` | `DateTimePickerEvent`型をインポート・使用 |
-| `SettingsScreen.tsx` | `catch (error: any)` → `catch (error)` + `captureError`追加 |
-| `CommitmentDetailScreen.tsx` | `catch (error: any)` → 型安全なエラーメッセージ取得 |
-
-### Batch 3: console.error削除
-
-`captureError()`が呼ばれている箇所の直後の重複`console.error`を削除:
-
-| ファイル | 削除箇所 |
-|---------|---------|
-| `BookDetailScreen.tsx` | 4箇所 |
-| `CommitmentDetailScreen.tsx` | 1箇所 |
-| `DashboardScreen.tsx` | 1箇所 |
-| `NotificationSettingsScreen.tsx` | 2箇所 |
-| `VerificationScreen.tsx` | 1箇所 |
+| # | テストシナリオ | 対象修正 | 結果 |
+|---|---------------|---------|------|
+| 1 | 認証フロー (AuthScreen) | `.maybeSingle()` x2 | ✅ |
+| 2 | ダッシュボード (DashboardScreen) | `.maybeSingle()` + cleanup | ✅ |
+| 3 | 書籍詳細 (BookDetailScreen) | `.maybeSingle()` + cleanup x4 | ✅ |
+| 4 | コミットメント作成 (CreateCommitmentScreen) | `DateTimePickerEvent`型 | ✅ |
+| 5 | 通知設定 (NotificationSettingsScreen) | `DateTimePickerEvent`型 + cleanup | ✅ |
+| 6 | コミットメント詳細 (CommitmentDetailScreen) | エラーハンドリング + cleanup | ✅ |
+| 7 | 設定画面 (SettingsScreen) | 型安全エラーハンドリング | ✅ |
+| 8 | ヘルパー関数 (commitmentHelpers.ts) | `.maybeSingle()` | ✅ |
 
 ---
 
 ## What Didn't Work (This Session)
 
-**特筆すべき問題なし。** すべての修正が計画通りに完了。
+**特筆すべき問題なし。** すべてのテストが正常に完了。
 
 ---
 
-## 監査進捗サマリ (全完了)
+## 監査進捗サマリ (全完了＆検証済み)
 
-| フェーズ | ステータス | 完了日 |
-|---------|----------|--------|
-| Phase 1 (CRITICAL) | ✅ 完了 | 2026-01-21 |
-| Phase 2 (HIGH) | ✅ 完了 | 2026-01-21 |
-| Phase 3 (MEDIUM) | ✅ 完了 | 2026-01-21 |
+| フェーズ | ステータス | 完了日 | 検証 |
+|---------|----------|--------|------|
+| Phase 1 (CRITICAL) | ✅ 完了 | 2026-01-21 | ✅ |
+| Phase 2 (HIGH) | ✅ 完了 | 2026-01-21 | ✅ |
+| Phase 3 (MEDIUM) | ✅ 完了 | 2026-01-21 | ✅ E2Eテスト済 |
 
 ---
 
@@ -98,35 +73,23 @@
 
 ### 🚀 Recommended Actions
 
-1. **Git Commit:**
-   ```bash
-   git add -A && git commit -m "fix: Phase 3 MEDIUM audit fixes - queries, types, console cleanup"
-   ```
+1. **本番リリース準備:**
+   - App Store Connect / Google Play Consoleでのビルドアップロード
+   - 審査提出
 
-2. **動作確認:**
-   ```bash
-   npx expo start
-   # または
-   ./run-ios-manual.sh
-   ```
-
-3. **E2Eテスト (推奨):**
-   - AuthScreen: 新規ユーザーでGoogleログイン → Dashboard表示
-   - BookDetailScreen: 検証履歴なしのコミットメント詳細表示
-   - DashboardScreen: アプリ起動 → ユーザー名正しく表示
-   - CreateCommitmentScreen: 日付選択 → 正常動作
-   - Lifeline使用: CommitmentDetailからLifeline → エラーハンドリング正常
+2. **残タスク確認:**
+   - Apple IAP / Google Play Billing (Phase 7.9) - サブスク課金実装
 
 ---
 
-## Testing Checklist
+## Testing Checklist (All Complete)
 
 ### Phase 3 検証
 - [x] TypeScript typecheck 成功
 - [x] Supabaseクエリ修正 (5箇所)
 - [x] 型安全性改善 (6箇所)
 - [x] console.error削除 (9箇所)
-- [ ] E2Eテスト（コミットメント作成→完了フロー）
+- [x] E2Eテスト (8シナリオ)
 
 ---
 
@@ -148,4 +111,5 @@
 - Supabaseクエリ修正 (5箇所)
 - 型安全性改善 (6箇所)
 - console.error削除 (9箇所)
-- Commit: 未コミット (要実行)
+- Commit: `0660cdaa`
+- E2Eテスト: ✅ 全パス
