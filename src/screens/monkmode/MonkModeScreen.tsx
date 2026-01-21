@@ -173,23 +173,68 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Titan Background */}
+      {/* Tesla Style 5-Layer Background (same as Dashboard) */}
       <View style={styles.backgroundContainer} pointerEvents="none">
+        {/* Layer 1: Base vertical gradient */}
         <LinearGradient
-          colors={['#1A1008', '#100A06', '#080604']}
-          locations={[0, 0.5, 1]}
+          colors={['#1A1008', '#120C08', '#0C0806', '#080604']}
+          locations={[0, 0.3, 0.6, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        {/* Ambient light from top-left */}
+
+        {/* Layer 2: 全画面オレンジウォッシュ */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 140, 100, 0.12)',
+            'rgba(255, 140, 100, 0.08)',
+            'rgba(255, 140, 100, 0.05)',
+            'rgba(255, 140, 100, 0.03)',
+          ]}
+          locations={[0, 0.3, 0.6, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Layer 3: 左上からの環境光 */}
         <LinearGradient
           colors={[
             'rgba(255, 160, 120, 0.15)',
-            'rgba(255, 160, 120, 0.06)',
+            'rgba(255, 160, 120, 0.08)',
+            'rgba(255, 160, 120, 0.03)',
             'transparent',
           ]}
-          locations={[0, 0.4, 0.8]}
+          locations={[0, 0.25, 0.5, 0.8]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0.8, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Layer 4: 右下からの補助光 */}
+        <LinearGradient
+          colors={[
+            'transparent',
+            'rgba(255, 140, 100, 0.02)',
+            'rgba(255, 140, 100, 0.06)',
+          ]}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Layer 5: 上部の暖色ウォッシュ */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 140, 100, 0.08)',
+            'rgba(255, 140, 100, 0.04)',
+            'transparent',
+          ]}
+          locations={[0, 0.3, 0.6]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.5 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -298,11 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#080604',
   },
   backgroundContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: SCREEN_WIDTH * 1.2,
+    ...StyleSheet.absoluteFillObject, // 全画面カバー
     zIndex: 0,
   },
   loadingContainer: {
@@ -351,39 +392,36 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
   },
-  // Glassmorphism stats card
+  // Stats card - Tesla style (溶け込む)
   statsCard: {
-    backgroundColor: 'rgba(26, 23, 20, 0.8)',
+    backgroundColor: 'rgba(26, 23, 20, 0.5)', // より透明に
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     marginBottom: 32,
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.06)', // より控えめ
     overflow: 'hidden',
-    // Subtle shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    // ソフトなシャドウ
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 4,
   },
   statsLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255, 160, 120, 0.6)',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.4)',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 10,
   },
   statsValue: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#FF6B35',
-    // Glow effect
-    textShadowColor: 'rgba(255, 107, 53, 0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
+    fontSize: 32,
+    fontWeight: '300', // 細めで高級感
+    color: '#FAFAFA',
+    letterSpacing: 1,
   },
   sectionContainer: {
     marginBottom: 24,
@@ -396,13 +434,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 16,
   },
-  // Glassmorphism sessions container
+  // Sessions container - Tesla style
   recentSessionsContainer: {
-    backgroundColor: 'rgba(26, 23, 20, 0.7)',
+    backgroundColor: 'rgba(26, 23, 20, 0.4)', // より透明に
     borderRadius: 16,
     padding: 4,
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   sessionItem: {
     flexDirection: 'row',

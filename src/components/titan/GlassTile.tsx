@@ -51,8 +51,8 @@ export function GlassTile({
         return {
           shadowColor: '#FF6B35',
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.4,
-          shadowRadius: 24,
+          shadowOpacity: 0.25, // ソフトに（Tesla style）
+          shadowRadius: 40,    // より広く拡散
           elevation: 12,
         };
       case 'subtle':
@@ -96,20 +96,20 @@ export function GlassTile({
     ] as const;
   };
 
-  // Inner glow gradient (発光効果)
+  // Inner glow gradient (発光効果) - Tesla style: より控えめに
   const getInnerGlowColors = (): GradientColors | null => {
     if (innerGlow === 'strong') {
       return [
-        'rgba(255, 107, 53, 0.25)',
-        'rgba(255, 107, 53, 0.12)',
+        'rgba(255, 107, 53, 0.15)', // 0.25→0.15
+        'rgba(255, 107, 53, 0.08)', // 0.12→0.08
         'transparent',
         'transparent',
       ] as const;
     }
     if (innerGlow === 'orange') {
       return [
-        'rgba(255, 107, 53, 0.12)',
-        'rgba(255, 107, 53, 0.05)',
+        'rgba(255, 107, 53, 0.08)', // 0.12→0.08
+        'rgba(255, 107, 53, 0.03)', // 0.05→0.03
         'transparent',
         'transparent',
       ] as const;
@@ -242,14 +242,14 @@ export function GlassTile({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: titanColors.background.card,
+    backgroundColor: 'rgba(26, 23, 20, 0.5)', // 透明に（Tesla style）
     overflow: 'hidden',
   },
   sunkenContainer: {
     backgroundColor: titanColors.background.tertiary,
   },
   glowingContainer: {
-    backgroundColor: 'rgba(26, 23, 20, 0.85)', // 半透明で発光が透過
+    backgroundColor: 'rgba(26, 23, 20, 0.6)', // より透明に（Tesla style）
   },
   topBorder: {
     position: 'absolute',

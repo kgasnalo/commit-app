@@ -332,24 +332,37 @@ export default function DashboardScreen({ navigation }: any) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#080604" />
 
-      {/* Rich Multi-Source Lighting Background */}
+      {/* Rich Multi-Source Lighting Background - Tesla Style 5-Layer */}
       <View style={styles.ambientGlowContainer} pointerEvents="none">
-        {/* Layer 1: Base vertical gradient (#1A1008 → #080604) */}
+        {/* Layer 1: Base vertical gradient (4色に拡張) */}
         <LinearGradient
-          colors={['#1A1008', '#100A06', '#080604']}
-          locations={[0, 0.5, 1]}
+          colors={['#1A1008', '#120C08', '#0C0806', '#080604']}
+          locations={[0, 0.3, 0.6, 1]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Layer 2: Ambient diffused light from top-left (霧の中の拡散光) */}
-        {/* Primary radial-like glow - centered at ~10% x, 25% y */}
+        {/* Layer 2: 全画面オレンジウォッシュ (NEW - Tesla style ambient) */}
         <LinearGradient
           colors={[
-            'rgba(255, 160, 120, 0.18)',  // 彩度を抑えた薄いオレンジ
-            'rgba(255, 160, 120, 0.10)',
-            'rgba(255, 160, 120, 0.04)',
+            'rgba(255, 140, 100, 0.12)',  // 淡いオレンジ全体に
+            'rgba(255, 140, 100, 0.08)',
+            'rgba(255, 140, 100, 0.05)',
+            'rgba(255, 140, 100, 0.03)',
+          ]}
+          locations={[0, 0.3, 0.6, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Layer 3: 左上からの環境光 (調整) */}
+        <LinearGradient
+          colors={[
+            'rgba(255, 160, 120, 0.15)',  // やや控えめに
+            'rgba(255, 160, 120, 0.08)',
+            'rgba(255, 160, 120, 0.03)',
             'transparent',
           ]}
           locations={[0, 0.25, 0.5, 0.8]}
@@ -358,28 +371,29 @@ export default function DashboardScreen({ navigation }: any) {
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Layer 3: Secondary diffuse spread (wider, softer) */}
+        {/* Layer 4: 右下からの補助光 (NEW) */}
         <LinearGradient
           colors={[
-            'rgba(255, 180, 140, 0.08)',
-            'rgba(255, 160, 120, 0.04)',
             'transparent',
+            'rgba(255, 140, 100, 0.02)',
+            'rgba(255, 140, 100, 0.06)',
           ]}
-          locations={[0, 0.4, 0.8]}
-          start={{ x: 0.1, y: 0.15 }}
-          end={{ x: 1, y: 0.6 }}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Layer 4: Subtle warm wash across top */}
+        {/* Layer 5: 上部の暖色ウォッシュ (調整) */}
         <LinearGradient
           colors={[
-            'rgba(255, 140, 100, 0.06)',
+            'rgba(255, 140, 100, 0.08)',
+            'rgba(255, 140, 100, 0.04)',
             'transparent',
           ]}
-          locations={[0, 0.5]}
+          locations={[0, 0.3, 0.6]}
           start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.4 }}
+          end={{ x: 0.5, y: 0.5 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -446,7 +460,7 @@ export default function DashboardScreen({ navigation }: any) {
             innerGlow="strong"
             padding="xl"
             borderRadius={28}
-            topBorder="orange"
+            topBorder="none"
             style={styles.mainStatTile}
           >
             <Text style={styles.statLabel}>{i18n.t('dashboard.donation_pool')}</Text>
@@ -586,11 +600,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#080604', // リッチな深いダーク
   },
   ambientGlowContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: SCREEN_WIDTH * 1.0, // 拡大
+    ...StyleSheet.absoluteFillObject, // 全画面カバー
     zIndex: 0,
   },
   header: {

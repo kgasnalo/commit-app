@@ -168,7 +168,7 @@ export default function DurationSlider({
 
   return (
     <View style={styles.container}>
-      {/* Duration Display */}
+      {/* Duration Display - clean, relies on ambient background glow */}
       <View style={styles.durationDisplayContainer}>
         <Text style={styles.durationDisplay}>
           {value}
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     width: TRACK_WIDTH,
     alignSelf: 'center',
   },
-  // Giant glowing duration display
+  // Duration display - clean Tesla style (ambient glow from background)
   durationDisplayContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -233,18 +233,15 @@ const styles = StyleSheet.create({
   },
   durationDisplay: {
     fontSize: 72,
-    fontWeight: '800',
+    fontWeight: '200', // 細めで高級感
     color: '#FF6B35',
-    letterSpacing: -3,
-    // Strong glow effect
-    textShadowColor: 'rgba(255, 107, 53, 0.6)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 24,
+    letterSpacing: -2,
+    // 最小限のグロー（背景に任せる）
   },
   durationUnit: {
     fontSize: 22,
-    fontWeight: '400',
-    color: 'rgba(255, 160, 120, 0.5)',
+    fontWeight: '300',
+    color: 'rgba(255, 160, 120, 0.6)',
   },
   trackContainer: {
     height: THUMB_SIZE + 20,
