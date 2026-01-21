@@ -1,7 +1,7 @@
-# Handoff: Session 2026-01-20 (深夜 - バグ監査完了)
+# Handoff: Session 2026-01-21 (DEADLINE_TOO_SOON修正)
 
 ## Current Goal
-**包括的バグ・エラー監査完了 - 12件のバグ修正済み・デプロイ済み**
+**CreateCommitmentScreenのDEADLINE_TOO_SOONエラー修正完了**
 
 ---
 
@@ -9,143 +9,46 @@
 
 ### ✅ Completed This Session
 
-| Bug ID | Severity | Description | File(s) |
-|--------|----------|-------------|---------|
-| BUG-001 | 🚨 CRITICAL | Stripe金額変換（非JPY通貨が99%アンダーチャージ） | `process-expired-commitments/index.ts` |
-| BUG-002 | 🚨 CRITICAL | STRIPE_SECRET_KEYを.envから削除 | `.env` |
-| BUG-003 | 🔴 HIGH | タイムゾーン不整合（new Date() → getNowDate()） | `CommitmentDetailScreen.tsx`, `CreateCommitmentScreen.tsx` |
-| BUG-004 | 🔴 HIGH | Admin-actionsにDBロールチェック追加 | `admin-actions/index.ts` |
-| BUG-005 | 🔴 HIGH | Bookオブジェクトのnullアクセス | `CommitmentDetailScreen.tsx` |
-| BUG-006 | 🟠 MEDIUM | Lifeline 30日グローバルクールダウン追加 | `use-lifeline/index.ts` |
-| BUG-007 | 🟠 MEDIUM | Refund 3段階トランザクション（pending→stripe→success） | `admin-actions/index.ts` |
-| BUG-008 | 🟠 MEDIUM | AppNavigator非同期エラーハンドリング | `AppNavigator.tsx` |
-| BUG-009 | 🟠 MEDIUM | Realtime Subscription型安全+エラーハンドリング | `AppNavigator.tsx` |
-| BUG-010 | 🟠 MEDIUM | DashboardScreenタイマーメモリリーク対策 | `DashboardScreen.tsx` |
-| BUG-011 | 🟡 LOW | Streak計算の日付丸め（Math.round→Math.floor） | `MonkModeService.ts` |
-| BUG-012 | 🟡 LOW | useImageColors Hook検証済み（問題なし） | - |
+| Issue | Severity | Description | Fix |
+|-------|----------|-------------|-----|
+| DEADLINE_TOO_SOON | 🔴 HIGH | 締切日選択後にサーバーバリデーションエラー | 3箇所修正 |
 
-**Git Commit:** `fb2014c7` - fix: comprehensive bug fixes from security and code audit
+**Root Cause Analysis:**
+1. DateTimePickerの`mode="date"`でiOSは時刻がローカル午前0時になる場合がある
+2. クライアント側は「過去でない」のみチェック、サーバー側は「24時間以上先」を要求
+3. フォーム入力中に時間が経過し、送信時には24時間を切る可能性
 
-**Edge Functions Deployed:**
-- ✅ `process-expired-commitments` (Stripe金額変換修正)
-- ✅ `admin-actions` (ロールチェック+Refund順序修正)
-- ✅ `use-lifeline` (グローバルクールダウン追加)
+**Fixes Applied (`CreateCommitmentScreen.tsx`):**
+1. `handleDateChange`: 選択日の23:59:59に設定（最大限の時間確保）
+2. `handleCreateCommitment`: 24時間以上先のバリデーション追加（サーバーと同期）
+3. `DateTimePicker.minimumDate`: +25時間に変更（1時間バッファ）
+
+**Git Commit:** `b96ab0da` - fix: prevent DEADLINE_TOO_SOON error in CreateCommitmentScreen
 
 ---
 
-## What Didn't Work (Lessons Learned)
+## What Didn't Work (This Session)
 
-### 1. Stripe Zero-Decimal Currencies
-**Problem:** USD $20のコミットメントが$0.20として課金されていた
+### DateTimePicker + Server Validation Mismatch
+**Problem:** ユーザーが「明日」を選択 → サーバーが`DEADLINE_TOO_SOON`を返す
 
-**Root Cause:**
-- Stripeは最小通貨単位を使用（USD: cents, JPY: 円）
-- JPYは「ゼロデシマル通貨」なので金額そのまま
-- USD/EUR/GBPは×100してcents/penceに変換が必要
-
-**Fix Applied:**
-```typescript
-const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', ...];
-
-function toStripeAmount(amount: number, currency: string): number {
-  if (ZERO_DECIMAL_CURRENCIES.includes(currency.toUpperCase())) {
-    return Math.round(amount);
-  }
-  return Math.round(amount * 100); // Convert to cents
-}
+**Why it happened:**
+```
+User selects: 2026-01-22 (tomorrow)
+DateTimePicker returns: 2026-01-22T00:00:00 (midnight local)
+Server checks: deadline > now + 24 hours
+If now = 2026-01-21T01:00:00 → deadline is only 23 hours away → REJECTED
 ```
 
-### 2. Admin Authorization was Email-Only
-**Problem:** メールホワイトリストのみで管理者チェック → メール偽装リスク
-
-**Fix Applied:**
-- Layer 2: メールホワイトリストチェック
-- Layer 3: DBロールチェック（`users.role = 'Founder'`）
-
-### 3. Refund Transaction Inconsistency
-**Problem:** Stripe返金後にDB更新 → DB更新失敗で不整合状態
-
-**Fix Applied (3-Phase Pattern):**
-1. DB: `charge_status = 'refund_pending'`
-2. Stripe: refund処理
-3. DB: `charge_status = 'refunded'` (失敗時は'succeeded'にリバート)
+**Lesson:** クライアント側バリデーションはサーバー側と**同じか厳しく**する。サーバーエラーでUXを損なわない。
 
 ---
 
-## Architecture Overview
+## Architecture Overview (Unchanged)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│            バグ監査完了 (2026-01-20)                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  修正済みの重要パターン:                                      │
-│                                                             │
-│  1. Stripe金額変換                                           │
-│     └─ toStripeAmount(amount, currency) を必ず使用          │
-│                                                             │
-│  2. 管理者認証 (Multi-Layer)                                 │
-│     └─ Email Whitelist + DB Role Check                      │
-│                                                             │
-│  3. Refund Transaction (3-Phase)                            │
-│     └─ pending → stripe → success/revert                    │
-│                                                             │
-│  4. Lifeline制限 (Dual Limit)                               │
-│     └─ Per-book (1回) + Global (30日)                       │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Git Status
-
-**Current Branch:** main (clean, pushed)
-
-**Recent Commits:**
-- `fb2014c7` fix: comprehensive bug fixes from security and code audit
-- `0542ea49` security: redact leaked service_role_key from migration file
-- `48e90cb4` security: remove exposed Stripe webhook secret from HANDOFF.md
-- `c354d5e1` docs: fix Vercel env var command to prevent trailing newline
-
----
-
-## Immediate Next Steps
-
-### 🚀 Recommended Actions
-
-1. **Phase 7.9 (Apple IAP)**: ストア申請準備
-   - `react-native-iap` or `expo-in-app-purchases` 導入
-   - App Store Connect / Google Play Console 設定
-
-2. **モバイルアプリテスト**: バグ修正後の動作確認
-   ```bash
-   npx expo start
-   # または
-   ./run-ios-manual.sh
-   ```
-
-3. **USD/EUR課金テスト**: Stripe Dashboardで金額確認
-   - USD $5 → 500 cents として処理されることを確認
-
----
-
-## Testing Checklist
-
-### バグ修正検証
-- [x] TypeScript typecheck 成功
-- [x] Edge Functions デプロイ成功
-- [ ] USD課金テスト（$5 → 500 cents）
-- [ ] Lifeline 30日クールダウン動作確認
-- [ ] 管理者ダッシュボードからRefund実行テスト
-
----
-
-## Critical Architecture Rules
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    COMMIT App                               │
+│            COMMIT App Architecture                          │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │   サブスクリプション              ペナルティ (寄付)          │
@@ -162,4 +65,56 @@ function toStripeAmount(amount: number, currency: string): number {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**絶対にWeb Portalでサブスクリプション解約を実装しないこと！**
+---
+
+## Git Status
+
+**Current Branch:** main (clean, pushed)
+
+**Recent Commits:**
+- `b96ab0da` fix: prevent DEADLINE_TOO_SOON error in CreateCommitmentScreen
+- `de2d0b4f` feat: add Memory MCP for X post consistency tracking
+- `e035c035` fix: i18n tab labels and improve DashboardScreen async handling
+- `fb2014c7` fix: comprehensive bug fixes from security and code audit
+
+---
+
+## Immediate Next Steps
+
+### 🚀 Recommended Actions
+
+1. **動作確認**: 修正後のコミットメント作成テスト
+   ```bash
+   npx expo start
+   # または
+   ./run-ios-manual.sh
+   ```
+
+2. **エッジケーステスト**:
+   - 夜遅く（23:00以降）に「明日」を選択
+   - タイムゾーンが異なる端末でテスト
+
+3. **Phase 7.9 (Apple IAP)**: ストア申請準備（次フェーズ）
+
+---
+
+## Testing Checklist
+
+### DEADLINE_TOO_SOON修正検証
+- [x] TypeScript typecheck 成功
+- [x] Git commit & push 完了
+- [ ] 「明日」選択でコミットメント作成成功
+- [ ] 夜遅く（23時以降）のエッジケーステスト
+- [ ] 英語/韓国語でエラーメッセージ表示確認
+
+---
+
+## Previous Session Context (2026-01-20)
+
+前回セッションで完了した主要なバグ修正:
+- BUG-001: Stripe金額変換（非JPY通貨が99%アンダーチャージ）
+- BUG-004: Admin-actionsにDBロールチェック追加
+- BUG-006: Lifeline 30日グローバルクールダウン追加
+- BUG-007: Refund 3段階トランザクション
+
+詳細は `fb2014c7` コミットを参照。

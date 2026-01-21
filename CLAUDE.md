@@ -1083,3 +1083,28 @@
   - Per-resource limits prevent repeated abuse on the same item
   - Global cooldowns prevent abuse by creating many resources
   - Both limits are checked server-side (Edge Function) - never trust client
+- **DateTimePicker Date-Only Selection (CRITICAL):** When using `@react-native-community/datetimepicker` with `mode="date"`, iOS may return the time as local midnight (00:00:00). For deadline inputs where server validates "X hours in future", set the time to end of day:
+  ```typescript
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      // Set to end of day to maximize available time
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      setDeadline(endOfDay);
+    }
+  };
+  ```
+- **Client-Server Validation Alignment (CRITICAL):** Client-side validation MUST match or be stricter than server-side validation. Never rely on server errors for UX - prevent them client-side:
+  ```typescript
+  // BAD - Client allows, server rejects → poor UX
+  // Client: deadline > now
+  // Server: deadline > now + 24 hours
+
+  // GOOD - Client matches server
+  const minDeadline = new Date(getNowDate().getTime() + 24 * 60 * 60 * 1000);
+  if (deadline < minDeadline) {
+    Alert.alert(i18n.t('common.error'), i18n.t('errors.validation.DEADLINE_TOO_SOON'));
+    return;
+  }
+  ```
+  - Also add buffer to `minimumDate` prop (+25 hours instead of +24) to account for form fill time
