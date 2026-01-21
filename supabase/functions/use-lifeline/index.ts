@@ -49,8 +49,17 @@ Deno.serve(async (req) => {
 
     addBreadcrumb('User authenticated', 'auth', { userId: user.id })
 
-    // Parse request body
-    const { commitment_id }: UseLifelineRequest = await req.json()
+    // Parse request body with error handling
+    let body: UseLifelineRequest
+    try {
+      body = await req.json()
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const { commitment_id } = body
 
     if (!commitment_id) {
       return new Response(

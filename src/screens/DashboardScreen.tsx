@@ -101,6 +101,8 @@ export default function DashboardScreen({ navigation }: any) {
     opacity: fadeOverlayOpacity.value,
   }));
 
+  // Refresh data on every screen focus to prevent stale data after navigation
+  // Empty deps is intentional: we always want fresh data when the screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       const loadData = async () => {
@@ -112,6 +114,7 @@ export default function DashboardScreen({ navigation }: any) {
         setCurrentLocale(i18n.locale);
       };
       loadData();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 

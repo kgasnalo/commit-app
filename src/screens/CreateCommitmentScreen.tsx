@@ -31,6 +31,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { HapticsService } from '../lib/HapticsService';
 import { HAPTIC_BUTTON_SCALES } from '../config/haptics';
 import { supabase } from '../lib/supabase';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import {
   getBookProgress,
   getBookById,
@@ -524,13 +525,34 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       if (error) {
         console.error('[CreateCommitment] Edge Function error:', error);
-        // Extract detailed error from response body
-        if (error.context) {
+
+        // Extract detailed error from response body (FunctionsHttpError type check)
+        if (error instanceof FunctionsHttpError) {
           try {
             const errorBody = await error.context.json();
             console.error('[CreateCommitment] Error details:', JSON.stringify(errorBody));
-          } catch {
-            console.error('[CreateCommitment] Could not parse error body');
+
+            // Handle specific error codes from Edge Function
+            const errorCode = errorBody?.error;
+            if (errorCode) {
+              const localizedError = i18n.t(`errors.validation.${errorCode}`);
+              if (localizedError !== `errors.validation.${errorCode}`) {
+                throw new Error(localizedError);
+              }
+            }
+          } catch (parseError) {
+            // JSON parse failed, try text
+            if (parseError instanceof SyntaxError || (parseError as Error).message?.includes('JSON')) {
+              try {
+                const errorText = await error.context.text();
+                console.error('[CreateCommitment] Error response (text):', errorText);
+              } catch {
+                console.error('[CreateCommitment] Could not parse error body');
+              }
+            } else {
+              // parseError is the localized error we threw above
+              throw parseError;
+            }
           }
         }
         throw new Error(i18n.t('errors.create_commitment_failed'));

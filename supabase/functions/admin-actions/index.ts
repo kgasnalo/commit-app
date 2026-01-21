@@ -180,7 +180,16 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     return errorResponse(400, 'NO_PAYMENT_INTENT', 'Cannot refund a charge without a Stripe Payment Intent')
   }
 
-  // 2. Set DB status to 'refund_pending' BEFORE attempting Stripe refund
+  // 2. Pre-validate Stripe configuration before any DB changes
+  let stripe: Stripe
+  try {
+    stripe = getStripe()
+  } catch (error) {
+    console.error('[admin-actions] Stripe not configured:', error)
+    return errorResponse(500, 'STRIPE_NOT_CONFIGURED', 'Stripe is not properly configured')
+  }
+
+  // 3. Set DB status to 'refund_pending' BEFORE attempting Stripe refund
   // This ensures consistency: even if later steps fail, we know a refund was attempted
   const { error: pendingError } = await supabase
     .from('penalty_charges')
@@ -195,9 +204,9 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
     return errorResponse(500, 'DB_UPDATE_FAILED', 'Failed to prepare refund')
   }
 
-  // 3. Process Stripe Refund with idempotency key to prevent duplicate refunds
+  // 4. Process Stripe Refund with idempotency key to prevent duplicate refunds
   try {
-    await getStripe().refunds.create(
+    await stripe.refunds.create(
       {
         payment_intent: charge.stripe_payment_intent_id,
         reason: 'requested_by_customer', // or 'duplicate', 'fraudulent'

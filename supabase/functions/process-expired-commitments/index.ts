@@ -254,8 +254,17 @@ Deno.serve(async (req) => {
     // ==========================================
     // Initialize Clients
     // ==========================================
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    // CRITICAL: Validate environment variables before proceeding
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('[Reaper] Missing required environment variables')
+      return new Response(
+        JSON.stringify({ error: 'CONFIGURATION_ERROR', details: 'Missing Supabase credentials' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: {

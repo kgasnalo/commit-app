@@ -736,6 +736,37 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - **🔑 Security (Secrets):** ✅ **CLEAN.** No Secret Keys found in client bundles.
 - **Verdict:** Fix **S.4**, and the service is safe to operate.
 
+### Level 6.1: Codebase Audit (2026-01-21) - 厳重監査
+**Objective:** Comprehensive audit revealed 56+ issues. Phase 1 (CRITICAL) complete, Phase 2/3 pending.
+
+- [x] **AUDIT.1 Edge Function JSON Parse Hardening**
+    - **Problem:** `req.json()` called without try-catch, crashes on invalid JSON
+    - **Fix:** Wrapped in try-catch, returns 400 INVALID_REQUEST
+    - **Files:** `use-lifeline/index.ts`, `isbn-lookup/index.ts`
+
+- [x] **AUDIT.2 Edge Function Environment Variable Validation**
+    - **Problem:** `Deno.env.get()` results not validated, empty strings cause cryptic errors
+    - **Fix:** Added null/empty check before createClient, returns 500 CONFIGURATION_ERROR
+    - **Files:** `process-expired-commitments/index.ts`
+
+- [x] **AUDIT.3 Stripe Initialization Pre-validation**
+    - **Problem:** `getStripe()` called inside try-catch for refunds, but failure message unclear
+    - **Fix:** Pre-validate Stripe config before any DB changes, returns 500 STRIPE_NOT_CONFIGURED
+    - **Files:** `admin-actions/index.ts`
+
+- [x] **AUDIT.4 FunctionsHttpError Type Check**
+    - **Problem:** `error.context` accessed without verifying error type
+    - **Fix:** Added `instanceof FunctionsHttpError` check before accessing context
+    - **Files:** `CreateCommitmentScreen.tsx`
+
+- [x] **AUDIT.5 useFocusEffect Dependency Documentation**
+    - **Problem:** Empty dependency array triggers ESLint warning, intention unclear
+    - **Fix:** Added explanatory comment and ESLint disable directive
+    - **Files:** `DashboardScreen.tsx`
+
+- [ ] **AUDIT.6 Phase 2 HIGH Issues (25 items)** - 別セッション
+- [ ] **AUDIT.7 Phase 3 MEDIUM Issues (24+ items)** - 別セッション
+
 ### Level 6: Security & Backend Consistency (バックエンド監査)
 - [ ] **S.1 Edge Function Security Verification**
     - **Status:** ✅ **Robust**.

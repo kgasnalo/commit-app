@@ -1108,3 +1108,37 @@
   }
   ```
   - Also add buffer to `minimumDate` prop (+25 hours instead of +24) to account for form fill time
+- **Edge Function JSON Parse (CRITICAL):** ALWAYS wrap `req.json()` in try-catch in Edge Functions. Invalid JSON will throw and crash the function without proper error response:
+  ```typescript
+  // BAD - crashes on invalid JSON
+  const { field } = await req.json();
+
+  // GOOD - returns proper 400 error
+  let body: RequestType;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: 'INVALID_REQUEST' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+  const { field } = body;
+  ```
+- **Edge Function Environment Variables (CRITICAL):** ALWAYS validate required environment variables before using them. Empty strings from `Deno.env.get()` will cause silent failures:
+  ```typescript
+  // BAD - empty string passed to createClient causes cryptic errors
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+  // GOOD - fail fast with clear error
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceRoleKey) {
+    return new Response(
+      JSON.stringify({ error: 'CONFIGURATION_ERROR' }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+  ```

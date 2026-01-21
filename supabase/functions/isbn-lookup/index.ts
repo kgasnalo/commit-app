@@ -34,8 +34,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Parse request body
-    const { isbn }: ISBNLookupRequest = await req.json()
+    // Parse request body with error handling
+    let body: ISBNLookupRequest
+    try {
+      body = await req.json()
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'INVALID_REQUEST' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const { isbn } = body
 
     if (!isbn) {
       return new Response(
