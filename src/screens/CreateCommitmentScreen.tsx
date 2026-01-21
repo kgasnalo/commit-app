@@ -442,7 +442,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
-      setDeadline(selectedDate);
+      // 選択された日の23:59:59に設定（最大限の時間を確保）
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      setDeadline(endOfDay);
     }
   };
 
@@ -462,8 +465,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       return;
     }
 
-    if (deadline < getNowDate()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.deadline_future'));
+    // サーバー側は24時間以上先を要求するため、クライアント側でも同様にチェック
+    const minDeadline = new Date(getNowDate().getTime() + 24 * 60 * 60 * 1000);
+    if (deadline < minDeadline) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.validation.DEADLINE_TOO_SOON'));
       return;
     }
 
@@ -751,7 +756,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               mode="date"
               display="default"
               onChange={handleDateChange}
-              minimumDate={new Date(Date.now() + 24 * 60 * 60 * 1000)}
+              minimumDate={new Date(Date.now() + 25 * 60 * 60 * 1000)}
               themeVariant="dark"
             />
           )}
