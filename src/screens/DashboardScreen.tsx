@@ -90,6 +90,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
   const [paymentMethodRegistered, setPaymentMethodRegistered] = useState<boolean>(true); // Default true to avoid flash
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [rankingPosition, setRankingPosition] = useState<number | null>(null);
 
   // Donation announcement
   const { unreadDonation, markAsRead } = useUnreadDonation();
@@ -111,6 +112,7 @@ export default function DashboardScreen({ navigation }: any) {
           fetchCommitments(),
           fetchUserProfile(),
           fetchStreakStats(),
+          fetchRankingPosition(),
         ]);
         setCurrentLocale(i18n.locale);
       };
@@ -125,6 +127,64 @@ export default function DashboardScreen({ navigation }: any) {
       setStreakStats(stats);
     } catch (error) {
       console.warn('[Dashboard] Failed to fetch streak stats:', error);
+    }
+  };
+
+  const fetchRankingPosition = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get the start of current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Fetch all completed commitments for this month with show_in_ranking = true
+      const { data, error } = await supabase
+        .from('commitments')
+        .select(`
+          user_id,
+          users!inner(id, show_in_ranking)
+        `)
+        .eq('status', 'completed')
+        .eq('users.show_in_ranking', true)
+        .gte('completed_at', startOfMonth.toISOString());
+
+      if (error) throw error;
+
+      // Group by user_id and count
+      const userCounts: Record<string, number> = {};
+      if (data) {
+        data.forEach((item: any) => {
+          const uid = item.user_id;
+          userCounts[uid] = (userCounts[uid] || 0) + 1;
+        });
+      }
+
+      // Convert to sorted array
+      const sortedUsers = Object.entries(userCounts)
+        .sort(([, a], [, b]) => b - a);
+
+      // Find current user's position (1-indexed)
+      let position: number | null = null;
+      let currentRank = 1;
+      let prevCount = -1;
+
+      for (let i = 0; i < sortedUsers.length; i++) {
+        const [uid, count] = sortedUsers[i];
+        if (count !== prevCount) {
+          currentRank = i + 1;
+          prevCount = count;
+        }
+        if (uid === user.id) {
+          position = currentRank;
+          break;
+        }
+      }
+
+      setRankingPosition(position);
+    } catch (error) {
+      console.warn('[Dashboard] Failed to fetch ranking position:', error);
     }
   };
 
@@ -439,18 +499,34 @@ export default function DashboardScreen({ navigation }: any) {
         {/* Card Registration Banner - Non-dismissable */}
         {!paymentMethodRegistered && <CardRegistrationBanner />}
 
-        {/* Streak Counter - Duolingo Style */}
-        {streakStats && streakStats.currentStreak > 0 && (
+        {/* Badges Row - Streak & Ranking */}
+        <View style={styles.badgeRow}>
+          {/* Streak Counter - Duolingo Style */}
+          {streakStats && streakStats.currentStreak > 0 && (
+            <TouchableOpacity
+              style={styles.streakBadge}
+              onPress={() => navigation.navigate('SettingsTab', { screen: 'Profile' })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.streakEmoji}>🔥</Text>
+              <Text style={styles.streakCount}>{streakStats.currentStreak}</Text>
+              <Text style={styles.streakLabel}>{i18n.t('dashboard.streak_days')}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Ranking Badge - Always visible */}
           <TouchableOpacity
-            style={styles.streakBadge}
-            onPress={() => navigation.navigate('SettingsTab', { screen: 'Profile' })}
+            style={styles.rankingBadge}
+            onPress={() => navigation.navigate('Leaderboard')}
             activeOpacity={0.8}
           >
-            <Text style={styles.streakEmoji}>🔥</Text>
-            <Text style={styles.streakCount}>{streakStats.currentStreak}</Text>
-            <Text style={styles.streakLabel}>{i18n.t('dashboard.streak_days')}</Text>
+            <Text style={styles.rankingEmoji}>🏆</Text>
+            <Text style={styles.rankingPosition}>
+              {rankingPosition ? `#${rankingPosition}` : '#-'}
+            </Text>
+            <Text style={styles.rankingLabel}>{i18n.t('dashboard.ranking_this_month')}</Text>
           </TouchableOpacity>
-        )}
+        </View>
 
         {/* Stats Grid: Reference Design Style */}
         <View style={styles.statsGrid}>
@@ -654,16 +730,22 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
+  // Badge Row
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+
   // Streak Badge - Duolingo Style
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     backgroundColor: 'rgba(255, 107, 53, 0.15)',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    marginBottom: 20,
     gap: 6,
   },
   streakEmoji: {
@@ -676,6 +758,31 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   streakLabel: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '500',
+  },
+
+  // Ranking Badge
+  rankingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 6,
+  },
+  rankingEmoji: {
+    fontSize: 18,
+  },
+  rankingPosition: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFD700',
+    fontVariant: ['tabular-nums'],
+  },
+  rankingLabel: {
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.6)',
     fontWeight: '500',

@@ -192,6 +192,26 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - Integrated in `VerificationScreen.tsx` (all 3 exit handlers)
     - **DoD:** App requests review at appropriate high-engagement moments. ✅
 
+- [x] **4.9 Leaderboard (Ranking Feature)**
+    - **Role:** `[Fullstack Engineer]`
+    - **Action:** Implement monthly/yearly leaderboard with dashboard badge.
+    - **Implementation (2026-01-21):**
+      - `LeaderboardScreen.tsx`: Titan Design System準拠、月間/年間タブ切り替え
+      - ポディウム (上位3名): 🥇🥈🥉 メダル表示
+      - ランキングリスト: 上位100名まで表示（パフォーマンス最適化）
+      - 同率順位対応（同じ冊数は同順位）
+      - 自分の行: オレンジ色ハイライト + "あなた" マーカー
+      - 「あなたの成績」カード: 全参加者中の順位表示（100位外でも正確な順位）
+      - `show_in_ranking=false` のユーザーは除外
+      - Dashboard: ストリークバッジ横に🏆ランキングバッジ追加
+      - i18n: 3言語対応 (ja/en/ko)
+    - **Files:**
+      - `src/screens/LeaderboardScreen.tsx` (新規)
+      - `src/screens/DashboardScreen.tsx` (バッジ追加)
+      - `src/navigation/AppNavigator.tsx` (画面登録)
+      - `src/i18n/locales/*.json` (キー追加)
+    - **DoD:** ユーザーがダッシュボードからランキングを確認可能。✅
+
 ---
 
 ## 🛠️ Phase 5: Technical Debt & Maintenance

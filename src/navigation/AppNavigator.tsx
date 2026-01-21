@@ -47,6 +47,7 @@ import MonkModeScreen from '../screens/monkmode/MonkModeScreen';
 import MonkModeActiveScreen from '../screens/monkmode/MonkModeActiveScreen';
 import ManualBookEntryScreen from '../screens/ManualBookEntryScreen';
 import LegalConsentScreen from '../screens/LegalConsentScreen';
+import LeaderboardScreen from '../screens/LeaderboardScreen';
 import { needsLegalConsent, CURRENT_LEGAL_VERSION } from '../config/legalVersions';
 import TabErrorBoundary from '../components/TabErrorBoundary';
 
@@ -81,6 +82,7 @@ function HomeStackNavigator() {
         <Stack.Screen name="ManualBookEntry" component={ManualBookEntryScreen} />
         <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
         <Stack.Screen name="Verification" component={VerificationScreen} />
+        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
       </Stack.Navigator>
     </TabErrorBoundary>
   );

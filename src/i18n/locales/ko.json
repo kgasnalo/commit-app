@@ -193,7 +193,20 @@
     "donated_short": "기부됨",
     "streak_days": "일 연속",
     "activity_log": "활동",
-    "days_suffix": "일"
+    "days_suffix": "일",
+    "ranking_this_month": "이번 달"
+  },
+  "leaderboard": {
+    "title": "랭킹",
+    "tab_month": "이번 달",
+    "tab_year": "올해",
+    "books_count": "{{count}}권",
+    "your_stats": "내 성적",
+    "rank_format": "#{{rank}} / {{total}}명",
+    "completed_count": "완독: {{count}}권",
+    "empty_title": "아직 랭킹이 없습니다",
+    "empty_subtitle": "책을 다 읽으면 랭킹에 참여할 수 있습니다",
+    "you_marker": "나"
   },
   "paywall": {
     "for_serious": "진지한 독자를 위해",
@@ -315,7 +328,10 @@
     "legal": "법적 정보",
     "support": "지원",
     "contact_support": "지원팀에 문의",
-    "manage_payment": "결제 관리 (Web)"
+    "manage_payment": "결제 관리 (Web)",
+    "ranking_section": "랭킹",
+    "show_in_ranking": "랭킹에 표시",
+    "show_in_ranking_description": "주간 및 월간 랭킹에 참여합니다"
   },
   "announcements": {
     "title": "공지사항",

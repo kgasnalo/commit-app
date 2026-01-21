@@ -193,7 +193,20 @@
     "donated_short": "Donated",
     "streak_days": "day streak",
     "activity_log": "ACTIVITY",
-    "days_suffix": "D"
+    "days_suffix": "D",
+    "ranking_this_month": "This Month"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "tab_month": "This Month",
+    "tab_year": "This Year",
+    "books_count": "{{count}} books",
+    "your_stats": "Your Stats",
+    "rank_format": "#{{rank}} / {{total}}",
+    "completed_count": "Completed: {{count}} books",
+    "empty_title": "No rankings yet",
+    "empty_subtitle": "Finish reading a book to join the leaderboard",
+    "you_marker": "You"
   },
   "paywall": {
     "for_serious": "For serious readers",
@@ -296,7 +309,10 @@
     "legal": "Legal",
     "support": "Support",
     "contact_support": "Contact Support",
-    "manage_payment": "Manage Payment (Web)"
+    "manage_payment": "Manage Payment (Web)",
+    "ranking_section": "Ranking",
+    "show_in_ranking": "Show in Ranking",
+    "show_in_ranking_description": "Participate in weekly and monthly rankings"
   },
   "announcements": {
     "title": "Announcements",

@@ -193,7 +193,20 @@
     "donated_short": "寄付済",
     "streak_days": "日連続",
     "activity_log": "アクティビティ",
-    "days_suffix": "日"
+    "days_suffix": "日",
+    "ranking_this_month": "今月"
+  },
+  "leaderboard": {
+    "title": "ランキング",
+    "tab_month": "今月",
+    "tab_year": "今年",
+    "books_count": "{{count}}冊",
+    "your_stats": "あなたの成績",
+    "rank_format": "#{{rank}} / {{total}}人",
+    "completed_count": "読了: {{count}}冊",
+    "empty_title": "まだランキングがありません",
+    "empty_subtitle": "本を読み終えるとランキングに参加できます",
+    "you_marker": "あなた"
   },
   "paywall": {
     "for_serious": "本気の人向け",
@@ -296,7 +309,10 @@
     "legal": "法的情報",
     "support": "サポート",
     "contact_support": "サポートにお問い合わせ",
-    "manage_payment": "支払い管理（Web）"
+    "manage_payment": "支払い管理（Web）",
+    "ranking_section": "ランキング",
+    "show_in_ranking": "ランキングに表示する",
+    "show_in_ranking_description": "週間・月間ランキングに参加します"
   },
   "announcements": {
     "title": "お知らせ",
