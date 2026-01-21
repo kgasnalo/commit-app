@@ -68,7 +68,7 @@ export default function AuthScreen({ navigation }: any) {
           .from('users')
           .select('id')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
 
         // レコードが存在しない場合は作成（既存ユーザー対応）
         if (!userData && !checkError && data.user.email) {
@@ -93,7 +93,7 @@ export default function AuthScreen({ navigation }: any) {
       .from('users')
       .select('id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (!userData) {
       await supabase

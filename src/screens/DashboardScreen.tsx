@@ -209,7 +209,7 @@ export default function DashboardScreen({ navigation }: any) {
           .from('users')
           .select('username, payment_method_registered')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         let name = data?.username;
         if (!name) name = user.email?.split('@')[0];
         setUserName(name || 'Guest');
@@ -277,7 +277,6 @@ export default function DashboardScreen({ navigation }: any) {
       }
     } catch (error) {
       captureError(error, { location: 'DashboardScreen.fetchCommitments' });
-      console.error('Error fetching commitments:', error);
     } finally {
       setRefreshing(false);
       setInitialLoading(false);

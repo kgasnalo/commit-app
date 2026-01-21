@@ -140,7 +140,7 @@ export default function BookDetailScreen() {
         .eq('commitment_id', commitmentId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!logError && logData) {
         setVerificationLog(logData);
@@ -157,7 +157,6 @@ export default function BookDetailScreen() {
       setAllTags(tagsData || []);
     } catch (err) {
       captureError(err, { location: 'BookDetailScreen.loadBookDetail', extra: { commitmentId } });
-      console.error('Error loading book detail:', err);
       setError(i18n.t('bookDetail.error_message'));
     } finally {
       setLoading(false);
@@ -184,7 +183,6 @@ export default function BookDetailScreen() {
       await loadBookDetail();
     } catch (error) {
       captureError(error, { location: 'BookDetailScreen.toggleTag' });
-      console.error('Error toggling tag:', error);
     }
   }
 
@@ -219,7 +217,6 @@ export default function BookDetailScreen() {
       await loadBookDetail();
     } catch (error) {
       captureError(error, { location: 'BookDetailScreen.createNewTag' });
-      console.error('Error creating tag:', error);
     }
   }
 
@@ -236,7 +233,6 @@ export default function BookDetailScreen() {
       setShowMemoModal(false);
     } catch (error) {
       captureError(error, { location: 'BookDetailScreen.updateMemo' });
-      console.error('Error updating memo:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('bookDetail.memo_update_failed'));
     }
   }

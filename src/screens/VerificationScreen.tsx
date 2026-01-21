@@ -213,7 +213,6 @@ export default function VerificationScreen({ route, navigation }: any) {
       setShowSuccessModal(true);
     } catch (error) {
       captureError(error, { location: 'VerificationScreen.handleSubmit', extra: { commitmentId } });
-      console.error('Verification error:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('errors.verification_failed'));
     } finally {
       setLoading(false);

@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import {
   NotificationService,
@@ -51,7 +51,6 @@ export default function NotificationSettingsScreen({ navigation }: any) {
       setHasPermission(permission);
     } catch (error) {
       captureError(error, { location: 'NotificationSettingsScreen.loadSettings' });
-      console.error('[NotificationSettings] Failed to load settings:', error);
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +104,6 @@ export default function NotificationSettingsScreen({ navigation }: any) {
       });
     } catch (error) {
       captureError(error, { location: 'NotificationSettingsScreen.loadActiveCommitment' });
-      console.error('[NotificationSettings] Failed to load commitment:', error);
     }
   };
 
@@ -133,7 +131,7 @@ export default function NotificationSettingsScreen({ navigation }: any) {
     setPreferences((prev) => ({ ...prev, enabled: value }));
   };
 
-  const handleTimeChange = async (event: any, selectedDate?: Date) => {
+  const handleTimeChange = async (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowTimePicker(false);
     }

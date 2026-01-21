@@ -92,9 +92,10 @@ export default function SettingsScreen({ navigation }: any) {
               } else {
                 throw new Error(data?.error || 'Failed to delete account');
               }
-            } catch (error: any) {
-              console.error('Delete account error:', error);
-              if (error.message === 'UNPAID_DEBT') {
+            } catch (error) {
+              captureError(error, { location: 'SettingsScreen.handleDeleteAccount' });
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              if (errorMessage === 'UNPAID_DEBT') {
                 Alert.alert(
                   i18n.t('common.error'),
                   i18n.t('settings.delete_account_error_failed_payments')

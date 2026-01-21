@@ -133,7 +133,7 @@ export async function getBookById(bookId: string): Promise<BookMetadata | null> 
       .from('books')
       .select('id, google_books_id, title, author, cover_url')
       .eq('id', bookId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;

@@ -40,7 +40,7 @@ import {
 } from '../lib/commitmentHelpers';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ScanBarcode } from 'lucide-react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Book } from '../types';
 import i18n from '../i18n';
 import { GOOGLE_API_KEY } from '../config/env';
@@ -440,7 +440,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
     setSearchQuery('');
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       // 選択された日の23:59:59に設定（最大限の時間を確保）

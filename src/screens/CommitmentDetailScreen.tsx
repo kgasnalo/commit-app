@@ -140,7 +140,6 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
       }
     } catch (error) {
       captureError(error, { location: 'CommitmentDetailScreen.fetchCommitment', extra: { commitmentId: id } });
-      console.error('[CommitmentDetailScreen] Fetch error:', error);
       Alert.alert(
         i18n.t('common.error'),
         i18n.t('errors.fetch_commitment_failed'),
@@ -230,12 +229,12 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
               } else if (data?.error) {
                 Alert.alert(i18n.t('common.error'), data.error);
               }
-            } catch (error: any) {
+            } catch (error) {
               captureError(error, { location: 'CommitmentDetailScreen.handleUseLifeline', extra: { commitmentId: commitment.id } });
-              console.error('[CommitmentDetailScreen] Lifeline error:', error);
+              const errorMessage = error instanceof Error ? error.message : undefined;
               Alert.alert(
                 i18n.t('common.error'),
-                error.message || i18n.t('commitment_detail.lifeline_already_used')
+                errorMessage || i18n.t('commitment_detail.lifeline_already_used')
               );
             } finally {
               setLifelineLoading(false);
