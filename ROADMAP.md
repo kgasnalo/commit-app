@@ -246,10 +246,10 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Pending:** iOS rebuild required (`npx expo prebuild && ./run-ios-manual.sh`)
     - **DoD:** Widget displays book title, progress, and deadline on home screen. 🔶
 
-- [ ] **4.12 Job-Based Ranking UI (職種別ランキング表示機能)**
+- [x] **4.12 Job-Based Ranking UI (職種別ランキング表示機能)**
     - **Role:** `[Fullstack Engineer]`
     - **Priority:** Medium
-    - **Status:** 設計完了、実装待ち
+    - **Status:** Phase 1-2 完了、Phase 3 (Web Portal) 未着手
     - **Depends on:** 4.10 (Job-Based Recommendations) ✅ 完了済み
 
     ### 背景・目的
@@ -306,17 +306,19 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
     ### 段階的実装アプローチ
 
-    #### Phase 1: ダッシュボードカード
-    - [ ] `DashboardScreen.tsx` に `JobRecommendations` コンポーネント統合
-    - [ ] ユーザーの `job_category` が設定済みの場合のみ表示
-    - [ ] 全期間Top10を横スクロールで表示
-    - [ ] タップで詳細画面へナビゲート
+    #### Phase 1: ダッシュボードカード ✅ (2026-01-22)
+    - [x] `DashboardScreen.tsx` に `JobRecommendations` コンポーネント統合
+    - [x] ユーザーの `job_category` が設定済みの場合のみ表示
+    - [x] 全期間Top10を横スクロールで表示
+    - [x] タップで詳細画面へナビゲート
 
-    #### Phase 2: 詳細ランキング画面
-    - [ ] `JobRankingScreen.tsx` 新規作成
-    - [ ] 全期間 / 月間 タブ切り替え
-    - [ ] Top10リスト表示（読了者数付き）
-    - [ ] Titan Design System準拠（LeaderboardScreenと統一感）
+    #### Phase 2: 詳細ランキング画面 ✅ (2026-01-22)
+    - [x] `JobRankingScreen.tsx` 新規作成
+    - [x] 全期間 / 月間 タブ切り替え
+    - [x] Top10リスト表示（読了者数付き）
+    - [x] Titan Design System準拠（LeaderboardScreenと統一感）
+    - [x] 全9職種の横スクロールタブ
+    - [x] Settingsからの導線追加
 
     #### Phase 3: Web Portal管理画面
     - [ ] `/admin/job-rankings` ページ追加
@@ -330,16 +332,20 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - `users.job_category` - 職種カラム
     - k-anonymity (3人以上) プライバシー保護
 
-    ### Files to Create/Modify
-    - `src/screens/DashboardScreen.tsx` (JobRecommendations統合)
-    - `src/screens/JobRankingScreen.tsx` (新規)
-    - `src/navigation/AppNavigator.tsx` (画面登録)
-    - `commit-app-web/src/app/admin/job-rankings/page.tsx` (新規)
-    - `src/i18n/locales/*.json` (キー追加)
+    ### Files Created/Modified
+    - `src/screens/DashboardScreen.tsx` (JobRecommendations統合) ✅
+    - `src/screens/JobRankingScreen.tsx` (新規) ✅
+    - `src/screens/JobCategorySettingsScreen.tsx` (新規) ✅
+    - `src/screens/SettingsScreen.tsx` (ランキング表示トグル + 導線追加) ✅
+    - `src/navigation/AppNavigator.tsx` (画面登録) ✅
+    - `src/components/JobRecommendations.tsx` (改善) ✅
+    - `supabase/functions/job-recommendations/index.ts` (period対応) ✅
+    - `src/i18n/locales/*.json` (キー追加) ✅
+    - `commit-app-web/src/app/admin/job-rankings/page.tsx` (Phase 3で作成予定)
 
     ### DoD (Definition of Done)
-    - [ ] Phase 1: ダッシュボードに職種別カードが表示される
-    - [ ] Phase 2: 詳細画面で全期間/月間の切り替えができる
+    - [x] Phase 1: ダッシュボードに職種別カードが表示される ✅
+    - [x] Phase 2: 詳細画面で全期間/月間の切り替えができる ✅
     - [ ] Phase 3: Web Portalで全職種のランキングが一覧できる
 
 ---
