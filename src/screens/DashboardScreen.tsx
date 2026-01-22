@@ -418,70 +418,42 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#080604" />
+      <StatusBar barStyle="light-content" backgroundColor="#050505" />
 
-      {/* Rich Multi-Source Lighting Background - Tesla Style 5-Layer */}
+      {/* Finexaスタイル: 黒ベース + 右上〜左下への対角オレンジグラデーション */}
       <View style={styles.ambientGlowContainer} pointerEvents="none">
-        {/* Layer 1: Base vertical gradient (4色に拡張) */}
+        {/* Layer 1: 黒ベース */}
         <LinearGradient
-          colors={['#1A1008', '#120C08', '#0C0806', '#080604']}
+          colors={['#0A0A0A', '#080808', '#060606', '#050505']}
           locations={[0, 0.3, 0.6, 1]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Layer 2: 全画面オレンジウォッシュ (NEW - Tesla style ambient) */}
+        {/* Layer 2: 右上からのオレンジグラデーション（Finexaの青をトレース） */}
         <LinearGradient
           colors={[
-            'rgba(255, 140, 100, 0.12)',  // 淡いオレンジ全体に
-            'rgba(255, 140, 100, 0.08)',
-            'rgba(255, 140, 100, 0.05)',
-            'rgba(255, 140, 100, 0.03)',
+            'rgba(255, 120, 80, 0.12)',
+            'rgba(255, 100, 60, 0.06)',
+            'transparent',
           ]}
-          locations={[0, 0.3, 0.6, 1]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
+          locations={[0, 0.4, 0.8]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 0.7 }}
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Layer 3: 左上からの環境光 (調整) */}
-        <LinearGradient
-          colors={[
-            'rgba(255, 160, 120, 0.15)',  // やや控えめに
-            'rgba(255, 160, 120, 0.08)',
-            'rgba(255, 160, 120, 0.03)',
-            'transparent',
-          ]}
-          locations={[0, 0.25, 0.5, 0.8]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.8, y: 0.7 }}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {/* Layer 4: 右下からの補助光 (NEW) */}
+        {/* Layer 3: 左下への補助グラデーション */}
         <LinearGradient
           colors={[
             'transparent',
-            'rgba(255, 140, 100, 0.02)',
-            'rgba(255, 140, 100, 0.06)',
+            'rgba(255, 100, 60, 0.04)',
+            'rgba(255, 80, 40, 0.08)',
           ]}
-          locations={[0, 0.5, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {/* Layer 5: 上部の暖色ウォッシュ (調整) */}
-        <LinearGradient
-          colors={[
-            'rgba(255, 140, 100, 0.08)',
-            'rgba(255, 140, 100, 0.04)',
-            'transparent',
-          ]}
-          locations={[0, 0.3, 0.6]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.5 }}
+          locations={[0.3, 0.6, 1]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -579,63 +551,81 @@ export default function DashboardScreen({ navigation }: any) {
             </View>
           </GlassTile>
 
-          {/* Secondary Stats - Grid (柔らかい発光) */}
-          <View style={styles.secondaryStatsRow}>
-            <GlassTile
-              variant="default"
-              innerGlow="orange"
-              padding="md"
-              borderRadius={20}
-              style={styles.smallStatTile}
-            >
-              <Text style={styles.smallStatValue}>{activeCommitmentsCount}</Text>
-              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.active_short') || 'Active'}</Text>
-            </GlassTile>
+          {/* Finexaスタイル: 4つの円形ボタン横並び */}
+          <View style={styles.circleButtonRow}>
+            {/* 進行中 */}
+            <View style={styles.circleButtonContainer}>
+              <View style={[
+                styles.circleButton,
+                activeCommitmentsCount > 0 && styles.circleButtonActive,
+              ]}>
+                <Ionicons
+                  name="hourglass-outline"
+                  size={24}
+                  color={activeCommitmentsCount > 0 ? '#FF6B35' : 'rgba(255, 255, 255, 0.5)'}
+                />
+              </View>
+              <Text style={styles.circleButtonValue}>{activeCommitmentsCount}</Text>
+              <Text style={styles.circleButtonLabel}>{i18n.t('dashboard.active_short') || 'Active'}</Text>
+            </View>
 
-            <GlassTile
-              variant="default"
-              innerGlow="orange"
-              padding="md"
-              borderRadius={20}
-              style={styles.smallStatTile}
-            >
-              <Text style={styles.smallStatValue}>{completedCount}</Text>
-              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.completed_short') || 'Done'}</Text>
-            </GlassTile>
-          </View>
+            {/* 完了 */}
+            <View style={styles.circleButtonContainer}>
+              <View style={[
+                styles.circleButton,
+                completedCount > 0 && styles.circleButtonActive,
+              ]}>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={24}
+                  color={completedCount > 0 ? '#FF6B35' : 'rgba(255, 255, 255, 0.5)'}
+                />
+              </View>
+              <Text style={styles.circleButtonValue}>{completedCount}</Text>
+              <Text style={styles.circleButtonLabel}>{i18n.t('dashboard.completed_short') || 'Done'}</Text>
+            </View>
 
-          <View style={styles.secondaryStatsRow}>
-            <GlassTile
-              variant="default"
-              innerGlow="orange"
-              padding="md"
-              borderRadius={20}
-              style={styles.smallStatTile}
-            >
-              <Text style={[styles.smallStatValue, failedCount > 0 && styles.dangerValue]}>
+            {/* 失敗 */}
+            <View style={styles.circleButtonContainer}>
+              <View style={[
+                styles.circleButton,
+                failedCount > 0 && styles.circleButtonDanger,
+              ]}>
+                <Ionicons
+                  name="close-circle-outline"
+                  size={24}
+                  color={failedCount > 0 ? '#FF6B6B' : 'rgba(255, 255, 255, 0.5)'}
+                />
+              </View>
+              <Text style={[styles.circleButtonValue, failedCount > 0 && styles.dangerValue]}>
                 {failedCount}
               </Text>
-              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.failed_short') || 'Failed'}</Text>
-            </GlassTile>
+              <Text style={styles.circleButtonLabel}>{i18n.t('dashboard.failed_short') || 'Failed'}</Text>
+            </View>
 
-            <GlassTile
-              variant="default"
-              innerGlow="orange"
-              padding="md"
-              borderRadius={20}
-              style={styles.smallStatTile}
-            >
-              <Text style={styles.smallStatValue}>
+            {/* 寄付済 */}
+            <View style={styles.circleButtonContainer}>
+              <View style={[
+                styles.circleButton,
+                Object.values(donatedByCurrency).some(v => v > 0) && styles.circleButtonActive,
+              ]}>
+                <Ionicons
+                  name="heart-outline"
+                  size={24}
+                  color={Object.values(donatedByCurrency).some(v => v > 0) ? '#FF6B35' : 'rgba(255, 255, 255, 0.5)'}
+                />
+              </View>
+              <Text style={styles.circleButtonValue}>
                 {Object.entries(donatedByCurrency)
                   .filter(([_, amount]) => amount > 0)
                   .map(([currency, amount]) => {
                     const symbol = CURRENCY_SYMBOLS[currency] || currency;
-                    return `${symbol}${Math.floor(amount / 1000)}k`;
+                    return amount >= 1000 ? `${symbol}${Math.floor(amount / 1000)}k` : `${symbol}${amount}`;
                   })
                   .join('+') || '¥0'}
               </Text>
-              <Text style={styles.smallStatLabel}>{i18n.t('dashboard.donated_short') || 'Donated'}</Text>
-            </GlassTile>
+              <Text style={styles.circleButtonLabel}>{i18n.t('dashboard.donated_short') || 'Donated'}</Text>
+            </View>
           </View>
         </View>
 
@@ -720,7 +710,7 @@ export default function DashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#080604', // リッチな深いダーク
+    backgroundColor: '#050505', // Finexaスタイル: 純粋な黒
   },
   ambientGlowContainer: {
     ...StyleSheet.absoluteFillObject, // 全画面カバー
@@ -843,6 +833,14 @@ const styles = StyleSheet.create({
   mainStatTile: {
     minHeight: 120,
     justifyContent: 'center',
+    // Finexaスタイル: オレンジボーダーグロー
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 53, 0.3)',
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 30,
+    elevation: 12,
   },
   statLabel: {
     fontSize: 11,
@@ -883,25 +881,50 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginLeft: 8,
   },
-  secondaryStatsRow: {
+  // Finexaスタイル: 円形ボタン
+  circleButtonRow: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    marginVertical: 8,
+    paddingHorizontal: 8,
   },
-  smallStatTile: {
-    flex: 1,
-    minHeight: 90,
+  circleButtonContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  circleButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(30, 30, 30, 0.95)', // Finexaスタイル: ニュートラルダーク
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)', // 薄い白ボーダー
     justifyContent: 'center',
     alignItems: 'center',
   },
-  smallStatValue: {
-    fontSize: 32,
-    color: '#FAFAFA',
-    fontWeight: '200',
-    letterSpacing: -0.5,
-    fontVariant: ['tabular-nums'],
-    marginBottom: 4,
+  circleButtonActive: {
+    borderColor: 'rgba(255, 107, 53, 0.4)', // アクティブ時のみオレンジ
+    // オレンジグロー
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  smallStatLabel: {
+  circleButtonDanger: {
+    borderColor: 'rgba(255, 107, 107, 0.4)',
+    shadowColor: '#FF6B6B',
+    shadowOpacity: 0.25,
+  },
+  circleButtonValue: {
+    fontSize: 18,
+    color: '#FAFAFA',
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    fontVariant: ['tabular-nums'],
+  },
+  circleButtonLabel: {
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.4)',
     fontWeight: '500',

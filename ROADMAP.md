@@ -352,6 +352,28 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - [x] Phase 2: 詳細画面で全期間/月間の切り替えができる ✅
     - [x] Phase 3: Web Portalで全職種のランキングが一覧できる ✅
 
+- [ ] **4.13 UI/UX Design Polish (Finexaトレース)**
+    - **Role:** `[UI/UX Designer]`
+    - **Priority:** Medium
+    - **Objective:** Finexaデザインを参考に、アプリ全体のUI/UXを洗練させる
+
+    ### 完了済みタスク (2026-01-22)
+    - [x] **CommitmentCard 表紙サムネイル追加**
+      - 左側に44x60pxの本の表紙を追加
+      - expo-imageで高速キャッシュ
+      - 表紙がない場合はプレースホルダー（📖アイコン）
+      - ファイル: `src/components/CommitmentCard.tsx`
+
+    - [x] **MonkMode Finexaスタイル背景**
+      - 5層グラデーション → 2層対角線グラデーション
+      - 左上オレンジグロー → 右下黒へフェード
+      - ファイル: `src/screens/monkmode/MonkModeScreen.tsx`
+
+    ### 検討中タスク
+    - [ ] MonkModeActiveScreen (タイマー実行中) 同様のFinexaスタイル適用
+    - [ ] DashboardScreen背景統一
+    - [ ] 他画面のデザイン一貫性確認
+
 ---
 
 ## 🛠️ Phase 5: Technical Debt & Maintenance
@@ -938,6 +960,15 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Batch 2:** 型安全性改善 (6箇所) - `DateTimePickerEvent`型、型安全なerror handling
     - **Batch 3:** console.error削除 (9箇所) - captureError重複箇所
     - **E2Eテスト:** 8シナリオ全パス (AuthScreen, DashboardScreen, BookDetailScreen, CreateCommitmentScreen, NotificationSettingsScreen, CommitmentDetailScreen, SettingsScreen, commitmentHelpers)
+
+- [x] **AUDIT.8 Phase 4 新機能品質監査 (7 items)** - ✅ 完了＆デプロイ済 (2026-01-22)
+    - **CRITICAL:** Web Portal職種定義修正 (`finance/executive` → `cs/founder`)
+    - **HIGH:** send-push-notification JSON parse try-catch追加
+    - **HIGH:** job-recommendations limit検証 (1-100範囲) 追加
+    - **MEDIUM:** OnboardingScreen1_5 captureError追加
+    - **MEDIUM:** WidgetService console.log削除 (7箇所)
+    - **MEDIUM:** JobRecommendations FunctionsHttpError処理追加
+    - **LOW:** admin-actions Optimistic Lock追加 (race condition防止)
 
 ### Level 6: Security & Backend Consistency (バックエンド監査)
 - [ ] **S.1 Edge Function Security Verification**

@@ -72,12 +72,12 @@ export function GlassTile({
   // Gradient colors based on variant
   const getGradientColors = (): GradientColors => {
     if (isGlowing) {
-      // 発光グラス: 背景からオレンジが透過
+      // Finexaスタイル: ニュートラルなダークグレー（オレンジはボーダーグローのみ）
       return [
-        'rgba(255, 107, 53, 0.15)',   // オレンジグロー（上）
-        'rgba(255, 107, 53, 0.08)',
-        'rgba(26, 23, 20, 0.95)',      // 半透明ダーク
-        'rgba(26, 23, 20, 0.98)',
+        'rgba(30, 30, 30, 0.95)',      // ニュートラルダーク
+        'rgba(25, 25, 25, 0.98)',
+        'rgba(20, 20, 20, 0.98)',
+        'rgba(18, 18, 18, 1)',
       ] as const;
     }
     if (isSunken) {
@@ -96,20 +96,21 @@ export function GlassTile({
     ] as const;
   };
 
-  // Inner glow gradient (発光効果) - Tesla style: より控えめに
+  // Inner glow gradient - Finexaスタイル: 微かな白のハイライトのみ
   const getInnerGlowColors = (): GradientColors | null => {
     if (innerGlow === 'strong') {
+      // Finexaスタイル: 上部に微かな白ハイライト
       return [
-        'rgba(255, 107, 53, 0.15)', // 0.25→0.15
-        'rgba(255, 107, 53, 0.08)', // 0.12→0.08
+        'rgba(255, 255, 255, 0.06)',
+        'rgba(255, 255, 255, 0.02)',
         'transparent',
         'transparent',
       ] as const;
     }
     if (innerGlow === 'orange') {
       return [
-        'rgba(255, 107, 53, 0.08)', // 0.12→0.08
-        'rgba(255, 107, 53, 0.03)', // 0.05→0.03
+        'rgba(255, 255, 255, 0.04)',
+        'rgba(255, 255, 255, 0.01)',
         'transparent',
         'transparent',
       ] as const;
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
     backgroundColor: titanColors.background.tertiary,
   },
   glowingContainer: {
-    backgroundColor: 'rgba(26, 23, 20, 0.6)', // より透明に（Tesla style）
+    backgroundColor: 'rgba(18, 18, 18, 0.95)', // Finexaスタイル: ニュートラルダーク
   },
   topBorder: {
     position: 'absolute',

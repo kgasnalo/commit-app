@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -151,6 +152,22 @@ export default function CommitmentCard({
         </View>
 
         <View style={styles.cardContent}>
+          {/* 本の表紙サムネイル */}
+          <View style={styles.coverContainer}>
+            {commitment.book.cover_url ? (
+              <Image
+                source={{ uri: commitment.book.cover_url.replace('http://', 'https://').replace(/&edge=curl/g, '') }}
+                style={styles.coverImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+            ) : (
+              <View style={styles.coverPlaceholder}>
+                <Ionicons name="book" size={20} color="rgba(255, 255, 255, 0.3)" />
+              </View>
+            )}
+          </View>
+
           <View style={styles.mainInfo}>
             <Text style={styles.bookTitle} numberOfLines={1}>
               {commitment.book.title}
@@ -230,6 +247,25 @@ const styles = StyleSheet.create({
     padding: 18,
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  coverContainer: {
+    width: 44,
+    height: 60,
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginRight: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  },
+  coverPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   mainInfo: {
     flex: 1,

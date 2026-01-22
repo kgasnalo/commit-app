@@ -1,132 +1,94 @@
-# Handoff: Session 2026-01-22 (職種別ランキング Web Portal完成)
+# Handoff: Session 2026-01-22 (UI/UXデザイン改善)
 
 ## Current Goal
-**職種別ランキング閲覧機能 (4.12) 全Phase完了**
+**Finexaデザインをトレースし、UI/UXを洗練させる**
 
 ---
 
 ## Current Critical Status
 
-### ✅ Phase 4.12: 職種別ランキング - 全Phase完了
+### ✅ 本セッション完了タスク
 
-| ステップ | 内容 | 結果 |
-|---------|------|------|
-| Phase 1 | Dashboard統合 | ✅ `JobRecommendations` カード表示、「すべて見る」リンク |
-| Phase 2 | 詳細画面 | ✅ `JobRankingScreen.tsx` 新規作成 |
-| Phase 2 | 全職種タブ | ✅ 9職種の横スクロールタブ |
-| Phase 2 | 期間切り替え | ✅ 全期間/月間タブ |
-| Phase 2 | Settings導線 | ✅ 「職種別ランキングを見る」リンク追加 |
-| Phase 2 | i18n | ✅ ja/en/ko 全言語対応 |
-| Phase 3 | Web Portal | ✅ `/admin/job-rankings` 管理画面完成 |
+| タスク | ファイル | 詳細 |
+|--------|----------|------|
+| CommitmentCard 表紙サムネイル | `src/components/CommitmentCard.tsx` | 左側に44x60pxの本の表紙を追加 |
+| MonkMode Finexaスタイル背景 | `src/screens/monkmode/MonkModeScreen.tsx` | 左上オレンジ→右下黒の対角線グラデーション |
 
-### ✅ Web Portal 管理画面 (Phase 3) 実装内容
+### CommitmentCard 変更内容
+```
+Before:
+┌─────────────────────────────────────────┐
+│  The 7 Habits of...             ¥3,000  │
+│  P.1-449                        28D 20H │
+└─────────────────────────────────────────┘
 
-**URL:** https://commit-app-web.vercel.app/admin/job-rankings
+After (Finexaスタイル):
+┌─────────────────────────────────────────┐
+│ [表紙]  The 7 Habits of...      ¥3,000  │
+│  44x60  P.1-449                 28D 20H │
+└─────────────────────────────────────────┘
+```
 
-| 機能 | 詳細 |
-|------|------|
-| ナビゲーション | Dashboard ↔ 職種別ランキング タブ切り替え |
-| 全期間/今月タブ | 期間でフィルタ可能 |
-| 9職種カードグリッド | 3列レスポンシブレイアウト |
-| Top10リスト | 🥇🥈🥉メダル + カバー画像 + タイトル/著者 + 読了者数 |
-| k-anonymity対応 | 3人未満の職種は「データ不足」表示 |
-| エクスポート | CSV/JSON形式でダウンロード |
-| ウォーターマーク | "Powered by COMMIT" (SNS投稿用) |
+### MonkMode 背景変更内容
+```
+Before: 5層グラデーション (Tesla Style)
+After:  2層対角線グラデーション (Finexa Style)
+
+左上 ━━━━━━━━━━━━━━━━━━━━━━→
+  ┃  🔶 濃いオレンジ (0.35)
+  ┃     ↘
+  ┃        オレンジ (0.18)
+  ┃           ↘
+  ┃              薄いオレンジ (0.08)
+  ┃                 ↘
+  ↓                    ■ 黒 (#030303)
+                              右下
+```
 
 ---
 
 ## What Didn't Work (This Session)
 
-特になし。順調に実装完了。
-
----
-
-## セキュリティ改善 (This Session)
-
-### 🔐 管理者メールアドレスの分離
-
-**背景:** 利用規約に公開されているメールアドレスが管理者メールと同一だったため、セキュリティリスクを検討。
-
-**分析結果:** Magic Link認証では、メールを受信できる人のみがログイン可能なため、メールアドレスを知っているだけでは管理者権限は取得不可。ただし、ベストプラクティスとして分離を実施。
-
-**変更内容:**
-```bash
-# Vercel環境変数
-ADMIN_EMAILS = "commit.xxx.kg@gmail.com,xagent000xxx@gmail.com"
-```
-
-**効果:**
-- 公開用メール（利用規約記載）と管理者メールを分離
-- 冗長性確保（片方のアカウントに問題があっても管理画面アクセス可能）
+特になし。計画通りに実装完了。
 
 ---
 
 ## Files Changed This Session
 
-| ファイル | 変更 |
-|----------|------|
-| `commit-app-web/src/app/admin/job-rankings/page.tsx` | **新規** - Server Component (認証チェック) |
-| `commit-app-web/src/app/admin/job-rankings/JobRankingsClient.tsx` | **新規** - Client Component (UI + データフェッチ) |
-| `commit-app-web/src/app/admin/dashboard/AdminDashboardClient.tsx` | ナビゲーションリンク追加 |
-| `commit-app-web/src/i18n/locales/ja.json` | `admin.job_rankings` セクション追加 |
-| `commit-app-web/src/i18n/locales/en.json` | `admin.job_rankings` セクション追加 |
-| `commit-app-web/src/i18n/locales/ko.json` | `admin.job_rankings` セクション追加 |
-
----
-
-## Architecture Note
-
-### Web Portal Admin ナビゲーション
-```
-/admin/dashboard          ← メイン管理画面
-    ├── Commitments タブ
-    ├── Penalty Charges タブ
-    ├── Donation Reports タブ
-    └── Announcements タブ
-
-/admin/job-rankings       ← 職種別ランキング (新規)
-    ├── 全期間/今月タブ
-    ├── 9職種カードグリッド
-    └── CSV/JSONエクスポート
-```
-
-### 相互ナビゲーション
-両ページ上部に共通ナビゲーションバー:
-```
-[📊 Dashboard] [📈 職種別ランキング]
-```
-現在のページはオレンジ色でハイライト。
+| ファイル | 変更内容 |
+|----------|---------|
+| `src/components/CommitmentCard.tsx` | expo-image追加、coverContainer/coverImage/coverPlaceholderスタイル追加 |
+| `src/screens/monkmode/MonkModeScreen.tsx` | 5層→2層グラデーション、Finexaスタイル対角線背景 |
 
 ---
 
 ## Immediate Next Steps
 
-### 🚀 次の優先タスク候補
+### 🔍 動作確認 (必須)
+1. `npx expo start` でアプリ起動
+2. **Dashboard**: CommitmentCardに表紙サムネイルが表示されることを確認
+3. **MonkModeタブ**: 左上オレンジ→右下黒のグラデーション確認
+4. 表紙がない本の場合、プレースホルダーアイコン（📖）が表示されることを確認
 
-1. **iOS Widget Native Module 動作確認**
-   - `npx expo prebuild && ./run-ios-manual.sh` でリビルド
-   - Apple Developer Portal で App Group 設定
-
-2. **Apple IAP / Google Play Billing (7.9)**
-   - サブスクリプション課金の実装（App Store審査必須）
-
-3. **Post-Release Backlog**
-   - Social Login Consent UX改善
-   - Context Memoization (P.9)
-   - Async Safety & Cleanup (A.4)
+### 🎨 追加デザイン検討 (オプション)
+- MonkModeActiveScreen (タイマー実行中) も同様のFinexaスタイル適用？
+- DashboardScreen背景もFinexaスタイルに統一？
+- 他の画面のデザイン一貫性確認
 
 ---
 
 ## Previous Sessions Summary
 
-**職種別ランキング (2026-01-22):**
-- Phase 1-2: モバイルアプリ実装完了
-- Phase 3: Web Portal管理画面実装完了
+**UI/UXデザイン改善 (2026-01-22 現セッション):**
+- CommitmentCard表紙サムネイル追加
+- MonkMode Finexaスタイル背景リデザイン
+
+**技術監査修正 (2026-01-22 早期):**
+- Phase 4新機能の品質監査・7件修正完了
+
+**職種別ランキング (2026-01-22 早期):**
+- Phase 1-3: モバイル + Web Portal管理画面完成
 
 **ウィジェット + 職種別推薦 (2026-01-22 早期):**
-- iOS Home Screen Widget Native Module実装完了
+- iOS Home Screen Widget Native Module実装
 - 職種別推薦基盤 (4.10) 完了
-
-**ランキング機能実装 (2026-01-21):**
-- LeaderboardScreen: 月間/年間タブ、上位100名表示
-- Dashboard: ランキングバッジ追加

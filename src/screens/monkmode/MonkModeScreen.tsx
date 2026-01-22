@@ -173,68 +173,35 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Tesla Style 5-Layer Background (same as Dashboard) */}
+      {/* Finexa Style Background - Orange glow from top-left to black at bottom-right */}
       <View style={styles.backgroundContainer} pointerEvents="none">
-        {/* Layer 1: Base vertical gradient */}
-        <LinearGradient
-          colors={['#1A1008', '#120C08', '#0C0806', '#080604']}
-          locations={[0, 0.3, 0.6, 1]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        {/* Layer 1: Base black */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#030303' }]} />
 
-        {/* Layer 2: 全画面オレンジウォッシュ */}
+        {/* Layer 2: Main diagonal gradient - Orange glow from top-left */}
         <LinearGradient
           colors={[
-            'rgba(255, 140, 100, 0.12)',
-            'rgba(255, 140, 100, 0.08)',
-            'rgba(255, 140, 100, 0.05)',
-            'rgba(255, 140, 100, 0.03)',
-          ]}
-          locations={[0, 0.3, 0.6, 1]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {/* Layer 3: 左上からの環境光 */}
-        <LinearGradient
-          colors={[
-            'rgba(255, 160, 120, 0.15)',
-            'rgba(255, 160, 120, 0.08)',
-            'rgba(255, 160, 120, 0.03)',
-            'transparent',
+            'rgba(255, 107, 53, 0.35)',   // Intense orange at top-left
+            'rgba(255, 80, 30, 0.18)',    // Mid orange
+            'rgba(255, 60, 20, 0.08)',    // Fading orange
+            'transparent',                 // Black at bottom-right
           ]}
           locations={[0, 0.25, 0.5, 0.8]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.8, y: 0.7 }}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {/* Layer 4: 右下からの補助光 */}
-        <LinearGradient
-          colors={[
-            'transparent',
-            'rgba(255, 140, 100, 0.02)',
-            'rgba(255, 140, 100, 0.06)',
-          ]}
-          locations={[0, 0.5, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Layer 5: 上部の暖色ウォッシュ */}
+        {/* Layer 3: Soft ambient glow for depth */}
         <LinearGradient
           colors={[
-            'rgba(255, 140, 100, 0.08)',
-            'rgba(255, 140, 100, 0.04)',
+            'rgba(255, 140, 100, 0.12)',
+            'rgba(255, 100, 60, 0.05)',
             'transparent',
           ]}
           locations={[0, 0.3, 0.6]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.5 }}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.6, y: 0.5 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
