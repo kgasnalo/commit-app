@@ -23,6 +23,7 @@ import VerificationSuccessModal from '../components/VerificationSuccessModal';
 import * as AnalyticsService from '../lib/AnalyticsService';
 import { ReviewService } from '../lib/ReviewService';
 import { captureError } from '../utils/errorLogger';
+import { getNowUTC } from '../lib/DateUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -185,11 +186,13 @@ export default function VerificationScreen({ route, navigation }: any) {
       }
 
       // コミットメントのステータスを更新
+      const nowUTC = getNowUTC();
       const { error: updateError } = await supabase
         .from('commitments')
         .update({
           status: 'completed',
-          updated_at: new Date().toISOString(),
+          updated_at: nowUTC,
+          completed_at: nowUTC,
         })
         .eq('id', commitmentId);
 

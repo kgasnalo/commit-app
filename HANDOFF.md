@@ -1,13 +1,13 @@
-# Handoff: Session 2026-01-22 (職種別ランキング機能完成)
+# Handoff: Session 2026-01-22 (職種別ランキング Web Portal完成)
 
 ## Current Goal
-**職種別ランキング閲覧機能 (4.12) Phase 1-2 完了、Phase 3 (Web Portal) 未着手**
+**職種別ランキング閲覧機能 (4.12) 全Phase完了**
 
 ---
 
 ## Current Critical Status
 
-### ✅ Phase 4.12: 職種別ランキング - Phase 1-2 完了
+### ✅ Phase 4.12: 職種別ランキング - 全Phase完了
 
 | ステップ | 内容 | 結果 |
 |---------|------|------|
@@ -17,76 +17,47 @@
 | Phase 2 | 期間切り替え | ✅ 全期間/月間タブ |
 | Phase 2 | Settings導線 | ✅ 「職種別ランキングを見る」リンク追加 |
 | Phase 2 | i18n | ✅ ja/en/ko 全言語対応 |
-| Phase 3 | Web Portal | 🔶 未着手 (`/admin/job-rankings`) |
+| Phase 3 | Web Portal | ✅ `/admin/job-rankings` 管理画面完成 |
 
-### ✅ 監査結果 (2026-01-22)
+### ✅ Web Portal 管理画面 (Phase 3) 実装内容
 
-| 項目 | 結果 |
+**URL:** https://commit-app-web.vercel.app/admin/job-rankings
+
+| 機能 | 詳細 |
 |------|------|
-| TypeScriptチェック | ✅ エラーなし |
-| i18nキー | ✅ 全言語で存在確認 |
-| AppNavigator登録 | ✅ HomeStack + SettingsStack 両方 |
-| エラーハンドリング | ✅ try-catch-finally + Sentry |
-| ナビゲーション | ✅ ネスト構文で正しく実装 |
+| ナビゲーション | Dashboard ↔ 職種別ランキング タブ切り替え |
+| 全期間/今月タブ | 期間でフィルタ可能 |
+| 9職種カードグリッド | 3列レスポンシブレイアウト |
+| Top10リスト | 🥇🥈🥉メダル + カバー画像 + タイトル/著者 + 読了者数 |
+| k-anonymity対応 | 3人未満の職種は「データ不足」表示 |
+| エクスポート | CSV/JSON形式でダウンロード |
+| ウォーターマーク | "Powered by COMMIT" (SNS投稿用) |
 
 ---
 
 ## What Didn't Work (This Session)
 
-特に問題なし。監査レポート通りの実装完了。
+特になし。順調に実装完了。
 
 ---
 
-## Architecture Note
+## セキュリティ改善 (This Session)
 
-### 職種別ランキング ナビゲーションフロー
-```
-【Dashboard → JobRanking】
-HomeTab (HomeStackNavigator)
-  └── Dashboard
-        └── JobRecommendations「すべて見る」
-              └── navigation.navigate('JobRanking', { jobCategory })
-                    └── JobRanking (HomeStackNavigator内)
-                          └── 本タップ → LibraryTab/BookDetail ✅
+### 🔐 管理者メールアドレスの分離
 
-【Settings → JobRanking】
-SettingsTab (SettingsStackNavigator)
-  └── Settings
-        └── 「職種別ランキングを見る」
-              └── navigation.navigate('JobRanking', {})
-                    └── JobRanking (SettingsStackNavigator内)
-                          └── 本タップ → LibraryTab/BookDetail ✅
-```
+**背景:** 利用規約に公開されているメールアドレスが管理者メールと同一だったため、セキュリティリスクを検討。
 
-### JobRankingScreen 実装パターン
-- `useFocusEffect` + `useCallback`: 画面表示時にデータ再取得
-- フォールバック: `route.params || {}` + `|| 'engineer'` でnull安全
-- エラーハンドリング: try-catch-finally + `captureError` でSentry連携
-- クロスタブナビゲーション: `navigation.navigate('LibraryTab', { screen: 'BookDetail' })`
+**分析結果:** Magic Link認証では、メールを受信できる人のみがログイン可能なため、メールアドレスを知っているだけでは管理者権限は取得不可。ただし、ベストプラクティスとして分離を実施。
 
----
-
-## Immediate Next Steps
-
-### 🚀 Phase 3: Web Portal管理画面 (未着手)
-
-```
-commit-app-web/
-├── src/app/admin/job-rankings/page.tsx  ← 新規作成
-│   ├── 全9職種のTop10を一覧表示
-│   ├── 全期間/月間の切り替え
-│   ├── スクショしやすいカード形式（SNS投稿用）
-│   └── CSV/JSONエクスポート機能（オプション）
-```
-
-### 🔶 iOS Widget ビルド待ち (前回セッション)
-
-Widget機能を有効化するには、iOSの再ビルドが必要:
+**変更内容:**
 ```bash
-npx expo prebuild && ./run-ios-manual.sh
+# Vercel環境変数
+ADMIN_EMAILS = "commit.xxx.kg@gmail.com,xagent000xxx@gmail.com"
 ```
 
-**注意:** Apple Developer Portalで `group.com.kgxxx.commitapp` App Groupの作成と、App IDへの関連付けが必要。
+**効果:**
+- 公開用メール（利用規約記載）と管理者メールを分離
+- 冗長性確保（片方のアカウントに問題があっても管理画面アクセス可能）
 
 ---
 
@@ -94,23 +65,66 @@ npx expo prebuild && ./run-ios-manual.sh
 
 | ファイル | 変更 |
 |----------|------|
-| `src/screens/JobRankingScreen.tsx` | **新規** - 職種別ランキング詳細画面 |
-| `src/screens/JobCategorySettingsScreen.tsx` | **新規** - 職種変更画面 |
-| `src/navigation/AppNavigator.tsx` | JobRanking + JobCategorySettings 登録 |
-| `src/screens/DashboardScreen.tsx` | JobRanking ナビゲーション追加 |
-| `src/screens/SettingsScreen.tsx` | ランキング表示トグル + 職種ランキングリンク |
-| `src/components/JobRecommendations.tsx` | 改善 |
-| `supabase/functions/job-recommendations/index.ts` | period パラメータ対応 |
-| `src/i18n/locales/*.json` | i18nキー追加 |
-| `supabase/migrations/20260121160000_ranking_preparation.sql` | **新規** |
-| `ROADMAP.md` | 4.12 更新 |
+| `commit-app-web/src/app/admin/job-rankings/page.tsx` | **新規** - Server Component (認証チェック) |
+| `commit-app-web/src/app/admin/job-rankings/JobRankingsClient.tsx` | **新規** - Client Component (UI + データフェッチ) |
+| `commit-app-web/src/app/admin/dashboard/AdminDashboardClient.tsx` | ナビゲーションリンク追加 |
+| `commit-app-web/src/i18n/locales/ja.json` | `admin.job_rankings` セクション追加 |
+| `commit-app-web/src/i18n/locales/en.json` | `admin.job_rankings` セクション追加 |
+| `commit-app-web/src/i18n/locales/ko.json` | `admin.job_rankings` セクション追加 |
+
+---
+
+## Architecture Note
+
+### Web Portal Admin ナビゲーション
+```
+/admin/dashboard          ← メイン管理画面
+    ├── Commitments タブ
+    ├── Penalty Charges タブ
+    ├── Donation Reports タブ
+    └── Announcements タブ
+
+/admin/job-rankings       ← 職種別ランキング (新規)
+    ├── 全期間/今月タブ
+    ├── 9職種カードグリッド
+    └── CSV/JSONエクスポート
+```
+
+### 相互ナビゲーション
+両ページ上部に共通ナビゲーションバー:
+```
+[📊 Dashboard] [📈 職種別ランキング]
+```
+現在のページはオレンジ色でハイライト。
+
+---
+
+## Immediate Next Steps
+
+### 🚀 次の優先タスク候補
+
+1. **iOS Widget Native Module 動作確認**
+   - `npx expo prebuild && ./run-ios-manual.sh` でリビルド
+   - Apple Developer Portal で App Group 設定
+
+2. **Apple IAP / Google Play Billing (7.9)**
+   - サブスクリプション課金の実装（App Store審査必須）
+
+3. **Post-Release Backlog**
+   - Social Login Consent UX改善
+   - Context Memoization (P.9)
+   - Async Safety & Cleanup (A.4)
 
 ---
 
 ## Previous Sessions Summary
 
+**職種別ランキング (2026-01-22):**
+- Phase 1-2: モバイルアプリ実装完了
+- Phase 3: Web Portal管理画面実装完了
+
 **ウィジェット + 職種別推薦 (2026-01-22 早期):**
-- iOS Home Screen Widget コード完了（ビルド待ち）
+- iOS Home Screen Widget Native Module実装完了
 - 職種別推薦基盤 (4.10) 完了
 
 **ランキング機能実装 (2026-01-21):**

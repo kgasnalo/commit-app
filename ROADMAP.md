@@ -249,7 +249,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] **4.12 Job-Based Ranking UI (職種別ランキング表示機能)**
     - **Role:** `[Fullstack Engineer]`
     - **Priority:** Medium
-    - **Status:** Phase 1-2 完了、Phase 3 (Web Portal) 未着手
+    - **Status:** ✅ 全Phase完了 (2026-01-22)
     - **Depends on:** 4.10 (Job-Based Recommendations) ✅ 完了済み
 
     ### 背景・目的
@@ -320,11 +320,12 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - [x] 全9職種の横スクロールタブ
     - [x] Settingsからの導線追加
 
-    #### Phase 3: Web Portal管理画面
-    - [ ] `/admin/job-rankings` ページ追加
-    - [ ] 全職種のTop10を一覧表示（9職種 × 全期間/月間）
-    - [ ] スクショしやすいカード形式（SNS投稿用）
-    - [ ] CSV/JSONエクスポート機能（オプション）
+    #### Phase 3: Web Portal管理画面 ✅ (2026-01-22)
+    - [x] `/admin/job-rankings` ページ追加
+    - [x] 全職種のTop10を一覧表示（9職種 × 全期間/月間）
+    - [x] スクショしやすいカード形式（SNS投稿用）
+    - [x] CSV/JSONエクスポート機能
+    - [x] Dashboard ↔ JobRankings ナビゲーションリンク
 
     ### 既存リソース（4.10で作成済み）
     - `supabase/functions/job-recommendations/index.ts` - データ集計Edge Function
@@ -341,12 +342,15 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - `src/components/JobRecommendations.tsx` (改善) ✅
     - `supabase/functions/job-recommendations/index.ts` (period対応) ✅
     - `src/i18n/locales/*.json` (キー追加) ✅
-    - `commit-app-web/src/app/admin/job-rankings/page.tsx` (Phase 3で作成予定)
+    - `commit-app-web/src/app/admin/job-rankings/page.tsx` ✅
+    - `commit-app-web/src/app/admin/job-rankings/JobRankingsClient.tsx` ✅
+    - `commit-app-web/src/app/admin/dashboard/AdminDashboardClient.tsx` (ナビ追加) ✅
+    - `commit-app-web/src/i18n/locales/*.json` (admin.job_rankings追加) ✅
 
     ### DoD (Definition of Done)
     - [x] Phase 1: ダッシュボードに職種別カードが表示される ✅
     - [x] Phase 2: 詳細画面で全期間/月間の切り替えができる ✅
-    - [ ] Phase 3: Web Portalで全職種のランキングが一覧できる
+    - [x] Phase 3: Web Portalで全職種のランキングが一覧できる ✅
 
 ---
 
