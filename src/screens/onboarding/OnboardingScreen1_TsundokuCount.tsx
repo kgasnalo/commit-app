@@ -38,15 +38,14 @@ export default function OnboardingScreen1({ navigation }: any) {
 
   // Handle next button press
   const handleNext = useCallback(() => {
-    // Store the selected value (could use AsyncStorage or Context)
-    // For now, just navigate
-    navigation.navigate('Onboarding2', { tsundokuCount: selectedValue });
+    // Navigate to job category selection screen
+    navigation.navigate('OnboardingJobCategory', { tsundokuCount: selectedValue });
   }, [navigation, selectedValue]);
 
   return (
     <OnboardingLayout
       currentStep={1}
-      totalSteps={14}
+      totalSteps={15}
       title={i18n.t('onboarding.screen1_title')}
       subtitle={i18n.t('onboarding.screen1_subtitle')}
       footer={

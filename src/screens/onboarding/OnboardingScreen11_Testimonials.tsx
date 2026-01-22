@@ -30,8 +30,8 @@ const getTESTIMONIALS = () => [
 export default function OnboardingScreen11({ navigation }: any) {
   return (
     <OnboardingLayout
-      currentStep={11}
-      totalSteps={14}
+      currentStep={12}
+      totalSteps={15}
       title={i18n.t('onboarding.screen11_title')}
       footer={
         <PrimaryButton

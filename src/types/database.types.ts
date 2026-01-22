@@ -23,6 +23,8 @@ export interface Database {
           payment_method_registered: boolean
           onboarding_completed: boolean
           legal_consent_version: string | null
+          show_in_ranking: boolean
+          job_category: string | null
           created_at: string
         }
         Insert: {
@@ -38,6 +40,8 @@ export interface Database {
           payment_method_registered?: boolean
           onboarding_completed?: boolean
           legal_consent_version?: string | null
+          show_in_ranking?: boolean
+          job_category?: string | null
           created_at?: string
         }
         Update: {
@@ -53,6 +57,8 @@ export interface Database {
           payment_method_registered?: boolean
           onboarding_completed?: boolean
           legal_consent_version?: string | null
+          show_in_ranking?: boolean
+          job_category?: string | null
           created_at?: string
         }
         Relationships: []
@@ -105,6 +111,7 @@ export interface Database {
           target_pages: number
           is_freeze_used: boolean
           defaulted_at: string | null
+          completed_at: string | null
           created_at: string
           updated_at: string | null
         }
@@ -119,6 +126,7 @@ export interface Database {
           target_pages?: number
           is_freeze_used?: boolean
           defaulted_at?: string | null
+          completed_at?: string | null
           created_at?: string
           updated_at?: string | null
         }
@@ -133,6 +141,7 @@ export interface Database {
           target_pages?: number
           is_freeze_used?: boolean
           defaulted_at?: string | null
+          completed_at?: string | null
           created_at?: string
           updated_at?: string | null
         }

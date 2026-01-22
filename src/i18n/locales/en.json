@@ -95,6 +95,20 @@
     "screen5_card_notice": "* Card registration required after signup to enable donations",
     "screen5_donation_label": "Donation to",
     "screen5_donation_info": "Donation to: Room to Read (Supporting children's education)",
+    "job_category_title": "What's your profession?",
+    "job_category_subtitle": "We'll recommend popular books among your peers",
+    "job_categories": {
+      "engineer": "Engineer",
+      "designer": "Designer",
+      "pm": "PM/PO",
+      "marketing": "Marketing",
+      "sales": "Sales",
+      "hr": "HR",
+      "cs": "Customer Success",
+      "founder": "Founder/CEO",
+      "other": "Other"
+    },
+    "skip": "Skip",
     "screen6_title": "Join COMMIT",
     "screen6_subtitle": "Join a community of readers with the same goals.",
     "screen6_username": "Username",
@@ -207,6 +221,15 @@
     "empty_title": "No rankings yet",
     "empty_subtitle": "Finish reading a book to join the leaderboard",
     "you_marker": "You"
+  },
+  "recommendations": {
+    "job_title": "Popular among {{jobCategory}}s",
+    "job_subtitle": "Books that people in your profession are reading",
+    "not_enough_data": "Not enough data yet",
+    "set_job_category": "Set your profession to see book recommendations",
+    "set_job_category_button": "Set Profession",
+    "read_count": "{{count}} readers",
+    "view_all": "View All"
   },
   "paywall": {
     "for_serious": "For serious readers",

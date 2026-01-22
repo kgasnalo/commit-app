@@ -43,6 +43,7 @@ import { MonkModeService, StreakStats } from '../lib/MonkModeService';
 import { CardRegistrationBanner } from '../components/CardRegistrationBanner';
 import { DonationAnnouncementModal, useUnreadDonation } from '../components/DonationAnnouncementModal';
 import { captureError } from '../utils/errorLogger';
+import { WidgetService } from '../lib/WidgetService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -334,6 +335,29 @@ export default function DashboardScreen({ navigation }: any) {
 
         setPoolByCurrency(poolByC);
         setDonatedByCurrency(donatedByC);
+
+        // Update iOS home screen widget with first active commitment
+        const activeCommitment = normalizedData.find(c => c.status === 'pending');
+        if (activeCommitment) {
+          // Calculate pages read from verification logs
+          const { data: verificationLogs } = await supabase
+            .from('verification_logs')
+            .select('commitment_id')
+            .eq('commitment_id', activeCommitment.id);
+          const pagesRead = (verificationLogs?.length || 0) * Math.ceil(activeCommitment.target_pages / 10);
+
+          WidgetService.updateWidget({
+            bookTitle: activeCommitment.book.title,
+            bookAuthor: activeCommitment.book.author,
+            bookCoverUrl: activeCommitment.book.cover_url,
+            deadline: activeCommitment.deadline,
+            pagesRead: Math.min(pagesRead, activeCommitment.target_pages),
+            totalPages: activeCommitment.target_pages,
+            hasActiveCommitment: true,
+          });
+        } else {
+          WidgetService.clearWidget();
+        }
       }
     } catch (error) {
       captureError(error, { location: 'DashboardScreen.fetchCommitments' });

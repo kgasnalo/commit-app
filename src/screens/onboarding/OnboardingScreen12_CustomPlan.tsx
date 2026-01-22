@@ -96,8 +96,8 @@ export default function OnboardingScreen12({ navigation, route }: any) {
 
   return (
     <OnboardingLayout
-      currentStep={12}
-      totalSteps={14}
+      currentStep={13}
+      totalSteps={15}
       title={i18n.t('onboarding.screen12_title')}
       subtitle={i18n.t('onboarding.screen12_subtitle')}
       footer={

@@ -235,8 +235,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         onComplete={handleWarpComplete}
       />
       <OnboardingLayout
-      currentStep={13}
-      totalSteps={14}
+      currentStep={14}
+      totalSteps={15}
       title={i18n.t('onboarding.screen13_title')}
       footer={
         <View>

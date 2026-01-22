@@ -1171,3 +1171,38 @@
   - The `location` format should be `ScreenName.functionName` for easy debugging
   - Optional `extra` object for additional context (no PII - use IDs, not emails)
   - Optional `level` for severity (`'error'`, `'warning'`, `'info'`)
+- **typography.fontSize Available Properties:** The `typography.fontSize` object only has these properties: `headingLarge`, `headingMedium`, `headingSmall`, `body`, `bodySmall`, `caption`, `button`. Do NOT use `bodyLarge` or `small` (they don't exist):
+  ```typescript
+  // BAD - these don't exist
+  typography.fontSize.bodyLarge
+  typography.fontSize.small
+
+  // GOOD - use correct properties
+  typography.fontSize.body      // 17px - for normal body text
+  typography.fontSize.bodySmall // 15px - for smaller body text
+  typography.fontSize.caption   // 14px - for captions and small labels
+  ```
+- **expo-image Source Null Handling:** `expo-image`'s `source` prop does NOT accept `null`, only `string | undefined`. When using with nullable URLs, use null coalescing:
+  ```typescript
+  // BAD - TypeScript error: null not assignable
+  <Image source={{ uri: someNullableUrl }} />
+
+  // GOOD - convert null to undefined
+  <Image source={{ uri: someNullableUrl ?? undefined }} />
+  ```
+- **Onboarding totalSteps Consistency:** When adding/removing onboarding screens, update `totalSteps` in ALL onboarding screens (currently 15 steps, screens 0-14). Also update `currentStep` for each subsequent screen. The screens are:
+  - 0: Welcome
+  - 1: TsundokuCount
+  - 2: JobCategory (inserted 2026-01-22)
+  - 3: LastRead
+  - 4: BookSelect
+  - 5: Deadline
+  - 6: Penalty
+  - 7: Account
+  - 8: OpportunityCost
+  - 9: Stats
+  - 10: HowItWorks
+  - 11: Authority
+  - 12: Testimonials
+  - 13: CustomPlan
+  - 14: Paywall

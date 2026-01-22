@@ -212,6 +212,40 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - `src/i18n/locales/*.json` (キー追加)
     - **DoD:** ユーザーがダッシュボードからランキングを確認可能。✅
 
+- [x] **4.10 Job-Based Book Recommendations (職種別推薦)**
+    - **Role:** `[Fullstack Engineer]`
+    - **Action:** Recommend books popular among users with the same profession.
+    - **Implementation (2026-01-22):**
+      - DB: `users.job_category` column added
+      - Onboarding: `OnboardingScreen1_5_JobCategory.tsx` for profession selection
+      - Edge Function: `job-recommendations` aggregates completed books by job category
+      - Privacy: Only `show_in_ranking=true` users, k-anonymity threshold (3+ users)
+      - UI: `JobRecommendations.tsx` horizontal scroll card component
+      - i18n: 9 job categories in ja/en/ko
+    - **Files:**
+      - `supabase/migrations/20260122100000_add_job_category.sql`
+      - `src/screens/onboarding/OnboardingScreen1_5_JobCategory.tsx` (新規)
+      - `supabase/functions/job-recommendations/index.ts` (新規)
+      - `src/components/JobRecommendations.tsx` (新規)
+    - **DoD:** Users see "Popular among [profession]" book recommendations. ✅
+
+- [x] **4.11 iOS Home Screen Widget**
+    - **Role:** `[Mobile Engineer]`
+    - **Action:** WidgetKit implementation showing reading progress.
+    - **Implementation (2026-01-22):**
+      - App Groups: `group.com.kgxxx.commitapp` for data sharing
+      - Swift Widget: `COMMITWidget.swift` (Small + Medium sizes)
+      - Native Module: `WidgetModule.swift` + `.m` bridge
+      - TypeScript: `WidgetService.ts` for React Native integration
+      - Trigger: Dashboard updates widget on data fetch
+    - **Files:**
+      - `ios/LiveActivity/COMMITWidget.swift` (新規)
+      - `ios/COMMIT/WidgetModule.swift` (新規)
+      - `ios/COMMIT/WidgetModule.m` (新規)
+      - `src/lib/WidgetService.ts` (新規)
+    - **Pending:** iOS rebuild required (`npx expo prebuild && ./run-ios-manual.sh`)
+    - **DoD:** Widget displays book title, progress, and deadline on home screen. 🔶
+
 ---
 
 ## 🛠️ Phase 5: Technical Debt & Maintenance

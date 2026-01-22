@@ -106,8 +106,8 @@ export default function OnboardingScreen5({ navigation, route }: any) {
       <PulsatingVignette intensity={sliderIntensity} active={true} />
 
       <OnboardingLayout
-        currentStep={5}
-        totalSteps={14}
+        currentStep={6}
+        totalSteps={15}
         title={i18n.t('onboarding.screen5_title')}
         subtitle={i18n.t('onboarding.screen5_subtitle')}
         footer={

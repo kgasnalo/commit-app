@@ -2,6 +2,17 @@ import type { Json } from './database.types';
 
 export type Role = 'Founder' | 'HR' | 'Manager' | 'Specialist';
 
+export type JobCategory =
+  | 'engineer'    // エンジニア
+  | 'designer'    // デザイナー
+  | 'pm'          // PM/PO
+  | 'marketing'   // マーケティング
+  | 'sales'       // 営業
+  | 'hr'          // 人事
+  | 'cs'          // カスタマーサクセス
+  | 'founder'     // 経営者/起業家
+  | 'other';      // その他
+
 export interface User {
   id: string;
   email: string;
@@ -15,6 +26,7 @@ export interface User {
   payment_method_registered: boolean;
   onboarding_completed: boolean;
   legal_consent_version?: string | null;
+  job_category?: JobCategory | null;
   created_at: string;
 }
 

@@ -95,6 +95,20 @@
     "screen5_card_notice": "※ 寄付を有効にするには、登録後にカード登録が必要です",
     "screen5_donation_label": "寄付先",
     "screen5_donation_info": "寄付先：Room to Read（子どもの教育支援）",
+    "job_category_title": "あなたの職種は？",
+    "job_category_subtitle": "同じ職種の人に人気の本をお届けします",
+    "job_categories": {
+      "engineer": "エンジニア",
+      "designer": "デザイナー",
+      "pm": "PM/PO",
+      "marketing": "マーケティング",
+      "sales": "営業",
+      "hr": "人事",
+      "cs": "カスタマーサクセス",
+      "founder": "経営者/起業家",
+      "other": "その他"
+    },
+    "skip": "スキップ",
     "screen6_title": "COMMITに参加する",
     "screen6_subtitle": "同じ志を持つ読書家たちのコミュニティへ。",
     "screen6_username": "ユーザーネーム",
@@ -207,6 +221,15 @@
     "empty_title": "まだランキングがありません",
     "empty_subtitle": "本を読み終えるとランキングに参加できます",
     "you_marker": "あなた"
+  },
+  "recommendations": {
+    "job_title": "{{jobCategory}}に人気の本",
+    "job_subtitle": "あなたと同じ職種の人がよく読んでいます",
+    "not_enough_data": "まだ十分なデータがありません",
+    "set_job_category": "職種を設定すると、おすすめの本が表示されます",
+    "set_job_category_button": "職種を設定",
+    "read_count": "{{count}}人が読了",
+    "view_all": "すべて見る"
   },
   "paywall": {
     "for_serious": "本気の人向け",

@@ -54,6 +54,7 @@ import TabErrorBoundary from '../components/TabErrorBoundary';
 // Onboarding screens
 import OnboardingScreen0 from '../screens/onboarding/OnboardingScreen0_Welcome';
 import OnboardingScreen1 from '../screens/onboarding/OnboardingScreen1_TsundokuCount';
+import OnboardingJobCategory from '../screens/onboarding/OnboardingScreen1_5_JobCategory';
 import OnboardingScreen2 from '../screens/onboarding/OnboardingScreen2_LastRead';
 import OnboardingScreen3 from '../screens/onboarding/OnboardingScreen3_BookSelect';
 import OnboardingScreen4 from '../screens/onboarding/OnboardingScreen4_Deadline';
@@ -835,6 +836,7 @@ function NavigationContent() {
           {/* Onboarding flow screens (14 screens total) */}
           <Stack.Screen name="Onboarding0" component={OnboardingScreen0} />
           <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
+          <Stack.Screen name="OnboardingJobCategory" component={OnboardingJobCategory} />
           <Stack.Screen name="Onboarding2" component={OnboardingScreen2} />
           <Stack.Screen name="Onboarding3" component={OnboardingScreen3} />
           <Stack.Screen name="ManualBookEntry" component={ManualBookEntryScreen} />

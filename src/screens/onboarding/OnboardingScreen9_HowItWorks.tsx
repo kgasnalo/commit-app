@@ -30,8 +30,8 @@ const getFEATURES = () => [
 export default function OnboardingScreen9({ navigation }: any) {
   return (
     <OnboardingLayout
-      currentStep={9}
-      totalSteps={14}
+      currentStep={10}
+      totalSteps={15}
       title={i18n.t('onboarding.screen9_title')}
       footer={
         <PrimaryButton
