@@ -201,13 +201,15 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
 
   // 3. Set DB status to 'refund_pending' BEFORE attempting Stripe refund
   // This ensures consistency: even if later steps fail, we know a refund was attempted
-  const { error: pendingError } = await supabase
+  // Optimistic lock: only update if charge_status is still 'succeeded' (prevents race conditions)
+  const { error: pendingError, count: updateCount } = await supabase
     .from('penalty_charges')
     .update({
       charge_status: 'refund_pending',
       updated_at: new Date().toISOString()
     })
     .eq('id', penaltyChargeId)
+    .eq('charge_status', 'succeeded')
 
   if (pendingError) {
     console.error('[admin-actions] Failed to set refund_pending:', pendingError)

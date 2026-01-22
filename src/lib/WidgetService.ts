@@ -33,7 +33,6 @@ class WidgetServiceClass {
    */
   async updateWidget(data: WidgetData): Promise<boolean> {
     if (!this.isAvailable) {
-      console.log('[WidgetService] Widget not available on this platform');
       return false;
     }
 
@@ -47,11 +46,9 @@ class WidgetServiceClass {
         data.totalPages,
         data.hasActiveCommitment
       );
-      console.log('[WidgetService] Widget updated successfully');
       return true;
     } catch (error) {
       captureError(error, { location: 'WidgetService.updateWidget' });
-      console.error('[WidgetService] Failed to update widget:', error);
       return false;
     }
   }
@@ -66,11 +63,9 @@ class WidgetServiceClass {
 
     try {
       await WidgetModule.clearWidget();
-      console.log('[WidgetService] Widget cleared');
       return true;
     } catch (error) {
       captureError(error, { location: 'WidgetService.clearWidget' });
-      console.error('[WidgetService] Failed to clear widget:', error);
       return false;
     }
   }
@@ -85,11 +80,9 @@ class WidgetServiceClass {
 
     try {
       await WidgetModule.reloadWidget();
-      console.log('[WidgetService] Widget reloaded');
       return true;
     } catch (error) {
       captureError(error, { location: 'WidgetService.reloadWidget' });
-      console.error('[WidgetService] Failed to reload widget:', error);
       return false;
     }
   }

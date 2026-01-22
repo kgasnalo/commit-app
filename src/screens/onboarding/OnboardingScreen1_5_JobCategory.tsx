@@ -12,6 +12,7 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, spacing, typography } from '../../theme';
 import { HapticsService } from '../../lib/HapticsService';
+import { captureError } from '../../utils/errorLogger';
 import i18n from '../../i18n';
 import type { JobCategory } from '../../types';
 
@@ -50,7 +51,10 @@ export default function OnboardingScreen1_5({ navigation, route }: any) {
         data.jobCategory = selectedCategory;
         await AsyncStorage.setItem('onboardingData', JSON.stringify(data));
       } catch (error) {
-        console.error('Failed to save job category:', error);
+        captureError(error, {
+          location: 'OnboardingScreen1_5.handleNext',
+          extra: { action: 'save_job_category' },
+        });
       }
     }
 

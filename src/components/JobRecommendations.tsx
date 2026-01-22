@@ -17,6 +17,7 @@ import {
 import { Image } from 'expo-image';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { supabase } from '../lib/supabase';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { colors, spacing, typography } from '../theme';
 import { ensureHttps } from '../utils/googleBooks';
 import { captureError } from '../utils/errorLogger';
@@ -101,7 +102,19 @@ export default function JobRecommendations({
         setRecommendations([]);
       }
     } catch (err) {
-      captureError(err, { location: 'JobRecommendations.fetchRecommendations' });
+      if (err instanceof FunctionsHttpError) {
+        try {
+          const errorBody = await err.context.json();
+          captureError(err, {
+            location: 'JobRecommendations.fetchRecommendations',
+            extra: { errorBody, jobCategory },
+          });
+        } catch {
+          captureError(err, { location: 'JobRecommendations.fetchRecommendations' });
+        }
+      } else {
+        captureError(err, { location: 'JobRecommendations.fetchRecommendations' });
+      }
       setError('FETCH_ERROR');
     } finally {
       setLoading(false);

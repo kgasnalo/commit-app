@@ -85,7 +85,13 @@ Deno.serve(async (req) => {
       return errorResponse(400, 'INVALID_REQUEST', 'Invalid JSON body')
     }
 
-    const { job_category, limit = 10, period = 'alltime' } = body
+    const { job_category, limit: rawLimit = 10, period = 'alltime' } = body
+
+    // Validate limit parameter
+    const limit = typeof rawLimit === 'number' ? rawLimit : 10
+    if (limit < 1 || limit > 100) {
+      return errorResponse(400, 'INVALID_LIMIT', 'Limit must be between 1 and 100')
+    }
 
     // Validate job_category
     if (!job_category || !VALID_JOB_CATEGORIES.includes(job_category)) {

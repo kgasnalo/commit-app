@@ -151,7 +151,16 @@ Deno.serve(async (req) => {
     )
 
     // Parse request body
-    const { userId, userIds, broadcast, title, body, data }: SendPushRequest = await req.json()
+    let requestBody: SendPushRequest
+    try {
+      requestBody = await req.json()
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'INVALID_REQUEST', message: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const { userId, userIds, broadcast, title, body, data } = requestBody
 
     // Validate required fields
     if (!title || !body) {
