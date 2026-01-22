@@ -12,6 +12,7 @@ initSentry('job-recommendations')
 interface JobRecommendationsRequest {
   job_category: string
   limit?: number // Default: 10
+  period?: 'alltime' | 'month' // Default: 'alltime'
 }
 
 interface RecommendedBook {
@@ -84,14 +85,19 @@ Deno.serve(async (req) => {
       return errorResponse(400, 'INVALID_REQUEST', 'Invalid JSON body')
     }
 
-    const { job_category, limit = 10 } = body
+    const { job_category, limit = 10, period = 'alltime' } = body
 
     // Validate job_category
     if (!job_category || !VALID_JOB_CATEGORIES.includes(job_category)) {
       return errorResponse(400, 'INVALID_JOB_CATEGORY', 'Job category is required and must be valid')
     }
 
-    addBreadcrumb('Request received', 'info', { job_category, limit })
+    // Validate period
+    if (period !== 'alltime' && period !== 'month') {
+      return errorResponse(400, 'INVALID_PERIOD', 'Period must be "alltime" or "month"')
+    }
+
+    addBreadcrumb('Request received', 'info', { job_category, limit, period })
 
     // Initialize Supabase client (using service role for aggregation)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -130,11 +136,13 @@ Deno.serve(async (req) => {
 
     // Step 2: Get completed commitments from these users
     // Join with books table to get book details
-    const { data: completedCommitments, error: commitmentsError } = await supabase
+    // Apply period filter if 'month'
+    let commitmentsQuery = supabase
       .from('commitments')
       .select(`
         book_id,
         user_id,
+        completed_at,
         books (
           id,
           title,
@@ -145,6 +153,16 @@ Deno.serve(async (req) => {
       `)
       .in('user_id', userIds)
       .eq('status', 'completed')
+
+    // Filter by period if 'month'
+    if (period === 'month') {
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      commitmentsQuery = commitmentsQuery.gte('completed_at', startOfMonth.toISOString())
+      addBreadcrumb('Filtering by month', 'info', { startOfMonth: startOfMonth.toISOString() })
+    }
+
+    const { data: completedCommitments, error: commitmentsError } = await commitmentsQuery
 
     if (commitmentsError) {
       captureException(commitmentsError, { location: 'job-recommendations.getCommitments' })
@@ -212,6 +230,7 @@ Deno.serve(async (req) => {
     return successResponse({
       recommendations,
       job_category,
+      period,
       user_count: userIds.length,
     })
   } catch (error) {

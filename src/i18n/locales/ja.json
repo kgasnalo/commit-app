@@ -222,6 +222,16 @@
     "empty_subtitle": "本を読み終えるとランキングに参加できます",
     "you_marker": "あなた"
   },
+  "jobRanking": {
+    "title": "{{jobCategory}}に人気の本",
+    "all_jobs_title": "職種別ランキング",
+    "tab_alltime": "全期間",
+    "tab_month": "今月",
+    "readers_count": "{{count}}人が読了",
+    "empty_title": "まだランキングがありません",
+    "empty_subtitle": "最初に本を読み切ってみませんか？",
+    "rank_label": "#{{rank}}"
+  },
   "recommendations": {
     "job_title": "{{jobCategory}}に人気の本",
     "job_subtitle": "あなたと同じ職種の人がよく読んでいます",
@@ -229,7 +239,21 @@
     "set_job_category": "職種を設定すると、おすすめの本が表示されます",
     "set_job_category_button": "職種を設定",
     "read_count": "{{count}}人が読了",
-    "view_all": "すべて見る"
+    "view_all": "すべて見る",
+    "books": {
+      "1": { "title": "HARD THINGS", "author": "ベン・ホロウィッツ" },
+      "2": { "title": "ゼロ・トゥ・ワン", "author": "ピーター・ティール" },
+      "3": { "title": "原則", "author": "レイ・ダリオ" },
+      "4": { "title": "ワーク・ルールズ！", "author": "ラズロ・ボック" },
+      "5": { "title": "NETFLIXの最強人事戦略", "author": "パティ・マッコード" },
+      "6": { "title": "マインドセット", "author": "キャロル・S・ドゥエック" },
+      "7": { "title": "HIGH OUTPUT MANAGEMENT", "author": "アンドリュー・S・グローブ" },
+      "8": { "title": "マネジメント", "author": "P.F.ドラッカー" },
+      "9": { "title": "リーダーの仮面", "author": "安藤広大" },
+      "10": { "title": "達人プログラマー", "author": "Andrew Hunt" },
+      "11": { "title": "Clean Code", "author": "Robert C. Martin" },
+      "12": { "title": "リファクタリング", "author": "Martin Fowler" }
+    }
   },
   "paywall": {
     "for_serious": "本気の人向け",
@@ -335,7 +359,10 @@
     "manage_payment": "支払い管理（Web）",
     "ranking_section": "ランキング",
     "show_in_ranking": "ランキングに表示する",
-    "show_in_ranking_description": "週間・月間ランキングに参加します"
+    "show_in_ranking_description": "週間・月間ランキングに参加します",
+    "job_category": "職種",
+    "job_category_description": "職種に基づいた本のおすすめを受け取る",
+    "view_job_rankings": "職種別ランキングを見る"
   },
   "announcements": {
     "title": "お知らせ",
@@ -648,22 +675,6 @@
     "permission_denied": "バーコードスキャンにはカメラへのアクセスが必要です",
     "invalid_barcode": "有効なISBNバーコードをスキャンしてください",
     "close": "閉じる"
-  },
-  "recommendations": {
-    "books": {
-      "1": { "title": "HARD THINGS", "author": "ベン・ホロウィッツ" },
-      "2": { "title": "ゼロ・トゥ・ワン", "author": "ピーター・ティール" },
-      "3": { "title": "原則", "author": "レイ・ダリオ" },
-      "4": { "title": "ワーク・ルールズ！", "author": "ラズロ・ボック" },
-      "5": { "title": "NETFLIXの最強人事戦略", "author": "パティ・マッコード" },
-      "6": { "title": "マインドセット", "author": "キャロル・S・ドゥエック" },
-      "7": { "title": "HIGH OUTPUT MANAGEMENT", "author": "アンドリュー・S・グローブ" },
-      "8": { "title": "マネジメント", "author": "P.F.ドラッカー" },
-      "9": { "title": "リーダーの仮面", "author": "安藤広大" },
-      "10": { "title": "達人プログラマー", "author": "Andrew Hunt" },
-      "11": { "title": "Clean Code", "author": "Robert C. Martin" },
-      "12": { "title": "リファクタリング", "author": "Martin Fowler" }
-    }
   },
   "blocking": {
     "maintenance_title": "メンテナンス中",

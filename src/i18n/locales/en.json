@@ -222,6 +222,16 @@
     "empty_subtitle": "Finish reading a book to join the leaderboard",
     "you_marker": "You"
   },
+  "jobRanking": {
+    "title": "Popular among {{jobCategory}}s",
+    "all_jobs_title": "Job Rankings",
+    "tab_alltime": "All Time",
+    "tab_month": "This Month",
+    "readers_count": "{{count}} readers",
+    "empty_title": "No rankings yet",
+    "empty_subtitle": "Be the first to finish a book!",
+    "rank_label": "#{{rank}}"
+  },
   "recommendations": {
     "job_title": "Popular among {{jobCategory}}s",
     "job_subtitle": "Books that people in your profession are reading",
@@ -229,7 +239,21 @@
     "set_job_category": "Set your profession to see book recommendations",
     "set_job_category_button": "Set Profession",
     "read_count": "{{count}} readers",
-    "view_all": "View All"
+    "view_all": "View All",
+    "books": {
+      "1": { "title": "The Hard Thing About Hard Things", "author": "Ben Horowitz" },
+      "2": { "title": "Zero to One", "author": "Peter Thiel" },
+      "3": { "title": "Principles", "author": "Ray Dalio" },
+      "4": { "title": "Work Rules!", "author": "Laszlo Bock" },
+      "5": { "title": "Powerful", "author": "Patty McCord" },
+      "6": { "title": "Mindset", "author": "Carol S. Dweck" },
+      "7": { "title": "High Output Management", "author": "Andrew S. Grove" },
+      "8": { "title": "Management", "author": "Peter F. Drucker" },
+      "9": { "title": "Leader no Kamen (The Mask of Leader)", "author": "Kodai Ando" },
+      "10": { "title": "The Pragmatic Programmer", "author": "Andrew Hunt" },
+      "11": { "title": "Clean Code", "author": "Robert C. Martin" },
+      "12": { "title": "Refactoring", "author": "Martin Fowler" }
+    }
   },
   "paywall": {
     "for_serious": "For serious readers",
@@ -335,7 +359,10 @@
     "manage_payment": "Manage Payment (Web)",
     "ranking_section": "Ranking",
     "show_in_ranking": "Show in Ranking",
-    "show_in_ranking_description": "Participate in weekly and monthly rankings"
+    "show_in_ranking_description": "Participate in weekly and monthly rankings",
+    "job_category": "Profession",
+    "job_category_description": "Get book recommendations based on your profession",
+    "view_job_rankings": "View Job Rankings"
   },
   "announcements": {
     "title": "Announcements",
@@ -648,22 +675,6 @@
     "permission_denied": "Camera access is required to scan barcodes",
     "invalid_barcode": "Please scan a valid ISBN barcode",
     "close": "Close"
-  },
-  "recommendations": {
-    "books": {
-      "1": { "title": "The Hard Thing About Hard Things", "author": "Ben Horowitz" },
-      "2": { "title": "Zero to One", "author": "Peter Thiel" },
-      "3": { "title": "Principles", "author": "Ray Dalio" },
-      "4": { "title": "Work Rules!", "author": "Laszlo Bock" },
-      "5": { "title": "Powerful", "author": "Patty McCord" },
-      "6": { "title": "Mindset", "author": "Carol S. Dweck" },
-      "7": { "title": "High Output Management", "author": "Andrew S. Grove" },
-      "8": { "title": "Management", "author": "Peter F. Drucker" },
-      "9": { "title": "Leader no Kamen (The Mask of Leader)", "author": "Kodai Ando" },
-      "10": { "title": "The Pragmatic Programmer", "author": "Andrew Hunt" },
-      "11": { "title": "Clean Code", "author": "Robert C. Martin" },
-      "12": { "title": "Refactoring", "author": "Martin Fowler" }
-    }
   },
   "blocking": {
     "maintenance_title": "Under Maintenance",

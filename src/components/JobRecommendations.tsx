@@ -37,6 +37,7 @@ interface JobRecommendationsProps {
   jobCategory: JobCategory | null | undefined;
   onBookPress?: (book: RecommendedBook) => void;
   onSetJobCategory?: () => void;
+  onViewAll?: () => void;
 }
 
 const JOB_CATEGORY_LABELS: Record<JobCategory, string> = {
@@ -51,10 +52,23 @@ const JOB_CATEGORY_LABELS: Record<JobCategory, string> = {
   other: 'onboarding.job_categories.other',
 };
 
+const JOB_CATEGORY_ICONS: Record<JobCategory, string> = {
+  engineer: '💻',
+  designer: '🎨',
+  pm: '📋',
+  marketing: '📣',
+  sales: '🤝',
+  hr: '👥',
+  cs: '💬',
+  founder: '🚀',
+  other: '✨',
+};
+
 export default function JobRecommendations({
   jobCategory,
   onBookPress,
   onSetJobCategory,
+  onViewAll,
 }: JobRecommendationsProps) {
   const { language } = useLanguage();
   const [recommendations, setRecommendations] = useState<RecommendedBook[]>([]);
@@ -122,7 +136,7 @@ export default function JobRecommendations({
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>
-            {i18n.t('recommendations.job_title', {
+            {JOB_CATEGORY_ICONS[jobCategory]} {i18n.t('recommendations.job_title', {
               jobCategory: i18n.t(JOB_CATEGORY_LABELS[jobCategory]),
             })}
           </Text>
@@ -139,35 +153,27 @@ export default function JobRecommendations({
     return null; // Silently hide on error
   }
 
-  // No recommendations available
+  // No recommendations available - hide completely
   if (recommendations.length === 0) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>
-            {i18n.t('recommendations.job_title', {
-              jobCategory: i18n.t(JOB_CATEGORY_LABELS[jobCategory]),
-            })}
-          </Text>
-        </View>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>{i18n.t('recommendations.not_enough_data')}</Text>
-        </View>
-      </View>
-    );
+    return null;
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerTextContainer}>
           <Text style={styles.title}>
-            {i18n.t('recommendations.job_title', {
+            {JOB_CATEGORY_ICONS[jobCategory]} {i18n.t('recommendations.job_title', {
               jobCategory: i18n.t(JOB_CATEGORY_LABELS[jobCategory]),
             })}
           </Text>
           <Text style={styles.subtitle}>{i18n.t('recommendations.job_subtitle')}</Text>
         </View>
+        {onViewAll && (
+          <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
+            <Text style={styles.viewAllText}>{i18n.t('recommendations.view_all')}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -228,6 +234,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  viewAllButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  viewAllText: {
+    color: colors.accent.primary,
+    fontSize: typography.fontSize.caption,
+    fontWeight: '600',
   },
   title: {
     color: colors.text.primary,

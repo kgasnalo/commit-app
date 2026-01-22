@@ -48,6 +48,8 @@ import MonkModeActiveScreen from '../screens/monkmode/MonkModeActiveScreen';
 import ManualBookEntryScreen from '../screens/ManualBookEntryScreen';
 import LegalConsentScreen from '../screens/LegalConsentScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
+import JobRankingScreen from '../screens/JobRankingScreen';
+import JobCategorySettingsScreen from '../screens/JobCategorySettingsScreen';
 import { needsLegalConsent, CURRENT_LEGAL_VERSION } from '../config/legalVersions';
 import TabErrorBoundary from '../components/TabErrorBoundary';
 
@@ -84,6 +86,7 @@ function HomeStackNavigator() {
         <Stack.Screen name="CommitmentDetail" component={CommitmentDetailScreen} />
         <Stack.Screen name="Verification" component={VerificationScreen} />
         <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+        <Stack.Screen name="JobRanking" component={JobRankingScreen} />
       </Stack.Navigator>
     </TabErrorBoundary>
   );
@@ -123,6 +126,8 @@ function SettingsStackNavigator() {
         <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
         <Stack.Screen name="DonationHistory" component={DonationHistoryScreen} />
         <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
+        <Stack.Screen name="JobCategorySettings" component={JobCategorySettingsScreen} />
+        <Stack.Screen name="JobRanking" component={JobRankingScreen} />
       </Stack.Navigator>
     </TabErrorBoundary>
   );

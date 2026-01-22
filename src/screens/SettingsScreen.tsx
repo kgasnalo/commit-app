@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Switch,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,12 +21,101 @@ import * as AnalyticsService from '../lib/AnalyticsService';
 import { safeOpenURL } from '../utils/linkingUtils';
 import { captureError } from '../utils/errorLogger';
 import LegalBottomSheet, { LegalDocumentType } from '../components/LegalBottomSheet';
+import type { JobCategory } from '../types';
+
+const JOB_CATEGORY_LABELS: Record<JobCategory, string> = {
+  engineer: 'onboarding.job_categories.engineer',
+  designer: 'onboarding.job_categories.designer',
+  pm: 'onboarding.job_categories.pm',
+  marketing: 'onboarding.job_categories.marketing',
+  sales: 'onboarding.job_categories.sales',
+  hr: 'onboarding.job_categories.hr',
+  cs: 'onboarding.job_categories.cs',
+  founder: 'onboarding.job_categories.founder',
+  other: 'onboarding.job_categories.other',
+};
 
 export default function SettingsScreen({ navigation }: any) {
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [legalSheetVisible, setLegalSheetVisible] = useState(false);
   const [legalDocumentType, setLegalDocumentType] = useState<LegalDocumentType>('terms');
+  const [showInRanking, setShowInRanking] = useState(true);
+  const [isLoadingRanking, setIsLoadingRanking] = useState(true);
+  const [jobCategory, setJobCategory] = useState<JobCategory | null>(null);
   const { language: currentLanguage, setLanguage } = useLanguage();
+
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+          .from('users')
+          .select('show_in_ranking, job_category')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!error && data) {
+          setShowInRanking(data.show_in_ranking ?? true);
+          setJobCategory(data.job_category as JobCategory | null);
+        }
+      } catch (error) {
+        captureError(error, { location: 'SettingsScreen.fetchUserSettings' });
+      } finally {
+        setIsLoadingRanking(false);
+      }
+    };
+
+    fetchUserSettings();
+  }, []);
+
+  // Refetch when returning from JobCategorySettings
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const { data } = await supabase
+          .from('users')
+          .select('job_category')
+          .eq('id', session.user.id)
+          .single();
+
+        if (data) {
+          setJobCategory(data.job_category as JobCategory | null);
+        }
+      } catch (error) {
+        // Silently fail
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleRankingToggle = async (value: boolean) => {
+    setShowInRanking(value);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('users')
+        .update({ show_in_ranking: value })
+        .eq('id', session.user.id);
+
+      if (error) {
+        // Revert on error
+        setShowInRanking(!value);
+        throw error;
+      }
+    } catch (error) {
+      captureError(error, { location: 'SettingsScreen.handleRankingToggle' });
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.unknown'));
+    }
+  };
 
   const handleOpenLegalSheet = (type: LegalDocumentType) => {
     setLegalDocumentType(type);
@@ -161,6 +251,17 @@ export default function SettingsScreen({ navigation }: any) {
           label={i18n.t('settings.manage_payment')}
           onPress={() => openURL('https://commit-app-web.vercel.app/billing')}
         />
+        <MenuItem
+          icon="briefcase-outline"
+          label={i18n.t('settings.job_category')}
+          value={jobCategory ? i18n.t(JOB_CATEGORY_LABELS[jobCategory]) : '-'}
+          onPress={() => navigation.navigate('JobCategorySettings')}
+        />
+        <MenuItem
+          icon="bar-chart-outline"
+          label={i18n.t('settings.view_job_rankings')}
+          onPress={() => navigation.navigate('JobRanking', {})}
+        />
 
         <SectionHeader title={i18n.t('settings.language')} />
         <MenuItem
@@ -176,6 +277,26 @@ export default function SettingsScreen({ navigation }: any) {
           label={i18n.t('notifications.settings_title')}
           onPress={() => navigation.navigate('NotificationSettings')}
         />
+
+        <SectionHeader title={i18n.t('settings.ranking_section')} />
+        <View style={styles.toggleItem}>
+          <View style={styles.toggleItemLeft}>
+            <Ionicons name="trophy-outline" size={20} color={colors.text.secondary} />
+            <View style={styles.toggleTextContainer}>
+              <Text style={styles.menuText}>{i18n.t('settings.show_in_ranking')}</Text>
+              <Text style={styles.toggleDescription}>
+                {i18n.t('settings.show_in_ranking_description')}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={showInRanking}
+            onValueChange={handleRankingToggle}
+            disabled={isLoadingRanking}
+            trackColor={{ false: colors.border.default, true: colors.accent.primary }}
+            thumbColor={colors.text.primary}
+          />
+        </View>
 
         <SectionHeader title={i18n.t('settings.legal')} />
         <MenuItem
@@ -325,6 +446,30 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
     fontWeight: '400',
+    color: colors.text.primary,
+  },
+  toggleItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
+  toggleItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
+  },
+  toggleTextContainer: {
+    flex: 1,
+  },
+  toggleDescription: {
+    fontSize: 12,
+    color: colors.text.muted,
+    marginTop: 4,
   },
   valueText: {
       color: colors.text.secondary,

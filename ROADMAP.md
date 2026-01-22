@@ -246,6 +246,102 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Pending:** iOS rebuild required (`npx expo prebuild && ./run-ios-manual.sh`)
     - **DoD:** Widget displays book title, progress, and deadline on home screen. 🔶
 
+- [ ] **4.12 Job-Based Ranking UI (職種別ランキング表示機能)**
+    - **Role:** `[Fullstack Engineer]`
+    - **Priority:** Medium
+    - **Status:** 設計完了、実装待ち
+    - **Depends on:** 4.10 (Job-Based Recommendations) ✅ 完了済み
+
+    ### 背景・目的
+    4.10で職種データ収集・集計基盤は完成。本タスクは「そのデータをどこでどう見せるか」を実装する。
+
+    **ユーザー向け:**
+    - 「自分と同じ職種の人がどんな本を読んでいるか」を発見できる
+    - 本選びの参考になる
+
+    **管理者向け:**
+    - SNS投稿用素材（「エンジニアに人気の本TOP10」等）として活用
+
+    ### 設計上の決定事項 (2026-01-22 議論)
+
+    #### 1. Top100 vs Top10
+    - **決定:** まずはTop10から開始
+    - **理由:**
+      - k-anonymity制約（3人以上のデータがないと表示しない）
+      - 職種9種 × 言語圏3つ = 27セグメント → データが分散
+      - 初期段階でTop100は「同じ本が1人ずつ」のスカスカになるリスク
+    - **将来:** データ蓄積後にTop100へ拡張可能
+
+    #### 2. 言語圏分割
+    - **決定:** 当面は分けない
+    - **理由:**
+      - 分けるとデータがさらに薄くなる
+      - Google Books IDはグローバル（同じ本でも言語版が違う可能性）
+    - **代替案（将来）:**
+      - 本タイトルの言語検出 → ユーザー言語設定と一致するものを優先
+      - 「日本語の本のみ表示」トグル
+
+    #### 3. 期間別ランキング
+    - **決定:** 全期間 + 月間の2軸
+    - **理由:**
+      - **全期間:** 「定番」を知りたいユーザー向け、データが安定
+      - **月間:** 「今流行ってる」を知りたい、SNS投稿向け
+      - 年間は中途半端（「去年」のデータは古く感じる）
+
+    #### 4. 表示場所
+    - **決定:** ダッシュボードにカード表示 → タップで詳細画面
+    - **理由:**
+      - 「設定から見れる」は発見性が低い
+      - 毎日見るダッシュボードに自然に存在 → 行動喚起しやすい
+    - **UI構成:**
+      ```
+      ダッシュボード
+      ├── 現在のコミットメント
+      ├── 月間ランキング（既存 4.9）
+      ├── 🆕「エンジニアに人気」カード ← 小さく表示
+      │
+      └── タップすると...
+          └── 職種別ランキング詳細画面（Top10、全期間/月間切り替え）
+      ```
+
+    ### 段階的実装アプローチ
+
+    #### Phase 1: ダッシュボードカード
+    - [ ] `DashboardScreen.tsx` に `JobRecommendations` コンポーネント統合
+    - [ ] ユーザーの `job_category` が設定済みの場合のみ表示
+    - [ ] 全期間Top10を横スクロールで表示
+    - [ ] タップで詳細画面へナビゲート
+
+    #### Phase 2: 詳細ランキング画面
+    - [ ] `JobRankingScreen.tsx` 新規作成
+    - [ ] 全期間 / 月間 タブ切り替え
+    - [ ] Top10リスト表示（読了者数付き）
+    - [ ] Titan Design System準拠（LeaderboardScreenと統一感）
+
+    #### Phase 3: Web Portal管理画面
+    - [ ] `/admin/job-rankings` ページ追加
+    - [ ] 全職種のTop10を一覧表示（9職種 × 全期間/月間）
+    - [ ] スクショしやすいカード形式（SNS投稿用）
+    - [ ] CSV/JSONエクスポート機能（オプション）
+
+    ### 既存リソース（4.10で作成済み）
+    - `supabase/functions/job-recommendations/index.ts` - データ集計Edge Function
+    - `src/components/JobRecommendations.tsx` - 表示コンポーネント（ダッシュボード統合待ち）
+    - `users.job_category` - 職種カラム
+    - k-anonymity (3人以上) プライバシー保護
+
+    ### Files to Create/Modify
+    - `src/screens/DashboardScreen.tsx` (JobRecommendations統合)
+    - `src/screens/JobRankingScreen.tsx` (新規)
+    - `src/navigation/AppNavigator.tsx` (画面登録)
+    - `commit-app-web/src/app/admin/job-rankings/page.tsx` (新規)
+    - `src/i18n/locales/*.json` (キー追加)
+
+    ### DoD (Definition of Done)
+    - [ ] Phase 1: ダッシュボードに職種別カードが表示される
+    - [ ] Phase 2: 詳細画面で全期間/月間の切り替えができる
+    - [ ] Phase 3: Web Portalで全職種のランキングが一覧できる
+
 ---
 
 ## 🛠️ Phase 5: Technical Debt & Maintenance

@@ -44,6 +44,8 @@ import { CardRegistrationBanner } from '../components/CardRegistrationBanner';
 import { DonationAnnouncementModal, useUnreadDonation } from '../components/DonationAnnouncementModal';
 import { captureError } from '../utils/errorLogger';
 import { WidgetService } from '../lib/WidgetService';
+import JobRecommendations from '../components/JobRecommendations';
+import type { JobCategory } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -92,6 +94,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [paymentMethodRegistered, setPaymentMethodRegistered] = useState<boolean>(true); // Default true to avoid flash
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [rankingPosition, setRankingPosition] = useState<number | null>(null);
+  const [jobCategory, setJobCategory] = useState<JobCategory | null | undefined>(undefined);
 
   // Donation announcement
   const { unreadDonation, markAsRead } = useUnreadDonation();
@@ -268,13 +271,14 @@ export default function DashboardScreen({ navigation }: any) {
       if (user) {
         const { data } = await supabase
           .from('users')
-          .select('username, payment_method_registered')
+          .select('username, payment_method_registered, job_category')
           .eq('id', user.id)
           .maybeSingle();
         let name = data?.username;
         if (!name) name = user.email?.split('@')[0];
         setUserName(name || 'Guest');
         setPaymentMethodRegistered(data?.payment_method_registered ?? false);
+        setJobCategory(data?.job_category as JobCategory | null);
       }
     } catch (e) {
       // Silently fail for profile fetch
@@ -634,6 +638,25 @@ export default function DashboardScreen({ navigation }: any) {
             </GlassTile>
           </View>
         </View>
+
+        {/* Job Recommendations - Only show if job_category is set or undefined (loading) */}
+        {jobCategory !== null && (
+          <JobRecommendations
+            jobCategory={jobCategory}
+            onBookPress={(book) => {
+              navigation.navigate('LibraryTab', {
+                screen: 'BookDetail',
+                params: { bookId: book.book_id },
+              });
+            }}
+            onSetJobCategory={() => {
+              navigation.navigate('SettingsTab', { screen: 'JobCategorySettings' });
+            }}
+            onViewAll={() => {
+              navigation.navigate('JobRanking', { jobCategory });
+            }}
+          />
+        )}
 
         {/* Active Commitments */}
         <View style={styles.section}>
