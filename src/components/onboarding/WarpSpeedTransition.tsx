@@ -29,6 +29,7 @@ import Animated, {
   Easing,
   SharedValue,
   interpolate,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { HapticsService } from '../../lib/HapticsService';
 import { colors } from '../../theme';
@@ -304,6 +305,12 @@ export default function WarpSpeedTransition({
     return () => {
       hapticTimers.forEach(clearTimeout);
       clearTimeout(completeTimer);
+      cancelAnimation(shakeX);
+      cancelAnimation(shakeY);
+      cancelAnimation(warpProgress);
+      cancelAnimation(containerOpacity);
+      cancelAnimation(flashOpacity);
+      cancelAnimation(centerGlowRadius);
     };
   }, [visible, onComplete]);
 

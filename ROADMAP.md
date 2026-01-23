@@ -701,6 +701,22 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Risk:** App rejection or poor UX for non-Japanese users.
     - **Fix:** Move all strings to `src/i18n/locales/*.json`.
 
+- [x] **H.4 GO_BACK not handled エラー (複合原因)**
+    - **Problem:** オンボーディング中に "GO_BACK not handled" エラーが発生。3つの根本原因が複合していた。
+    - **Root Causes:**
+      1. `withRepeat(-1)` の無限ループがクリーンアップなしで残存（アニメーション系）
+      2. iOS スワイプバックジェスチャーがスタック最初の画面で発火
+      3. OnboardingLayout の戻るボタンに `canGoBack()` ガードなし
+    - **Fix Phase 1 (cancelAnimation追加):**
+      - `src/components/onboarding/LivingBackground.tsx` (AnimatedOrb x, y)
+      - `src/components/onboarding/PulsatingVignette.tsx` (pulseValue)
+      - `src/components/onboarding/AshParticles.tsx` (予防的修正)
+    - **Fix Phase 2 (ナビゲーション防御):**
+      - `src/navigation/AppNavigator.tsx`: Onboarding0, Onboarding7 に `gestureEnabled: false`
+      - `src/components/onboarding/OnboardingLayout.tsx`: `canGoBack()` ガード追加
+      - `src/components/onboarding/WarpSpeedTransition.tsx`: `cancelAnimation` x6 追加
+    - **Status:** ✅ 完全修正完了 (2026-01-23)
+
 ### Level 2: Warning (Refactoring) - バグの温床
 - [ ] **W.1 Type Safety Enforcement**
     - **Problem:** Widespread use of `any` type and `as any` casting in navigation props and hooks.

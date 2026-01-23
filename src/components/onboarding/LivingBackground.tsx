@@ -28,6 +28,7 @@ import Animated, {
   useDerivedValue,
   interpolateColor,
   SharedValue,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { useOnboardingAtmosphere } from '../../hooks/useOnboardingAtmosphere';
 import {
@@ -123,6 +124,12 @@ function AnimatedOrb({
       -1,
       true
     );
+
+    // Cleanup: cancel infinite animations on unmount
+    return () => {
+      cancelAnimation(x);
+      cancelAnimation(y);
+    };
   }, []);
 
   // Derive color from current Act (v3 style - no dependency array needed)

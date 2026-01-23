@@ -20,6 +20,7 @@ import Animated, {
   useDerivedValue,
   SharedValue,
   interpolate,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { ACT_THEMES } from '../../config/animation';
 
@@ -151,6 +152,14 @@ function AshParticle({
       totalDelay + config.duration * 0.6,
       withTiming(0, { duration: config.duration * 0.4 })
     );
+
+    // Cleanup: cancel animations on unmount
+    return () => {
+      cancelAnimation(translateY);
+      cancelAnimation(translateX);
+      cancelAnimation(opacity);
+      cancelAnimation(rotation);
+    };
   }, [active]);
 
   // Animated style for the particle container
@@ -239,6 +248,13 @@ function EmberParticle({
         easing: Easing.out(Easing.cubic),
       })
     );
+
+    // Cleanup: cancel animations on unmount
+    return () => {
+      cancelAnimation(translateY);
+      cancelAnimation(opacity);
+      cancelAnimation(glowIntensity);
+    };
   }, [active]);
 
   const animatedStyle = useAnimatedStyle(() => ({

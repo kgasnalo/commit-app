@@ -16,6 +16,7 @@ import Animated, {
   withTiming,
   useDerivedValue,
   SharedValue,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { EASING_CURVES, ACT_THEMES } from '../../config/animation';
@@ -48,6 +49,11 @@ export default function PulsatingVignette({
     } else {
       pulseValue.value = withTiming(0, { duration: 500 });
     }
+
+    // Cleanup: cancel infinite animation on unmount
+    return () => {
+      cancelAnimation(pulseValue);
+    };
   }, [active]);
 
   // Combined opacity from pulse + intensity

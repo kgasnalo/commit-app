@@ -48,7 +48,7 @@ export default function OnboardingLayout({
         {showBackButton ? (
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => { if (navigation.canGoBack()) navigation.goBack(); }}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel={i18n.t('accessibility.button.back')}

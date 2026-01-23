@@ -1,55 +1,62 @@
-# Handoff: Session 2026-01-22 (UI/UXデザイン改善)
+# Handoff: Session 2026-01-23 (GO_BACK not handled エラー完全修正)
 
 ## Current Goal
-**Finexaデザインをトレースし、UI/UXを洗練させる**
+**オンボーディング GO_BACK not handled エラーの完全解消（3つの根本原因すべてに対処）**
 
 ---
 
 ## Current Critical Status
 
-### ✅ 本セッション完了タスク
+### 問題の経緯
+前回セッションで `LivingBackground`, `PulsatingVignette`, `AshParticles` に `cancelAnimation` クリーンアップを追加したが、GO_BACK エラーが継続。追加調査で3つの根本原因を特定し、すべて修正完了。
 
-| タスク | ファイル | 詳細 |
-|--------|----------|------|
-| CommitmentCard 表紙サムネイル | `src/components/CommitmentCard.tsx` | 左側に44x60pxの本の表紙を追加 |
-| MonkMode Finexaスタイル背景 | `src/screens/monkmode/MonkModeScreen.tsx` | 左上オレンジ→右下黒の対角線グラデーション |
+### 3つの根本原因と修正
 
-### CommitmentCard 変更内容
+| # | 原因 | 修正 | ファイル |
+|---|------|------|---------|
+| 1 | iOS スワイプバックジェスチャーがスタック最初の画面で発火 | `gestureEnabled: false` 追加 | `AppNavigator.tsx` (L842, L868) |
+| 2 | OnboardingLayout の戻るボタンに `canGoBack()` ガードなし | `canGoBack()` チェック追加 | `OnboardingLayout.tsx` (L51) |
+| 3 | WarpSpeedTransition の `withRepeat` アニメーションにクリーンアップなし | `cancelAnimation` x6 追加 | `WarpSpeedTransition.tsx` |
+
+### 修正詳細
+
+#### 修正1: スタック最初の画面のジェスチャー無効化
+```typescript
+// AppNavigator.tsx L842
+<Stack.Screen name="Onboarding0" component={OnboardingScreen0} options={{ gestureEnabled: false }} />
+
+// AppNavigator.tsx L868
+<Stack.Screen name="Onboarding7" component={OnboardingScreen7} options={{ gestureEnabled: false }} />
 ```
-Before:
-┌─────────────────────────────────────────┐
-│  The 7 Habits of...             ¥3,000  │
-│  P.1-449                        28D 20H │
-└─────────────────────────────────────────┘
 
-After (Finexaスタイル):
-┌─────────────────────────────────────────┐
-│ [表紙]  The 7 Habits of...      ¥3,000  │
-│  44x60  P.1-449                 28D 20H │
-└─────────────────────────────────────────┘
+#### 修正2: 戻るボタンガード
+```typescript
+// OnboardingLayout.tsx L51
+onPress={() => { if (navigation.canGoBack()) navigation.goBack(); }}
 ```
 
-### MonkMode 背景変更内容
+#### 修正3: WarpSpeedTransition クリーンアップ
+```typescript
+// WarpSpeedTransition.tsx - cleanup関数に追加
+cancelAnimation(shakeX);
+cancelAnimation(shakeY);
+cancelAnimation(warpProgress);
+cancelAnimation(containerOpacity);
+cancelAnimation(flashOpacity);
+cancelAnimation(centerGlowRadius);
 ```
-Before: 5層グラデーション (Tesla Style)
-After:  2層対角線グラデーション (Finexa Style)
 
-左上 ━━━━━━━━━━━━━━━━━━━━━━→
-  ┃  🔶 濃いオレンジ (0.35)
-  ┃     ↘
-  ┃        オレンジ (0.18)
-  ┃           ↘
-  ┃              薄いオレンジ (0.08)
-  ┃                 ↘
-  ↓                    ■ 黒 (#030303)
-                              右下
-```
+### 検証状況
+- [x] TypeCheck (`npx tsc --noEmit`) パス
+- [ ] シミュレーターでの動作確認（Metro bundler起動が必要）
+- [ ] Onboarding0 でスワイプバック → エラーなし確認
+- [ ] WarpTransition アニメーション途中でアンマウント → エラーなし確認
 
 ---
 
 ## What Didn't Work (This Session)
 
-特になし。計画通りに実装完了。
+特になし。計画通りに修正完了。
 
 ---
 
@@ -57,38 +64,42 @@ After:  2層対角線グラデーション (Finexa Style)
 
 | ファイル | 変更内容 |
 |----------|---------|
-| `src/components/CommitmentCard.tsx` | expo-image追加、coverContainer/coverImage/coverPlaceholderスタイル追加 |
-| `src/screens/monkmode/MonkModeScreen.tsx` | 5層→2層グラデーション、Finexaスタイル対角線背景 |
+| `src/navigation/AppNavigator.tsx` | Onboarding0, Onboarding7 に `gestureEnabled: false` 追加 |
+| `src/components/onboarding/OnboardingLayout.tsx` | `canGoBack()` ガード追加 |
+| `src/components/onboarding/WarpSpeedTransition.tsx` | `cancelAnimation` import + 6 SharedValue のクリーンアップ追加 |
 
 ---
 
 ## Immediate Next Steps
 
-### 🔍 動作確認 (必須)
-1. `npx expo start` でアプリ起動
-2. **Dashboard**: CommitmentCardに表紙サムネイルが表示されることを確認
-3. **MonkModeタブ**: 左上オレンジ→右下黒のグラデーション確認
-4. 表紙がない本の場合、プレースホルダーアイコン（📖）が表示されることを確認
+### 動作確認 (必須)
+1. `npx expo start` で Metro bundler を起動
+2. シミュレーターでアプリを開く（`./run-ios-manual.sh` でビルド済みの場合は Metro のみでOK）
+3. Onboarding0 (Welcome) で左端からスワイプ → エラーが出ないこと
+4. Onboarding0 → Onboarding1 → 戻る → 正常動作
+5. オンボーディング全画面遷移でエラーなし確認
+6. WarpTransition 画面で中断テスト
 
-### 🎨 追加デザイン検討 (オプション)
-- MonkModeActiveScreen (タイマー実行中) も同様のFinexaスタイル適用？
-- DashboardScreen背景もFinexaスタイルに統一？
-- 他の画面のデザイン一貫性確認
+### 注意事項
+- `Could not connect to development server` エラーが出る場合は、Metro bundler が起動していない。`npx expo start` を先に実行すること。
+- ビルド済みアプリがある場合、Metro さえ起動すれば Reload で接続可能。
 
 ---
 
 ## Previous Sessions Summary
 
-**UI/UXデザイン改善 (2026-01-22 現セッション):**
+**GO_BACK完全修正 (2026-01-23 現セッション):**
+- 3つの根本原因すべてに対処（ジェスチャー無効化、canGoBackガード、WarpSpeedTransition cancelAnimation）
+
+**GO_BACK修正 Phase 1 (2026-01-23 前回セッション):**
+- withRepeat(-1) の cancelAnimation クリーンアップ追加 (LivingBackground, PulsatingVignette, AshParticles)
+
+**UI/UXデザイン改善 (2026-01-22):**
 - CommitmentCard表紙サムネイル追加
 - MonkMode Finexaスタイル背景リデザイン
 
-**技術監査修正 (2026-01-22 早期):**
+**技術監査修正 (2026-01-22):**
 - Phase 4新機能の品質監査・7件修正完了
 
-**職種別ランキング (2026-01-22 早期):**
+**職種別ランキング (2026-01-22):**
 - Phase 1-3: モバイル + Web Portal管理画面完成
-
-**ウィジェット + 職種別推薦 (2026-01-22 早期):**
-- iOS Home Screen Widget Native Module実装
-- 職種別推薦基盤 (4.10) 完了

@@ -75,6 +75,17 @@
   - New screens MUST be added to the appropriate Stack/Tab navigator in `AppNavigator.tsx` before they can be used for navigation.
   - If a screen is used in multiple auth states (e.g., Onboarding), ensure it is registered in all relevant stack conditional blocks.
 - **Onboarding Screen 7 (Point of No Return):** This screen follows account registration (Screen 6). ALWAYS keep `showBackButton={false}` in `OnboardingLayout` for this screen. Navigating back after registration causes `GO_BACK not handled` errors because the stack history is cleared/reset upon auth state change. Use the `screen7_no_turning_back` toast to explain this to the user.
+- **Stack-First Screen Gesture Guard (GO_BACK Prevention):** The first screen in each conditional Stack.Navigator group MUST have `options={{ gestureEnabled: false }}`. iOS swipe-back gesture on the first screen of a stack triggers `GO_BACK not handled` because there is no previous screen to navigate to. Additionally, any call to `navigation.goBack()` MUST be wrapped with `navigation.canGoBack()` check:
+  ```typescript
+  // Stack registration - disable swipe on first screen
+  <Stack.Screen name="FirstScreen" component={...} options={{ gestureEnabled: false }} />
+
+  // Back button handler - always check canGoBack
+  onPress={() => { if (navigation.canGoBack()) navigation.goBack(); }}
+  ```
+  Current stack-first screens with `gestureEnabled: false`:
+  - `Onboarding0` (unauthenticated stack)
+  - `Onboarding7` (authenticated, not subscribed stack)
 - **Reanimated withDelay Reliability:** `withDelay` may fail to trigger in complex animation sequences. For critical timing (e.g., cinematic reveals), use `setTimeout` to control when animations start, then call `withTiming` directly inside the callback:
   ```typescript
   // UNRELIABLE:
@@ -85,6 +96,27 @@
     opacity.value = withTiming(1, { duration: 800 });
   }, 1000);
   ```
+- **Reanimated withRepeat(-1) Cleanup (CRITICAL):** When using `withRepeat(-1)` (infinite loop) inside `useEffect`, ALWAYS add a cleanup function that calls `cancelAnimation()` on ALL animated SharedValues. Without cleanup, infinite animations persist after component unmount, causing navigation errors ("GO_BACK not handled") and memory leaks:
+  ```typescript
+  // BAD - animation persists after unmount, causes navigation crashes
+  useEffect(() => {
+    x.value = withRepeat(withSequence(...), -1, true);
+    y.value = withRepeat(withSequence(...), -1, true);
+  }, []);
+
+  // GOOD - cleanup cancels animations on unmount
+  useEffect(() => {
+    x.value = withRepeat(withSequence(...), -1, true);
+    y.value = withRepeat(withSequence(...), -1, true);
+
+    return () => {
+      cancelAnimation(x);
+      cancelAnimation(y);
+    };
+  }, []);
+  ```
+  - Import `cancelAnimation` from `react-native-reanimated`
+  - Also recommended for finite `withRepeat(N)` if the animation duration is long (prevents stale callbacks on quick unmount)
 - **Skia + Reanimated v4 Compatibility:** Skia components (Canvas, Text, etc.) may not properly reflect `useDerivedValue` changes from Reanimated v4. For overlay/transition components that must render reliably, prefer React Native's `Animated.View` and `Text` over Skia.
 - **Full-Screen Overlay Layering:** For overlay components (modals, transitions), explicitly set BOTH `zIndex` (iOS) AND `elevation` (Android) on ALL layers. Use absolute positioning with `top/left/right/bottom: 0` on each layer:
   ```typescript

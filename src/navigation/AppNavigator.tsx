@@ -839,7 +839,7 @@ function NavigationContent() {
       {!session ? (
         <>
           {/* Onboarding flow screens (14 screens total) */}
-          <Stack.Screen name="Onboarding0" component={OnboardingScreen0} />
+          <Stack.Screen name="Onboarding0" component={OnboardingScreen0} options={{ gestureEnabled: false }} />
           <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
           <Stack.Screen name="OnboardingJobCategory" component={OnboardingJobCategory} />
           <Stack.Screen name="Onboarding2" component={OnboardingScreen2} />
@@ -865,7 +865,7 @@ function NavigationContent() {
       ) : !hasCompletedOnboarding ? (
         <>
           {/* Authenticated but onboarding not completed - show Onboarding7-13 + MainTabs for transition */}
-          <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
+          <Stack.Screen name="Onboarding7" component={OnboardingScreen7} options={{ gestureEnabled: false }} />
           <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
           <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
           <Stack.Screen name="Onboarding10" component={OnboardingScreen10} />
