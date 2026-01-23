@@ -723,7 +723,6 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Locations:**
         - `src/screens/onboarding/*.tsx` (Almost all onboarding screens)
         - `src/screens/monkmode/MonkModeScreen.tsx`
-        - `src/components/VerificationSuccessModal.tsx` (`useRef<any>`)
         - `src/screens/LibraryScreen.tsx`
     - **Risk:** Runtime errors due to missing/incorrect route params.
     - **Fix:** Implement strictly typed `StackScreenProps` for all screens.
@@ -775,9 +774,14 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - `useMemoEditor.ts`: メモ編集
     - **Shared Types:** `src/types/commitment.types.ts` (Currency, GoogleBook, ManualBook)
 
-- [ ] **D.6 Legacy Library Replacement**
+- [x] **D.6 Legacy Library Replacement**
     - **Problem:** `react-native-confetti-cannon` is likely unmaintained and may conflict with New Architecture.
-    - **Fix:** Replace with `react-native-skia` particle system or a modern, maintained alternative.
+    - **Fix:** Replaced with custom `ConfettiEffect` component using pure `react-native-reanimated` (60 particles, physics-based).
+    - **Implementation (2026-01-23):**
+      - `src/components/ConfettiEffect.tsx`: 60パーティクル物理シミュレーション
+      - 単一SharedValue駆動、形状3種(正方形/長方形/円)、重力+サイン波揺れ
+      - `VerificationSuccessModal.tsx` で宣言的API (`visible` prop) に変更
+      - `react-native-confetti-cannon` 完全削除
 
 - [x] **D.7 File Naming Consistency**
     - **Problem:** Inconsistent folder naming conventions in `src/components`.

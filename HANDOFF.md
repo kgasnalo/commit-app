@@ -1,7 +1,7 @@
-# Handoff: Session 2026-01-23 (技術的負債修正: Memoization + Async Safety + God Component分割)
+# Handoff: Session 2026-01-23 (D.6 Legacy Library置換: react-native-confetti-cannon → Reanimated)
 
 ## Current Goal
-**影響度の高い技術的負債3件を安全に修正完了（A.3/P.9, A.4, D.5）**
+**`react-native-confetti-cannon` を純粋な Reanimated ベースの `ConfettiEffect` コンポーネントに完全置換完了**
 
 ---
 
@@ -11,22 +11,22 @@
 
 | # | 項目 | 修正内容 | 影響ファイル数 |
 |---|------|---------|--------------|
-| 1 | Context Value Memoization (A.3/P.9) | 5つのContext Provider valueを`useMemo`でラップ | 5ファイル |
-| 2 | Async Safety (A.4) | `isMounted`ガードで非同期状態更新を保護 | 2ファイル |
-| 3 | God Component分割 (D.5) | 2画面から7 hooks抽出、行数40%削減 | 9ファイル（新規7 + 編集2） |
+| 1 | ConfettiEffect新規作成 | Reanimated `Animated.View` × 60パーティクル物理シミュレーション | 1ファイル（新規） |
+| 2 | VerificationSuccessModal修正 | ConfettiCannon → ConfettiEffect 宣言的API切り替え | 1ファイル |
+| 3 | 依存削除 | `react-native-confetti-cannon@1.5.2` アンインストール | package.json |
 
 ### 検証状況
 - [x] TypeCheck (`npx tsc --noEmit`) パス - エラー0件
-- [x] 循環import なし確認
-- [x] `cancelAnimation`クリーンアップ追加（`withRepeat(-1)`バグ修正）
-- [ ] シミュレーターでの動作確認
+- [x] 依存パッケージ削除完了
+- [ ] シミュレーターでの視覚確認（紙吹雪の動き・密度）
+- [ ] パフォーマンス確認（60fps維持）
+- [ ] アニメーション中のモーダル閉じテスト（クラッシュなし確認）
 
 ---
 
 ## What Didn't Work (This Session)
 
-- `useContinueFlow.ts` の `onBookTotalPages` コールバック型で `number` を指定していたが、`getBookById` の `total_pages` が `number | null` を返すため型エラー。`number | null` に修正して解決。
-- 特に大きな問題はなく、計画通りに完了。
+- `Animated.SharedValue<number>` 型参照でTSエラー（`Namespace has no exported member 'SharedValue'`）。CLAUDE.md記載のルール通り `SharedValue` を直接インポートに変更して解決。新規ルール追加は不要。
 
 ---
 
@@ -35,26 +35,43 @@
 ### 新規作成ファイル
 | ファイル | 目的 |
 |----------|------|
-| `src/types/commitment.types.ts` | 共有型定義 (Currency, GoogleBook, ManualBook) |
-| `src/hooks/useBookSearch.ts` | 書籍検索ロジック |
-| `src/hooks/useCommitmentForm.ts` | フォーム状態 + アニメーション |
-| `src/hooks/useContinueFlow.ts` | Continue Flow初期化 |
-| `src/hooks/useManualBookEntry.ts` | 手動入力ロジック |
-| `src/hooks/useBookCommitmentDetail.ts` | BookDetail データ取得 |
-| `src/hooks/useTagManagement.ts` | タグ操作 |
-| `src/hooks/useMemoEditor.ts` | メモ編集 |
+| `src/components/ConfettiEffect.tsx` | Reanimatedベース紙吹雪コンポーネント（60パーティクル、物理モデル） |
 
 ### 編集ファイル
 | ファイル | 変更内容 |
 |----------|---------|
-| `src/contexts/LanguageContext.tsx` | `useMemo` + `isMounted`ガード |
-| `src/contexts/OfflineContext.tsx` | `useMemo` |
-| `src/contexts/AnalyticsContext.tsx` | `useMemo` (両Provider) |
-| `src/context/OnboardingAtmosphereContext.tsx` | `useMemo` |
-| `src/contexts/UnreadContext.tsx` | `useMemo` |
-| `src/screens/onboarding/OnboardingScreen0_Welcome.tsx` | `isMounted`ガード |
-| `src/screens/CreateCommitmentScreen.tsx` | Hook抽出リファクタ (1335→1008行) |
-| `src/screens/BookDetailScreen.tsx` | Hook抽出リファクタ (857→682行) |
+| `src/components/VerificationSuccessModal.tsx` | ConfettiCannon削除、ConfettiEffect導入、Dimensions/SCREEN_WIDTH削除 |
+| `package.json` | `react-native-confetti-cannon` 依存削除 |
+
+---
+
+## Technical Details: ConfettiEffect コンポーネント
+
+### 物理モデル
+- **Y軸**: 上方バースト（-400〜-1000）+ 重力落下（800〜1200）
+- **X軸**: 線形ドリフト + サイン波揺れ（ヒラヒラ効果）
+- **回転**: ランダム速度で連続回転（-360〜360°/sec）
+- **フェード**: duration の 70% 以降に徐々に透明化
+- **形状**: 正方形(50%) / 長方形(30%) / 円(20%)
+- **サイズ**: 6-14px ランダム
+
+### パフォーマンス設計
+- SharedValue 1つのみ（progress: 0→1 linear）
+- `useMemo` でパーティクル設定生成（visible変化時のみ）
+- `pointerEvents="none"` でタッチ無視
+- `cancelAnimation` + `clearTimeout` で完全クリーンアップ
+
+### API
+```typescript
+<ConfettiEffect
+  visible={boolean}       // 宣言的トリガー
+  count={60}              // パーティクル数
+  colors={[...]}          // 色配列
+  origin={{ x, y }}       // 発射原点
+  duration={3000}         // アニメーション時間(ms)
+  startDelay={300}        // 開始遅延(ms)
+/>
+```
 
 ---
 
@@ -62,21 +79,25 @@
 
 ### 推奨: 動作確認
 1. `npx expo start` でMetro bundlerを起動
-2. CreateCommitmentScreenの全フローテスト（検索、日付選択、金額選択、作成）
-3. BookDetailScreenのタグ追加/メモ編集テスト
-4. Continue Flowテスト（Library → 続きを読む）
+2. コミットメント完了 → 写真撮影 → 成功モーダル表示
+3. 紙吹雪が300ms後に上部から発射、重力で落下、3秒でフェードアウト確認
+4. モーダルを5回以上開閉してメモリリーク確認
+5. アニメーション中にモーダル閉じてもクラッシュしない確認
 
 ### 残りの技術的負債 (優先度順)
 1. **W.1 Type Safety** - `any`型を厳密型に置換
-2. **D.6 Legacy Library** - `react-native-confetti-cannon`置換
-3. **D.8 Type Definition** - `database.types.ts`との整合性
-4. **I.1 Optimized Data Fetching** - React Queryまたはキャッシュ戦略
+2. **D.8 Type Definition** - `database.types.ts`との整合性
+3. **I.1 Optimized Data Fetching** - React Queryまたはキャッシュ戦略
+4. **W.3 Inline Styles** - 16箇所の`StyleSheet.create`化
 
 ---
 
 ## Previous Sessions Summary
 
-**技術的負債修正 (2026-01-23 現セッション):**
+**D.6 Legacy Library置換 (2026-01-23 現セッション):**
+- react-native-confetti-cannon → 純Reanimated ConfettiEffect（60パーティクル物理モデル）
+
+**技術的負債修正 (2026-01-23):**
 - Context Memoization (5 Providers), Async Safety (2ファイル), God Component分割 (2画面→7 hooks)
 
 **GO_BACK完全修正 (2026-01-23):**

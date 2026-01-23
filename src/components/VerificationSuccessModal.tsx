@@ -5,10 +5,9 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import ConfettiCannon from 'react-native-confetti-cannon';
+import ConfettiEffect from './ConfettiEffect';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -22,8 +21,6 @@ import { HapticsService } from '../lib/HapticsService';
 import { HAPTIC_BUTTON_SCALES } from '../config/haptics';
 import i18n from '../i18n';
 import ReceiptPreviewModal from './receipt/ReceiptPreviewModal';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface VerificationSuccessModalProps {
   visible: boolean;
@@ -53,7 +50,6 @@ export default function VerificationSuccessModal({
   completionDate,
   readingDays,
 }: VerificationSuccessModalProps) {
-  const confettiRef = useRef<any>(null);
   const prevVisibleRef = useRef(false);
   const [motivationKey, setMotivationKey] = useState(1);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -154,11 +150,6 @@ export default function VerificationSuccessModal({
 
       animationFrameId = requestAnimationFrame(animate);
 
-      // Trigger confetti after a short delay
-      setTimeout(() => {
-        confettiRef.current?.start();
-      }, 300);
-
       return () => cancelAnimationFrame(animationFrameId);
     }
   }, [visible, savedAmount]);
@@ -183,16 +174,7 @@ export default function VerificationSuccessModal({
     >
       <View style={styles.overlay}>
         {/* Confetti with warm colors */}
-        <ConfettiCannon
-          ref={confettiRef}
-          count={200}
-          origin={{ x: SCREEN_WIDTH / 2, y: -10 }}
-          autoStart={false}
-          fadeOut
-          fallSpeed={3000}
-          explosionSpeed={350}
-          colors={['#FF6B35', '#FFB347', '#FFD700', '#FF8C42', '#FFA07A', '#E8A87C']}
-        />
+        <ConfettiEffect visible={visible} />
 
         <Animated.View style={[styles.content, containerStyle]}>
           {/* Thick Glass Block グラデーション */}
