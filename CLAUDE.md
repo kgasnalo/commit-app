@@ -1251,3 +1251,18 @@
   ```
   新しい言語を追加する場合は、必ず `locales/XX.json` と `app.json` の `locales` の両方を更新する。
 - **setUserContext Signature:** `setUserContext(userId: string)` はID**のみ**を受け取る。emailは渡さない（Sentry PII規約）。呼び出し側で `session.user.email` を引数に含めないこと。
+- **database.types.ts NULL→NOT NULL変更時 (CRITICAL):** カラムを `string | null` → `string` に変更する場合、**全ての** `insert` / `upsert` 呼び出しでそのフィールドが必須になる。変更前に必ず `grep "\.from('TABLE_NAME').*\.(insert|upsert)" src/` で全呼び出し元を確認し、fallback値を追加すること。TypeScriptは`Insert`型で必須フィールドの欠落を検出する。
+- **Supabase RPC関数の型登録:** `CREATE OR REPLACE FUNCTION` でRPC関数を追加した場合、`src/types/database.types.ts` の `Functions` セクションにも型定義を追加すること。未登録の場合、`supabase.rpc('function_name')` で `Argument of type '"function_name"' is not assignable to parameter of type 'never'` エラーになる：
+  ```typescript
+  // src/types/database.types.ts の Functions セクション
+  Functions: {
+    my_rpc_function: {
+      Args: {
+        p_param1: string
+        p_param2?: string | null
+      }
+      Returns: boolean
+    }
+  }
+  ```
+- **Username Validation Rules:** ユーザー名は `^[a-zA-Z0-9_]{3,20}$` (3-20文字、英数字+アンダースコア)。バリデーションには `src/utils/usernameValidator.ts` の `validateUsernameFormat()` と `checkUsernameAvailability()` を使用すること。DB側にもCHECK制約とcase-insensitive UNIQUE INDEXが存在する。
