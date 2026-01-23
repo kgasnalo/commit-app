@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import i18n, { setLanguage as setI18nLanguage, loadLanguage } from '../i18n';
 
 interface LanguageContextType {
@@ -15,10 +15,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   // Load saved language on mount
   useEffect(() => {
+    let isMounted = true;
     loadLanguage().then(locale => {
-      setLanguageState(locale);
-      setIsLoading(false);
+      if (isMounted) {
+        setLanguageState(locale);
+        setIsLoading(false);
+      }
     });
+    return () => { isMounted = false; };
   }, []);
 
   const setLanguage = useCallback(async (code: string) => {
@@ -26,8 +30,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLanguageState(code);
   }, []);
 
+  const value = useMemo(() => ({ language, setLanguage, isLoading }), [language, setLanguage, isLoading]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, isLoading }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 
 interface OfflineContextType {
@@ -20,8 +20,10 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => unsubscribe();
   }, []);
 
+  const value = useMemo(() => ({ isOnline }), [isOnline]);
+
   return (
-    <OfflineContext.Provider value={{ isOnline }}>
+    <OfflineContext.Provider value={value}>
       {children}
     </OfflineContext.Provider>
   );

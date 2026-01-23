@@ -13,6 +13,7 @@ import React, {
   useCallback,
   useEffect,
   useRef,
+  useMemo,
   ReactNode,
 } from 'react';
 import type {
@@ -144,14 +145,14 @@ export function OnboardingAtmosphereProvider({ children }: ProviderProps) {
     SoundManager.setMuted(!enabled);
   }, []);
 
-  const contextValue: OnboardingAtmosphereContextType = {
+  const contextValue = useMemo<OnboardingAtmosphereContextType>(() => ({
     state,
     updateScreen,
     showToast,
     hideToast,
     activeToasts,
     setAudioEnabled,
-  };
+  }), [state, updateScreen, showToast, hideToast, activeToasts, setAudioEnabled]);
 
   return (
     <OnboardingAtmosphereContext.Provider value={contextValue}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,66 +8,22 @@ import {
   Modal,
   TextInput,
   ImageBackground,
-  Dimensions,
   StatusBar,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
 import i18n from '../i18n';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import BookDetailSkeleton from '../components/BookDetailSkeleton';
 import ReceiptPreviewModal from '../components/receipt/ReceiptPreviewModal';
 import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { LinearGradient } from 'expo-linear-gradient';
-import { captureError } from '../utils/errorLogger';
-
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  cover_url: string | null;
-  page_count?: number;
-}
-
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-}
-
-interface BookTag {
-  id: string;
-  tag_id: string;
-  tags: Tag;
-}
-
-interface Commitment {
-  id: string;
-  user_id: string;
-  book_id: string;
-  deadline: string;
-  pledge_amount: number;
-  currency: string;
-  target_pages: number;
-  status: 'pending' | 'completed' | 'defaulted' | 'cancelled';
-  created_at: string;
-  updated_at: string | null;
-  books: Book;
-  book_tags: BookTag[];
-}
-
-interface VerificationLog {
-  id: string;
-  commitment_id: string;
-  memo_text: string | null;
-  created_at: string;
-}
+import { useBookCommitmentDetail } from '../hooks/useBookCommitmentDetail';
+import { useTagManagement } from '../hooks/useTagManagement';
+import { useMemoEditor } from '../hooks/useMemoEditor';
 
 const TAG_COLORS = [
   colors.signal.active,
@@ -78,7 +34,6 @@ const TAG_COLORS = [
   colors.tag.pink,
 ];
 
-// Helper to force HTTPS
 const ensureHttps = (url: string | null | undefined): string | null => {
   if (!url) return null;
   return url.replace(/^http:\/\//i, 'https://');
@@ -89,177 +44,47 @@ export default function BookDetailScreen() {
   const route = useRoute();
   const { commitmentId } = route.params as { commitmentId: string };
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [commitment, setCommitment] = useState<Commitment | null>(null);
-  const [verificationLog, setVerificationLog] = useState<VerificationLog | null>(null);
-  const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [showTagModal, setShowTagModal] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
-  const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
-  const [showMemoModal, setShowMemoModal] = useState(false);
-  const [editedMemo, setEditedMemo] = useState('');
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
-  useEffect(() => {
-    loadBookDetail();
-  }, [commitmentId]);
+  // Data loading hook
+  const detail = useBookCommitmentDetail(commitmentId);
 
-  async function loadBookDetail() {
-    setError(null);
-    setLoading(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+  // Tag management hook
+  const tags = useTagManagement({
+    commitment: detail.commitment,
+    onRefresh: detail.loadBookDetail,
+    tagColors: TAG_COLORS,
+  });
 
-      const { data: commitmentData, error: commitmentError } = await supabase
-        .from('commitments')
-        .select(
-          `
-          *,
-          books (*),
-          book_tags (
-            id,
-            tag_id,
-            tags (*)
-          )
-        `
-        )
-        .eq('id', commitmentId)
-        .single();
-
-      if (commitmentError) throw commitmentError;
-
-      setCommitment(commitmentData);
-
-      const { data: logData, error: logError } = await supabase
-        .from('verification_logs')
-        .select('*')
-        .eq('commitment_id', commitmentId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!logError && logData) {
-        setVerificationLog(logData);
-      }
-
-      const { data: tagsData, error: tagsError } = await supabase
-        .from('tags')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (tagsError) throw tagsError;
-
-      setAllTags(tagsData || []);
-    } catch (err) {
-      captureError(err, { location: 'BookDetailScreen.loadBookDetail', extra: { commitmentId } });
-      setError(i18n.t('bookDetail.error_message'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function toggleTag(tagId: string) {
-    if (!commitment) return;
-    const isTagged = commitment.book_tags.some((bt) => bt.tags.id === tagId);
-
-    try {
-      if (isTagged) {
-        const bookTag = commitment.book_tags.find((bt) => bt.tags.id === tagId);
-        if (!bookTag) return;
-        const { error } = await supabase.from('book_tags').delete().eq('id', bookTag.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('book_tags').insert({
-          commitment_id: commitment.id,
-          tag_id: tagId,
-        });
-        if (error) throw error;
-      }
-      await loadBookDetail();
-    } catch (error) {
-      captureError(error, { location: 'BookDetailScreen.toggleTag' });
-    }
-  }
-
-  async function createNewTag() {
-    if (!newTagName.trim()) return;
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('tags')
-        .insert({
-          user_id: user.id,
-          name: newTagName.trim(),
-          color: selectedColor,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (data && commitment) {
-        await supabase.from('book_tags').insert({
-          commitment_id: commitment.id,
-          tag_id: data.id,
-        });
-      }
-      setNewTagName('');
-      setSelectedColor(TAG_COLORS[0]);
-      setShowTagModal(false);
-      await loadBookDetail();
-    } catch (error) {
-      captureError(error, { location: 'BookDetailScreen.createNewTag' });
-    }
-  }
-
-  async function updateMemo() {
-    if (!verificationLog) return;
-    try {
-      const { error } = await supabase
-        .from('verification_logs')
-        .update({ memo_text: editedMemo })
-        .eq('id', verificationLog.id);
-
-      if (error) throw error;
-      setVerificationLog({ ...verificationLog, memo_text: editedMemo });
-      setShowMemoModal(false);
-    } catch (error) {
-      captureError(error, { location: 'BookDetailScreen.updateMemo' });
-      Alert.alert(i18n.t('common.error'), i18n.t('bookDetail.memo_update_failed'));
-    }
-  }
+  // Memo editor hook
+  const memo = useMemoEditor({
+    verificationLog: detail.verificationLog,
+    setVerificationLog: detail.setVerificationLog,
+  });
 
   function calculateReadingDays() {
-    if (!commitment) return 0;
-    const start = new Date(commitment.created_at);
-    const end = commitment.updated_at ? new Date(commitment.updated_at) : new Date();
+    if (!detail.commitment) return 0;
+    const start = new Date(detail.commitment.created_at);
+    const end = detail.commitment.updated_at ? new Date(detail.commitment.updated_at) : new Date();
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   }
 
   function renderTagEditModal() {
-    if (!commitment) return null;
+    if (!detail.commitment) return null;
 
     return (
       <Modal
-        visible={showTagModal}
+        visible={tags.showTagModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowTagModal(false)}
+        onRequestClose={() => tags.setShowTagModal(false)}
       >
-        <TouchableOpacity 
-            style={styles.modalOverlay} 
-            activeOpacity={1} 
-            onPress={() => setShowTagModal(false)}
+        <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => tags.setShowTagModal(false)}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -268,8 +93,8 @@ export default function BookDetailScreen() {
 
             <ScrollView style={styles.modalBody}>
               <View style={styles.tagsGrid}>
-                {allTags.map((tag) => {
-                  const isSelected = commitment.book_tags.some(
+                {detail.allTags.map((tag) => {
+                  const isSelected = detail.commitment!.book_tags.some(
                     (bt) => bt.tags.id === tag.id
                   );
 
@@ -280,7 +105,7 @@ export default function BookDetailScreen() {
                         styles.tagModalChip,
                         isSelected && styles.tagModalChipSelected,
                       ]}
-                      onPress={() => toggleTag(tag.id)}
+                      onPress={() => tags.toggleTag(tag.id)}
                     >
                       <View style={[styles.tagDot, { backgroundColor: tag.color }]} />
                       <Text style={[styles.tagModalChipText, isSelected && {color: '#000'}]}>
@@ -297,8 +122,8 @@ export default function BookDetailScreen() {
                   style={styles.newTagInput}
                   placeholder="Tag Name"
                   placeholderTextColor={colors.text.muted}
-                  value={newTagName}
-                  onChangeText={setNewTagName}
+                  value={tags.newTagName}
+                  onChangeText={tags.setNewTagName}
                 />
 
                 <View style={styles.colorPicker}>
@@ -308,9 +133,9 @@ export default function BookDetailScreen() {
                       style={[
                         styles.colorOption,
                         { backgroundColor: color },
-                        selectedColor === color && styles.colorOptionSelected,
+                        tags.selectedColor === color && styles.colorOptionSelected,
                       ]}
-                      onPress={() => setSelectedColor(color)}
+                      onPress={() => tags.setSelectedColor(color)}
                     />
                   ))}
                 </View>
@@ -318,10 +143,10 @@ export default function BookDetailScreen() {
                 <TouchableOpacity
                   style={[
                     styles.createTagButton,
-                    !newTagName.trim() && styles.createTagButtonDisabled,
+                    !tags.newTagName.trim() && styles.createTagButtonDisabled,
                   ]}
-                  onPress={createNewTag}
-                  disabled={!newTagName.trim()}
+                  onPress={tags.createNewTag}
+                  disabled={!tags.newTagName.trim()}
                 >
                   <Text style={styles.createTagButtonText}>
                     Create Tag
@@ -338,15 +163,15 @@ export default function BookDetailScreen() {
   function renderMemoEditModal() {
     return (
       <Modal
-        visible={showMemoModal}
+        visible={memo.showMemoModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowMemoModal(false)}
+        onRequestClose={() => memo.setShowMemoModal(false)}
       >
-        <TouchableOpacity 
-            style={styles.modalOverlay} 
-            activeOpacity={1} 
-            onPress={() => setShowMemoModal(false)}
+        <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => memo.setShowMemoModal(false)}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -355,8 +180,8 @@ export default function BookDetailScreen() {
 
             <TextInput
               style={styles.memoInput}
-              value={editedMemo}
-              onChangeText={setEditedMemo}
+              value={memo.editedMemo}
+              onChangeText={memo.setEditedMemo}
               placeholder={i18n.t('bookDetail.memo_placeholder')}
               placeholderTextColor={colors.text.muted}
               multiline
@@ -367,7 +192,7 @@ export default function BookDetailScreen() {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.saveButton}
-                onPress={updateMemo}
+                onPress={memo.updateMemo}
               >
                 <Text style={styles.saveButtonText}>{i18n.t('bookDetail.save')}</Text>
               </TouchableOpacity>
@@ -378,7 +203,7 @@ export default function BookDetailScreen() {
     );
   }
 
-  if (loading) {
+  if (detail.loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.text.muted} />
@@ -386,7 +211,7 @@ export default function BookDetailScreen() {
     );
   }
 
-  if (error || !commitment) {
+  if (detail.error || !detail.commitment) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -396,17 +221,17 @@ export default function BookDetailScreen() {
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorMessage}>
-            {error || i18n.t('errors.unknown')}
+            {detail.error || i18n.t('errors.unknown')}
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const book = commitment.books;
+  const book = detail.commitment.books;
   const secureCoverUrl = ensureHttps(book.cover_url);
   const readingDays = calculateReadingDays();
-  const isSuccess = commitment.status === 'completed';
+  const isSuccess = detail.commitment.status === 'completed';
 
   return (
     <View style={styles.container}>
@@ -428,7 +253,7 @@ export default function BookDetailScreen() {
                   <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
               </SafeAreaView>
-              
+
               <View style={styles.heroContent}>
                 <View style={styles.posterContainer}>
                   {secureCoverUrl ? (
@@ -454,17 +279,17 @@ export default function BookDetailScreen() {
           </ImageBackground>
         </View>
 
-        {/* Tags Section - Always visible with add button */}
+        {/* Tags Section */}
         <View style={styles.tagsSection}>
           <View style={styles.tagsRow}>
-            {commitment.book_tags?.map((bt) => (
+            {detail.commitment.book_tags?.map((bt) => (
               <View key={bt.id} style={styles.tagBadge}>
                 <View style={[styles.tagDot, { backgroundColor: bt.tags.color }]} />
                 <Text style={styles.tagText}>{bt.tags.name}</Text>
               </View>
             ))}
             <TouchableOpacity
-              onPress={() => setShowTagModal(true)}
+              onPress={() => tags.setShowTagModal(true)}
               style={styles.addTagButton}
             >
               <Ionicons name="add-circle" size={24} color={colors.accent.primary} />
@@ -478,14 +303,14 @@ export default function BookDetailScreen() {
           <View style={styles.dataRow}>
             <MicroLabel>COMPLETION DATE</MicroLabel>
             <TacticalText>
-              {commitment.updated_at ? new Date(commitment.updated_at).toLocaleDateString() : '-'}
+              {detail.commitment.updated_at ? new Date(detail.commitment.updated_at).toLocaleDateString() : '-'}
             </TacticalText>
           </View>
 
           <View style={styles.dataRow}>
             <MicroLabel>VALUE</MicroLabel>
             <TacticalText color={isSuccess ? colors.signal.success : colors.signal.danger}>
-              {commitment.currency} {commitment.pledge_amount.toLocaleString()}
+              {detail.commitment.currency} {detail.commitment.pledge_amount.toLocaleString()}
             </TacticalText>
           </View>
 
@@ -502,14 +327,14 @@ export default function BookDetailScreen() {
           <View style={styles.memoHeader}>
             <MicroLabel style={{ color: colors.text.muted }}>FIELD NOTES</MicroLabel>
             <TouchableOpacity onPress={() => {
-                setEditedMemo(verificationLog?.memo_text || '');
-                setShowMemoModal(true);
+                memo.setEditedMemo(detail.verificationLog?.memo_text || '');
+                memo.setShowMemoModal(true);
             }}>
               <Text style={styles.editLink}>Edit</Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.memoText}>
-            {verificationLog?.memo_text || "No notes recorded."}
+            {detail.verificationLog?.memo_text || "No notes recorded."}
           </Text>
         </View>
 
@@ -525,7 +350,7 @@ export default function BookDetailScreen() {
             </Text>
           </TouchableOpacity>
         )}
-        
+
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -540,10 +365,10 @@ export default function BookDetailScreen() {
           bookTitle={book.title}
           bookAuthor={book.author || i18n.t('common.unknown_author')}
           bookCoverUrl={secureCoverUrl ?? undefined}
-          completionDate={commitment.updated_at ? new Date(commitment.updated_at) : new Date()}
+          completionDate={detail.commitment.updated_at ? new Date(detail.commitment.updated_at) : new Date()}
           readingDays={readingDays}
-          savedAmount={commitment.pledge_amount}
-          currency={commitment.currency}
+          savedAmount={detail.commitment.pledge_amount}
+          currency={detail.commitment.currency}
         />
       )}
     </View>

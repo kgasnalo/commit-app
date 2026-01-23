@@ -21,10 +21,13 @@ export default function OnboardingScreen0({ navigation }: any) {
   const [introComplete, setIntroComplete] = useState(false);
 
   useEffect(() => {
-    // Load saved language on mount
+    let isMounted = true;
     loadLanguage().then(locale => {
-      setCurrentLanguage(locale);
+      if (isMounted) {
+        setCurrentLanguage(locale);
+      }
     });
+    return () => { isMounted = false; };
   }, []);
 
   const handleLanguageChange = async (languageCode: string) => {

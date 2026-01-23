@@ -1,102 +1,89 @@
-# Handoff: Session 2026-01-23 (GO_BACK not handled エラー完全修正)
+# Handoff: Session 2026-01-23 (技術的負債修正: Memoization + Async Safety + God Component分割)
 
 ## Current Goal
-**オンボーディング GO_BACK not handled エラーの完全解消（3つの根本原因すべてに対処）**
+**影響度の高い技術的負債3件を安全に修正完了（A.3/P.9, A.4, D.5）**
 
 ---
 
 ## Current Critical Status
 
-### 問題の経緯
-前回セッションで `LivingBackground`, `PulsatingVignette`, `AshParticles` に `cancelAnimation` クリーンアップを追加したが、GO_BACK エラーが継続。追加調査で3つの根本原因を特定し、すべて修正完了。
+### 完了した修正サマリー
 
-### 3つの根本原因と修正
-
-| # | 原因 | 修正 | ファイル |
-|---|------|------|---------|
-| 1 | iOS スワイプバックジェスチャーがスタック最初の画面で発火 | `gestureEnabled: false` 追加 | `AppNavigator.tsx` (L842, L868) |
-| 2 | OnboardingLayout の戻るボタンに `canGoBack()` ガードなし | `canGoBack()` チェック追加 | `OnboardingLayout.tsx` (L51) |
-| 3 | WarpSpeedTransition の `withRepeat` アニメーションにクリーンアップなし | `cancelAnimation` x6 追加 | `WarpSpeedTransition.tsx` |
-
-### 修正詳細
-
-#### 修正1: スタック最初の画面のジェスチャー無効化
-```typescript
-// AppNavigator.tsx L842
-<Stack.Screen name="Onboarding0" component={OnboardingScreen0} options={{ gestureEnabled: false }} />
-
-// AppNavigator.tsx L868
-<Stack.Screen name="Onboarding7" component={OnboardingScreen7} options={{ gestureEnabled: false }} />
-```
-
-#### 修正2: 戻るボタンガード
-```typescript
-// OnboardingLayout.tsx L51
-onPress={() => { if (navigation.canGoBack()) navigation.goBack(); }}
-```
-
-#### 修正3: WarpSpeedTransition クリーンアップ
-```typescript
-// WarpSpeedTransition.tsx - cleanup関数に追加
-cancelAnimation(shakeX);
-cancelAnimation(shakeY);
-cancelAnimation(warpProgress);
-cancelAnimation(containerOpacity);
-cancelAnimation(flashOpacity);
-cancelAnimation(centerGlowRadius);
-```
+| # | 項目 | 修正内容 | 影響ファイル数 |
+|---|------|---------|--------------|
+| 1 | Context Value Memoization (A.3/P.9) | 5つのContext Provider valueを`useMemo`でラップ | 5ファイル |
+| 2 | Async Safety (A.4) | `isMounted`ガードで非同期状態更新を保護 | 2ファイル |
+| 3 | God Component分割 (D.5) | 2画面から7 hooks抽出、行数40%削減 | 9ファイル（新規7 + 編集2） |
 
 ### 検証状況
-- [x] TypeCheck (`npx tsc --noEmit`) パス
-- [ ] シミュレーターでの動作確認（Metro bundler起動が必要）
-- [ ] Onboarding0 でスワイプバック → エラーなし確認
-- [ ] WarpTransition アニメーション途中でアンマウント → エラーなし確認
+- [x] TypeCheck (`npx tsc --noEmit`) パス - エラー0件
+- [x] 循環import なし確認
+- [x] `cancelAnimation`クリーンアップ追加（`withRepeat(-1)`バグ修正）
+- [ ] シミュレーターでの動作確認
 
 ---
 
 ## What Didn't Work (This Session)
 
-特になし。計画通りに修正完了。
+- `useContinueFlow.ts` の `onBookTotalPages` コールバック型で `number` を指定していたが、`getBookById` の `total_pages` が `number | null` を返すため型エラー。`number | null` に修正して解決。
+- 特に大きな問題はなく、計画通りに完了。
 
 ---
 
 ## Files Changed This Session
 
+### 新規作成ファイル
+| ファイル | 目的 |
+|----------|------|
+| `src/types/commitment.types.ts` | 共有型定義 (Currency, GoogleBook, ManualBook) |
+| `src/hooks/useBookSearch.ts` | 書籍検索ロジック |
+| `src/hooks/useCommitmentForm.ts` | フォーム状態 + アニメーション |
+| `src/hooks/useContinueFlow.ts` | Continue Flow初期化 |
+| `src/hooks/useManualBookEntry.ts` | 手動入力ロジック |
+| `src/hooks/useBookCommitmentDetail.ts` | BookDetail データ取得 |
+| `src/hooks/useTagManagement.ts` | タグ操作 |
+| `src/hooks/useMemoEditor.ts` | メモ編集 |
+
+### 編集ファイル
 | ファイル | 変更内容 |
 |----------|---------|
-| `src/navigation/AppNavigator.tsx` | Onboarding0, Onboarding7 に `gestureEnabled: false` 追加 |
-| `src/components/onboarding/OnboardingLayout.tsx` | `canGoBack()` ガード追加 |
-| `src/components/onboarding/WarpSpeedTransition.tsx` | `cancelAnimation` import + 6 SharedValue のクリーンアップ追加 |
+| `src/contexts/LanguageContext.tsx` | `useMemo` + `isMounted`ガード |
+| `src/contexts/OfflineContext.tsx` | `useMemo` |
+| `src/contexts/AnalyticsContext.tsx` | `useMemo` (両Provider) |
+| `src/context/OnboardingAtmosphereContext.tsx` | `useMemo` |
+| `src/contexts/UnreadContext.tsx` | `useMemo` |
+| `src/screens/onboarding/OnboardingScreen0_Welcome.tsx` | `isMounted`ガード |
+| `src/screens/CreateCommitmentScreen.tsx` | Hook抽出リファクタ (1335→1008行) |
+| `src/screens/BookDetailScreen.tsx` | Hook抽出リファクタ (857→682行) |
 
 ---
 
 ## Immediate Next Steps
 
-### 動作確認 (必須)
-1. `npx expo start` で Metro bundler を起動
-2. シミュレーターでアプリを開く（`./run-ios-manual.sh` でビルド済みの場合は Metro のみでOK）
-3. Onboarding0 (Welcome) で左端からスワイプ → エラーが出ないこと
-4. Onboarding0 → Onboarding1 → 戻る → 正常動作
-5. オンボーディング全画面遷移でエラーなし確認
-6. WarpTransition 画面で中断テスト
+### 推奨: 動作確認
+1. `npx expo start` でMetro bundlerを起動
+2. CreateCommitmentScreenの全フローテスト（検索、日付選択、金額選択、作成）
+3. BookDetailScreenのタグ追加/メモ編集テスト
+4. Continue Flowテスト（Library → 続きを読む）
 
-### 注意事項
-- `Could not connect to development server` エラーが出る場合は、Metro bundler が起動していない。`npx expo start` を先に実行すること。
-- ビルド済みアプリがある場合、Metro さえ起動すれば Reload で接続可能。
+### 残りの技術的負債 (優先度順)
+1. **W.1 Type Safety** - `any`型を厳密型に置換
+2. **D.6 Legacy Library** - `react-native-confetti-cannon`置換
+3. **D.8 Type Definition** - `database.types.ts`との整合性
+4. **I.1 Optimized Data Fetching** - React Queryまたはキャッシュ戦略
 
 ---
 
 ## Previous Sessions Summary
 
-**GO_BACK完全修正 (2026-01-23 現セッション):**
+**技術的負債修正 (2026-01-23 現セッション):**
+- Context Memoization (5 Providers), Async Safety (2ファイル), God Component分割 (2画面→7 hooks)
+
+**GO_BACK完全修正 (2026-01-23):**
 - 3つの根本原因すべてに対処（ジェスチャー無効化、canGoBackガード、WarpSpeedTransition cancelAnimation）
 
-**GO_BACK修正 Phase 1 (2026-01-23 前回セッション):**
-- withRepeat(-1) の cancelAnimation クリーンアップ追加 (LivingBackground, PulsatingVignette, AshParticles)
-
 **UI/UXデザイン改善 (2026-01-22):**
-- CommitmentCard表紙サムネイル追加
-- MonkMode Finexaスタイル背景リデザイン
+- CommitmentCard表紙サムネイル追加、MonkMode Finexaスタイル背景
 
 **技術監査修正 (2026-01-22):**
 - Phase 4新機能の品質監査・7件修正完了

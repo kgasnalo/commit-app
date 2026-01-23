@@ -5,7 +5,7 @@
  * Supabase Realtimeで新規投稿を監視し、自動的に未読数を更新
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import {
   UnreadCounts,
@@ -143,12 +143,12 @@ export function UnreadProvider({ children }: UnreadProviderProps) {
     };
   }, [isInitialized, refreshCounts]);
 
-  const value: UnreadContextValue = {
+  const value = useMemo<UnreadContextValue>(() => ({
     unreadCounts,
     isLoading,
     markAsRead,
     refreshCounts,
-  };
+  }), [unreadCounts, isLoading, markAsRead, refreshCounts]);
 
   return (
     <UnreadContext.Provider value={value}>

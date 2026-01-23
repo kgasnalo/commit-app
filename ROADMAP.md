@@ -759,12 +759,21 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Extract to `src/config/constants.ts` or top-level constants.
     - **Implementation:** Extracted to top-level constants: `HEATMAP_THRESHOLDS`, `READER_TYPE_THRESHOLDS`, `DEFAULTS`, `MS_PER_DAY`, `SECONDS_PER_HOUR`. Updated all usages in MonkModeService.ts.
 
-- [ ] **D.5 God Component Refactoring (High Priority)**
+- [x] **D.5 God Component Refactoring (High Priority)**
     - **Problem:** Massive components handling mixed concerns (UI, State, API).
     - **Locations:**
-        - `CreateCommitmentScreen.tsx` (>1080 lines)
-        - `BookDetailScreen.tsx` (>840 lines)
-    - **Fix:** Extract logic into custom hooks (e.g., `useBookDetails`, `useCommitmentCreation`) and sub-components.
+        - `CreateCommitmentScreen.tsx` (1335→1008 lines, -24%)
+        - `BookDetailScreen.tsx` (857→682 lines, -20%)
+    - **Fix:** Extracted logic into 7 custom hooks.
+    - **Implementation (2026-01-23):**
+      - `useBookSearch.ts`: 検索ロジック (ISBN + Google Books API)
+      - `useCommitmentForm.ts`: フォーム状態 + Reanimatedアニメーション + cancelAnimationバグ修正
+      - `useContinueFlow.ts`: Continue Flow初期化 + isMountedガード
+      - `useManualBookEntry.ts`: 手動入力ロジック
+      - `useBookCommitmentDetail.ts`: BookDetailデータ取得
+      - `useTagManagement.ts`: タグ操作
+      - `useMemoEditor.ts`: メモ編集
+    - **Shared Types:** `src/types/commitment.types.ts` (Currency, GoogleBook, ManualBook)
 
 - [ ] **D.6 Legacy Library Replacement**
     - **Problem:** `react-native-confetti-cannon` is likely unmaintained and may conflict with New Architecture.
@@ -894,19 +903,22 @@ Each task is atomic, role-specific, and has a clear definition of done.
     - **Fix:** Ensure `Sentry.captureException(error)` is present in all critical API and logic failures.
     - **Implementation:** Added `captureError` and `captureWarning` helper functions to `src/utils/errorLogger.ts`. Updated commitmentHelpers.ts, MonkModeService.ts, NotificationService.ts with proper Sentry reporting.
 
-- [ ] **A.3 Provider Optimization**
+- [x] **A.3 Provider Optimization**
     - **Problem:** `OnboardingAtmosphereProvider` wraps the entire app, causing root re-renders on every atmosphere change.
-    - **Fix:** Use `memo` on `AppNavigator` or split context into static/dynamic parts.
+    - **Fix:** All 5 Context Providers (Language, Offline, Analytics, OnboardingAtmosphere, Unread) now use `useMemo` for value objects.
+    - **Implementation (2026-01-23):** Added `useMemo` wrapping to prevent unnecessary consumer re-renders.
 
-- [ ] **A.4 Async Safety & Cleanup**
+- [x] **A.4 Async Safety & Cleanup**
     - **Problem:** Unawaited promises and `.then()` chains in `useEffect` (e.g., `LanguageContext`, `OnboardingScreen0`) without cleanup.
     - **Risk:** Memory leaks and "Can't perform state update on unmounted component" errors.
-    - **Fix:** Use `AbortController` or cleanup flags in all async `useEffect` hooks.
+    - **Fix:** Added `isMounted` cleanup flags to async `useEffect` hooks.
+    - **Implementation (2026-01-23):** `LanguageContext.tsx` and `OnboardingScreen0_Welcome.tsx` now guard setState calls with `isMounted` flag.
 
-- [ ] **P.9 Context Memoization**
-    - **Problem:** `OnboardingAtmosphereContext` provider value is not memoized.
+- [x] **P.9 Context Memoization**
+    - **Problem:** Context provider values not memoized across 5 providers.
     - **Risk:** Unnecessary re-renders of all consuming components on every state update.
-    - **Fix:** Wrap `contextValue` in `useMemo`.
+    - **Fix:** Wrapped all context values in `useMemo` with proper dependency arrays.
+    - **Implementation (2026-01-23):** LanguageContext, OfflineContext, AnalyticsContext (both providers), OnboardingAtmosphereContext, UnreadContext.
 
 - [ ] **P.10 Missing Indexes (Database Performance)**
     - **Problem:** `commitments` table lacks indexes on foreign keys (`user_id`, `book_id`) and status.

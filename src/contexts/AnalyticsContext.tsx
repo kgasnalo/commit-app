@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { PostHogProvider as PHProvider, usePostHog } from 'posthog-react-native';
 import { POSTHOG_API_KEY } from '../config/env';
 import { setAnalyticsInstance } from '../lib/AnalyticsService';
@@ -91,17 +91,17 @@ function AnalyticsContextProvider({ children }: { children: React.ReactNode }) {
     return posthog?.getFeatureFlagPayload(flagKey) as JsonType;
   }, [posthog]);
 
+  const value = useMemo(() => ({
+    isReady,
+    identify,
+    reset,
+    trackEvent,
+    isFeatureEnabled,
+    getFeatureFlagPayload,
+  }), [isReady, identify, reset, trackEvent, isFeatureEnabled, getFeatureFlagPayload]);
+
   return (
-    <AnalyticsContext.Provider
-      value={{
-        isReady,
-        identify,
-        reset,
-        trackEvent,
-        isFeatureEnabled,
-        getFeatureFlagPayload,
-      }}
-    >
+    <AnalyticsContext.Provider value={value}>
       {children}
     </AnalyticsContext.Provider>
   );
@@ -138,17 +138,17 @@ function DisabledAnalyticsProvider({ children }: { children: React.ReactNode }) 
     return null;
   }, []);
 
+  const value = useMemo(() => ({
+    isReady: false as const,
+    identify: noopIdentify,
+    reset: noopReset,
+    trackEvent: noopTrackEvent,
+    isFeatureEnabled: noopIsFeatureEnabled,
+    getFeatureFlagPayload: noopGetFeatureFlagPayload,
+  }), [noopIdentify, noopReset, noopTrackEvent, noopIsFeatureEnabled, noopGetFeatureFlagPayload]);
+
   return (
-    <AnalyticsContext.Provider
-      value={{
-        isReady: false,
-        identify: noopIdentify,
-        reset: noopReset,
-        trackEvent: noopTrackEvent,
-        isFeatureEnabled: noopIsFeatureEnabled,
-        getFeatureFlagPayload: noopGetFeatureFlagPayload,
-      }}
-    >
+    <AnalyticsContext.Provider value={value}>
       {children}
     </AnalyticsContext.Provider>
   );
