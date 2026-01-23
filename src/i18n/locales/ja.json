@@ -261,7 +261,8 @@
     "registration_complete": "COMMITへの登録が完了しました。",
     "auth_error": "認証エラーが発生しました。再度ログインしてください。",
     "session_error": "セッションエラー",
-    "session_invalid": "ログイン状態が確認できません。再度ログインしてください。"
+    "session_invalid": "ログイン状態が確認できません。再度ログインしてください。",
+    "missing_data": "コミットメントデータが不足しています。オンボーディングを最初からやり直してください。"
   },
   "book_search": {
     "title": "本を追加",

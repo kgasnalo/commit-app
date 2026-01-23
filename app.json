@@ -30,7 +30,6 @@
       "package": "com.kgxxx.commitapp",
       "versionCode": 1,
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
@@ -44,14 +43,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "読書記録の検証のために写真ライブラリへのアクセスを許可してください。",
-          "cameraPermission": "読書記録の撮影のためにカメラへのアクセスを許可してください。"
+          "photosPermission": "Allow access to the photo library to verify your reading progress.",
+          "cameraPermission": "Allow access to the camera to capture your reading progress."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "ISBNバーコードをスキャンするためにカメラへのアクセスを許可してください。"
+          "cameraPermission": "Allow access to the camera to scan ISBN barcodes."
         }
       ],
       [
@@ -77,7 +76,8 @@
     },
     "locales": {
       "ja": "./locales/ja.json",
-      "en": "./locales/en.json"
+      "en": "./locales/en.json",
+      "ko": "./locales/ko.json"
     }
   }
 }

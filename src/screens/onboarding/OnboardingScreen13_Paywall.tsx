@@ -111,7 +111,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       // コミットメント作成（bookToCommitがある場合のみ）
       if (!bookToCommit || !deadlineToCommit || !pledgeToCommit) {
         console.error('[Screen13] Missing commitment data:', { bookToCommit, deadlineToCommit, pledgeToCommit });
-        Alert.alert('Error', 'Commitment data is missing. Please restart onboarding.');
+        Alert.alert(i18n.t('common.error'), i18n.t('paywall.missing_data'));
         return;
       }
 

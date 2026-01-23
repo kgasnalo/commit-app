@@ -44,11 +44,10 @@ export function logMessage(
  * Sets user context for Sentry error reports.
  * Call this after user authentication.
  */
-export function setUserContext(userId: string, email?: string): void {
+export function setUserContext(userId: string): void {
   if (SENTRY_DSN) {
     Sentry.setUser({
       id: userId,
-      email,
     });
   }
 }

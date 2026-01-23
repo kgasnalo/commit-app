@@ -1238,3 +1238,16 @@
   - 12: Testimonials
   - 13: CustomPlan
   - 14: Paywall
+- **app.json iOS Permission Locales (CRITICAL):** `app.json` の `plugins` セクション内の権限文言（`photosPermission`, `cameraPermission`）は**英語をfallback**として記述する。日本語・韓国語は `locales/*.json` で対応。また、`app.json` の `locales` セクションにはアプリがサポートする**全言語**（ja, en, ko）を登録し、各ファイルを `locales/` ディレクトリに配置すること：
+  ```json
+  // app.json - plugins内は英語fallback
+  ["expo-image-picker", { "photosPermission": "Allow access to..." }]
+
+  // app.json - 全言語を登録
+  "locales": { "ja": "./locales/ja.json", "en": "./locales/en.json", "ko": "./locales/ko.json" }
+
+  // locales/ja.json - iOS権限ダイアログの日本語
+  { "NSPhotoLibraryUsageDescription": "...", "NSCameraUsageDescription": "..." }
+  ```
+  新しい言語を追加する場合は、必ず `locales/XX.json` と `app.json` の `locales` の両方を更新する。
+- **setUserContext Signature:** `setUserContext(userId: string)` はID**のみ**を受け取る。emailは渡さない（Sentry PII規約）。呼び出し側で `session.user.email` を引数に含めないこと。

@@ -261,7 +261,8 @@
     "registration_complete": "Registration complete.",
     "auth_error": "An authentication error occurred. Please log in again.",
     "session_error": "Session Error",
-    "session_invalid": "Unable to verify login status. Please log in again."
+    "session_invalid": "Unable to verify login status. Please log in again.",
+    "missing_data": "Commitment data is missing. Please restart onboarding."
   },
   "book_search": {
     "title": "Add Book",

@@ -418,6 +418,20 @@ Each task is atomic, role-specific, and has a clear definition of done.
       - SettingsScreen: Uses LegalBottomSheet for terms/privacy (no external browser)
     - **DoD:** Infrastructure to force-renew consent when legal terms change. ✅
 
+- [x] **6.8 Pre-Release Compliance Audit (2026-01-23)**
+    - **Role:** `[Security/Compliance Engineer]`
+    - **Action:** Comprehensive audit for store submission blockers.
+    - **Fixes Applied:**
+      - [x] `moti` パッケージ削除 (Reanimated v4非互換クラッシュ防止)
+      - [x] Paywall画面ハードコード英語 → i18n.t() 修正
+      - [x] 韓国語locale追加 (`locales/ko.json` + app.json登録)
+      - [x] app.json plugin権限文言を英語fallbackに変更
+      - [x] PII除去: console.logとSentryからemail参照削除
+      - [x] 未使用RECORD_AUDIO権限削除
+    - **Remaining SHOWSTOPPER:** Apple IAP未実装 (→ 7.9)
+    - **Remaining (Build-time):** Stripe本番キー差し替え (.env)
+    - **DoD:** CRITICAL/HIGH/MEDIUM項目すべて修正済み ✅
+
 ---
 
 ## ⚙️ Phase 7: The Engine (Web Companion & Security)

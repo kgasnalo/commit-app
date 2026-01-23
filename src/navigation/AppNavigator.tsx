@@ -442,7 +442,7 @@ function NavigationContent() {
             return;
           }
           if (sessionData.session) {
-            console.log('🔗 Deep Link: Session established via Implicit flow ✅', sessionData.session.user.email);
+            console.log('🔗 Deep Link: Session established via Implicit flow ✅', sessionData.session.user.id);
             // User record creation moved to onAuthStateChange (prevents race condition)
           } else {
             console.log('🔗 Deep Link: setSession returned no session');
@@ -469,7 +469,7 @@ function NavigationContent() {
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('🚀 initializeAuth: Got session:', session?.user?.email ?? '(no session)');
+        console.log('🚀 initializeAuth: Got session:', session?.user?.id ?? '(no session)');
 
         if (!session) {
           console.log('🚀 initializeAuth: No session, setting unauthenticated');
@@ -508,7 +508,7 @@ function NavigationContent() {
 
     // 認証状態の変化を監視
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('✅ Auth State Changed:', event, session?.user?.email ?? '(no session)');
+      console.log('✅ Auth State Changed:', event, session?.user?.id ?? '(no session)');
 
       // INITIAL_SESSION は initializeAuth で処理済み
       if (event === 'INITIAL_SESSION') {
@@ -732,7 +732,7 @@ function NavigationContent() {
   // Phase 8.3: Set PostHog user identification
   useEffect(() => {
     if (authState.status === 'authenticated') {
-      setUserContext(authState.session.user.id, authState.session.user.email);
+      setUserContext(authState.session.user.id);
       // PostHog: Identify user (no PII - userId only)
       identify(authState.session.user.id, {
         subscription_status: authState.isSubscribed ? 'active' : 'inactive',
