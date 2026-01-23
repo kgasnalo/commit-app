@@ -46,6 +46,7 @@ export default function AuthScreen({ navigation }: any) {
           .insert({
             id: data.user.id,
             email: data.user.email,
+            username: 'user_' + data.user.id.substring(0, 8),
             subscription_status: 'inactive'
           });
 
@@ -77,6 +78,7 @@ export default function AuthScreen({ navigation }: any) {
             .insert({
               id: data.user.id,
               email: data.user.email,
+              username: 'user_' + data.user.id.substring(0, 8),
               subscription_status: 'inactive'
             });
         }
@@ -101,6 +103,7 @@ export default function AuthScreen({ navigation }: any) {
         .insert({
           id: userId,
           email: userEmail,
+          username: 'user_' + userId.substring(0, 8),
           subscription_status: 'inactive'
         });
     }

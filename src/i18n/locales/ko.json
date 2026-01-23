@@ -114,11 +114,12 @@
     "screen6_username": "사용자명",
     "screen6_email": "이메일",
     "screen6_password": "비밀번호",
+    "screen6_password_note": "8자 이상, 영문자와 숫자 포함",
     "screen6_create_account": "계정 만들기",
     "screen6_or": "또는",
     "screen6_google": "Google로 계속하기",
     "screen6_apple": "Apple로 계속하기",
-    "screen6_username_note": "사용자명은 나중에 변경할 수 있습니다",
+    "screen6_username_note": "3-20자, 영문자, 숫자, _만 가능",
     "screen7_title": "읽지 않은 한 권은, 손에 넣지 못한 하나의 무기.",
     "screen7_subtitle": "지식은 복리로 작용한다. 1년 후, 차이가 난다.",
     "screen7_intro": "당신이 잃을 것들",
@@ -542,6 +543,13 @@
     "create_commitment_failed": "커밋먼트 생성에 실패했습니다.",
     "file_too_large_title": "파일이 너무 큽니다",
     "file_too_large_message": "5MB 이하의 이미지를 선택해 주세요.",
+    "username": {
+      "too_short": "사용자명은 3자 이상이어야 합니다",
+      "too_long": "사용자명은 20자 이하여야 합니다",
+      "invalid_characters": "영문자, 숫자, 밑줄만 사용할 수 있습니다",
+      "taken": "이 사용자명은 이미 사용 중입니다",
+      "check_failed": "확인에 실패했습니다. 다시 시도해주세요"
+    },
     "validation": {
       "INVALID_AMOUNT": "금액이 허용 범위를 벗어났습니다",
       "INVALID_CURRENCY": "지원되지 않는 통화입니다",

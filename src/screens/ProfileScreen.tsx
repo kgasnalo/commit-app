@@ -36,6 +36,7 @@ import { TacticalText } from '../components/titan/TacticalText';
 import { MicroLabel } from '../components/titan/MicroLabel';
 import { ReadingDNASection } from '../components/reading-dna';
 import { captureError } from '../utils/errorLogger';
+import { validateUsernameFormat, checkUsernameAvailability } from '../utils/usernameValidator';
 
 type UserProfile = Database['public']['Tables']['users']['Row'];
 
@@ -118,10 +119,22 @@ export default function ProfileScreen({ navigation }: any) {
       return;
     }
 
+    const formatCheck = validateUsernameFormat(newUsername);
+    if (!formatCheck.isValid) {
+      Alert.alert(i18n.t('common.error'), i18n.t(formatCheck.errorKey!));
+      return;
+    }
+
     try {
       setUpdating(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
+      const availCheck = await checkUsernameAvailability(newUsername, session.user.id);
+      if (!availCheck.isValid) {
+        Alert.alert(i18n.t('common.error'), i18n.t(availCheck.errorKey!));
+        return;
+      }
 
       const { error } = await supabase
         .from('users')

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
 import { captureError } from '../../utils/errorLogger';
+import { validateUsernameFormat, checkUsernameAvailability } from '../../utils/usernameValidator';
 
 // WebBrowserの結果を適切に処理するために必要
 WebBrowser.maybeCompleteAuthSession();
@@ -22,6 +23,43 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameValid, setUsernameValid] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isPasswordValid = password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
+
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    setUsernameError(null);
+    setUsernameValid(false);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (value.trim().length === 0) {
+      setIsCheckingUsername(false);
+      return;
+    }
+
+    const formatCheck = validateUsernameFormat(value);
+    if (!formatCheck.isValid) {
+      setUsernameError(i18n.t(formatCheck.errorKey!));
+      setIsCheckingUsername(false);
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    debounceRef.current = setTimeout(async () => {
+      const result = await checkUsernameAvailability(value);
+      setIsCheckingUsername(false);
+      if (!result.isValid) {
+        setUsernameError(i18n.t(result.errorKey!));
+      } else {
+        setUsernameValid(true);
+      }
+    }, 500);
+  };
 
   // リダイレクトURIの設定
   const redirectUri = makeRedirectUri({
@@ -56,7 +94,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
             {
               id: userId,
               email: userEmail,
-              username: displayName,
+              username: displayName || ('user_' + userId.substring(0, 8)),
               subscription_status: 'inactive',
             },
             {
@@ -89,6 +127,13 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const handleEmailSignup = async () => {
     if (!username.trim() || !email.trim() || !password.trim()) {
       Alert.alert(i18n.t('common.error'), i18n.t('errors.fill_all_fields'));
+      return;
+    }
+
+    // ユーザー名バリデーション
+    const formatCheck = validateUsernameFormat(username);
+    if (!formatCheck.isValid) {
+      Alert.alert(i18n.t('common.error'), i18n.t(formatCheck.errorKey!));
       return;
     }
 
@@ -304,22 +349,40 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           label={i18n.t('onboarding.screen6_create_account')}
           onPress={handleEmailSignup}
           loading={loading}
-          disabled={!username || !email || !password}
+          disabled={!username.trim() || !email.trim() || !isPasswordValid || !!usernameError || isCheckingUsername || !usernameValid}
         />
       }
     >
       <View style={styles.form}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>{i18n.t('onboarding.screen6_username')}</Text>
-          <TextInput
-            style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-            placeholder="your_username"
-            placeholderTextColor={colors.text.muted}
-            autoCapitalize="none"
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={[
+                styles.input,
+                usernameError ? styles.inputError : null,
+                usernameValid ? styles.inputValid : null,
+              ]}
+              value={username}
+              onChangeText={handleUsernameChange}
+              placeholder="your_username"
+              placeholderTextColor={colors.text.muted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={20}
+            />
+            {isCheckingUsername && (
+              <ActivityIndicator
+                size="small"
+                color={colors.text.muted}
+                style={styles.inputIndicator}
+              />
+            )}
+          </View>
           <Text style={styles.inputNote}>{i18n.t('onboarding.screen6_username_note')}</Text>
+          {usernameError && (
+            <Text style={styles.inputErrorText}>{usernameError}</Text>
+          )}
         </View>
 
         <View style={styles.inputContainer}>
@@ -345,6 +408,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
             placeholderTextColor={colors.text.muted}
             secureTextEntry
           />
+          <Text style={styles.inputNote}>{i18n.t('onboarding.screen6_password_note')}</Text>
         </View>
       </View>
 
@@ -411,8 +475,27 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: typography.fontSize.body,
   },
+  inputWrapper: {
+    position: 'relative' as const,
+  },
+  inputError: {
+    borderColor: '#FF3D00',
+  },
+  inputValid: {
+    borderColor: '#4CAF50',
+  },
+  inputIndicator: {
+    position: 'absolute' as const,
+    right: 16,
+    top: 16,
+  },
   inputNote: {
     color: colors.text.muted,
+    fontSize: typography.fontSize.caption,
+    marginTop: 4,
+  },
+  inputErrorText: {
+    color: '#FF3D00',
     fontSize: typography.fontSize.caption,
     marginTop: 4,
   },

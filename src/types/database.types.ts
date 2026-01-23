@@ -13,7 +13,7 @@ export interface Database {
         Row: {
           id: string
           email: string
-          username: string | null
+          username: string
           stripe_customer_id: string | null
           stripe_payment_method_id: string | null
           card_last_four: string | null
@@ -30,7 +30,7 @@ export interface Database {
         Insert: {
           id: string
           email: string
-          username?: string | null
+          username: string
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
           card_last_four?: string | null
@@ -47,7 +47,7 @@ export interface Database {
         Update: {
           id?: string
           email?: string
-          username?: string | null
+          username?: string
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
           card_last_four?: string | null
@@ -580,7 +580,13 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_username_available: {
+        Args: {
+          p_username: string
+          p_exclude_user_id?: string | null
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

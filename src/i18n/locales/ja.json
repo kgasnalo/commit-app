@@ -114,11 +114,12 @@
     "screen6_username": "ユーザーネーム",
     "screen6_email": "メールアドレス",
     "screen6_password": "パスワード",
+    "screen6_password_note": "8文字以上、英字と数字を含む",
     "screen6_create_account": "アカウントを作成",
     "screen6_or": "または",
     "screen6_google": "Googleで続ける",
     "screen6_apple": "Appleで続ける",
-    "screen6_username_note": "ユーザーネームは後から変更できます",
+    "screen6_username_note": "3-20文字、英数字と_のみ",
     "screen7_title": "読まなかった1冊は、\n手に入らなかった知識の1つ。",
     "screen7_subtitle": "知識は複利で効く。1年後、差がつく。",
     "screen7_intro": "あなたが失いつつあるもの",
@@ -545,6 +546,13 @@
     "create_commitment_failed": "コミットメントの作成に失敗しました。",
     "file_too_large_title": "ファイルが大きすぎます",
     "file_too_large_message": "5MB以下の画像を選択してください。",
+    "username": {
+      "too_short": "ユーザー名は3文字以上で入力してください",
+      "too_long": "ユーザー名は20文字以内で入力してください",
+      "invalid_characters": "英数字とアンダースコアのみ使用できます",
+      "taken": "このユーザー名は既に使用されています",
+      "check_failed": "確認に失敗しました。再試行してください"
+    },
     "validation": {
       "INVALID_AMOUNT": "金額が許容範囲外です",
       "INVALID_CURRENCY": "サポートされていない通貨です",

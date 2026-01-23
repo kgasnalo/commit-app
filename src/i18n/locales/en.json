@@ -114,11 +114,12 @@
     "screen6_username": "Username",
     "screen6_email": "Email",
     "screen6_password": "Password",
+    "screen6_password_note": "At least 8 characters, with letters and numbers",
     "screen6_create_account": "Create Account",
     "screen6_or": "or",
     "screen6_google": "Continue with Google",
     "screen6_apple": "Continue with Apple",
-    "screen6_username_note": "Username can be changed later",
+    "screen6_username_note": "3-20 chars, letters, numbers & _ only",
     "screen7_title": "The book you didn't read was one weapon you didn't obtain.",
     "screen7_subtitle": "Knowledge compounds. In one year, the difference shows.",
     "screen7_intro": "What you're about to lose",
@@ -545,6 +546,13 @@
     "create_commitment_failed": "Failed to create commitment.",
     "file_too_large_title": "File Too Large",
     "file_too_large_message": "Please select an image under 5MB.",
+    "username": {
+      "too_short": "Username must be at least 3 characters",
+      "too_long": "Username must be 20 characters or less",
+      "invalid_characters": "Only letters, numbers, and underscores allowed",
+      "taken": "This username is already taken",
+      "check_failed": "Check failed. Please try again"
+    },
     "validation": {
       "INVALID_AMOUNT": "Pledge amount is outside the allowed range",
       "INVALID_CURRENCY": "Unsupported currency",
