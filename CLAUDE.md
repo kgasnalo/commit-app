@@ -27,6 +27,7 @@
 | `/i18n-check` | 3言語同期チェック | UI文言追加後、リリース前 |
 | `/build-ios` | iOSビルド自走 | 動作確認時、ネイティブモジュール追加後 |
 | `/deploy-supabase` | 本番デプロイ | DB変更後、Edge Function修正後 |
+| `/save-knowledge` | ナレッジ保存 | 有益なツイート・記事を見つけた時 |
 
 ---
 
@@ -1298,3 +1299,49 @@
   }
   ```
 - **Username Validation Rules:** ユーザー名は `^[a-zA-Z0-9_]{3,20}$` (3-20文字、英数字+アンダースコア)。バリデーションには `src/utils/usernameValidator.ts` の `validateUsernameFormat()` と `checkUsernameAvailability()` を使用すること。DB側にもCHECK制約とcase-insensitive UNIQUE INDEXが存在する。
+- **JSON.parse with Record<string, unknown> Type Narrowing:** `JSON.parse` の結果を `Record<string, unknown>` で型付けした場合、プロパティアクセスは `unknown` 型になる。使用前に型ガードが必須:
+  ```typescript
+  // BAD - TypeScript error: unknown is not assignable to string
+  let data: Record<string, unknown> = {};
+  data = JSON.parse(jsonString);
+  const username = data.username; // 型: unknown
+  doSomething(username); // Error!
+
+  // GOOD - 型ガードで絞り込み
+  if (typeof data.username !== 'string') return;
+  doSomething(data.username); // OK: string型
+  ```
+- **Supabase Migration Column Safety:** マイグレーションで列の存在が保証されない場合（異なる環境間での履歴差異）、`DO $$ IF EXISTS ... END $$` ブロックでラップする:
+  ```sql
+  -- BAD - 列が存在しないとエラー
+  CREATE INDEX idx_foo ON table(maybe_missing_column);
+
+  -- GOOD - 条件付き実行
+  DO $$
+  BEGIN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'table' AND column_name = 'maybe_missing_column'
+    ) THEN
+      CREATE INDEX IF NOT EXISTS idx_foo ON table(maybe_missing_column);
+    END IF;
+  END $$;
+  ```
+- **Supabase Migration Ordering with --include-all:** ローカルマイグレーションのタイムスタンプがリモートの最新より前の場合、`supabase db push` は失敗する。`--include-all` フラグを使用:
+  ```bash
+  # エラー: "Found local migration files to be inserted before the last migration"
+  # 解決:
+  supabase db push --include-all
+  ```
+- **Production console.log Policy:** 本番ビルドでの情報漏洩を防ぐため、認証・決済関連のデバッグログは `__DEV__` で条件分岐:
+  ```typescript
+  // BAD - 本番でもログ出力される
+  console.log('Session:', session);
+  console.log('Payment intent:', paymentIntent);
+
+  // GOOD - 開発時のみ出力
+  if (__DEV__) console.log('Session:', session?.user?.id);
+  if (__DEV__) console.log('Payment processing...');
+  ```
+  - `captureError()` は本番でも使用可（Sentryに送信される）
+  - 機密情報（トークン、パスワード、フルセッション）は `__DEV__` でも出力しない

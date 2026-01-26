@@ -1,84 +1,111 @@
-# Handoff: Session 2026-01-25 (Edge Function WORKER_ERROR Debug)
+# Handoff: Session 2026-01-26 (Security Audit Phase 3)
 
 ## Current Goal
-**オンボーディングフローでコミットメント作成を成功させる。Edge Function の WORKER_ERROR を切り分け中。**
+**セキュリティ監査 Phase 3 完了。本番デプロイ済み。次はアプリの動作確認。**
 
 ---
 
 ## Current Critical Status
 
-### 問題の経緯
+### 完了した作業
 
-| 時系列 | 問題 | 対応 | 結果 |
-|--------|------|------|------|
-| 前セッション | `target_pages: 0` で送信されていた | `target_pages: 224` に修正 | 成功 |
-| 今セッション | Edge Function が `WORKER_ERROR` でクラッシュ | Sentry SDK を一時無効化 | **テスト待ち** |
+| カテゴリ | 内容 | ステータス |
+|----------|------|-----------|
+| C1 | JSON.parse保護 (3ファイル) | ✅ Deployed |
+| C2 | ディープリンク検証 (CSRF, HTMLエスケープ) | ✅ Deployed |
+| C3 | PII削除 (admin_email列) | ✅ Deployed |
+| C4 | pg_cron認証をCRON_SECRETに変更 | ✅ Deployed |
+| H1 | nonce生成を暗号学的に安全に | ✅ Deployed |
+| H2 | バッチサイズ上限追加 | ✅ Deployed |
+| H3 | 外部APIエラー隠蔽 (3ファイル) | ✅ Deployed |
+| H4 | console.log __DEV__条件分岐 | ✅ Deployed |
+| H5 | Google Books API検証強化 | ✅ Deployed |
+| H6 | delete-accountエラー隠蔽 | ✅ Deployed |
 
-### 現在の状態
+### デプロイ状況
 
 ```
-OnboardingScreen13 → create-commitment Edge Function
-                           ↓
-                    WORKER_ERROR (Deno runtime crash)
-                           ↓
-                    原因: Sentry SDK インポートエラーの可能性
-                           ↓
-                    対応: Sentry コードをコメントアウト
+Migrations:
+  ✅ 20260126100000_remove_pii_from_audit_logs.sql
+  ✅ 20260126110000_update_triggers_to_cron_secret.sql
+
+Edge Functions (7個):
+  ✅ post-to-x
+  ✅ generate-x-posts
+  ✅ generate-post-image
+  ✅ send-push-notification
+  ✅ delete-account
+  ✅ admin-actions
+  ✅ create-commitment (--no-verify-jwt)
 ```
-
-### 修正したファイル
-
-**`supabase/functions/create-commitment/index.ts`**
-- Line 3-4: `import { initSentry, ... }` をコメントアウト
-- Line 7: `initSentry('create-commitment')` をコメントアウト
-- Line 167: `addBreadcrumb('Auth failed'...)` をコメントアウト
-- Line 172: `addBreadcrumb('User authenticated'...)` をコメントアウト
-- Line 347-353: `logBusinessEvent(...)` をコメントアウト
-- Line 366-369: `captureException(...)` をコメントアウト
-
-**デプロイ済み:** `supabase functions deploy create-commitment --no-verify-jwt`
 
 ---
 
 ## What Didn't Work (This Session)
 
-### Sentry SDK インポートエラー (推定)
+### 1. TypeScript: Record<string, unknown> の型推論
 
 ```typescript
-// 問題のインポート (supabase/functions/_shared/sentry.ts)
-import * as Sentry from 'https://deno.land/x/sentry@8.42.0/index.mjs'
+// 問題: JSON.parse後のプロパティはunknown型
+let data: Record<string, unknown> = {};
+data = JSON.parse(jsonString);
+const username = data.username; // 型: unknown
+
+// 解決: 型ガードを追加
+if (typeof data.username !== 'string') return;
+// 以降 data.username は string 型として扱える
 ```
 
-- `WORKER_ERROR` は Deno ランタイムのクラッシュを示す
-- モジュールレベルで `initSentry()` が即座に呼ばれる設計
-- URL が無効またはバージョン非互換の可能性
+### 2. マイグレーション履歴の不整合
 
-**教訓:** Edge Function で外部モジュール（特に監視系SDK）を使う場合、インポートエラーでランタイム全体がクラッシュする。本番では try-catch でラップするか、動的インポートを検討。
+```bash
+# 問題: リモートに _prefix 付きマイグレーションが存在
+# → ローカルでスキップされ、バージョン不整合
+
+# 解決:
+supabase migration repair --status reverted 20260127100000 20260127110000 20260127120000
+```
+
+### 3. マイグレーションの列不存在エラー
+
+```sql
+-- 問題: CREATE INDEX が存在しない列を参照
+CREATE INDEX idx_foo ON table(column); -- ERROR: column does not exist
+
+-- 解決: 条件付き実行
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE ...) THEN
+    CREATE INDEX IF NOT EXISTS ...;
+  END IF;
+END $$;
+```
+
+### 4. マイグレーション順序エラー
+
+```bash
+# 問題: ローカル(20260126*)がリモート(20260128*)より前
+# → "Found local migration files to be inserted before the last migration"
+
+# 解決:
+supabase db push --include-all
+```
 
 ---
 
 ## Immediate Next Steps
 
-### 1. テスト実行 (最優先)
-1. アプリでオンボーディング Screen13 を開く
-2. 「SLIDE TO COMMIT」をスライド
-3. **期待結果:** コミットメント作成成功、シネマティック演出が表示される
-4. Supabase Dashboard でログ確認: `[create-commitment] Success`
+### 1. 動作確認 (優先)
+1. アプリでオンボーディングフロー完走テスト
+2. コミットメント作成 → 成功確認
+3. 設定画面からアカウント削除テスト
 
-### 2. 結果に応じた対応
+### 2. 残作業 (手動/任意)
 
-**成功した場合:**
-- Sentry SDK のインポート URL を修正 (npm 版に変更等)
-- 修正後、Sentry を再有効化してデプロイ
-
-**失敗した場合:**
-- Supabase Dashboard → Edge Functions → Logs で詳細エラー確認
-- 他の原因を調査
-
-### 3. Sentry 再有効化 (成功後)
-```typescript
-// 修正案: npm 版 Sentry を使用
-import * as Sentry from 'npm:@sentry/node@latest'
+**CRON_SECRET をVaultに保存** (DBトリガーで使用する場合):
+```sql
+-- Supabase Dashboard > SQL Editor
+SELECT vault.create_secret('YOUR_CRON_SECRET_HERE', 'cron_secret');
 ```
 
 ---
@@ -99,20 +126,17 @@ import * as Sentry from 'npm:@sentry/node@latest'
 
 ## Previous Sessions Summary
 
-**Edge Function Debug (2026-01-25 現セッション):**
-- WORKER_ERROR 切り分けのため Sentry を一時無効化
+**Security Audit Phase 3 (2026-01-26 現セッション):**
+- CRITICAL 4件 + HIGH 7件のセキュリティ修正を実装・デプロイ
+
+**Security Audit Phase 2 (2026-01-25):**
+- タイミング攻撃対策、エラーハンドリング、情報漏洩防止
+
+**Security Audit Phase 1 (2026-01-25):**
+- Sentry設定、認証バイパス、JSON.parse、API検証
 
 **Username Uniqueness (2026-01-24):**
 - DB UNIQUE制約 + クライアントリアルタイムバリデーション
 
 **Pre-Release Audit Fixes (2026-01-23):**
-- moti削除、Paywall i18n、韓国語locale、権限英語化、PII除去、RECORD_AUDIO削除
-
-**D.6 Legacy Library置換 (2026-01-23):**
-- react-native-confetti-cannon → 純Reanimated ConfettiEffect
-
-**技術的負債修正 (2026-01-23):**
-- Context Memoization (5 Providers), Async Safety (2ファイル), God Component分割
-
-**GO_BACK完全修正 (2026-01-23):**
-- 3つの根本原因すべてに対処
+- moti削除、Paywall i18n、韓国語locale、権限英語化、PII除去
