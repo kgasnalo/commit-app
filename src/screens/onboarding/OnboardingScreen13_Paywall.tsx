@@ -138,8 +138,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-      console.log('[Screen13] Session refreshed, user:', session.user.id);
-      console.log('[Screen13] Token expires at:', new Date(session.expires_at! * 1000).toISOString());
+      console.log('[Screen13] Session refreshed successfully');
+      // Token expiry removed for security
 
       // Step 2: データソースを確定（stateよりもroute.paramsを優先、なければstate）
       const bookToCommit = route.params?.selectedBook || selectedBook;

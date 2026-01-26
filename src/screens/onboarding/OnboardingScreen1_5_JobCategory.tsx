@@ -47,7 +47,18 @@ export default function OnboardingScreen1_5({ navigation, route }: any) {
     if (selectedCategory) {
       try {
         const existingData = await AsyncStorage.getItem('onboardingData');
-        const data = existingData ? JSON.parse(existingData) : {};
+        let data: Record<string, unknown> = {};
+        if (existingData) {
+          try {
+            data = JSON.parse(existingData);
+          } catch (parseError) {
+            captureError(parseError, {
+              location: 'OnboardingScreen1_5.handleNext',
+              extra: { action: 'parse_onboarding_data' },
+            });
+            // Continue with empty object if parse fails
+          }
+        }
         data.jobCategory = selectedCategory;
         await AsyncStorage.setItem('onboardingData', JSON.stringify(data));
       } catch (error) {

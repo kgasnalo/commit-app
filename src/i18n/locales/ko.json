@@ -295,11 +295,14 @@
     "take_photo": "사진 촬영",
     "choose_photo": "앨범에서 선택",
     "no_cover": "표지 없음",
+    "remove_photo": "제거",
     "add_button": "이 책 추가하기",
+    "success_message": "책이 추가되었습니다!",
     "validation": {
       "title_required": "책 제목을 입력해주세요",
       "author_required": "저자를 입력해주세요",
-      "pages_invalid": "유효한 페이지 수를 입력해주세요 (1-10000)"
+      "pages_invalid": "유효한 페이지 수를 입력해주세요 (1-10000)",
+      "pages_required": "총 페이지 수는 필수입니다"
     }
   },
   "commitment": {

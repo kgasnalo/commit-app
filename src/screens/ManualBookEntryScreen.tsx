@@ -120,8 +120,20 @@ export default function ManualBookEntryScreen({ navigation, route }: any) {
     setUploadingCover(true);
     try {
       const fileName = `manual_covers/manual_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-      const response = await fetch(coverImage.uri);
-      const blob = await response.blob();
+
+      // Fetch cover image with error handling
+      let blob: Blob;
+      try {
+        const response = await fetch(coverImage.uri);
+        if (!response.ok) {
+          console.warn(`[ManualBookEntry] Failed to fetch cover: ${response.status}`);
+          return null; // Continue without cover image
+        }
+        blob = await response.blob();
+      } catch (fetchError) {
+        captureError(fetchError, { location: 'ManualBookEntryScreen.uploadCoverImage' });
+        return null; // Continue without cover image
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('book-covers')

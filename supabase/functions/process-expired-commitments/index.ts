@@ -292,9 +292,9 @@ Deno.serve(async (req) => {
     try {
       stripe = getStripe()
     } catch (error) {
-      console.error('[Reaper] Stripe not configured:', error)
+      console.error('[Reaper] Stripe configuration error:', error)
       return new Response(
-        JSON.stringify({ error: 'Stripe not configured', details: String(error) }),
+        JSON.stringify({ error: 'Service configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
