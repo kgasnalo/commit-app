@@ -8,6 +8,7 @@ import CinematicCommitReveal from '../../components/onboarding/CinematicCommitRe
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, triggerAuthRefresh } from '../../lib/supabase';
+import { invokeFunctionWithRetry } from '../../lib/supabaseHelpers';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
 import * as AnalyticsService from '../../lib/AnalyticsService';
@@ -168,7 +169,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         book_title: bookToCommit.volumeInfo?.title || 'Unknown',
         book_author: bookToCommit.volumeInfo?.authors?.join(', ') || 'Unknown',
         book_cover_url: bookToCommit.volumeInfo?.imageLinks?.thumbnail || null,
-        book_total_pages: null, // オンボーディングでは未取得
+        book_total_pages: targetPagesToCommit, // Edge Functionの再取得時のAPIミスマッチを防ぐため、クライアント側で取得したページ数を使用
         is_manual_entry: false,
         deadline: deadlineToCommit,
         pledge_amount: pledgeToCommit,
@@ -179,15 +180,19 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       if (__DEV__) console.log('[Screen13] Request body:', JSON.stringify(requestBody, null, 2));
 
       // SDK の functions.invoke() を使用（トークン管理が自動化される）
-      const { data: commitmentData, error: invokeError } = await supabase.functions.invoke(
-        'create-commitment',
-        { body: requestBody }
-      );
+      // WORKER_ERROR 対策としてリトライロジックを使用
+      const { data: commitmentData, error: invokeError } = await invokeFunctionWithRetry<{
+        success: boolean;
+        commitment_id: string;
+        book_id: string;
+      }>('create-commitment', requestBody);
 
       if (invokeError) {
         captureError(invokeError, { location: 'OnboardingScreen13.handleSubscribe.createCommitment' });
 
         // FunctionsHttpError から詳細なエラー情報を抽出
+        let detailedErrorMessage = `Commitment creation failed: ${invokeError.message}`;
+
         if (invokeError instanceof FunctionsHttpError) {
           try {
             const errorBody = await invokeError.context.json();
@@ -195,18 +200,13 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             if (__DEV__) console.error('[Screen13] Full error body:', JSON.stringify(errorBody));
             const errorCode = errorBody.error || errorBody.code || errorBody.message || 'UNKNOWN';
             const errorDetails = errorBody.details || errorBody.msg || '';
-            throw new Error(`Commitment creation failed: ${errorCode} - ${errorDetails}`);
-          } catch (parseError) {
-            // JSON パースに失敗した場合、テキストとして取得を試みる
-            try {
-              const errorText = await invokeError.context.text();
-              if (__DEV__) console.error('[Screen13] Error response (text):', errorText);
-            } catch {
-              // Silently fail in production
-            }
+            detailedErrorMessage = `Commitment creation failed: ${errorCode}${errorDetails ? ' - ' + errorDetails : ''}`;
+          } catch {
+            // JSON パースに失敗した場合はデフォルトのエラーメッセージを使用
+            if (__DEV__) console.error('[Screen13] Could not parse error body as JSON');
           }
         }
-        throw new Error(`Commitment creation failed: ${invokeError.message}`);
+        throw new Error(detailedErrorMessage);
       }
 
       if (__DEV__) console.log('[Screen13] Commitment created successfully:', commitmentData);

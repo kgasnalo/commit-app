@@ -29,6 +29,10 @@
 | `/deploy-supabase` | 本番デプロイ | DB変更後、Edge Function修正後 |
 | `/save-knowledge` | ナレッジ保存 | 有益なツイート・記事を見つけた時 |
 
+## Tech Knowledge Policy
+- 開発手法・ツール・アーキテクチャの質問時は `mcp__memory__search_nodes` でTech系ナレッジを検索してから回答
+- 蓄積されたナレッジがあれば優先的に参照
+
 ---
 
 # Commands
@@ -1345,3 +1349,40 @@
   ```
   - `captureError()` は本番でも使用可（Sentryに送信される）
   - 機密情報（トークン、パスワード、フルセッション）は `__DEV__` でも出力しない
+- **Sentry Deno SDK in Edge Functions (CRITICAL):** Sentry Deno SDK (`https://deno.land/x/sentry@*/index.mjs`) causes `WORKER_ERROR` in Supabase Edge Functions. The SDK works in standard Deno but NOT in Deno Deploy (Edge Runtime). Do NOT use module-level imports:
+  ```typescript
+  // BAD - Crashes Edge Function with WORKER_ERROR
+  import * as Sentry from "https://deno.land/x/sentry@8.42.0/index.mjs";
+
+  // GOOD - Use no-op stubs until Sentry releases Edge-compatible SDK
+  // See: supabase/functions/_shared/sentry.ts for implementation
+  export function captureException(error: unknown) {
+    console.error("[Sentry] Exception (SDK disabled):", error);
+  }
+  ```
+  - Symptoms: Edge Function returns `{"code": 500, "message": "WORKER_ERROR"}` without executing function code
+  - Current workaround: `_shared/sentry.ts` contains no-op stubs, errors logged to console (visible in Supabase Dashboard Logs)
+  - TODO: Re-enable when Sentry releases Deno Edge Runtime compatible SDK
+- **Edge Function Client-Side Retry (CRITICAL):** Supabase Edge Functions (Deno Deploy) have Cold Start issues that cause intermittent `WORKER_ERROR`. NEVER use `supabase.functions.invoke()` directly. Always use `invokeFunctionWithRetry()` from `src/lib/supabaseHelpers.ts`:
+  ```typescript
+  // BAD - WORKER_ERROR on Cold Start causes user-facing error
+  const { data, error } = await supabase.functions.invoke('create-commitment', {
+    body: requestBody,
+  });
+
+  // GOOD - Automatic retry with exponential backoff
+  import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
+
+  const { data, error } = await invokeFunctionWithRetry<{
+    success: boolean;
+    commitment_id: string;
+  }>('create-commitment', requestBody);
+  ```
+  - Retries up to 3 times on WORKER_ERROR with exponential backoff (1s, 2s, 3s)
+  - Logs retry attempts in development: `[create-commitment] Retry 1/3 after WORKER_ERROR`
+  - All Edge Function calls in the codebase use this pattern:
+    - `create-commitment` (OnboardingScreen13, CreateCommitmentScreen)
+    - `use-lifeline` (CommitmentDetailScreen)
+    - `delete-account` (SettingsScreen)
+    - `isbn-lookup` (useBookSearch, BarcodeScannerModal)
+    - `job-recommendations` (JobRecommendations, JobRankingScreen)

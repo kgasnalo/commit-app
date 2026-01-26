@@ -17,6 +17,7 @@ import {
 import { Image } from 'expo-image';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { colors, spacing, typography } from '../theme';
 import { ensureHttps } from '../utils/googleBooks';
@@ -83,12 +84,14 @@ export default function JobRecommendations({
     setError(null);
 
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke(
-        'job-recommendations',
-        {
-          body: { job_category: jobCategory, limit: 10 },
-        }
-      );
+      // WORKER_ERROR 対策としてリトライロジックを使用
+      const { data, error: invokeError } = await invokeFunctionWithRetry<{
+        success: boolean;
+        data?: {
+          recommendations?: RecommendedBook[];
+          message?: string;
+        };
+      }>('job-recommendations', { job_category: jobCategory, limit: 10 });
 
       if (invokeError) {
         throw invokeError;

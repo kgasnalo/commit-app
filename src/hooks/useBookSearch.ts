@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import { GOOGLE_API_KEY } from '../config/env';
 import { buildSearchQuery } from '../utils/searchQueryBuilder';
 import { filterAndRankResults, GoogleBook as GoogleBookFilter } from '../utils/searchResultFilter';
@@ -49,9 +50,16 @@ export function useBookSearch({ onBookSelect }: UseBookSearchParams): UseBookSea
 
       // If ISBN detected, try direct lookup first
       if (parsedQuery.type === 'isbn' && parsedQuery.isbnValue) {
-        const { data: isbnData } = await supabase.functions.invoke('isbn-lookup', {
-          body: { isbn: parsedQuery.isbnValue },
-        });
+        // WORKER_ERROR 対策としてリトライロジックを使用
+        const { data: isbnData } = await invokeFunctionWithRetry<{
+          success: boolean;
+          book?: {
+            id: string;
+            title: string;
+            authors?: string[];
+            thumbnail?: string;
+          };
+        }>('isbn-lookup', { isbn: parsedQuery.isbnValue });
         if (isbnData?.success && isbnData.book) {
           const googleBook: GoogleBook = {
             id: isbnData.book.id,

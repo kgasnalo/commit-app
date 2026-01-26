@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import i18n from '../i18n';
 import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import { isValidISBN, normalizeISBN } from '../utils/isbn';
 import * as AnalyticsService from '../lib/AnalyticsService';
 
@@ -117,9 +118,16 @@ export default function BarcodeScannerModal({
 
     try {
       // Call Edge Function to look up ISBN
-      const { data, error } = await supabase.functions.invoke('isbn-lookup', {
-        body: { isbn: normalizedISBN },
-      });
+      // WORKER_ERROR 対策としてリトライロジックを使用
+      const { data, error } = await invokeFunctionWithRetry<{
+        success: boolean;
+        book?: {
+          id: string;
+          title: string;
+          authors?: string[];
+          thumbnail?: string;
+        };
+      }>('isbn-lookup', { isbn: normalizedISBN });
 
       if (error) {
         console.error('ISBN lookup error:', error);

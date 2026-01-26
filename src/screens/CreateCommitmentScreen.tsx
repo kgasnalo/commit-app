@@ -24,6 +24,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { HapticsService } from '../lib/HapticsService';
 import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { ScanBarcode } from 'lucide-react-native';
@@ -235,9 +236,13 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         }
       }
 
-      const { data, error } = await supabase.functions.invoke('create-commitment', {
-        body: requestBody,
-      });
+      // WORKER_ERROR 対策としてリトライロジックを使用
+      const { data, error } = await invokeFunctionWithRetry<{
+        success: boolean;
+        commitment_id: string;
+        book_id: string;
+        error?: string;
+      }>('create-commitment', requestBody);
 
       if (error) {
         console.error('[CreateCommitment] Edge Function error:', error);

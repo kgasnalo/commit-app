@@ -22,6 +22,7 @@ import Animated, {
 import { HapticsService } from '../lib/HapticsService';
 import { HAPTIC_BUTTON_SCALES } from '../config/haptics';
 import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import i18n from '../i18n';
 import { colors, typography } from '../theme';
 import { TacticalText } from '../components/titan/TacticalText';
@@ -208,9 +209,11 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
           onPress: async () => {
             setLifelineLoading(true);
             try {
-              const { data, error } = await supabase.functions.invoke('use-lifeline', {
-                body: { commitment_id: commitment.id },
-              });
+              // WORKER_ERROR 対策としてリトライロジックを使用
+              const { data, error } = await invokeFunctionWithRetry<{
+                success: boolean;
+                error?: string;
+              }>('use-lifeline', { commitment_id: commitment.id });
 
               if (error) {
                 if (error instanceof FunctionsHttpError) {

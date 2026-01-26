@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import i18n from '../i18n';
 import { colors, typography, spacing } from '../theme';
 import { ensureHttps } from '../utils/googleBooks';
@@ -84,12 +85,16 @@ export default function JobRankingScreen({ navigation, route }: any) {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.functions.invoke('job-recommendations', {
-        body: {
-          job_category: category,
-          limit: 10,
-          period: selectedPeriod,
-        },
+      // WORKER_ERROR 対策としてリトライロジックを使用
+      const { data, error } = await invokeFunctionWithRetry<{
+        success: boolean;
+        data?: {
+          recommendations?: Omit<RankedBook, 'rank'>[];
+        };
+      }>('job-recommendations', {
+        job_category: category,
+        limit: 10,
+        period: selectedPeriod,
       });
 
       if (error) throw error;

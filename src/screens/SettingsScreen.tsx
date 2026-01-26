@@ -13,6 +13,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import i18n, { LANGUAGES } from '../i18n';
 import { useLanguage } from '../contexts/LanguageContext';
 import { colors, typography } from '../theme';
@@ -171,7 +172,11 @@ export default function SettingsScreen({ navigation }: any) {
               const { data: { session } } = await supabase.auth.getSession();
               if (!session) return;
 
-              const { data, error } = await supabase.functions.invoke('delete-account');
+              // WORKER_ERROR 対策としてリトライロジックを使用
+              const { data, error } = await invokeFunctionWithRetry<{
+                success: boolean;
+                error?: string;
+              }>('delete-account', {});
 
               if (error) throw error;
 
