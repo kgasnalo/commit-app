@@ -1,3 +1,35 @@
+# Skill Management Policy
+
+## スキルの発見
+タスク開始前に `.claude/skills/` を確認し、該当スキルがあれば使用を提案する。
+
+## スキルの自動提案
+以下の状況では、対応するスキルの使用を提案すること:
+
+| 状況 | 提案するスキル |
+|------|----------------|
+| TypeScriptエラー発生 | `/typecheck` |
+| UI文言追加・i18n作業 | `/i18n-check` |
+| iOSビルド・動作確認 | `/build-ios` |
+| DB/Edge Functionデプロイ | `/deploy-supabase` |
+
+## スキルの自動作成
+同じパターンの作業を3回以上行った場合:
+1. 「このパターンをスキル化しますか？」と提案
+2. 承認されたら `.claude/skills/` に SKILL.md を作成
+3. このセクションの一覧を更新
+
+## 現在のスキル一覧
+
+| コマンド | 用途 | いつ使う |
+|----------|------|----------|
+| `/typecheck` | 型エラー自走修正 | TSエラー発生時、コミット前 |
+| `/i18n-check` | 3言語同期チェック | UI文言追加後、リリース前 |
+| `/build-ios` | iOSビルド自走 | 動作確認時、ネイティブモジュール追加後 |
+| `/deploy-supabase` | 本番デプロイ | DB変更後、Edge Function修正後 |
+
+---
+
 # Commands
 - start: npx expo start
 - ios: ./run-ios-manual.sh (preferred over `npm run ios` to avoid Xcode Error 65/115)

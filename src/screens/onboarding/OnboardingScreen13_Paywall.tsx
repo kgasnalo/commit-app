@@ -33,6 +33,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const [selectedPlan, setSelectedPlan] = useState<Plan>('yearly');
   const [loading, setLoading] = useState(false);
   const [showWarpTransition, setShowWarpTransition] = useState(false);
+  const [pageCount, setPageCount] = useState<number>(0);
 
   // オンボーディングデータを読み込む
   useEffect(() => {
@@ -45,6 +46,10 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           setDeadline(route.params.deadline);
           setPledgeAmount(route.params.pledgeAmount);
           setCurrency(route.params.currency || 'JPY');
+          // route.paramsにtargetPagesがあれば設定
+          if (route.params?.targetPages) {
+            setPageCount(route.params.targetPages);
+          }
         } else {
           // route.paramsがない場合、AsyncStorageから読み込む（認証後のスタック切り替え後）
           const data = await AsyncStorage.getItem('onboardingData');
@@ -54,6 +59,28 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             setDeadline(parsed.deadline);
             setPledgeAmount(parsed.pledgeAmount);
             setCurrency(parsed.currency || 'JPY');
+
+            // AsyncStorageから復元した場合、targetPagesがないのでGoogle Books APIから取得
+            if (parsed.selectedBook?.id) {
+              try {
+                console.log('[Screen13] Fetching book detail for pageCount:', parsed.selectedBook.id);
+                const response = await fetch(
+                  `https://www.googleapis.com/books/v1/volumes/${parsed.selectedBook.id}`
+                );
+                const detail = await response.json();
+                const count = detail?.volumeInfo?.pageCount;
+                if (count && count > 0) {
+                  console.log('[Screen13] Got pageCount from API:', count);
+                  setPageCount(count);
+                } else {
+                  console.log('[Screen13] No pageCount in API, using fallback: 100');
+                  setPageCount(100);
+                }
+              } catch (fetchError) {
+                console.warn('[Screen13] Failed to fetch book detail:', fetchError);
+                setPageCount(100);
+              }
+            }
           } else {
             console.warn('No onboarding data found in AsyncStorage');
           }
@@ -106,7 +133,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       const deadlineToCommit = route.params?.deadline || deadline;
       const pledgeToCommit = route.params?.pledgeAmount || pledgeAmount;
       const currencyToCommit = route.params?.currency || currency;
-      const targetPagesToCommit = route.params?.targetPages || 0;
+      const targetPagesToCommit = route.params?.targetPages || pageCount || 100;
 
       // コミットメント作成（bookToCommitがある場合のみ）
       if (!bookToCommit || !deadlineToCommit || !pledgeToCommit) {
