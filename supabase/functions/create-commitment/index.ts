@@ -1,10 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-// TEMP: Disable Sentry to debug WORKER_ERROR
-// import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
+import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
 
 // Initialize Sentry
-// initSentry('create-commitment')
+initSentry('create-commitment')
 
 // ============================================================
 // Types
@@ -164,12 +163,12 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       console.error('[create-commitment] Auth verification failed:', authError?.message)
       console.error('[create-commitment] Auth error code:', authError?.status)
-      // addBreadcrumb('Auth failed', 'auth', { error: authError?.message })
+      addBreadcrumb('Auth failed', 'auth', { error: authError?.message })
       return errorResponse(401, 'UNAUTHORIZED', authError?.message || 'Token validation failed')
     }
 
     // Set user context for Sentry
-    // addBreadcrumb('User authenticated', 'auth', { userId: user.id })
+    addBreadcrumb('User authenticated', 'auth', { userId: user.id })
 
     // 2. Parse request body
     let body: CreateCommitmentRequest
@@ -344,13 +343,13 @@ Deno.serve(async (req) => {
     console.log(`[create-commitment] Success: user=${user.id}, commitment=${commitment.id}, book=${bookId}`)
 
     // Log business event (always recorded, not just on errors)
-    // logBusinessEvent('commitment_created', {
-    //   commitmentId: commitment.id,
-    //   bookId,
-    //   userId: user.id,
-    //   amount: pledge_amount,
-    //   currency,
-    // })
+    logBusinessEvent('commitment_created', {
+      commitmentId: commitment.id,
+      bookId,
+      userId: user.id,
+      amount: pledge_amount,
+      currency,
+    })
 
     return new Response(
       JSON.stringify({
@@ -363,10 +362,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[create-commitment] Unexpected error:', error)
-    // captureException(error, {
-    //   functionName: 'create-commitment',
-    //   extra: { errorMessage: String(error) },
-    // })
+    captureException(error, {
+      functionName: 'create-commitment',
+      extra: { errorMessage: String(error) },
+    })
     return errorResponse(500, 'INTERNAL_ERROR', String(error))
   }
 })

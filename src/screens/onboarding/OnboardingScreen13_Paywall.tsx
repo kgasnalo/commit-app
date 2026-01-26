@@ -11,6 +11,7 @@ import { supabase, triggerAuthRefresh } from '../../lib/supabase';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
 import * as AnalyticsService from '../../lib/AnalyticsService';
+import { captureError } from '../../utils/errorLogger';
 
 type Plan = 'yearly' | 'monthly';
 
@@ -54,7 +55,14 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           // route.paramsがない場合、AsyncStorageから読み込む（認証後のスタック切り替え後）
           const data = await AsyncStorage.getItem('onboardingData');
           if (data) {
-            const parsed = JSON.parse(data);
+            let parsed;
+            try {
+              parsed = JSON.parse(data);
+            } catch (parseError) {
+              captureError(parseError, { location: 'OnboardingScreen13.loadOnboardingData' });
+              setPageCount(100);
+              return;
+            }
             setSelectedBook(parsed.selectedBook);
             setDeadline(parsed.deadline);
             setPledgeAmount(parsed.pledgeAmount);
@@ -67,6 +75,11 @@ export default function OnboardingScreen13({ navigation, route }: any) {
                 const response = await fetch(
                   `https://www.googleapis.com/books/v1/volumes/${parsed.selectedBook.id}`
                 );
+                if (!response.ok) {
+                  console.warn(`[Screen13] Google Books API returned ${response.status}`);
+                  setPageCount(100);
+                  return;
+                }
                 const detail = await response.json();
                 const count = detail?.volumeInfo?.pageCount;
                 if (count && count > 0) {

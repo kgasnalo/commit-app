@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
     }
 
     // Check global cooldown: lifeline can only be used once every 30 days (across all books)
+    // Note: new Date().toISOString() returns UTC timestamp (ISO 8601 format)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     const { data: recentLifeline, error: globalCheckError } = await supabaseClient
       .from('commitments')
@@ -169,12 +170,13 @@ Deno.serve(async (req) => {
 
     // Update commitment: extend deadline and mark lifeline as used
     // Optimistic locking: only update if is_freeze_used is still false (prevents race condition)
+    // Note: new Date().toISOString() returns UTC timestamp (ISO 8601 format)
     const { data: updatedCommitment, error: updateError } = await supabaseClient
       .from('commitments')
       .update({
         deadline: newDeadline.toISOString(),
         is_freeze_used: true,
-        updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(), // UTC timestamp
       })
       .eq('id', commitment_id)
       .eq('is_freeze_used', false) // Optimistic lock: ensures no concurrent update

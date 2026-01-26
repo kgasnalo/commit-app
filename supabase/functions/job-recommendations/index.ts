@@ -218,7 +218,9 @@ Deno.serve(async (req) => {
       bookCounts[book.id].user_ids.add(commitment.user_id)
     }
 
-    // Step 4: Convert to array and sort by read_count (descending)
+    // Step 4: Convert to array, apply k-anonymity filter, and sort by read_count (descending)
+    // k-anonymity: Only include books with at least MIN_USERS_THRESHOLD readers
+    // to prevent inference of individual reading habits
     const recommendations: RecommendedBook[] = Object.values(bookCounts)
       .map((item) => ({
         book_id: item.book_id,
@@ -228,6 +230,7 @@ Deno.serve(async (req) => {
         google_books_id: item.google_books_id,
         read_count: item.user_ids.size,
       }))
+      .filter((book) => book.read_count >= MIN_USERS_THRESHOLD) // k-anonymity at result level
       .sort((a, b) => b.read_count - a.read_count)
       .slice(0, limit)
 

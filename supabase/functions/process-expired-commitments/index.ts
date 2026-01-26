@@ -101,14 +101,26 @@ function timingSafeEqual(a: string, b: string): boolean {
 function verifySystemAuthorization(authHeader: string): boolean {
   const token = authHeader.replace('Bearer ', '').trim()
 
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  const cronSecret = Deno.env.get('CRON_SECRET') ?? ''
+  // SECURITY: Reject empty tokens immediately to prevent timingSafeEqual('', '') returning true
+  if (!token) {
+    console.warn('[SECURITY] Empty token rejected')
+    return false
+  }
 
-  if (serviceRoleKey && timingSafeEqual(token, serviceRoleKey)) {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const cronSecret = Deno.env.get('CRON_SECRET')
+
+  // SECURITY: Fail if no authorization secrets are configured (configuration error)
+  if (!serviceRoleKey && !cronSecret) {
+    console.error('[SECURITY] No authorization secrets configured')
+    return false
+  }
+
+  if (serviceRoleKey && serviceRoleKey.length > 0 && timingSafeEqual(token, serviceRoleKey)) {
     return true
   }
 
-  if (cronSecret && timingSafeEqual(token, cronSecret)) {
+  if (cronSecret && cronSecret.length > 0 && timingSafeEqual(token, cronSecret)) {
     return true
   }
 

@@ -6,6 +6,7 @@ import BlueprintCard from '../../components/onboarding/BlueprintCard';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { spacing } from '../../theme';
 import i18n from '../../i18n';
+import { captureError } from '../../utils/errorLogger';
 
 export default function OnboardingScreen12({ navigation, route }: any) {
   const [selectedBook, setSelectedBook] = useState<any>(null);
@@ -32,7 +33,14 @@ export default function OnboardingScreen12({ navigation, route }: any) {
           // route.paramsがない場合、AsyncStorageから読み込む（認証後のスタック切り替え後）
           const data = await AsyncStorage.getItem('onboardingData');
           if (data) {
-            const parsed = JSON.parse(data);
+            let parsed;
+            try {
+              parsed = JSON.parse(data);
+            } catch (parseError) {
+              captureError(parseError, { location: 'OnboardingScreen12.loadOnboardingData' });
+              setPageCount(100);
+              return;
+            }
             bookData = parsed.selectedBook;
             setSelectedBook(bookData);
             setDeadline(parsed.deadline);
@@ -50,6 +58,11 @@ export default function OnboardingScreen12({ navigation, route }: any) {
             const response = await fetch(
               `https://www.googleapis.com/books/v1/volumes/${bookData.id}`
             );
+            if (!response.ok) {
+              console.warn(`[Screen12] Google Books API returned ${response.status}`);
+              setPageCount(100);
+              return;
+            }
             const detail = await response.json();
             const count = detail?.volumeInfo?.pageCount;
             if (count && count > 0) {

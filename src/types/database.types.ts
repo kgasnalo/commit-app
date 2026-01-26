@@ -358,7 +358,7 @@ export interface Database {
           stripe_payment_intent_id: string | null
           stripe_customer_id: string | null
           stripe_payment_method_id: string | null
-          charge_status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refunded'
+          charge_status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refund_pending' | 'refunded'
           failure_reason: string | null
           failure_code: string | null
           attempt_count: number
@@ -379,7 +379,7 @@ export interface Database {
           stripe_payment_intent_id?: string | null
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
-          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refunded'
+          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refund_pending' | 'refunded'
           failure_reason?: string | null
           failure_code?: string | null
           attempt_count?: number
@@ -400,7 +400,7 @@ export interface Database {
           stripe_payment_intent_id?: string | null
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
-          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refunded'
+          charge_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'requires_action' | 'refund_pending' | 'refunded'
           failure_reason?: string | null
           failure_code?: string | null
           attempt_count?: number
@@ -574,6 +574,154 @@ export interface Database {
           created_at?: string
         }
         Relationships: []
+      }
+      scheduled_posts: {
+        Row: {
+          id: string
+          content_en: string
+          content_ja: string | null
+          hashtags: string[]
+          media_type: 'screenshot' | 'ai_image' | 'video' | 'none' | null
+          media_url: string | null
+          media_prompt: string | null
+          scheduled_at: string
+          language: 'en' | 'ja'
+          status: 'pending' | 'generating_image' | 'ready' | 'processing' | 'posted' | 'failed'
+          posted_at: string | null
+          x_post_id: string | null
+          template_id: string | null
+          attempt_count: number
+          last_error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          content_en: string
+          content_ja?: string | null
+          hashtags?: string[]
+          media_type?: 'screenshot' | 'ai_image' | 'video' | 'none' | null
+          media_url?: string | null
+          media_prompt?: string | null
+          scheduled_at: string
+          language?: 'en' | 'ja'
+          status?: 'pending' | 'generating_image' | 'ready' | 'processing' | 'posted' | 'failed'
+          posted_at?: string | null
+          x_post_id?: string | null
+          template_id?: string | null
+          attempt_count?: number
+          last_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          content_en?: string
+          content_ja?: string | null
+          hashtags?: string[]
+          media_type?: 'screenshot' | 'ai_image' | 'video' | 'none' | null
+          media_url?: string | null
+          media_prompt?: string | null
+          scheduled_at?: string
+          language?: 'en' | 'ja'
+          status?: 'pending' | 'generating_image' | 'ready' | 'processing' | 'posted' | 'failed'
+          posted_at?: string | null
+          x_post_id?: string | null
+          template_id?: string | null
+          attempt_count?: number
+          last_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_posts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "post_templates"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      post_templates: {
+        Row: {
+          id: string
+          name: string
+          category: 'build_in_public' | 'problem_solution' | 'visual' | 'engagement' | 'micro'
+          template_en: string
+          template_ja: string | null
+          hashtags: string[]
+          media_required: boolean
+          media_type: 'screenshot' | 'ai_image' | 'video' | 'none' | null
+          image_prompt_hint: string | null
+          is_active: boolean
+          use_count: number
+          last_used_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          category: 'build_in_public' | 'problem_solution' | 'visual' | 'engagement' | 'micro'
+          template_en: string
+          template_ja?: string | null
+          hashtags?: string[]
+          media_required?: boolean
+          media_type?: 'screenshot' | 'ai_image' | 'video' | 'none' | null
+          image_prompt_hint?: string | null
+          is_active?: boolean
+          use_count?: number
+          last_used_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          category?: 'build_in_public' | 'problem_solution' | 'visual' | 'engagement' | 'micro'
+          template_en?: string
+          template_ja?: string | null
+          hashtags?: string[]
+          media_required?: boolean
+          media_type?: 'screenshot' | 'ai_image' | 'video' | 'none' | null
+          image_prompt_hint?: string | null
+          is_active?: boolean
+          use_count?: number
+          last_used_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      post_generation_logs: {
+        Row: {
+          id: string
+          scheduled_post_id: string | null
+          action: 'generation_started' | 'generation_completed' | 'image_generation_started' | 'image_generation_completed' | 'image_generation_failed' | 'post_started' | 'post_completed' | 'post_failed' | 'retry_scheduled'
+          details: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          scheduled_post_id?: string | null
+          action: 'generation_started' | 'generation_completed' | 'image_generation_started' | 'image_generation_completed' | 'image_generation_failed' | 'post_started' | 'post_completed' | 'post_failed' | 'retry_scheduled'
+          details?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          scheduled_post_id?: string | null
+          action?: 'generation_started' | 'generation_completed' | 'image_generation_started' | 'image_generation_completed' | 'image_generation_failed' | 'post_started' | 'post_completed' | 'post_failed' | 'retry_scheduled'
+          details?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_generation_logs_scheduled_post_id_fkey"
+            columns: ["scheduled_post_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_posts"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
