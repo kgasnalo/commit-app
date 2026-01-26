@@ -36,13 +36,14 @@ const RETRY_DELAY_MINUTES = 30
 // OAuth 1.0a Helper Functions
 // ============================================================
 
+/**
+ * Generate cryptographically secure nonce for OAuth 1.0a
+ * Uses Web Crypto API instead of Math.random() for security
+ */
 function generateNonce(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let nonce = ''
-  for (let i = 0; i < 32; i++) {
-    nonce += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return nonce
+  const array = new Uint8Array(16)
+  crypto.getRandomValues(array)
+  return Array.from(array, b => b.toString(16).padStart(2, '0')).join('')
 }
 
 function percentEncode(str: string): string {
@@ -121,7 +122,8 @@ async function uploadMedia(
   // Download image from URL
   const imageResponse = await fetch(mediaUrl)
   if (!imageResponse.ok) {
-    throw new Error(`Failed to download image: ${imageResponse.status}`)
+    console.error('[post-to-x] Failed to download image:', imageResponse.status)
+    throw new Error('Media download failed')
   }
   const imageBlob = await imageResponse.blob()
   const imageBase64 = btoa(
@@ -168,8 +170,9 @@ async function uploadMedia(
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Media upload failed: ${response.status} - ${error}`)
+    const errorBody = await response.text()
+    console.error('[post-to-x] Media upload failed:', response.status, errorBody)
+    throw new Error('Media upload to X failed')
   }
 
   const result = await response.json()
@@ -229,8 +232,9 @@ async function postTweet(
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Tweet failed: ${response.status} - ${error}`)
+    const errorBody = await response.text()
+    console.error('[post-to-x] Tweet failed:', response.status, errorBody)
+    throw new Error('Tweet posting failed')
   }
 
   const result = await response.json()

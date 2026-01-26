@@ -336,10 +336,18 @@ class MonkModeServiceClass {
       const stateJson = await AsyncStorage.getItem(STORAGE_KEYS.TIMER_STATE);
       if (!stateJson) return null;
 
-      const state: PersistedTimerState = JSON.parse(stateJson);
+      let state: PersistedTimerState;
+      try {
+        state = JSON.parse(stateJson);
+      } catch (parseError) {
+        captureError(parseError, { location: 'MonkModeService.restoreTimerState.JSON.parse' });
+        // Clear corrupted data
+        await this.clearTimerState();
+        return null;
+      }
       return state;
     } catch (error) {
-      console.error('[MonkModeService] Failed to restore timer state:', error);
+      captureError(error, { location: 'MonkModeService.restoreTimerState' });
       return null;
     }
   }

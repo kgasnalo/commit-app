@@ -71,35 +71,35 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             // AsyncStorageから復元した場合、targetPagesがないのでGoogle Books APIから取得
             if (parsed.selectedBook?.id) {
               try {
-                console.log('[Screen13] Fetching book detail for pageCount:', parsed.selectedBook.id);
+                if (__DEV__) console.log('[Screen13] Fetching book detail for pageCount:', parsed.selectedBook.id);
                 const response = await fetch(
                   `https://www.googleapis.com/books/v1/volumes/${parsed.selectedBook.id}`
                 );
                 if (!response.ok) {
-                  console.warn(`[Screen13] Google Books API returned ${response.status}`);
+                  if (__DEV__) console.warn(`[Screen13] Google Books API returned ${response.status}`);
                   setPageCount(100);
                   return;
                 }
                 const detail = await response.json();
                 const count = detail?.volumeInfo?.pageCount;
                 if (count && count > 0) {
-                  console.log('[Screen13] Got pageCount from API:', count);
+                  if (__DEV__) console.log('[Screen13] Got pageCount from API:', count);
                   setPageCount(count);
                 } else {
-                  console.log('[Screen13] No pageCount in API, using fallback: 100');
+                  if (__DEV__) console.log('[Screen13] No pageCount in API, using fallback: 100');
                   setPageCount(100);
                 }
               } catch (fetchError) {
-                console.warn('[Screen13] Failed to fetch book detail:', fetchError);
+                if (__DEV__) console.warn('[Screen13] Failed to fetch book detail:', fetchError);
                 setPageCount(100);
               }
             }
           } else {
-            console.warn('No onboarding data found in AsyncStorage');
+            if (__DEV__) console.warn('No onboarding data found in AsyncStorage');
           }
         }
       } catch (error) {
-        console.error('Error loading onboarding data:', error);
+        captureError(error, { location: 'OnboardingScreen13.loadOnboardingData.outer' });
       }
     };
 
@@ -109,16 +109,16 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const handleSubscribe = async () => {
     setLoading(true);
     try {
-      console.log('[Screen13] Starting subscription flow...');
+      if (__DEV__) console.log('[Screen13] Starting subscription flow...');
 
       // Step 1: セッションをリフレッシュして最新のトークンを取得
       // INITIAL_SESSION（AsyncStorageから復元）のトークンが期限切れの可能性があるため、
       // functions.invoke()を呼ぶ前に明示的にリフレッシュする
-      console.log('[Screen13] Refreshing session to get fresh token...');
+      if (__DEV__) console.log('[Screen13] Refreshing session to get fresh token...');
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
 
       if (refreshError) {
-        console.error('[Screen13] Session refresh failed:', refreshError.message);
+        captureError(refreshError, { location: 'OnboardingScreen13.handleSubscribe.refreshSession' });
         Alert.alert(
           i18n.t('paywall.session_error'),
           i18n.t('paywall.session_invalid'),
@@ -129,7 +129,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       const session = refreshData.session;
       if (!session?.user?.id) {
-        console.error('[Screen13] No valid session after refresh');
+        captureError(new Error('No valid session after refresh'), { location: 'OnboardingScreen13.handleSubscribe' });
         Alert.alert(
           i18n.t('paywall.session_error'),
           i18n.t('paywall.session_invalid'),
@@ -138,7 +138,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-      console.log('[Screen13] Session refreshed successfully');
+      if (__DEV__) console.log('[Screen13] Session refreshed successfully');
       // Token expiry removed for security
 
       // Step 2: データソースを確定（stateよりもroute.paramsを優先、なければstate）
@@ -150,7 +150,10 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
       // コミットメント作成（bookToCommitがある場合のみ）
       if (!bookToCommit || !deadlineToCommit || !pledgeToCommit) {
-        console.error('[Screen13] Missing commitment data:', { bookToCommit, deadlineToCommit, pledgeToCommit });
+        captureError(new Error('Missing commitment data'), {
+          location: 'OnboardingScreen13.handleSubscribe',
+          extra: { hasBook: !!bookToCommit, hasDeadline: !!deadlineToCommit, hasPledge: !!pledgeToCommit },
+        });
         Alert.alert(i18n.t('common.error'), i18n.t('paywall.missing_data'));
         return;
       }
@@ -172,8 +175,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         currency: currencyToCommit,
         target_pages: targetPagesToCommit,
       };
-      console.log('[Screen13] Creating commitment via supabase.functions.invoke...');
-      console.log('[Screen13] Request body:', JSON.stringify(requestBody, null, 2));
+      if (__DEV__) console.log('[Screen13] Creating commitment via supabase.functions.invoke...');
+      if (__DEV__) console.log('[Screen13] Request body:', JSON.stringify(requestBody, null, 2));
 
       // SDK の functions.invoke() を使用（トークン管理が自動化される）
       const { data: commitmentData, error: invokeError } = await supabase.functions.invoke(
@@ -182,14 +185,14 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       );
 
       if (invokeError) {
-        console.error('[Screen13] Commitment creation error:', invokeError);
+        captureError(invokeError, { location: 'OnboardingScreen13.handleSubscribe.createCommitment' });
 
         // FunctionsHttpError から詳細なエラー情報を抽出
         if (invokeError instanceof FunctionsHttpError) {
           try {
             const errorBody = await invokeError.context.json();
-            // 完全なエラーボディをログに出力して構造を確認
-            console.error('[Screen13] Full error body:', JSON.stringify(errorBody));
+            // 完全なエラーボディをログに出力して構造を確認（デバッグ時のみ）
+            if (__DEV__) console.error('[Screen13] Full error body:', JSON.stringify(errorBody));
             const errorCode = errorBody.error || errorBody.code || errorBody.message || 'UNKNOWN';
             const errorDetails = errorBody.details || errorBody.msg || '';
             throw new Error(`Commitment creation failed: ${errorCode} - ${errorDetails}`);
@@ -197,16 +200,16 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             // JSON パースに失敗した場合、テキストとして取得を試みる
             try {
               const errorText = await invokeError.context.text();
-              console.error('[Screen13] Error response (text):', errorText);
+              if (__DEV__) console.error('[Screen13] Error response (text):', errorText);
             } catch {
-              console.error('[Screen13] Failed to get error response');
+              // Silently fail in production
             }
           }
         }
         throw new Error(`Commitment creation failed: ${invokeError.message}`);
       }
 
-      console.log('[Screen13] Commitment created successfully:', commitmentData);
+      if (__DEV__) console.log('[Screen13] Commitment created successfully:', commitmentData);
 
       // Note: subscription_status更新はhandleWarpComplete()で実行
       // ここで更新するとRealtimeが発火し、アニメーション表示前にスタックが切り替わってしまう
@@ -221,7 +224,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       setShowWarpTransition(true);
 
     } catch (error: unknown) {
-      console.error('[Screen13] Subscription error:', error);
+      captureError(error, { location: 'OnboardingScreen13.handleSubscribe' });
       Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.subscription_failed'));
     } finally {
       setLoading(false);
@@ -234,7 +237,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       // Step 1: セッションを取得
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) {
-        console.error('[Screen13] No session in handleWarpComplete');
+        captureError(new Error('No session in handleWarpComplete'), { location: 'OnboardingScreen13.handleWarpComplete' });
         triggerAuthRefresh();
         return;
       }
@@ -242,7 +245,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       // Step 2: subscription_statusとonboarding_completedを更新（アニメーション完了後に実行）
       // Note: handleSubscribe()ではなくここで更新することで、
       // Realtimeがアニメーション完了前に発火することを防ぐ
-      console.log('[Screen13] Updating subscription_status to active and onboarding_completed to true...');
+      if (__DEV__) console.log('[Screen13] Updating subscription_status to active and onboarding_completed to true...');
       const { error: updateError } = await supabase
         .from('users')
         .update({
@@ -252,15 +255,15 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         .eq('id', session.user.id);
 
       if (updateError) {
-        console.error('[Screen13] Update error:', updateError);
+        captureError(updateError, { location: 'OnboardingScreen13.handleWarpComplete.update' });
       } else {
-        console.log('[Screen13] subscription_status=active, onboarding_completed=true ✅');
+        if (__DEV__) console.log('[Screen13] subscription_status=active, onboarding_completed=true ✅');
       }
 
       // Step 3: Dashboard側でフェードインするためのフラグを設定
       await AsyncStorage.setItem('showDashboardFadeIn', 'true');
     } catch (error) {
-      console.error('[Screen13] handleWarpComplete error:', error);
+      captureError(error, { location: 'OnboardingScreen13.handleWarpComplete' });
     }
 
     // Step 4: AppNavigatorに認証状態の再チェックを通知

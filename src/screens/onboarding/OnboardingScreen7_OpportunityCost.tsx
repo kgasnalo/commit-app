@@ -29,6 +29,7 @@ import AshParticles from '../../components/onboarding/AshParticles';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { ACT_THEMES } from '../../config/animation';
 import i18n from '../../i18n';
+import { captureError } from '../../utils/errorLogger';
 
 import { useOnboardingAtmosphere } from '../../hooks/useOnboardingAtmosphere';
 
@@ -89,19 +90,25 @@ export default function OnboardingScreen7({ navigation, route }: any) {
         try {
           const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
           if (onboardingDataStr) {
-            const onboardingData = JSON.parse(onboardingDataStr);
+            let onboardingData: Record<string, unknown> = {};
+            try {
+              onboardingData = JSON.parse(onboardingDataStr);
+            } catch (parseError) {
+              captureError(parseError, { location: 'OnboardingScreen7.loadData.JSON.parse' });
+              // Continue with defaults
+            }
             if (!loadedPledgeAmount && typeof onboardingData.pledgeAmount === 'number') {
               loadedPledgeAmount = onboardingData.pledgeAmount;
             }
             if (!loadedCurrency && onboardingData.currency) {
-              loadedCurrency = onboardingData.currency;
+              loadedCurrency = onboardingData.currency as Currency;
             }
             if (!loadedTsundokuCount && typeof onboardingData.tsundokuCount === 'number') {
               loadedTsundokuCount = onboardingData.tsundokuCount;
             }
           }
         } catch (error) {
-          console.warn('Failed to load onboarding data from AsyncStorage:', error);
+          captureError(error, { location: 'OnboardingScreen7.loadData' });
         }
       }
 

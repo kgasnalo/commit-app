@@ -78,7 +78,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   ): Promise<void> => {
     // emailが必須フィールドなので、存在しない場合は同期をスキップ
     if (!userEmail) {
-      console.warn('syncUserToDatabase: email is required but not provided');
+      if (__DEV__) console.warn('syncUserToDatabase: email is required but not provided');
       return;
     }
 
@@ -108,10 +108,10 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         }
 
         lastError = new Error(upsertError.message);
-        console.warn(`User sync attempt ${attempt} failed:`, upsertError.message);
+        if (__DEV__) console.warn(`User sync attempt ${attempt} failed:`, upsertError.message);
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
-        console.warn(`User sync attempt ${attempt} exception:`, lastError.message);
+        if (__DEV__) console.warn(`User sync attempt ${attempt} exception:`, lastError.message);
       }
 
       // 最後の試行でなければ少し待ってリトライ
@@ -121,7 +121,10 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     }
 
     // 全リトライ失敗してもログだけ残して続行（後で設定可能）
-    console.error('Failed to sync user after all retries:', lastError?.message);
+    captureError(lastError || new Error('Unknown sync error'), {
+      location: 'OnboardingScreen6.syncUserToDatabase',
+      extra: { userId, retries: maxRetries },
+    });
   };
 
   const handleEmailSignup = async () => {
@@ -168,7 +171,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       });
 
       if (error) {
-        console.error('Signup error:', error);
+        captureError(error, { location: 'OnboardingScreen6.handleEmailSignup' });
         throw error;
       }
 
@@ -190,8 +193,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         });
       }
     } catch (error: unknown) {
-      captureError(error, { location: 'OnboardingScreen6.handleSignUp' });
-      console.error('Signup flow error:', error);
+      captureError(error, { location: 'OnboardingScreen6.handleEmailSignup' });
       Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.account_creation'));
     } finally {
       setLoading(false);
@@ -279,7 +281,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       return false;
     }
 
-    console.warn('No authentication tokens found in callback URL');
+    if (__DEV__) console.warn('No authentication tokens found in callback URL');
     return false;
   };
 

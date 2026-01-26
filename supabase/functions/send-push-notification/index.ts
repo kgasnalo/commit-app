@@ -21,6 +21,10 @@ initSentry('send-push-notification')
 
 const EXPO_PUSH_API_URL = 'https://exp.host/--/api/v2/push/send'
 
+// Security: Maximum allowed batch size to prevent abuse
+const MAX_BATCH_SIZE = 1000
+const DEFAULT_BATCH_SIZE = 100
+
 interface SendPushRequest {
   userId?: string
   userIds?: string[]
@@ -28,6 +32,7 @@ interface SendPushRequest {
   title: string
   body: string
   data?: Record<string, unknown>
+  batch_size?: number
 }
 
 interface ExpoPushMessage {
@@ -172,12 +177,21 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-    const { userId, userIds, broadcast, title, body, data } = requestBody
+    const { userId, userIds, broadcast, title, body, data, batch_size } = requestBody
 
     // Validate required fields
     if (!title || !body) {
       return new Response(
         JSON.stringify({ error: 'title and body are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate batch_size (security: prevent abuse with large batches)
+    const effectiveBatchSize = batch_size ?? DEFAULT_BATCH_SIZE
+    if (effectiveBatchSize < 1 || effectiveBatchSize > MAX_BATCH_SIZE) {
+      return new Response(
+        JSON.stringify({ error: 'INVALID_BATCH_SIZE', message: `batch_size must be between 1 and ${MAX_BATCH_SIZE}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -253,12 +267,11 @@ Deno.serve(async (req) => {
       data: data || {},
     }))
 
-    // Send to Expo Push API (in batches of 100)
-    const batchSize = 100
+    // Send to Expo Push API (in batches, respecting effectiveBatchSize)
     const allTickets: ExpoPushTicket[] = []
 
-    for (let i = 0; i < messages.length; i += batchSize) {
-      const batch = messages.slice(i, i + batchSize)
+    for (let i = 0; i < messages.length; i += effectiveBatchSize) {
+      const batch = messages.slice(i, i + effectiveBatchSize)
 
       const response = await fetch(EXPO_PUSH_API_URL, {
         method: 'POST',

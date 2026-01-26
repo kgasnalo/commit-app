@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
@@ -18,7 +18,7 @@ import { OfflineBanner } from '../components/OfflineBanner';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
 import i18n from '../i18n';
-import { setUserContext, clearUserContext } from '../utils/errorLogger';
+import { setUserContext, clearUserContext, captureError } from '../utils/errorLogger';
 import { trackScreenView } from '../lib/AnalyticsService';
 
 // 統一された認証状態型
@@ -262,7 +262,7 @@ function NavigationContent() {
     const TIMEOUT_MS = 4000; // 4秒のタイムアウト（OAuth後のセッション確立に時間がかかるため）
     const defaultStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null };
 
-    console.log(`📊 checkUserStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
+    if (__DEV__) console.log(`📊 checkUserStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
 
     try {
       // OAuth後にSupabaseクライアントのセッション状態が更新されていない可能性があるため、
@@ -279,7 +279,7 @@ function NavigationContent() {
       // タイムアウト時はrejectではなくnullをresolveする（catchブロックに入らないように）
       const timeoutPromise = new Promise<null>((resolve) =>
         setTimeout(() => {
-          console.log('📊 checkUserStatus: Request timed out');
+          if (__DEV__) console.log('📊 checkUserStatus: Request timed out');
           resolve(null);
         }, TIMEOUT_MS)
       );
@@ -290,29 +290,29 @@ function NavigationContent() {
       // タイムアウトした場合（resultがnull）
       if (result === null) {
         if (retryCount < maxRetries) {
-          console.log(`📊 checkUserStatus: Timeout, waiting 500ms before retry...`);
+          if (__DEV__) console.log(`📊 checkUserStatus: Timeout, waiting 500ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, 500)); // セッション安定化待機
           return checkUserStatus(userId, retryCount + 1);
         }
         // 最大リトライ後もタイムアウト → デフォルト値を返す（新規ユーザー扱い）
-        console.log('📊 checkUserStatus: Max retries reached after timeout');
+        if (__DEV__) console.log('📊 checkUserStatus: Max retries reached after timeout');
         return defaultStatus;
       }
 
       const { data, error } = result;
 
       if (error) {
-        console.log(`📊 checkUserStatus: Error code=${error.code}, message=${error.message}`);
+        if (__DEV__) console.log(`📊 checkUserStatus: Error code=${error.code}, message=${error.message}`);
 
         // usersテーブルにレコードが見つからない場合（PGRST116）、短めのリトライ
         if (error.code === 'PGRST116' && retryCount < maxRetries) {
-          console.log(`📊 checkUserStatus: User profile not found, retrying in 500ms...`);
+          if (__DEV__) console.log(`📊 checkUserStatus: User profile not found, retrying in 500ms...`);
           await new Promise(resolve => setTimeout(resolve, 500));
           return checkUserStatus(userId, retryCount + 1);
         }
 
         // プロファイルが見つからない = 新規ユーザー = オンボーディング未完了
-        console.log(`📊 checkUserStatus: Returning default (no profile or error)`);
+        if (__DEV__) console.log(`📊 checkUserStatus: Returning default (no profile or error)`);
         return defaultStatus;
       }
 
@@ -321,10 +321,10 @@ function NavigationContent() {
         hasCompletedOnboarding: data?.onboarding_completed ?? false,
         legalConsentVersion: data?.legal_consent_version ?? null,
       };
-      console.log(`📊 checkUserStatus: Found profile, subscription_status=${data?.subscription_status}, onboarding_completed=${data?.onboarding_completed}, legal_consent_version=${data?.legal_consent_version}`);
+      if (__DEV__) console.log(`📊 checkUserStatus: Found profile, subscription_status=${data?.subscription_status}, onboarding_completed=${data?.onboarding_completed}`);
       return status;
     } catch (err) {
-      console.error('📊 checkUserStatus: Unexpected error:', err);
+      captureError(err, { location: 'AppNavigator.checkUserStatus' });
       return defaultStatus;
     }
   }
@@ -339,25 +339,31 @@ function NavigationContent() {
     try {
       const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
       if (!onboardingDataStr) {
-        console.log('🔗 createUserRecord: No onboarding data found in AsyncStorage');
+        if (__DEV__) console.log('🔗 createUserRecord: No onboarding data found in AsyncStorage');
         return;
       }
 
-      const onboardingData = JSON.parse(onboardingDataStr);
+      let onboardingData: Record<string, unknown> = {};
+      try {
+        onboardingData = JSON.parse(onboardingDataStr);
+      } catch (parseError) {
+        captureError(parseError, { location: 'AppNavigator.createUserRecordFromOnboardingData.JSON.parse' });
+        return;
+      }
       const pendingUsername = onboardingData?.username;
 
-      if (!pendingUsername) {
-        console.log('🔗 createUserRecord: No username found in onboarding data');
+      if (!pendingUsername || typeof pendingUsername !== 'string') {
+        if (__DEV__) console.log('🔗 createUserRecord: No username found in onboarding data');
         return;
       }
 
       // emailが必須フィールドなので、存在しない場合はスキップ
       if (!session.user.email) {
-        console.log('🔗 createUserRecord: No email in session, skipping');
+        if (__DEV__) console.log('🔗 createUserRecord: No email in session, skipping');
         return;
       }
 
-      console.log('🔗 createUserRecord: Creating user record with username:', pendingUsername);
+      if (__DEV__) console.log('🔗 createUserRecord: Creating user record with username:', pendingUsername);
 
       const { error } = await supabase.from('users').upsert(
         {
@@ -370,12 +376,12 @@ function NavigationContent() {
       );
 
       if (error) {
-        console.error('🔗 createUserRecord: Failed to create user record:', error.message);
+        captureError(error, { location: 'AppNavigator.createUserRecordFromOnboardingData.upsert' });
       } else {
-        console.log('🔗 createUserRecord: User record created successfully ✅');
+        if (__DEV__) console.log('🔗 createUserRecord: User record created successfully ✅');
       }
     } catch (err) {
-      console.error('🔗 createUserRecord: Unexpected error:', err);
+      captureError(err, { location: 'AppNavigator.createUserRecordFromOnboardingData' });
     }
   }
 
@@ -402,18 +408,56 @@ function NavigationContent() {
     let isMounted = true;
 
     // Deep Link Handler: Process OAuth callback URLs
+    // Security: Validates state parameter (CSRF), sanitizes error messages
     async function handleDeepLink(url: string | null) {
-      console.log('🔗 Deep Link received:', url);
+      if (__DEV__) console.log('🔗 Deep Link received:', url);
       if (!url || !url.startsWith('commitapp://')) {
-        console.log('🔗 Deep Link: Ignored (not commitapp://)');
+        if (__DEV__) console.log('🔗 Deep Link: Ignored (not commitapp://)');
         return;
       }
 
       try {
-        console.log('🔗 Deep Link: Processing OAuth callback...');
-        const urlObj = new URL(url);
+        if (__DEV__) console.log('🔗 Deep Link: Processing OAuth callback...');
+
+        // Parse URL with exception handling
+        let urlObj: URL;
+        try {
+          urlObj = new URL(url);
+        } catch (parseError) {
+          captureError(parseError, { location: 'AppNavigator.handleDeepLink.URL.parse' });
+          return;
+        }
+
         const hashParams = new URLSearchParams(urlObj.hash.slice(1));
         const queryParams = urlObj.searchParams;
+
+        // Check for OAuth error first (HTMLエスケープ)
+        const errorParam = hashParams.get('error') || queryParams.get('error');
+        const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+        if (errorParam) {
+          // Sanitize error message (prevent XSS in Alert)
+          const safeMessage = errorDescription
+            ? errorDescription.replace(/[<>]/g, '').slice(0, 200)
+            : i18n.t('common.error');
+          if (__DEV__) console.warn('🔗 Deep Link: OAuth error:', errorParam);
+          Alert.alert(i18n.t('common.error'), safeMessage);
+          return;
+        }
+
+        // CSRF Protection: Validate state parameter
+        const state = hashParams.get('state') || queryParams.get('state');
+        if (state) {
+          const expectedState = await AsyncStorage.getItem('oauth_state');
+          if (expectedState && state !== expectedState) {
+            if (__DEV__) console.warn('🔗 Deep Link: CSRF validation failed');
+            captureError(new Error('OAuth CSRF validation failed'), {
+              location: 'AppNavigator.handleDeepLink.CSRF',
+            });
+            return;
+          }
+          // Clear the state after validation
+          await AsyncStorage.removeItem('oauth_state');
+        }
 
         // PKCE Flow: Check for code parameter
         const code = queryParams.get('code');
@@ -423,35 +467,52 @@ function NavigationContent() {
           // セッション状態が破損してScreen13で"Invalid JWT"エラーが発生する
           // Screen6がセッションを確立した後、onAuthStateChangeが自動的に発火するため、
           // AppNavigatorでの重複処理は不要
-          console.log('🔗 Deep Link: PKCE code detected, skipping (handled by Screen6)');
+          if (__DEV__) console.log('🔗 Deep Link: PKCE code detected, skipping (handled by Screen6)');
           return;
         }
 
         // Implicit Flow: Check for access_token
         const access_token = hashParams.get('access_token') || queryParams.get('access_token');
         const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
-        console.log('🔗 Deep Link: Checking Implicit flow tokens...', { hasAccessToken: !!access_token, hasRefreshToken: !!refresh_token });
+        if (__DEV__) console.log('🔗 Deep Link: Checking Implicit flow tokens...', { hasAccessToken: !!access_token, hasRefreshToken: !!refresh_token });
+
+        // Token format validation (basic check)
+        const isValidToken = (token: string | null): boolean => {
+          if (!token) return false;
+          // JWT should have 3 parts separated by dots
+          const parts = token.split('.');
+          return parts.length === 3 && parts.every(part => part.length > 0);
+        };
+
         if (access_token && refresh_token) {
-          console.log('🔗 Deep Link: Found Implicit flow tokens, setting session...');
+          if (!isValidToken(access_token)) {
+            if (__DEV__) console.warn('🔗 Deep Link: Invalid access_token format');
+            captureError(new Error('Invalid access_token format'), {
+              location: 'AppNavigator.handleDeepLink.tokenValidation',
+            });
+            return;
+          }
+
+          if (__DEV__) console.log('🔗 Deep Link: Found Implicit flow tokens, setting session...');
           const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
             access_token,
             refresh_token,
           });
           if (sessionError) {
-            console.error('🔗 Deep Link: setSession FAILED:', sessionError.message);
+            captureError(sessionError, { location: 'AppNavigator.handleDeepLink.setSession' });
             return;
           }
           if (sessionData.session) {
-            console.log('🔗 Deep Link: Session established via Implicit flow ✅', sessionData.session.user.id);
+            if (__DEV__) console.log('🔗 Deep Link: Session established via Implicit flow ✅', sessionData.session.user.id);
             // User record creation moved to onAuthStateChange (prevents race condition)
           } else {
-            console.log('🔗 Deep Link: setSession returned no session');
+            if (__DEV__) console.log('🔗 Deep Link: setSession returned no session');
           }
         } else {
-          console.log('🔗 Deep Link: No valid tokens found in URL');
+          if (__DEV__) console.log('🔗 Deep Link: No valid tokens found in URL');
         }
       } catch (error) {
-        console.error('🔗 Deep Link processing ERROR:', error);
+        captureError(error, { location: 'AppNavigator.handleDeepLink' });
       }
     }
 
@@ -465,30 +526,30 @@ function NavigationContent() {
 
     // 初期化：セッションとサブスク状態を一括で確認・設定
     async function initializeAuth() {
-      console.log('🚀 initializeAuth: Starting...');
+      if (__DEV__) console.log('🚀 initializeAuth: Starting...');
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('🚀 initializeAuth: Got session:', session?.user?.id ?? '(no session)');
+        if (__DEV__) console.log('🚀 initializeAuth: Got session:', session?.user?.id ?? '(no session)');
 
         if (!session) {
-          console.log('🚀 initializeAuth: No session, setting unauthenticated');
+          if (__DEV__) console.log('🚀 initializeAuth: No session, setting unauthenticated');
           if (isMounted) setAuthState({ status: 'unauthenticated' });
           return;
         }
 
         // ユーザーステータスチェック with outer timeout (8s safety net)
-        console.log('🚀 initializeAuth: Checking user status...');
+        if (__DEV__) console.log('🚀 initializeAuth: Checking user status...');
         const userStatus = await withTimeout(
           checkUserStatus(session.user.id),
           8000,
           { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'initializeAuth.checkUserStatus'
         );
-        console.log('🚀 initializeAuth: User status:', userStatus);
+        if (__DEV__) console.log('🚀 initializeAuth: User status:', userStatus);
 
         if (isMounted) {
-          console.log('🚀 initializeAuth: Setting authenticated state');
+          if (__DEV__) console.log('🚀 initializeAuth: Setting authenticated state');
           setAuthState({
             status: 'authenticated',
             session,
@@ -498,7 +559,7 @@ function NavigationContent() {
           });
         }
       } catch (error) {
-        console.error('🚀 initializeAuth: ERROR:', error);
+        captureError(error, { location: 'AppNavigator.initializeAuth' });
         // Fail-safe: Set unauthenticated on error
         if (isMounted) setAuthState({ status: 'unauthenticated' });
       }
@@ -508,11 +569,11 @@ function NavigationContent() {
 
     // 認証状態の変化を監視
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('✅ Auth State Changed:', event, session?.user?.id ?? '(no session)');
+      if (__DEV__) console.log('✅ Auth State Changed:', event, session?.user?.id ?? '(no session)');
 
       // INITIAL_SESSION は initializeAuth で処理済み
       if (event === 'INITIAL_SESSION') {
-        console.log('✅ Auth: Skipping INITIAL_SESSION (handled by initializeAuth)');
+        if (__DEV__) console.log('✅ Auth: Skipping INITIAL_SESSION (handled by initializeAuth)');
         return;
       }
 
@@ -524,7 +585,7 @@ function NavigationContent() {
       // TOKEN_REFRESHED: セッションのみ更新し、既存のisSubscribed/hasCompletedOnboarding状態を維持
       // これにより、Screen13でrefreshSession()を呼んでもスタックが切り替わらない
       if (event === 'TOKEN_REFRESHED') {
-        console.log('✅ Auth: TOKEN_REFRESHED - preserving current state');
+        if (__DEV__) console.log('✅ Auth: TOKEN_REFRESHED - preserving current state');
         if (isMounted) {
           setAuthState(prev => {
             if (prev.status !== 'authenticated') {
@@ -548,7 +609,7 @@ function NavigationContent() {
       const loginSource = await AsyncStorage.getItem('loginSource');
       const isFromAuthScreen = loginSource === 'auth_screen';
       if (isFromAuthScreen) {
-        console.log('✅ Auth: Detected login from Auth screen (existing user re-login)');
+        if (__DEV__) console.log('✅ Auth: Detected login from Auth screen (existing user re-login)');
         await AsyncStorage.removeItem('loginSource');
       }
 
@@ -558,7 +619,7 @@ function NavigationContent() {
       try {
         // SIGNED_IN: ユーザーレコード作成（5秒タイムアウト）
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          console.log('✅ Auth: Processing SIGNED_IN/USER_UPDATED...');
+          if (__DEV__) console.log('✅ Auth: Processing SIGNED_IN/USER_UPDATED...');
 
           // 認証トリガーを待つ
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -574,7 +635,7 @@ function NavigationContent() {
 
         // ユーザーステータスチェック（15秒の外部タイムアウト）
         // 内側のcheckUserStatusが最大13秒かかる可能性があるため余裕を持たせる
-        console.log('✅ Auth: Checking user status...');
+        if (__DEV__) console.log('✅ Auth: Checking user status...');
         statusPromise = checkUserStatus(session.user.id);
         userStatus = await withTimeout(
           statusPromise,
@@ -582,14 +643,14 @@ function NavigationContent() {
           { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'checkUserStatus'
         );
-        console.log('✅ Auth: User status check complete:', userStatus);
+        if (__DEV__) console.log('✅ Auth: User status check complete:', userStatus);
 
         // Auth画面からのログインでタイムアウトした場合、バックグラウンドで結果を待つ
         // ローディング状態を維持し、結果が来てから状態を設定（Onboarding7のチラつき防止）
         if (!userStatus.hasCompletedOnboarding && isFromAuthScreen && statusPromise) {
-          console.log('✅ Auth: Waiting for background user status check (Auth screen login)...');
+          if (__DEV__) console.log('✅ Auth: Waiting for background user status check (Auth screen login)...');
           statusPromise.then((result) => {
-            console.log('✅ Auth: Background check complete, result:', result);
+            if (__DEV__) console.log('✅ Auth: Background check complete, result:', result);
             if (isMounted) {
               try {
                 // バックグラウンドチェック完了後に状態を設定
@@ -601,11 +662,11 @@ function NavigationContent() {
                   legalConsentVersion: result.legalConsentVersion,
                 });
               } catch (stateError) {
-                console.error('✅ Auth: Failed to set auth state in background callback:', stateError);
+                captureError(stateError, { location: 'AppNavigator.onAuthStateChange.backgroundCallback' });
               }
             }
           }).catch((err) => {
-            console.error('✅ Auth: Background check error:', err);
+            captureError(err, { location: 'AppNavigator.onAuthStateChange.backgroundCheck' });
             // エラー時はデフォルト値で状態を設定
             if (isMounted) {
               try {
@@ -617,14 +678,14 @@ function NavigationContent() {
                   legalConsentVersion: null,
                 });
               } catch (stateError) {
-                console.error('✅ Auth: Failed to set fallback auth state:', stateError);
+                captureError(stateError, { location: 'AppNavigator.onAuthStateChange.fallbackState' });
               }
             }
           });
         }
 
       } catch (error) {
-        console.error('❌ Auth State Change Error:', error);
+        captureError(error, { location: 'AppNavigator.onAuthStateChange' });
         // デフォルト値で続行
       } finally {
         // 保証: 必ずローディング状態を終了
@@ -632,11 +693,11 @@ function NavigationContent() {
         // バックグラウンドチェックの結果を待つ（ローディング状態維持）
         if (isMounted) {
           if (isFromAuthScreen && !userStatus.hasCompletedOnboarding && statusPromise) {
-            console.log('✅ Auth: Waiting for background check (Auth screen login), keeping loading state...');
+            if (__DEV__) console.log('✅ Auth: Waiting for background check (Auth screen login), keeping loading state...');
             // finally blockでは状態を設定しない
             // バックグラウンドチェックの.then()で状態を設定する
           } else {
-            console.log('✅ Auth: Setting authenticated state (finally block)');
+            if (__DEV__) console.log('✅ Auth: Setting authenticated state (finally block)');
             setAuthState({
               status: 'authenticated',
               session,
@@ -714,7 +775,8 @@ function NavigationContent() {
         try {
           realtimeSubscription.unsubscribe();
         } catch (unsubError) {
-          console.error('Failed to unsubscribe from realtime channel:', unsubError);
+          // Non-critical error, log only in development
+          if (__DEV__) console.error('Failed to unsubscribe from realtime channel:', unsubError);
         }
       }
     };

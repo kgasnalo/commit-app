@@ -49,10 +49,11 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
 
     if (authError || !user) {
-      console.error('Auth Error:', authError)
-      addBreadcrumb('Auth failed for delete-account', 'auth', { error: authError?.message })
+      // Log error internally but don't expose details to client
+      console.error('[delete-account] Auth error:', authError?.message)
+      addBreadcrumb('Auth failed for delete-account', 'auth', { errorCode: authError?.status })
       return new Response(
-        JSON.stringify({ error: 'Unauthorized', details: authError?.message }),
+        JSON.stringify({ error: 'UNAUTHORIZED' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

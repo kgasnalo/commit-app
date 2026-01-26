@@ -74,8 +74,9 @@ async function generateImage(prompt: string, openaiKey: string): Promise<string>
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`DALL-E API error: ${response.status} - ${error}`)
+    const errorBody = await response.text()
+    console.error('[generate-post-image] DALL-E API error:', response.status, errorBody)
+    throw new Error('Image generation API request failed')
   }
 
   const result = await response.json()

@@ -344,10 +344,10 @@ async function handleMarkComplete(supabase: any, adminUser: any, commitmentId: s
 }
 
 async function logAudit(supabase: any, adminUser: any, action: string, table: string, id: string, details: any, ipAddress: string) {
-  // NOTE: admin_email is redacted to comply with PII policy - use admin_user_id for audit trail
+  // PII Policy: Only store admin_user_id, never email
+  // To get admin email, JOIN with users table using admin_user_id
   await supabase.from('admin_audit_logs').insert({
     admin_user_id: adminUser.id,
-    admin_email: '[REDACTED]',
     action_type: action,
     target_resource_table: table,
     target_resource_id: id,

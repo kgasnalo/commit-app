@@ -265,8 +265,9 @@ IMPORTANT: Output ONLY the tweet text, nothing else. No quotes, no explanations.
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Anthropic API error: ${response.status} - ${error}`)
+    const errorBody = await response.text()
+    console.error('[generate-x-posts] Anthropic API error:', response.status, errorBody)
+    throw new Error('External AI API request failed')
   }
 
   const result = await response.json()

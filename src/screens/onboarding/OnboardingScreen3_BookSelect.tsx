@@ -42,20 +42,49 @@ export default function OnboardingScreen3({ navigation, route }: any) {
 
   const searchBooks = async () => {
     if (!query.trim()) return;
+    // Input length limit (security)
+    if (query.length > 200) return;
     if (!GOOGLE_API_KEY) {
-      console.warn('Google Books API key not configured');
+      if (__DEV__) console.warn('Google Books API key not configured');
       return;
     }
     setLoading(true);
     try {
+      // Add timeout with AbortController
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${GOOGLE_API_KEY}`
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${GOOGLE_API_KEY}`,
+        { signal: controller.signal }
       );
+      clearTimeout(timeoutId);
+
+      // Response validation
+      if (!response.ok) {
+        if (response.status === 429) {
+          if (__DEV__) console.warn('[BookSearch] Rate limited by Google Books API');
+        }
+        setResults([]);
+        return;
+      }
+
       const data = await response.json();
-      setResults(data.items || []);
+      // Validate response structure
+      if (!Array.isArray(data.items)) {
+        setResults([]);
+        return;
+      }
+      setResults(data.items);
     } catch (error) {
+      // Handle AbortError (timeout) separately
+      if (error instanceof Error && error.name === 'AbortError') {
+        if (__DEV__) console.warn('[BookSearch] Request timed out');
+        setResults([]);
+        return;
+      }
       captureError(error, { location: 'OnboardingScreen3.searchBooks' });
-      console.error('Book search error:', error);
+      setResults([]);
     } finally {
       setLoading(false);
     }
