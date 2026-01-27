@@ -35,6 +35,32 @@
 
 ---
 
+# Claude Teacher Policy
+
+プロジェクトごとに、詳細な **FORKG.md** ファイルを作成し、プロジェクト全体を平易な言葉で解説する。
+
+## 含めるべき内容
+
+1. **技術アーキテクチャ** - システム全体の設計思想と構成
+2. **コードベースの構造** - 各部分がどのように接続され、データがどう流れるか
+3. **使用技術** - なぜこれらの技術を選んだのか、他の選択肢との比較
+4. **技術的意思決定** - トレードオフと、その判断に至った理由
+5. **学べる教訓**:
+   - 遭遇したバグとその解決方法
+   - 潜在的な落とし穴と回避策
+   - 新しく使った技術の実践知
+   - 優れたエンジニアの思考プロセスと作業方法
+   - ベストプラクティスとアンチパターン
+
+## 書き方のスタイル
+
+- 退屈な技術ドキュメントや教科書のようにしない
+- アナロジー（例え話）とエピソードを使って理解しやすく、記憶に残るようにする
+- 読んでいて面白いと思える、エンゲージングな文章を心がける
+- 「なぜそうなったか」のストーリーを大切にする
+
+---
+
 # Commands
 - start: npx expo start
 - ios: ./run-ios-manual.sh (preferred over `npm run ios` to avoid Xcode Error 65/115)
@@ -1386,3 +1412,54 @@
     - `delete-account` (SettingsScreen)
     - `isbn-lookup` (useBookSearch, BarcodeScannerModal)
     - `job-recommendations` (JobRecommendations, JobRankingScreen)
+- **expo-splash-screen hideAsync() Required (CRITICAL):** `app.json` で splash screen を設定している場合、`SplashScreen.hideAsync()` を必ず呼ばないとアプリが永久に黒画面（またはsplash画面）のまま固まる。現在の実装パターン:
+  ```javascript
+  // App.js - モジュールレベルで呼ぶ
+  import * as SplashScreen from 'expo-splash-screen';
+  SplashScreen.preventAutoHideAsync();
+
+  // AppNavigator.tsx - 認証チェック完了後に呼ぶ
+  useEffect(() => {
+    if (authState.status !== 'loading') {
+      SplashScreen.hideAsync();
+    }
+  }, [authState.status]);
+  ```
+  - `preventAutoHideAsync()` は App 関数の外（モジュールレベル）で呼ぶ
+  - `hideAsync()` は認証状態の初期化完了後に呼ぶ（NavigationContent内）
+  - TestFlightビルドで黒画面になる場合、まずこの呼び出しを確認すること
+- **EAS Submit ascAppId (CRITICAL):** `eas submit --non-interactive` は `ascAppId` が `eas.json` に設定されていないと失敗する。Apple Developer Portalへのインタラクティブログインが不要になるよう、必ず設定すること:
+  ```json
+  // eas.json
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6758319830"
+      }
+    }
+  }
+  ```
+  - `ascAppId` は App Store Connect > アプリ > 一般情報 > Apple ID で確認
+  - このプロジェクトの ascAppId: `6758319830`
+- **withTimeout Nested Fallback (CRITICAL):** `withTimeout(innerFn(), timeout, fallback)` でラップする場合、`innerFn` 内部のフォールバック機構（キャッシュ読み込み、リトライ等）は外側タイムアウトが先に発火すると**実行されない**。外側フォールバック値にもキャッシュ等の適切な値を渡すこと:
+  ```typescript
+  // BAD - 内部のキャッシュフォールバックが無効化される
+  const result = await withTimeout(
+    checkUserStatus(userId),  // 内部にキャッシュフォールバックあり（最大13.5s）
+    8000,                      // 外側8sが先にタイムアウト
+    { isSubscribed: false },   // ハードコード値 → 既存ユーザーがOnboardingに戻される
+    'checkUserStatus'
+  );
+
+  // GOOD - 外側フォールバックにもキャッシュを使用
+  const cachedFallback = await getCachedUserStatus(userId);
+  const result = await withTimeout(
+    checkUserStatus(userId),
+    8000,
+    cachedFallback ?? { isSubscribed: false },  // キャッシュ優先
+    'checkUserStatus'
+  );
+  ```
+  - 原則: **「タイムアウトの入れ子」は外側が常に勝つ**
+  - `withTimeout` のフォールバック値は「最悪ケースでユーザーに見せて良い値」であること
+  - 認証状態のフォールバックは安全側（Onboarding表示）だが、キャッシュがあれば既存状態を優先

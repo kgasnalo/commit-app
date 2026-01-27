@@ -4,12 +4,13 @@ import { NavigationContainer, useNavigationContainerRef } from '@react-navigatio
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking, Alert } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
 import { Session, RealtimeChannel } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
-import { STRIPE_PUBLISHABLE_KEY } from '../config/env';
+import { STRIPE_PUBLISHABLE_KEY, ENV_INIT_ERROR } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsProvider, useAnalytics } from '../contexts/AnalyticsContext';
 import { OfflineProvider } from '../contexts/OfflineContext';
@@ -257,10 +258,44 @@ function NavigationContent() {
     legalConsentVersion: string | null;
   }
 
+  // キャッシュヘルパー: DB失敗時のフォールバックとしてAsyncStorageにUserStatusを保存
+  interface CachedUserStatus extends UserStatus {
+    cachedAt: string;
+  }
+
+  async function getCachedUserStatus(userId: string): Promise<UserStatus | null> {
+    try {
+      const cached = await AsyncStorage.getItem(`userStatus_${userId}`);
+      if (!cached) return null;
+      const parsed: CachedUserStatus = JSON.parse(cached);
+      if (__DEV__) console.log(`📊 getCachedUserStatus: Found cache from ${parsed.cachedAt}`);
+      return {
+        isSubscribed: parsed.isSubscribed,
+        hasCompletedOnboarding: parsed.hasCompletedOnboarding,
+        legalConsentVersion: parsed.legalConsentVersion,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async function setCachedUserStatus(userId: string, status: UserStatus): Promise<void> {
+    try {
+      const cacheData: CachedUserStatus = { ...status, cachedAt: new Date().toISOString() };
+      await AsyncStorage.setItem(`userStatus_${userId}`, JSON.stringify(cacheData));
+    } catch { /* non-critical */ }
+  }
+
   async function checkUserStatus(userId: string, retryCount = 0): Promise<UserStatus> {
     const maxRetries = 2; // 2回リトライ（合計3回試行）
     const TIMEOUT_MS = 4000; // 4秒のタイムアウト（OAuth後のセッション確立に時間がかかるため）
-    const defaultStatus: UserStatus = { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null };
+
+    // デフォルト: キャッシュなし・DB失敗時は安全側（Onboardingへ）
+    const defaultStatus: UserStatus = {
+      isSubscribed: false,
+      hasCompletedOnboarding: false,
+      legalConsentVersion: null,
+    };
 
     if (__DEV__) console.log(`📊 checkUserStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
 
@@ -294,8 +329,17 @@ function NavigationContent() {
           await new Promise(resolve => setTimeout(resolve, 500)); // セッション安定化待機
           return checkUserStatus(userId, retryCount + 1);
         }
-        // 最大リトライ後もタイムアウト → デフォルト値を返す（新規ユーザー扱い）
-        if (__DEV__) console.log('📊 checkUserStatus: Max retries reached after timeout');
+        // 最大リトライ後もタイムアウト → キャッシュ → デフォルト値
+        if (__DEV__) console.log(`📊 checkUserStatus: Max retries reached after timeout, trying cache...`);
+        captureError(new Error('checkUserStatus timeout after max retries'), {
+          location: 'AppNavigator.checkUserStatus',
+          extra: { userId: userId.slice(0, 8) },
+        });
+        const cached = await getCachedUserStatus(userId);
+        if (cached) {
+          if (__DEV__) console.log('📊 checkUserStatus: Using cached status (timeout fallback)');
+          return cached;
+        }
         return defaultStatus;
       }
 
@@ -311,8 +355,13 @@ function NavigationContent() {
           return checkUserStatus(userId, retryCount + 1);
         }
 
-        // プロファイルが見つからない = 新規ユーザー = オンボーディング未完了
-        if (__DEV__) console.log(`📊 checkUserStatus: Returning default (no profile or error)`);
+        // プロファイルが見つからない → キャッシュ → デフォルト値
+        if (__DEV__) console.log(`📊 checkUserStatus: DB error, trying cache...`);
+        const cachedOnError = await getCachedUserStatus(userId);
+        if (cachedOnError) {
+          if (__DEV__) console.log('📊 checkUserStatus: Using cached status (DB error fallback)');
+          return cachedOnError;
+        }
         return defaultStatus;
       }
 
@@ -322,9 +371,16 @@ function NavigationContent() {
         legalConsentVersion: data?.legal_consent_version ?? null,
       };
       if (__DEV__) console.log(`📊 checkUserStatus: Found profile, subscription_status=${data?.subscription_status}, onboarding_completed=${data?.onboarding_completed}`);
+      // DB成功時にキャッシュを更新
+      setCachedUserStatus(userId, status);
       return status;
     } catch (err) {
       captureError(err, { location: 'AppNavigator.checkUserStatus' });
+      const cachedOnCatch = await getCachedUserStatus(userId);
+      if (cachedOnCatch) {
+        if (__DEV__) console.log('📊 checkUserStatus: Using cached status (catch fallback)');
+        return cachedOnCatch;
+      }
       return defaultStatus;
     }
   }
@@ -528,8 +584,20 @@ function NavigationContent() {
     async function initializeAuth() {
       if (__DEV__) console.log('🚀 initializeAuth: Starting...');
 
+      // ENV_INIT_ERROR がある場合、Supabase接続は不可能
+      if (ENV_INIT_ERROR) {
+        console.error('🚀 initializeAuth: ENV error, skipping auth:', ENV_INIT_ERROR);
+        if (isMounted) setAuthState({ status: 'unauthenticated' });
+        return;
+      }
+
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await withTimeout(
+          supabase.auth.getSession(),
+          10000,
+          { data: { session: null }, error: null },
+          'initializeAuth.getSession'
+        );
         if (__DEV__) console.log('🚀 initializeAuth: Got session:', session?.user?.id ?? '(no session)');
 
         if (!session) {
@@ -539,11 +607,13 @@ function NavigationContent() {
         }
 
         // ユーザーステータスチェック with outer timeout (8s safety net)
+        // タイムアウト時はキャッシュをフォールバックに使用
         if (__DEV__) console.log('🚀 initializeAuth: Checking user status...');
+        const cachedFallback = await getCachedUserStatus(session.user.id);
         const userStatus = await withTimeout(
           checkUserStatus(session.user.id),
           8000,
-          { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
+          cachedFallback ?? { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'initializeAuth.checkUserStatus'
         );
         if (__DEV__) console.log('🚀 initializeAuth: User status:', userStatus);
@@ -613,9 +683,6 @@ function NavigationContent() {
         await AsyncStorage.removeItem('loginSource');
       }
 
-      // ユーザーステータスチェック用のPromise（バックグラウンド継続用）
-      let statusPromise: Promise<UserStatus> | null = null;
-
       try {
         // SIGNED_IN: ユーザーレコード作成（5秒タイムアウト）
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
@@ -634,78 +701,31 @@ function NavigationContent() {
         }
 
         // ユーザーステータスチェック（15秒の外部タイムアウト）
-        // 内側のcheckUserStatusが最大13秒かかる可能性があるため余裕を持たせる
+        // タイムアウト時はキャッシュをフォールバックに使用
         if (__DEV__) console.log('✅ Auth: Checking user status...');
-        statusPromise = checkUserStatus(session.user.id);
+        const authCachedFallback = await getCachedUserStatus(session.user.id);
         userStatus = await withTimeout(
-          statusPromise,
+          checkUserStatus(session.user.id),
           15000,
-          { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
+          authCachedFallback ?? { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'checkUserStatus'
         );
         if (__DEV__) console.log('✅ Auth: User status check complete:', userStatus);
-
-        // Auth画面からのログインでタイムアウトした場合、バックグラウンドで結果を待つ
-        // ローディング状態を維持し、結果が来てから状態を設定（Onboarding7のチラつき防止）
-        if (!userStatus.hasCompletedOnboarding && isFromAuthScreen && statusPromise) {
-          if (__DEV__) console.log('✅ Auth: Waiting for background user status check (Auth screen login)...');
-          statusPromise.then((result) => {
-            if (__DEV__) console.log('✅ Auth: Background check complete, result:', result);
-            if (isMounted) {
-              try {
-                // バックグラウンドチェック完了後に状態を設定
-                setAuthState({
-                  status: 'authenticated',
-                  session,
-                  isSubscribed: result.isSubscribed,
-                  hasCompletedOnboarding: result.hasCompletedOnboarding,
-                  legalConsentVersion: result.legalConsentVersion,
-                });
-              } catch (stateError) {
-                captureError(stateError, { location: 'AppNavigator.onAuthStateChange.backgroundCallback' });
-              }
-            }
-          }).catch((err) => {
-            captureError(err, { location: 'AppNavigator.onAuthStateChange.backgroundCheck' });
-            // エラー時はデフォルト値で状態を設定
-            if (isMounted) {
-              try {
-                setAuthState({
-                  status: 'authenticated',
-                  session,
-                  isSubscribed: false,
-                  hasCompletedOnboarding: false,
-                  legalConsentVersion: null,
-                });
-              } catch (stateError) {
-                captureError(stateError, { location: 'AppNavigator.onAuthStateChange.fallbackState' });
-              }
-            }
-          });
-        }
 
       } catch (error) {
         captureError(error, { location: 'AppNavigator.onAuthStateChange' });
         // デフォルト値で続行
       } finally {
-        // 保証: 必ずローディング状態を終了
-        // ただし、Auth画面からのログインでタイムアウトした場合は、
-        // バックグラウンドチェックの結果を待つ（ローディング状態維持）
+        // 保証: 必ずローディング状態を終了（条件分岐なし）
         if (isMounted) {
-          if (isFromAuthScreen && !userStatus.hasCompletedOnboarding && statusPromise) {
-            if (__DEV__) console.log('✅ Auth: Waiting for background check (Auth screen login), keeping loading state...');
-            // finally blockでは状態を設定しない
-            // バックグラウンドチェックの.then()で状態を設定する
-          } else {
-            if (__DEV__) console.log('✅ Auth: Setting authenticated state (finally block)');
-            setAuthState({
-              status: 'authenticated',
-              session,
-              isSubscribed: userStatus.isSubscribed,
-              hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
-              legalConsentVersion: userStatus.legalConsentVersion,
-            });
-          }
+          if (__DEV__) console.log('✅ Auth: Setting authenticated state (finally block)');
+          setAuthState({
+            status: 'authenticated',
+            session,
+            isSubscribed: userStatus.isSubscribed,
+            hasCompletedOnboarding: userStatus.hasCompletedOnboarding,
+            legalConsentVersion: userStatus.legalConsentVersion,
+          });
         }
       }
     });
@@ -714,7 +734,12 @@ function NavigationContent() {
     let realtimeSubscription: RealtimeChannel | null = null;
 
     async function setupRealtimeSubscription() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await withTimeout(
+        supabase.auth.getSession(),
+        10000,
+        { data: { session: null }, error: null },
+        'setupRealtimeSubscription.getSession'
+      );
       if (session?.user?.id) {
         realtimeSubscription = supabase
           .channel('user-status-changes')
@@ -731,15 +756,19 @@ function NavigationContent() {
               const newOnboardingCompleted = payload.new.onboarding_completed ?? false;
               const newLegalConsentVersion = payload.new.legal_consent_version ?? null;
 
+              const newStatus: UserStatus = {
+                isSubscribed: newSubscriptionStatus,
+                hasCompletedOnboarding: newOnboardingCompleted,
+                legalConsentVersion: newLegalConsentVersion,
+              };
+
+              // キャッシュも更新
+              setCachedUserStatus(session.user.id, newStatus);
+
               // 既存の認証状態を維持しつつユーザーステータスを更新
               setAuthState(prev => {
                 if (prev.status !== 'authenticated') return prev;
-                return {
-                  ...prev,
-                  isSubscribed: newSubscriptionStatus,
-                  hasCompletedOnboarding: newOnboardingCompleted,
-                  legalConsentVersion: newLegalConsentVersion,
-                };
+                return { ...prev, ...newStatus };
               });
             }
           )
@@ -752,9 +781,20 @@ function NavigationContent() {
     // Listen for manual auth refresh events (from OnboardingScreen13 after subscription update)
     const refreshListener = DeviceEventEmitter.addListener(AUTH_REFRESH_EVENT, async () => {
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await withTimeout(
+        supabase.auth.getSession(),
+        10000,
+        { data: { session: null }, error: null },
+        'refreshListener.getSession'
+      );
       if (session && isMounted) {
-        const userStatus = await checkUserStatus(session.user.id);
+        const refreshCachedFallback = await getCachedUserStatus(session.user.id);
+        const userStatus = await withTimeout(
+          checkUserStatus(session.user.id),
+          15000,
+          refreshCachedFallback ?? { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
+          'refreshListener.checkUserStatus'
+        );
 
         setAuthState({
           status: 'authenticated',
@@ -781,6 +821,13 @@ function NavigationContent() {
       }
     };
   }, []);
+
+  // Hide splash screen once auth state is resolved
+  useEffect(() => {
+    if (authState.status !== 'loading') {
+      SplashScreen.hideAsync();
+    }
+  }, [authState.status]);
 
   // 統一状態から値を取得
   const isLoading = authState.status === 'loading';

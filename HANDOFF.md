@@ -1,25 +1,56 @@
-# Handoff: Session 2026-01-27 (Screen13 500 Error Fix)
+# Handoff: Session 2026-01-27 (UserStatus Cache Strategy)
 
 ## Current Goal
-**Screen13 (Paywall) の create-commitment Edge Function 500エラーを解消。TestFlightビルド#5のApple処理待ち継続中。**
+**DB読み込み失敗時にAsyncStorageキャッシュでフォールバックする仕組みを実装完了。TestFlightビルド#5のApple処理待ち継続中。**
 
 ---
 
 ## Current Critical Status
 
-### 今セッションで修正した内容
+### 今セッションで実装した内容
 
-| 原因 | 修正 | 状態 |
-|------|------|------|
-| create-commitment Edge Functionが3回連続WORKER_ERROR | Edge Function再デプロイ (`--no-verify-jwt`) | ✅ 解消 |
-| Metroキャッシュが古いコードを配信（削除済みログメッセージが表示） | `npx expo start --clear` で再起動 | ✅ 解消 |
+| 変更 | 内容 | ファイル |
+|------|------|----------|
+| UserStatusキャッシュ戦略 | DB成功時にAsyncStorageへ書き込み、タイムアウト/エラー時にキャッシュ読み込み | `AppNavigator.tsx` |
+| withTimeoutフォールバック修正 | 3箇所の`withTimeout`ラッパーのフォールバック値をキャッシュベースに変更 | `AppNavigator.tsx` |
+| onboardingDataベース判定の削除 | `isLikelyNewUser`ロジックを削除、キャッシュ有無で判定に統一 | `AppNavigator.tsx` |
+| Realtimeハンドラのキャッシュ更新 | DB変更がリアルタイムでキャッシュにも反映 | `AppNavigator.tsx` |
+
+### 設計上の重要ポイント
+
+```
+キャッシュフロー:
+  DB成功 → setCachedUserStatus() → AsyncStorage書き込み
+  Realtime更新 → setCachedUserStatus() → AsyncStorage書き込み
+
+フォールバックフロー (3層):
+  1. checkUserStatus内部: タイムアウト/エラー/catch → getCachedUserStatus()
+  2. withTimeout外部: initializeAuth/onAuthStateChange/refreshListener → getCachedUserStatus()
+  3. 最終フォールバック: キャッシュなし → {false, false} (安全側=Onboarding)
+
+キー: userStatus_{userId} (ユーザーごとに分離)
+```
+
+### 発見した致命的バグと修正
+
+```
+問題: checkUserStatus内部にキャッシュフォールバックを入れても、
+      外側のwithTimeoutが先にタイムアウトするとキャッシュが読まれない。
+
+      initializeAuth: 外側8s < 内部最大13.5s → 外側が先にタイムアウト
+      → ハードコード {false, false} が返る → 既存ユーザーがOnboardingに戻される
+
+解決: 3箇所のwithTimeoutフォールバック値を事前にgetCachedUserStatus()で取得し、
+      キャッシュがあればそれをフォールバック値として渡すよう変更。
+```
 
 ### 前セッションの修正（適用済み・変更なし）
 
 | 原因 | 修正 | ファイル |
 |------|------|----------|
+| create-commitment Edge FunctionがWORKER_ERROR | Edge Function再デプロイ (`--no-verify-jwt`) | Edge Function |
 | `SplashScreen.hideAsync()` 未実装 → 黒splash永久表示 | `preventAutoHideAsync` + 認証完了後 `hideAsync` 追加 | `App.js`, `AppNavigator.tsx` |
-| `env.ts` が必須変数欠落時にErrorBoundary前でthrow | try-catchでフォールバック値を返すよう修正 | `src/config/env.ts` |
+| `env.ts` が必須変数欠落時にthrow | try-catchでフォールバック値を返すよう修正 | `src/config/env.ts` |
 | `eas.json` に `ascAppId` 未設定 | `6758319830` を設定 | `eas.json` |
 
 ### ビルド&サブミット状況
@@ -34,6 +65,7 @@
   Submission ID: 980998db-cc42-4236-a7ec-d7ceb8b85418
   TestFlight URL: https://appstoreconnect.apple.com/apps/6758319830/testflight/ios
   状態: Apple処理待ち
+  注意: UserStatusキャッシュはBuild #5に含まれていない（次回ビルドで反映）
 ```
 
 ### Sentry SDK 状況 (変更なし)
@@ -49,60 +81,39 @@ TODO: 互換SDKリリース次第、再有効化
 
 ## What Didn't Work
 
-### 1. Edge Function WORKER_ERROR (3回連続失敗)
+### 1. withTimeoutフォールバックがキャッシュをバイパス (今セッション)
 ```
-症状: Screen13でスライド → create-commitment呼び出し → 500 WORKER_ERROR × 3回
-原因: Edge Functionのデプロイ不良 + Deno Deploy Cold Start
-解決: supabase functions deploy create-commitment --no-verify-jwt
-教訓: リトライロジック(invokeFunctionWithRetry)は正常動作していたが、
-     Edge Function自体が壊れていたため3回とも失敗した。
-     コード修正だけでなく、Edge Functionの再デプロイが必要な場合がある。
-```
-
-### 2. Metroバンドラーのキャッシュ残り
-```
-症状: コードから削除済みのログ「Could not parse error body as JSON」が出力される
-原因: Metroが古いバンドルをキャッシュしていた
-解決: npx expo start --clear
-教訓: コード変更後に「変更前の挙動」が再現する場合、まずMetroキャッシュを疑う。
+症状: UserStatusキャッシュを実装したのに、外側のwithTimeoutが
+      先にタイムアウトするとキャッシュが使われない
+原因: withTimeout(checkUserStatus(), 8s, {false,false}) の構造上、
+      checkUserStatus内部リトライ(最大13.5s)が完了する前に外側が切れ、
+      ハードコードされた{false,false}がフォールバックとして使われる
+解決: withTimeout呼び出し前にgetCachedUserStatus()を実行し、
+      その結果をフォールバック値として渡す
+教訓: withTimeoutでラップする関数が内部にフォールバック機構を持つ場合、
+      外側のタイムアウトが内部機構を無効化しないか必ず確認する。
+      「タイムアウトの入れ子」は外側が常に勝つ。
 ```
 
-### 3. expo-splash-screen の hideAsync() 未呼び出し (前セッション)
+### 2. onboardingDataベースの新規/既存ユーザー判定の脆弱性 (今セッション削除)
 ```
-症状: TestFlightで起動すると黒画面のまま固まる
-原因: SplashScreen.hideAsync() がどこにも呼ばれていなかった
-解決: App.jsでpreventAutoHideAsync、AppNavigatorの認証完了後にhideAsync
-```
-
-### 4. Sentry Deno SDK (前セッションから)
-```
-症状: Edge FunctionがWORKER_ERRORを返す
-原因: Sentry SDKがDeno Edge Runtime非対応
-解決: no-opスタブに置換、全Edge Functionを再デプロイ
+症状: 既存ユーザーでもonboardingDataが残っているケースがあり得る
+      (AsyncStorageクリア漏れ等)
+原因: isLikelyNewUserの判定がonboardingDataの有無のみに依存
+解決: キャッシュベースのフォールバックに統一。
+      キャッシュあり=過去にDB成功した既存ユーザー、
+      キャッシュなし=新規ユーザーまたはアプリ再インストール
 ```
 
----
-
-## Screen13フロー分析結果
-
-### 現在の課金→コミットメント作成フロー
+### 3. Edge Function WORKER_ERROR (前セッション)
 ```
-ユーザーが「Slide to Commit」スライド
-  ↓
-create-commitment Edge Function呼び出し (リトライ3回付き)
-  ├─ ✅ 成功 → CinematicCommitReveal表示 → subscription_status='active'更新 → MainTabs
-  └─ ❌ 失敗 → Alert表示 → スライダー再アクティブ化 → ユーザー再試行可能
+解決済み: supabase functions deploy create-commitment --no-verify-jwt
 ```
 
-### IAP未実装のため現時点では安全
-- 実際の課金処理（Apple IAP）は未実装
-- `subscription_status: 'active'` はDB直接更新（コミットメント作成成功後のみ）
-- 失敗時: 課金なし + コミットメントなし = 一貫性保持
-
-### IAP実装時に必要な対策 (将来のTODO)
-1. 課金成功をAsyncStorageに永続化 → create-commitment失敗時の再送機構
-2. サーバーサイドWebhookでレシート検証 → コミットメント作成をサーバー保証
-3. Alertに明示的な再試行ボタン追加
+### 4. Metroバンドラーのキャッシュ残り (前セッション)
+```
+解決済み: npx expo start --clear
+```
 
 ---
 
@@ -113,8 +124,14 @@ create-commitment Edge Function呼び出し (リトライ3回付き)
 - [ ] TestFlightでビルド#5をインストール
 - [ ] 起動 → 黒画面でないことを確認
 - [ ] オンボーディングフロー → Screen13でコミットメント作成成功を確認
+- [ ] 注意: Build #5にはUserStatusキャッシュは含まれていない
 
-### 2. Screen13エラーが再発する場合
+### 2. 次回ビルド (UserStatusキャッシュ反映)
+- [ ] Build #5の検証完了後、キャッシュ込みのBuild #6を作成
+- [ ] `eas build --profile production --platform ios`
+- [ ] `eas submit --platform ios --non-interactive`
+
+### 3. Screen13エラーが再発する場合
 - Edge Function再デプロイ: `supabase functions deploy create-commitment --no-verify-jwt`
 - Metroキャッシュクリア: `npx expo start --clear`
 - Edge Functionログ確認: Supabase Dashboard > Functions > create-commitment > Logs
@@ -137,7 +154,11 @@ create-commitment Edge Function呼び出し (リトライ3回付き)
 
 ## Previous Sessions Summary
 
-**Screen13 500 Error Fix (2026-01-27 現セッション):**
+**UserStatus Cache Strategy (2026-01-27 現セッション):**
+- AsyncStorageキャッシュでDB障害時のフォールバック実装
+- withTimeoutフォールバックのキャッシュバイパス問題を発見・修正
+
+**Screen13 500 Error Fix (2026-01-27):**
 - Edge Function再デプロイ + Metroキャッシュクリアで500エラー解消
 
 **TestFlight Black Screen Fix (2026-01-27):**
