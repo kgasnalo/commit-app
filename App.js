@@ -5,7 +5,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
-import { OnboardingAtmosphereProvider } from './src/context/OnboardingAtmosphereContext';
 import { SENTRY_DSN } from './src/config/env';
 import 'react-native-gesture-handler';
 
@@ -35,12 +34,10 @@ function App() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <OnboardingAtmosphereProvider>
-          <View style={styles.container}>
-            <AppNavigator />
-            <StatusBar style="auto" />
-          </View>
-        </OnboardingAtmosphereProvider>
+        <View style={styles.container}>
+          <AppNavigator />
+          <StatusBar style="auto" />
+        </View>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

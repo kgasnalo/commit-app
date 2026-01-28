@@ -830,6 +830,18 @@ function NavigationContent() {
     }
   }, [authState.status]);
 
+  // Safety: force hide splash after 15s even if auth never resolves
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      SplashScreen.hideAsync();
+      if (authState.status === 'loading') {
+        console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 15s');
+        setAuthState({ status: 'unauthenticated' });
+      }
+    }, 15000);
+    return () => clearTimeout(safetyTimer);
+  }, []);
+
   // 統一状態から値を取得
   const isLoading = authState.status === 'loading';
   const session = authState.status === 'authenticated' ? authState.session : null;
