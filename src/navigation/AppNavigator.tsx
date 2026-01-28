@@ -4,6 +4,7 @@ import { NavigationContainer, useNavigationContainerRef } from '@react-navigatio
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, Image, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking, Alert } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
@@ -821,6 +822,13 @@ function NavigationContent() {
       }
     };
   }, []);
+
+  // Hide splash screen once auth state is resolved
+  useEffect(() => {
+    if (authState.status !== 'loading') {
+      SplashScreen.hideAsync();
+    }
+  }, [authState.status]);
 
   // 統一状態から値を取得
   const isLoading = authState.status === 'loading';
