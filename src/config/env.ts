@@ -138,7 +138,26 @@ function buildEnvConfig(): EnvConfig {
  * Importing this module will trigger validation.
  * The app will crash if required variables are missing.
  */
-export const env: EnvConfig = buildEnvConfig();
+let _env: EnvConfig;
+export let ENV_INIT_ERROR: string | null = null;
+try {
+  _env = buildEnvConfig();
+} catch (error) {
+  ENV_INIT_ERROR = String(error);
+  console.error('[ENV] Configuration failed:', error);
+  // Provide fallback so the app can at least render an error screen
+  // instead of crashing before ErrorBoundary mounts
+  _env = {
+    SUPABASE_URL: '',
+    SUPABASE_ANON_KEY: '',
+    STRIPE_PUBLISHABLE_KEY: 'pk_placeholder',
+    GOOGLE_API_KEY: undefined,
+    SENTRY_DSN: undefined,
+    POSTHOG_API_KEY: undefined,
+  };
+}
+
+export const env: EnvConfig = _env;
 
 // Also export individual variables for convenience
 export const {

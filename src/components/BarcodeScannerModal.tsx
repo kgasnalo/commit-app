@@ -22,9 +22,8 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import i18n from '../i18n';
-import { supabase } from '../lib/supabase';
-import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import { isValidISBN, normalizeISBN } from '../utils/isbn';
+import { GOOGLE_API_KEY } from '../config/env';
 import * as AnalyticsService from '../lib/AnalyticsService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -35,6 +34,7 @@ interface GoogleBook {
   volumeInfo: {
     title: string;
     authors?: string[];
+    pageCount?: number;
     imageLinks?: {
       thumbnail?: string;
       smallThumbnail?: string;
@@ -117,43 +117,43 @@ export default function BarcodeScannerModal({
     setScannerState('looking_up');
 
     try {
-      // Call Edge Function to look up ISBN
-      // WORKER_ERROR 対策としてリトライロジックを使用
-      const { data, error } = await invokeFunctionWithRetry<{
-        success: boolean;
-        book?: {
-          id: string;
-          title: string;
-          authors?: string[];
-          thumbnail?: string;
-        };
-      }>('isbn-lookup', { isbn: normalizedISBN });
+      // Client-side Google Books API lookup (avoids Edge Function quota issues)
+      const apiUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${normalizedISBN}${GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : ''}&maxResults=1`;
+      const response = await fetch(apiUrl);
+      const data = await response.json();
 
-      if (error) {
-        console.error('ISBN lookup error:', error);
-        setScannerState('error');
-        isProcessingRef.current = false;
-        return;
-      }
-
-      if (data?.success && data?.book) {
-        // Phase 8.3: Track successful scan
+      if (data.items && data.items.length > 0) {
         AnalyticsService.bookScanned({ isbn: normalizedISBN, found: true });
-        // Convert to GoogleBook format for compatibility
+        const item = data.items[0];
+        const thumbnail = item.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:').replace(/&edge=curl/g, '') ?? undefined;
+
+        // Fetch pageCount from individual volume API (search API often omits it)
+        let pageCount: number | undefined = item.volumeInfo?.pageCount;
+        if (!pageCount && item.id) {
+          try {
+            const detailUrl = `https://www.googleapis.com/books/v1/volumes/${item.id}${GOOGLE_API_KEY ? `?key=${GOOGLE_API_KEY}` : ''}`;
+            const detailRes = await fetch(detailUrl);
+            if (detailRes.ok) {
+              const detail = await detailRes.json();
+              pageCount = detail?.volumeInfo?.pageCount;
+            }
+          } catch {
+            // pageCount取得失敗は無視（スライダーはデフォルト1000になる）
+          }
+        }
+
         const googleBook: GoogleBook = {
-          id: data.book.id,
+          id: item.id,
           volumeInfo: {
-            title: data.book.title,
-            authors: data.book.authors,
-            imageLinks: data.book.thumbnail
-              ? { thumbnail: data.book.thumbnail }
-              : undefined,
+            title: item.volumeInfo?.title ?? 'Unknown Title',
+            authors: item.volumeInfo?.authors,
+            pageCount,
+            imageLinks: thumbnail ? { thumbnail } : undefined,
           },
         };
         onBookFound(googleBook);
         onClose();
       } else {
-        // Phase 8.3: Track failed scan
         AnalyticsService.bookScanned({ isbn: normalizedISBN, found: false });
         setScannerState('not_found');
       }

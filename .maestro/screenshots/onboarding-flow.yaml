@@ -1,0 +1,90 @@
+# Onboarding Screenshots Flow
+# Usage: maestro test .maestro/screenshots/onboarding-flow.yaml
+#
+# This flow captures screenshots from the onboarding flow (no auth required)
+# Screenshots: Welcome (08) and Penalty (06)
+
+appId: com.kgxxx.commitapp
+---
+
+# Launch app with clean state
+- launchApp:
+    appId: com.kgxxx.commitapp
+    clearState: true
+
+# Wait for Welcome screen
+- extendedWaitUntil:
+    visible: "COMMIT"
+    timeout: 15000
+
+# ======================================
+# Screenshot 8: Welcome Screen
+# ======================================
+- takeScreenshot: .maestro/screenshots/08_welcome
+
+# Navigate through onboarding to get to Penalty screen
+# Screen 0 -> 1 (Tsundoku Count)
+- tapOn:
+    text: "始める|Start|시작"
+    optional: true
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Screen 1 -> JobCategory: Select a tsundoku count
+- tapOn:
+    text: "3-5.*|5-10.*"
+    optional: true
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# JobCategory -> Screen 2
+- tapOn:
+    text: "続ける|Continue|계속"
+    optional: true
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Screen 2 -> 3: Select last read
+- tapOn:
+    text: "1ヶ月以上前|1 month.*|한 달"
+    optional: true
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Screen 3 -> 4: Book select - search for a book
+- inputText: "アトミック"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 5000
+
+# Select first search result
+- tapOn:
+    index: 0
+    optional: true
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Screen 4 -> 5: Set deadline (just tap continue)
+- tapOn:
+    text: "続ける|Continue|계속"
+    optional: true
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# ======================================
+# Screenshot 6: Penalty Screen
+# ======================================
+- takeScreenshot: .maestro/screenshots/06_penalty

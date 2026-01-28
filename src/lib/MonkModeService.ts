@@ -18,6 +18,7 @@ import { captureError, captureWarning } from '../utils/errorLogger';
 const STORAGE_KEYS = {
   TIMER_STATE: 'monk_mode_timer_state',
   LAST_DURATION: 'monk_mode_last_duration',
+  LAST_SOUND: 'monk_mode_last_sound',
 };
 
 // ========================================
@@ -371,6 +372,29 @@ class MonkModeServiceClass {
       await AsyncStorage.setItem(STORAGE_KEYS.LAST_DURATION, String(minutes));
     } catch (error) {
       console.error('[MonkModeService] Failed to save last duration:', error);
+    }
+  }
+
+  /**
+   * Save last used sound key
+   */
+  async saveLastSound(key: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.LAST_SOUND, key);
+    } catch (error) {
+      console.error('[MonkModeService] Failed to save last sound:', error);
+    }
+  }
+
+  /**
+   * Get last used sound key
+   */
+  async getLastSound(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(STORAGE_KEYS.LAST_SOUND);
+    } catch (error) {
+      console.error('[MonkModeService] Failed to get last sound:', error);
+      return null;
     }
   }
 

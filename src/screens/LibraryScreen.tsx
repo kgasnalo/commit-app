@@ -90,13 +90,30 @@ export default function LibraryScreen() {
   const ambientColorProgress = useSharedValue(0);
   const currentAmbientColor = useSharedValue('#FF6B35');
 
-  // Get hero book data
-  const heroCommitment = completedBooks[0] || null;
+  // Filter books (needed before hero computation)
+  const filteredBooks = useMemo(() => {
+    let result = completedBooks;
+    if (selectedMonth) {
+      result = result.filter(book => {
+        const date = new Date(book.updated_at || book.created_at);
+        const monthKey = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return monthKey === selectedMonth;
+      });
+    }
+    if (selectedTags.length > 0) {
+      result = result.filter(book => {
+        const bookTagIds = book.book_tags?.map((bt: any) => bt.tag_id) || [];
+        return selectedTags.every(tagId => bookTagIds.includes(tagId));
+      });
+    }
+    return result;
+  }, [completedBooks, selectedMonth, selectedTags]);
+
+  // Hero book data (from filtered results)
+  const heroCommitment = filteredBooks[0] || null;
   const heroCoverUrl = heroCommitment
     ? ensureHttps(heroCommitment.books.cover_url || coverUrls[heroCommitment.books.id])
     : null;
-
-  // Extract color for hero
   const { dominantColor: heroColor } = useImageColors(heroCoverUrl);
 
   useFocusEffect(
@@ -126,15 +143,24 @@ export default function LibraryScreen() {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
+      if (__DEV__) {
+        console.log('[Library] Loaded books:', data?.length);
+        data?.forEach(b => {
+          console.log(`[Library] Book "${b.books?.title}" book_tags:`, JSON.stringify(b.book_tags));
+        });
+      }
       setCompletedBooks(data || []);
 
       // Fetch all user tags for filter bar
-      const { data: tagsData } = await supabase
+      const { data: tagsData, error: tagsError } = await supabase
         .from('tags')
         .select('*')
         .eq('user_id', user.id)
         .order('name', { ascending: true });
 
+      if (__DEV__) {
+        console.log('[Library] Tags:', JSON.stringify(tagsData), 'error:', tagsError);
+      }
       setAllTags(tagsData || []);
 
       // Fetch missing covers
@@ -191,30 +217,6 @@ export default function LibraryScreen() {
       .sort((a, b) => b.localeCompare(a)) // Newest first
       .map(month => ({ id: month, label: month }));
   }, [completedBooks]);
-
-  // Filter books by selected month and tags
-  const filteredBooks = useMemo(() => {
-    let result = completedBooks;
-
-    // Filter by month
-    if (selectedMonth) {
-      result = result.filter(book => {
-        const date = new Date(book.updated_at || book.created_at);
-        const monthKey = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
-        return monthKey === selectedMonth;
-      });
-    }
-
-    // Filter by tags (AND logic - must have ALL selected tags)
-    if (selectedTags.length > 0) {
-      result = result.filter(book => {
-        const bookTagIds = book.book_tags?.map(bt => bt.tag_id) || [];
-        return selectedTags.every(tagId => bookTagIds.includes(tagId));
-      });
-    }
-
-    return result;
-  }, [completedBooks, selectedMonth, selectedTags]);
 
   // Toggle tag selection (Notion-style multi-select)
   const toggleTagFilter = useCallback((tagId: string) => {
@@ -380,6 +382,7 @@ export default function LibraryScreen() {
               tags={allTags}
               selectedTags={selectedTags}
               onToggleTag={toggleTagFilter}
+              onClearAllFilters={() => setSelectedTags([])}
             />
           </View>
         )}

@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { supabase } from '../lib/supabase';
-import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
 import { GOOGLE_API_KEY } from '../config/env';
 import { buildSearchQuery } from '../utils/searchQueryBuilder';
 import { filterAndRankResults, GoogleBook as GoogleBookFilter } from '../utils/searchResultFilter';
@@ -48,30 +46,14 @@ export function useBookSearch({ onBookSelect }: UseBookSearchParams): UseBookSea
     try {
       const parsedQuery = buildSearchQuery({ query: searchQuery });
 
-      // If ISBN detected, try direct lookup first
+      // If ISBN detected, try direct lookup first (client-side, same API key as standard search)
       if (parsedQuery.type === 'isbn' && parsedQuery.isbnValue) {
-        // WORKER_ERROR 対策としてリトライロジックを使用
-        const { data: isbnData } = await invokeFunctionWithRetry<{
-          success: boolean;
-          book?: {
-            id: string;
-            title: string;
-            authors?: string[];
-            thumbnail?: string;
-          };
-        }>('isbn-lookup', { isbn: parsedQuery.isbnValue });
-        if (isbnData?.success && isbnData.book) {
-          const googleBook: GoogleBook = {
-            id: isbnData.book.id,
-            volumeInfo: {
-              title: isbnData.book.title,
-              authors: isbnData.book.authors,
-              imageLinks: isbnData.book.thumbnail
-                ? { thumbnail: isbnData.book.thumbnail }
-                : undefined,
-            },
-          };
-          handleBookSelect(googleBook);
+        const isbnResponse = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=isbn:${parsedQuery.isbnValue}&key=${GOOGLE_API_KEY}&maxResults=1`
+        );
+        const isbnData = await isbnResponse.json();
+        if (isbnData.items && isbnData.items.length > 0) {
+          handleBookSelect(isbnData.items[0] as GoogleBook);
           setSearching(false);
           return;
         }

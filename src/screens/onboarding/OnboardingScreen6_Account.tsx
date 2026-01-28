@@ -30,6 +30,9 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   const isPasswordValid = password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
 
+  // メールアドレスの形式チェック
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
   const handleUsernameChange = (value: string) => {
     setUsername(value);
     setUsernameError(null);
@@ -137,6 +140,12 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     const formatCheck = validateUsernameFormat(username);
     if (!formatCheck.isValid) {
       Alert.alert(i18n.t('common.error'), i18n.t(formatCheck.errorKey!));
+      return;
+    }
+
+    // メールアドレス形式バリデーション
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.invalid_email_format'));
       return;
     }
 
@@ -351,7 +360,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           label={i18n.t('onboarding.screen6_create_account')}
           onPress={handleEmailSignup}
           loading={loading}
-          disabled={!username.trim() || !email.trim() || !isPasswordValid || !!usernameError || isCheckingUsername || !usernameValid}
+          disabled={!username.trim() || !email.trim() || !isEmailValid || !isPasswordValid || !!usernameError || isCheckingUsername || !usernameValid}
         />
       }
     >

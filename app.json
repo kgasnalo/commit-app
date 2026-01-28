@@ -40,6 +40,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-splash-screen",
       [
         "expo-image-picker",
         {
@@ -65,7 +66,8 @@
         "@sentry/react-native",
         {
           "organization": "commit-app",
-          "project": "commit-app-mobile"
+          "project": "commit-app-mobile",
+          "autoUpload": false
         }
       ]
     ],

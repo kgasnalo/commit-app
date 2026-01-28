@@ -1,0 +1,156 @@
+{
+  "screens": [
+    {
+      "id": "01_dashboard",
+      "maestroFlow": "dashboard",
+      "headline": {
+        "ja": "積ん読を撃退せよ",
+        "en": "Crush Your Backlog",
+        "ko": "독서 목표를 달성하라"
+      },
+      "subtitle": {
+        "ja": "読書の約束を管理する",
+        "en": "Manage Your Reading Commitments",
+        "ko": "독서 약속을 관리하세요"
+      }
+    },
+    {
+      "id": "02_create",
+      "maestroFlow": "create-commitment",
+      "headline": {
+        "ja": "本に誓いを立てる",
+        "en": "Make a Commitment",
+        "ko": "책에 맹세하라"
+      },
+      "subtitle": {
+        "ja": "期限とペナルティを設定",
+        "en": "Set Deadline & Stakes",
+        "ko": "기한과 벌금을 설정"
+      }
+    },
+    {
+      "id": "03_focus",
+      "maestroFlow": "monk-mode",
+      "headline": {
+        "ja": "深い集中を手に入れる",
+        "en": "Deep Focus Mode",
+        "ko": "깊은 집중을 경험하라"
+      },
+      "subtitle": {
+        "ja": "集中タイマーで読書に没頭",
+        "en": "Immerse Yourself in Reading",
+        "ko": "집중 타이머로 독서에 몰입"
+      }
+    },
+    {
+      "id": "04_library",
+      "maestroFlow": "library",
+      "headline": {
+        "ja": "読破の殿堂",
+        "en": "Hall of Fame",
+        "ko": "명예의 전당"
+      },
+      "subtitle": {
+        "ja": "あなたの読書の記録",
+        "en": "Your Reading Achievements",
+        "ko": "당신의 독서 기록"
+      }
+    },
+    {
+      "id": "05_detail",
+      "maestroFlow": "commitment-detail",
+      "headline": {
+        "ja": "進捗を記録する",
+        "en": "Track Your Progress",
+        "ko": "진행 상황을 기록하라"
+      },
+      "subtitle": {
+        "ja": "毎日の読書を見える化",
+        "en": "Visualize Your Daily Reading",
+        "ko": "매일의 독서를 시각화"
+      }
+    },
+    {
+      "id": "06_penalty",
+      "maestroFlow": "onboarding-penalty",
+      "headline": {
+        "ja": "本気の証明",
+        "en": "Prove You're Serious",
+        "ko": "진심을 증명하라"
+      },
+      "subtitle": {
+        "ja": "読まなければ、寄付になる",
+        "en": "Miss Your Goal, Donate to Charity",
+        "ko": "목표 미달시 기부로 전환"
+      }
+    },
+    {
+      "id": "07_profile",
+      "maestroFlow": "profile",
+      "headline": {
+        "ja": "あなたの読書DNA",
+        "en": "Your Reading DNA",
+        "ko": "당신의 독서 DNA"
+      },
+      "subtitle": {
+        "ja": "読書習慣を分析する",
+        "en": "Analyze Your Reading Habits",
+        "ko": "독서 습관을 분석하다"
+      }
+    },
+    {
+      "id": "08_welcome",
+      "maestroFlow": "onboarding-welcome",
+      "headline": {
+        "ja": "読書革命、始まる",
+        "en": "Reading Revolution",
+        "ko": "독서 혁명이 시작된다"
+      },
+      "subtitle": {
+        "ja": "積ん読を今度こそ読み切る",
+        "en": "Finally Finish Your Books",
+        "ko": "쌓아둔 책을 드디어 완독"
+      }
+    }
+  ],
+  "deviceFrames": {
+    "iphone14ProMax": {
+      "width": 1290,
+      "height": 2796,
+      "frameFile": "iphone-14-pro-max.png",
+      "screenOffset": {
+        "x": 26,
+        "y": 26
+      },
+      "screenSize": {
+        "width": 1238,
+        "height": 2688
+      }
+    }
+  },
+  "design": {
+    "background": {
+      "gradient": ["#0D0B09", "#1A1008", "#0D0B09"],
+      "gradientStops": [0, 0.5, 1]
+    },
+    "accentColor": "rgba(255, 107, 53, 0.3)",
+    "text": {
+      "headline": {
+        "size": 72,
+        "weight": "bold",
+        "color": "#FFFFFF"
+      },
+      "subtitle": {
+        "size": 36,
+        "weight": "normal",
+        "color": "#9A9590"
+      }
+    },
+    "layout": {
+      "headlineY": 180,
+      "subtitleY": 260,
+      "frameY": 380,
+      "padding": 40
+    }
+  }
+}

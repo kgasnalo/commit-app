@@ -31,6 +31,7 @@ interface GlassFilterBarProps {
   tags?: TagItem[];
   selectedTags?: string[];
   onToggleTag?: (id: string) => void;
+  onClearAllFilters?: () => void;
   style?: ViewStyle;
 }
 
@@ -51,6 +52,7 @@ export function GlassFilterBar({
   tags = [],
   selectedTags = [],
   onToggleTag,
+  onClearAllFilters,
   style,
 }: GlassFilterBarProps) {
   const hasFilters = filters.length > 0 || tags.length > 0;
@@ -75,7 +77,7 @@ export function GlassFilterBar({
           ]}
           onPress={() => {
             onSelect(null);
-            // Clear all tags too if onToggleTag exists
+            onClearAllFilters?.();
           }}
           activeOpacity={0.7}
         >

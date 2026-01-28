@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Text, Dimensions } from 'react-native';
+import React, { useRef, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Text, Dimensions, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -80,7 +80,8 @@ export default function AnimatedPageSlider({
     })
     .onUpdate((event) => {
       const startX = ((value - minValue) / (maxValue - minValue)) * TRACK_WIDTH;
-      const newX = Math.max(0, Math.min(TRACK_WIDTH, startX + event.translationX));
+      const DRAG_DAMPING = 0.4;
+      const newX = Math.max(0, Math.min(TRACK_WIDTH, startX + event.translationX * DRAG_DAMPING));
       translateX.value = newX;
       progress.value = newX / TRACK_WIDTH;
 
@@ -95,6 +96,23 @@ export default function AnimatedPageSlider({
       scale.value = withSpring(1, { damping: 15, stiffness: 200 });
       runOnJS(hapticLight)();
     });
+
+  // Tap gesture for track jump
+  const tapGesture = Gesture.Tap()
+    .onEnd((event) => {
+      const tapX = Math.max(0, Math.min(TRACK_WIDTH, event.x - THUMB_SIZE / 2));
+      translateX.value = withSpring(tapX, { damping: 15, stiffness: 200 });
+      progress.value = tapX / TRACK_WIDTH;
+
+      const newValue = Math.round(
+        interpolate(tapX, [0, TRACK_WIDTH], [minValue, maxValue])
+      );
+
+      runOnJS(triggerHaptic)(newValue);
+    });
+
+  // Combine gestures: pan takes priority over tap
+  const composedGesture = Gesture.Exclusive(panGesture, tapGesture);
 
   // Animated styles
   const containerStyle = useAnimatedStyle(() => ({
@@ -140,8 +158,10 @@ export default function AnimatedPageSlider({
           <Animated.View style={[styles.fill, fillStyle]} />
         </View>
 
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.thumb, thumbStyle]} />
+        <GestureDetector gesture={composedGesture}>
+          <Animated.View style={[styles.trackHitArea, { width: TRACK_WIDTH + THUMB_SIZE, height: 44 }]}>
+            <Animated.View style={[styles.thumb, thumbStyle]} />
+          </Animated.View>
         </GestureDetector>
       </View>
 
@@ -149,6 +169,31 @@ export default function AnimatedPageSlider({
       <View style={styles.labelsContainer}>
         <TacticalText size={10} color={colors.text.muted}>{minValue}</TacticalText>
         <TacticalText size={10} color={colors.text.muted}>{maxValue}</TacticalText>
+      </View>
+
+      {/* Fine adjustment buttons */}
+      <View style={styles.adjustButtonsContainer}>
+        {([-10, -1, 1, 10] as const).map((delta) => {
+          const label = delta > 0 ? `+${delta}` : `${delta}`;
+          return (
+            <TouchableOpacity
+              key={delta}
+              style={styles.adjustButton}
+              onPress={() => {
+                const clamped = Math.max(minValue, Math.min(maxValue, value + delta));
+                if (clamped !== value) {
+                  HapticsService.feedbackLight();
+                  onValueChange(clamped);
+                }
+              }}
+              activeOpacity={0.6}
+            >
+              <TacticalText size={13} weight="bold" color={colors.text.primary}>
+                {label}
+              </TacticalText>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </Animated.View>
   );
@@ -188,6 +233,12 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: colors.signal.active, // Always Neon Red
   },
+  trackHitArea: {
+    position: 'absolute',
+    top: -10,
+    left: 0,
+    justifyContent: 'center',
+  },
   thumb: {
     position: 'absolute',
     width: THUMB_SIZE,
@@ -201,5 +252,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 12,
+  },
+  adjustButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 16,
+  },
+  adjustButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    minWidth: 52,
+    alignItems: 'center',
   },
 });

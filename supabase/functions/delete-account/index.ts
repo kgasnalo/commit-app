@@ -67,18 +67,51 @@ Deno.serve(async (req) => {
       supabaseServiceRoleKey
     )
 
+    // Check for unpaid penalty charges before deletion
+    const { data: unpaidCharges, error: chargesError } = await supabaseAdmin
+      .from('penalty_charges')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('charge_status', ['pending', 'processing', 'requires_action'])
+      .limit(1)
+
+    if (chargesError) {
+      console.error('[delete-account] Error checking unpaid charges:', chargesError)
+      // Continue with deletion - don't block on check failure
+    } else if (unpaidCharges && unpaidCharges.length > 0) {
+      console.log(`[delete-account] User ${user.id} has unpaid charges, blocking deletion`)
+      addBreadcrumb('Delete blocked due to unpaid debt', 'business', { userId: user.id })
+      return new Response(
+        JSON.stringify({ error: 'UNPAID_DEBT' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Delete the user from auth.users
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id)
 
     if (deleteError) {
-      console.error('Error deleting user:', deleteError)
+      console.error('[delete-account] Error deleting user:', {
+        code: deleteError.code,
+        message: deleteError.message,
+        status: deleteError.status,
+        name: deleteError.name,
+      })
       captureException(new Error(`Failed to delete user: ${deleteError.message}`), {
         functionName: 'delete-account',
         userId: user.id,
-        extra: { deleteError: deleteError.message },
+        extra: {
+          deleteErrorCode: deleteError.code,
+          deleteErrorMessage: deleteError.message,
+          deleteErrorStatus: deleteError.status,
+        },
       })
       return new Response(
-        JSON.stringify({ error: 'Failed to delete account' }),
+        JSON.stringify({
+          error: 'Failed to delete account',
+          details: deleteError.message,
+          code: deleteError.code,
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

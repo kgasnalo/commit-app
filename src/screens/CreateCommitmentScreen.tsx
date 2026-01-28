@@ -514,6 +514,34 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
             minValue={continueFlow.isContinueFlow && continueFlow.totalPagesRead > 0 ? continueFlow.totalPagesRead + 1 : 1}
             maxValue={manualEntry.isManualEntry ? manualEntry.manualMaxPages : (bookTotalPages || 1000)}
           />
+          {(bookTotalPages || (manualEntry.isManualEntry && manualEntry.manualMaxPages)) && (
+            <TouchableOpacity
+              style={styles.editTotalPagesButton}
+              onPress={() => {
+                Alert.prompt(
+                  i18n.t('commitment.edit_total_pages_title'),
+                  i18n.t('commitment.edit_total_pages_message'),
+                  (text) => {
+                    const num = parseInt(text, 10);
+                    if (num > 0) {
+                      setBookTotalPages(num);
+                      if (form.pageCount > num) {
+                        form.setPageCount(num);
+                      }
+                    }
+                  },
+                  'plain-text',
+                  String(manualEntry.isManualEntry ? manualEntry.manualMaxPages : bookTotalPages),
+                  'number-pad',
+                );
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.editTotalPagesText}>
+                {i18n.t('commitment.edit_total_pages_button')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* SECTION 4: STAKE (Penalty) */}
@@ -628,6 +656,9 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         onClose={() => setShowScanner(false)}
         onBookFound={(book) => {
           setSelectedBook(book);
+          if (book.volumeInfo.pageCount) {
+            setBookTotalPages(book.volumeInfo.pageCount);
+          }
           setShowScanner(false);
         }}
         onManualSearch={() => setShowScanner(false)}
@@ -698,6 +729,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.5)',
     letterSpacing: 1,
+  },
+  editTotalPagesButton: {
+    alignSelf: 'flex-end',
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  editTotalPagesText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.6)',
+    letterSpacing: 0.5,
   },
   searchContainer: {
     flexDirection: 'row',

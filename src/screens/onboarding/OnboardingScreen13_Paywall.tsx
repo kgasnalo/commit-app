@@ -6,7 +6,6 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import SlideToCommit from '../../components/onboarding/SlideToCommit';
 import CinematicCommitReveal from '../../components/onboarding/CinematicCommitReveal';
 import { colors, typography, spacing, borderRadius } from '../../theme';
-import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, triggerAuthRefresh } from '../../lib/supabase';
 import { invokeFunctionWithRetry } from '../../lib/supabaseHelpers';
 import i18n from '../../i18n';
@@ -190,21 +189,19 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       if (invokeError) {
         captureError(invokeError, { location: 'OnboardingScreen13.handleSubscribe.createCommitment' });
 
-        // FunctionsHttpError から詳細なエラー情報を抽出
+        // エンリッチドエラーから詳細情報を抽出
         let detailedErrorMessage = `Commitment creation failed: ${invokeError.message}`;
 
-        if (invokeError instanceof FunctionsHttpError) {
-          try {
-            const errorBody = await invokeError.context.json();
-            // 完全なエラーボディをログに出力して構造を確認（デバッグ時のみ）
-            if (__DEV__) console.error('[Screen13] Full error body:', JSON.stringify(errorBody));
-            const errorCode = errorBody.error || errorBody.code || errorBody.message || 'UNKNOWN';
-            const errorDetails = errorBody.details || errorBody.msg || '';
-            detailedErrorMessage = `Commitment creation failed: ${errorCode}${errorDetails ? ' - ' + errorDetails : ''}`;
-          } catch {
-            // JSON パースに失敗した場合はデフォルトのエラーメッセージを使用
-            if (__DEV__) console.error('[Screen13] Could not parse error body as JSON');
-          }
+        // invokeFunctionWithRetryがエンリッチしたエラー情報を使用（bodyは既に消費済み）
+        const enrichedError = invokeError as Error & { _parsedBody?: Record<string, unknown> | null; _responseText?: string };
+        if (enrichedError._parsedBody) {
+          const errorBody = enrichedError._parsedBody;
+          if (__DEV__) console.error('[Screen13] Full error body:', JSON.stringify(errorBody));
+          const errorCode = errorBody.error || errorBody.code || errorBody.message || 'UNKNOWN';
+          const errorDetails = errorBody.details || errorBody.msg || '';
+          detailedErrorMessage = `Commitment creation failed: ${errorCode}${errorDetails ? ' - ' + errorDetails : ''}`;
+        } else if (enrichedError._responseText) {
+          if (__DEV__) console.error('[Screen13] Error text:', enrichedError._responseText);
         }
         throw new Error(detailedErrorMessage);
       }

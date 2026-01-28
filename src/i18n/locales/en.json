@@ -302,7 +302,10 @@
     "pages_read_so_far": "{{pages}} pages read so far",
     "progress_near_max": "Amazing! You've already read {{pages}} pages of this book.",
     "slider_min_note": "* {{pages}} pages already read. You can set goals from page {{next}}.",
-    "success_message": "Commitment created!\nDeadline: {{deadline}}\nPenalty: {{penalty}}"
+    "success_message": "Commitment created!\nDeadline: {{deadline}}\nPenalty: {{penalty}}",
+    "edit_total_pages_title": "Edit Total Pages",
+    "edit_total_pages_message": "Enter the total page count of your book",
+    "edit_total_pages_button": "Wrong page count? Edit"
   },
   "commitment_detail": {
     "title": "Commitment Details",
@@ -443,7 +446,15 @@
     "live_activity_subtitle_reading": "Focus session in progress",
     "live_activity_subtitle_paused": "Paused",
     "live_activity_completed": "Session Complete!",
-    "live_activity_ended": "Session Ended"
+    "live_activity_ended": "Session Ended",
+    "sound_on": "Sound ON",
+    "sound_off": "Sound OFF",
+    "sound_label": "Ambient Sound",
+    "sound_none": "Silent",
+    "sound_bonfire": "Bonfire",
+    "sound_ocean": "Waves",
+    "sound_stream": "Stream",
+    "sound_rain": "Rain"
   },
   "notifications": {
     "settings_title": "Notification Settings",
@@ -522,6 +533,7 @@
     "password_too_short": "Password must be at least 8 characters",
     "password_requirements": "Password must contain both letters and numbers",
     "account_creation": "Failed to create account",
+    "invalid_email_format": "Please enter a valid email address",
     "oauth_coming_soon": "{{provider}} login coming soon",
     "deadline_error": "Deadline Error",
     "deadline_tomorrow_or_later": "Deadline must be tomorrow or later.",

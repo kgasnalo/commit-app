@@ -216,11 +216,11 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
               }>('use-lifeline', { commitment_id: commitment.id });
 
               if (error) {
-                if (error instanceof FunctionsHttpError) {
-                  const errorBody = await error.context.json();
-                  throw new Error(errorBody.error || 'Unknown error');
-                }
-                throw error;
+                // invokeFunctionWithRetry returns enriched Error with _parsedBody
+                const enriched = error as Error & { _parsedBody?: Record<string, unknown>; _responseText?: string };
+                const serverError = enriched._parsedBody?.error ?? enriched._responseText;
+                if (__DEV__) console.error('[use-lifeline] Error:', serverError, enriched._parsedBody);
+                throw new Error(typeof serverError === 'string' ? serverError : error.message);
               }
 
               if (data?.success) {

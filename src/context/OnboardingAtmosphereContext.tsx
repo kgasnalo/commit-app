@@ -49,9 +49,14 @@ export function OnboardingAtmosphereProvider({ children }: ProviderProps) {
   const lastUpdateRef = useRef<number>(0);
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize audio on mount
+  // Initialize audio on mount and start act1 ambient
   useEffect(() => {
-    SoundManager.initialize();
+    SoundManager.initialize().then(() => {
+      if (__DEV__) console.log('[Atmosphere] SoundManager initialized, starting act1 ambient');
+      SoundManager.crossfadeToAct('act1');
+    }).catch((err) => {
+      if (__DEV__) console.warn('[Atmosphere] SoundManager init failed:', err);
+    });
 
     return () => {
       // Cleanup on unmount

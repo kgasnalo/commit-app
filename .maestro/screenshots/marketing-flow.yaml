@@ -1,0 +1,82 @@
+# App Store Marketing Screenshot Flow
+# Usage: maestro test .maestro/screenshots/marketing-flow.yaml
+#
+# Prerequisites:
+# 1. Run the app with a test user logged in and subscribed
+# 2. Have at least one active commitment and one completed book
+#
+# Output: .maestro/screenshots/*.png
+
+appId: com.kgxxx.commitapp
+---
+
+# Launch app (preserving state - test user should be logged in)
+- launchApp:
+    appId: com.kgxxx.commitapp
+    clearState: false
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+
+# Give UI time to settle
+- swipe:
+    direction: DOWN
+    duration: 100
+
+# ======================================
+# Screenshot 1: Dashboard (Home Tab)
+# ======================================
+
+# Tap on first tab (MISSION) using position - bottom left quarter
+- tapOn:
+    point: "12%,92%"
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 2000
+
+- takeScreenshot: .maestro/screenshots/01_dashboard
+
+# ======================================
+# Screenshot 3: Monk Mode / Focus Timer
+# ======================================
+
+# Tap on second tab (FOCUS) - bottom 37% from left
+- tapOn:
+    point: "37%,92%"
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 4000
+
+- takeScreenshot: .maestro/screenshots/03_focus
+
+# ======================================
+# Screenshot 4: Library / Hall of Fame
+# ======================================
+
+# Tap on third tab (ARCHIVE) - bottom 63% from left
+- tapOn:
+    point: "63%,92%"
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+- takeScreenshot: .maestro/screenshots/04_library
+
+# ======================================
+# Screenshot 7: Settings / Profile
+# ======================================
+
+# Tap on fourth tab (SYSTEM) - bottom right quarter
+- tapOn:
+    point: "88%,92%"
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+- takeScreenshot: .maestro/screenshots/07_profile

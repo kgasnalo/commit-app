@@ -29,8 +29,9 @@ Deno.serve(async (req) => {
     // Validate environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
       console.error('[use-lifeline] Missing required environment variables')
       return new Response(
         JSON.stringify({ error: 'CONFIGURATION_ERROR' }),
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create Supabase client with auth context
+    // User client for auth verification & read queries (respects RLS)
     const supabaseClient = createClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -47,6 +48,12 @@ Deno.serve(async (req) => {
           headers: { Authorization: authHeader },
         },
       }
+    )
+
+    // Admin client for update operations (bypasses RLS)
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseServiceRoleKey
     )
 
     // Get the authenticated user
@@ -102,10 +109,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if commitment is pending
-    if (commitment.status !== 'pending') {
+    // Check if commitment is active (pending or in_progress)
+    const activeStatuses = ['pending', 'in_progress'];
+    if (!activeStatuses.includes(commitment.status)) {
       return new Response(
-        JSON.stringify({ error: 'Lifeline can only be used on pending commitments' }),
+        JSON.stringify({ error: 'Lifeline can only be used on active commitments' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -171,7 +179,7 @@ Deno.serve(async (req) => {
     // Update commitment: extend deadline and mark lifeline as used
     // Optimistic locking: only update if is_freeze_used is still false (prevents race condition)
     // Note: new Date().toISOString() returns UTC timestamp (ISO 8601 format)
-    const { data: updatedCommitment, error: updateError } = await supabaseClient
+    const { data: updatedCommitment, error: updateError } = await supabaseAdmin
       .from('commitments')
       .update({
         deadline: newDeadline.toISOString(),

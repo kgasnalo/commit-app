@@ -1,37 +1,20 @@
 // Sentry integration for Supabase Edge Functions (Deno runtime)
-// https://docs.sentry.io/platforms/javascript/guides/deno/
+// TEMPORARILY DISABLED: Sentry Deno SDK causes WORKER_ERROR in Edge Functions
+// See: commit a884b882 - "fix: disable Sentry SDK to debug Edge Function WORKER_ERROR"
+// TODO: Re-enable when Sentry releases a compatible Deno Edge Runtime SDK
 
-import * as Sentry from "https://deno.land/x/sentry@8.42.0/index.mjs";
+// All functions are no-op stubs to maintain API compatibility
 
-// Initialize Sentry with Edge DSN
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN_EDGE");
 
-let initialized = false;
-
 export function initSentry(functionName: string) {
-  if (!SENTRY_DSN) {
-    console.warn("[Sentry] SENTRY_DSN_EDGE not set, skipping initialization");
-    return;
+  if (SENTRY_DSN) {
+    console.log(`[Sentry] SDK disabled - would initialize for: ${functionName}`);
   }
-
-  if (initialized) return;
-
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    tracesSampleRate: 0.1, // 10% of transactions to avoid quota exhaustion
-    environment: Deno.env.get("DENO_DEPLOYMENT_ID") ? "production" : "development",
-    release: `edge-functions@${new Date().toISOString().split("T")[0]}`,
-    serverName: functionName,
-    // Edge Functions specific settings
-    integrations: [],
-  });
-
-  initialized = true;
-  console.log(`[Sentry] Initialized for function: ${functionName}`);
 }
 
 /**
- * Capture an exception and send to Sentry
+ * Capture an exception (no-op - logs to console only)
  */
 export function captureException(
   error: Error | unknown,
@@ -41,161 +24,86 @@ export function captureException(
     extra?: Record<string, unknown>;
   }
 ) {
-  if (!SENTRY_DSN) {
-    console.error("[Sentry] Error (not sent - no DSN):", error);
-    return;
-  }
-
-  // Set user context if provided
-  if (context?.userId) {
-    Sentry.setUser({ id: context.userId });
-  }
-
-  // Add function name as tag
-  if (context?.functionName) {
-    Sentry.setTag("function_name", context.functionName);
-  }
-
-  Sentry.captureException(error, {
-    extra: context?.extra,
-  });
-
-  console.error(`[Sentry] Exception captured:`, error);
+  console.error("[Sentry] Exception (SDK disabled):", error, context);
 }
 
 /**
- * Capture a message (non-error event)
+ * Capture a message (no-op - logs to console only)
  */
 export function captureMessage(
   message: string,
   level: "fatal" | "error" | "warning" | "log" | "info" | "debug" = "info",
   extra?: Record<string, unknown>
 ) {
-  if (!SENTRY_DSN) {
-    console.log(`[Sentry] Message (not sent - no DSN): ${message}`);
-    return;
-  }
-
-  Sentry.captureMessage(message, {
-    level,
-    extra,
-  });
+  console.log(`[Sentry] Message (SDK disabled): [${level}] ${message}`, extra);
 }
 
 /**
- * Add breadcrumb for debugging context
+ * Add breadcrumb (no-op)
  */
 export function addBreadcrumb(
   message: string,
   category: string,
   data?: Record<string, unknown>
 ) {
-  if (!SENTRY_DSN) return;
-
-  Sentry.addBreadcrumb({
-    message,
-    category,
-    data,
-    level: "info",
-  });
+  // No-op: breadcrumbs only useful when SDK is active
 }
 
 /**
- * Start a transaction for performance monitoring
+ * Start a transaction (no-op - returns null)
  */
-export function startTransaction(name: string, op: string) {
-  if (!SENTRY_DSN) return null;
-
-  return Sentry.startSpan({ name, op }, (span) => span);
+export function startTransaction(_name: string, _op: string) {
+  return null;
 }
 
 /**
- * Wrapper to catch errors in Edge Functions
+ * Wrapper to catch errors in Edge Functions (passthrough)
  */
 export function withSentry<T>(
   functionName: string,
   handler: () => Promise<T>
 ): Promise<T> {
-  initSentry(functionName);
-
   return handler().catch((error) => {
-    captureException(error, { functionName });
+    console.error(`[Sentry] Error in ${functionName} (SDK disabled):`, error);
     throw error;
   });
 }
 
 /**
- * Create a Sentry-wrapped request handler for Edge Functions
+ * Create a Sentry-wrapped request handler (passthrough)
  */
 export function createSentryHandler(
   functionName: string,
   handler: (req: Request) => Promise<Response>
 ): (req: Request) => Promise<Response> {
   return async (req: Request) => {
-    initSentry(functionName);
-
     try {
-      addBreadcrumb(`${functionName} request received`, "http", {
-        url: req.url,
-        method: req.method,
-      });
-
-      const response = await handler(req);
-
-      addBreadcrumb(`${functionName} response sent`, "http", {
-        status: response.status,
-      });
-
-      return response;
+      return await handler(req);
     } catch (error) {
-      captureException(error, {
-        functionName,
-        extra: {
-          url: req.url,
-          method: req.method,
-        },
-      });
-
-      // Re-throw to let the function handle the error response
+      console.error(`[Sentry] Error in ${functionName} (SDK disabled):`, error);
       throw error;
     }
   };
 }
 
 /**
- * Log a business metric/event that should ALWAYS be recorded
- * Uses captureMessage (not breadcrumbs) to ensure visibility even on success
+ * Log a business metric/event (logs to console only)
  */
 export function logBusinessEvent(
   eventName: string,
   data?: Record<string, unknown>
 ) {
-  if (!SENTRY_DSN) {
-    console.log(`[Sentry] Business event (not sent - no DSN): ${eventName}`, data);
-    return;
-  }
-
-  Sentry.captureMessage(eventName, {
-    level: "info",
-    extra: data,
-    tags: { event_type: "business_metric" },
-  });
-
-  console.log(`[Sentry] Business event logged: ${eventName}`, data);
+  console.log(`[Sentry] Business event (SDK disabled): ${eventName}`, data);
 }
 
 /**
- * @deprecated Use logBusinessEvent for success metrics. Breadcrumbs only appear with errors.
- * Increment a custom metric counter (breadcrumb-based - only visible if error occurs)
+ * @deprecated Use logBusinessEvent for success metrics.
+ * Increment a custom metric counter (no-op)
  */
 export function incrementMetric(
-  name: string,
-  value: number = 1,
-  tags?: Record<string, string>
+  _name: string,
+  _value: number = 1,
+  _tags?: Record<string, string>
 ) {
-  if (!SENTRY_DSN) return;
-
-  // WARNING: Breadcrumbs are only sent if an error occurs later
-  // For critical business metrics, use logBusinessEvent() instead
-  addBreadcrumb(`Metric: ${name}`, "metric", { value, ...tags });
+  // No-op
 }

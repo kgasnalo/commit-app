@@ -78,10 +78,11 @@ Deno.serve(async (req) => {
     const response = await fetch(apiUrl.toString())
 
     if (!response.ok) {
-      console.error('Google Books API error:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('Google Books API error:', response.status, response.statusText, errorText)
       addBreadcrumb('Google Books API error', 'error', { status: response.status })
       return new Response(
-        JSON.stringify({ success: false, error: 'API_ERROR' }),
+        JSON.stringify({ success: false, error: 'API_ERROR', details: `${response.status}: ${errorText.slice(0, 200)}` }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

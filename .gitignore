@@ -47,3 +47,7 @@ smoke_test_welcome_screen.png
 
 # Memory MCP data (personal context, do not commit)
 .claude/memory.jsonl
+
+# Generated screenshots (regenerated via npm run screenshots:all)
+output/raw-screenshots/*.png
+output/app-store-screenshots/**/*.png

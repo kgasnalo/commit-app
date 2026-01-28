@@ -29,6 +29,7 @@ import { HapticsService } from '../../lib/HapticsService';
 import { HAPTIC_BUTTON_SCALES } from '../../config/haptics';
 import { colors } from '../../theme/colors';
 import i18n from '../../i18n';
+import { SoundManager, MonkModeSoundKey } from '../../lib/audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { supabase } from '../../lib/supabase';
@@ -44,6 +45,7 @@ interface MonkModeScreenProps {
 
 export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
   const [duration, setDuration] = useState(30); // Default 30 minutes
+  const [selectedSound, setSelectedSound] = useState<MonkModeSoundKey>('bonfire');
   const [selectedBook, setSelectedBook] = useState<BookOption | null>(null);
   const [bookOptions, setBookOptions] = useState<BookOption[]>([]);
   const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([]);
@@ -61,10 +63,14 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
     try {
       setLoading(true);
 
-      // Fetch last used duration
+      // Fetch last used duration and sound
       const lastDuration = await MonkModeService.getLastDuration();
       if (lastDuration) {
         setDuration(lastDuration);
+      }
+      const lastSound = await MonkModeService.getLastSound();
+      if (lastSound) {
+        setSelectedSound(lastSound as MonkModeSoundKey);
       }
 
       // Fetch active commitments for book selection
@@ -129,8 +135,23 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
     buttonPressScale.value = withSpring(1, HAPTIC_BUTTON_SCALES.heavy.spring);
   };
 
+  const handleSoundSelect = async (key: MonkModeSoundKey) => {
+    HapticsService.feedbackLight();
+    setSelectedSound(key);
+    MonkModeService.saveLastSound(key);
+    // Preview sound (2s)
+    if (key !== 'none') {
+      await SoundManager.initialize();
+      SoundManager.previewMonkModeSound(key);
+    } else {
+      SoundManager.stopMonkModeSound();
+    }
+  };
+
   const handleStartSession = () => {
     try {
+      // Stop any preview sound before navigating
+      SoundManager.stopMonkModeSound();
       HapticsService.feedbackHeavy();
       // Phase 8.3: Track session start
       AnalyticsService.monkModeSessionStarted({
@@ -141,6 +162,7 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
         durationMinutes: duration,
         bookId: selectedBook?.id,
         bookTitle: selectedBook?.title,
+        soundKey: selectedSound,
       });
     } catch (error) {
       captureError(error, { location: 'MonkModeScreen.handleStartSession' });
@@ -236,6 +258,53 @@ export default function MonkModeScreen({ navigation }: MonkModeScreenProps) {
             {i18n.t('monkmode.select_duration')}
           </Text>
           <DurationSlider value={duration} onValueChange={setDuration} />
+        </View>
+
+        {/* Sound Selector */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionLabel}>
+            {i18n.t('monkmode.sound_label')}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.soundChipsContainer}
+          >
+            {([
+              { key: 'none' as MonkModeSoundKey, icon: 'volume-mute-outline', label: i18n.t('monkmode.sound_none') },
+              { key: 'bonfire' as MonkModeSoundKey, icon: 'flame-outline', label: i18n.t('monkmode.sound_bonfire') },
+              { key: 'ocean' as MonkModeSoundKey, icon: 'water-outline', label: i18n.t('monkmode.sound_ocean') },
+              { key: 'stream' as MonkModeSoundKey, icon: 'leaf-outline', label: i18n.t('monkmode.sound_stream') },
+              { key: 'rain' as MonkModeSoundKey, icon: 'rainy-outline', label: i18n.t('monkmode.sound_rain') },
+            ]).map((sound) => {
+              const isSelected = selectedSound === sound.key;
+              return (
+                <TouchableOpacity
+                  key={sound.key}
+                  style={[
+                    styles.soundChip,
+                    isSelected && styles.soundChipSelected,
+                  ]}
+                  onPress={() => handleSoundSelect(sound.key)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={sound.icon as any}
+                    size={18}
+                    color={isSelected ? '#FF6B35' : 'rgba(255,255,255,0.5)'}
+                  />
+                  <Text
+                    style={[
+                      styles.soundChipText,
+                      isSelected && styles.soundChipTextSelected,
+                    ]}
+                  >
+                    {sound.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* Book Selector */}
@@ -469,5 +538,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FAFAFA',
     letterSpacing: 0.5,
+  },
+  // Sound selector chips
+  soundChipsContainer: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  soundChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: 'rgba(26, 23, 20, 0.4)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  soundChipSelected: {
+    backgroundColor: 'rgba(255, 107, 53, 0.12)',
+    borderColor: '#FF6B35',
+    borderWidth: 1,
+  },
+  soundChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  soundChipTextSelected: {
+    color: '#FF6B35',
   },
 });

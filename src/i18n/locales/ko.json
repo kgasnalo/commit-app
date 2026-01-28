@@ -324,7 +324,10 @@
     "pages_read_so_far": "지금까지 {{pages}}페이지 읽음",
     "progress_near_max": "대단해요! 이 책을 이미 {{pages}}페이지 읽었습니다.",
     "slider_min_note": "※ 이전까지 {{pages}}페이지 읽음. {{next}}페이지부터 설정할 수 있습니다.",
-    "success_message": "커밋먼트를 생성했습니다.\n기한: {{deadline}}\n페널티: {{penalty}}"
+    "success_message": "커밋먼트를 생성했습니다.\n기한: {{deadline}}\n페널티: {{penalty}}",
+    "edit_total_pages_title": "총 페이지 수 수정",
+    "edit_total_pages_message": "책의 총 페이지 수를 입력해주세요",
+    "edit_total_pages_button": "페이지 수가 다르다면? 수정"
   },
   "commitment_detail": {
     "title": "커밋먼트 상세",
@@ -465,7 +468,15 @@
     "live_activity_subtitle_reading": "깊은 독서에 집중 중",
     "live_activity_subtitle_paused": "일시 중지됨",
     "live_activity_completed": "세션 완료!",
-    "live_activity_ended": "세션 종료"
+    "live_activity_ended": "세션 종료",
+    "sound_on": "사운드 ON",
+    "sound_off": "사운드 OFF",
+    "sound_label": "환경음",
+    "sound_none": "무음",
+    "sound_bonfire": "모닥불",
+    "sound_ocean": "파도",
+    "sound_stream": "계곡",
+    "sound_rain": "빗소리"
   },
   "notifications": {
     "settings_title": "알림 설정",
@@ -522,6 +533,7 @@
     "password_too_short": "비밀번호는 8자 이상이어야 합니다",
     "password_requirements": "비밀번호는 영문자와 숫자를 모두 포함해야 합니다",
     "account_creation": "계정 생성에 실패했습니다",
+    "invalid_email_format": "유효한 이메일 주소를 입력해주세요",
     "oauth_coming_soon": "{{provider}} 로그인은 준비 중입니다",
     "deadline_error": "기한 오류",
     "deadline_tomorrow_or_later": "기한은 내일 이후로 선택해주세요.",

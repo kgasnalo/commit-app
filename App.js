@@ -9,6 +9,10 @@ import { OnboardingAtmosphereProvider } from './src/context/OnboardingAtmosphere
 import { SENTRY_DSN } from './src/config/env';
 import 'react-native-gesture-handler';
 
+// Native splash screen is no longer held via preventAutoHideAsync().
+// It will auto-dismiss when the React rootView mounts.
+// A JS-level splash view in AppNavigator handles the loading state seamlessly.
+
 // Initialize Sentry for crash monitoring
 if (SENTRY_DSN) {
   Sentry.init({
@@ -51,4 +55,12 @@ const styles = StyleSheet.create({
 });
 
 // Wrap with Sentry for automatic error boundary and performance monitoring
-export default SENTRY_DSN ? Sentry.wrap(App) : App;
+let WrappedApp = App;
+try {
+  if (SENTRY_DSN) {
+    WrappedApp = Sentry.wrap(App);
+  }
+} catch (e) {
+  console.error('[App] Sentry.wrap failed:', e);
+}
+export default WrappedApp;

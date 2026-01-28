@@ -1463,3 +1463,34 @@
   - 原則: **「タイムアウトの入れ子」は外側が常に勝つ**
   - `withTimeout` のフォールバック値は「最悪ケースでユーザーに見せて良い値」であること
   - 認証状態のフォールバックは安全側（Onboarding表示）だが、キャッシュがあれば既存状態を優先
+- **実機ビルド (expo run:ios) の制約 (CRITICAL):**
+  - `expo prebuild` で生成されるiOSプロジェクトには `expo-dev-launcher` が含まれる
+  - `--configuration Release` でも完全なproductionビルドにはならない（dev clientのまま）
+  - Releaseビルドでもdev serverに接続しようとし、未接続だとスプラッシュ画面で停止する
+  - **TestFlight/本番用**: `eas build --profile production` を使用（dev-launcher除外）
+  - **ローカル実機テスト**: `--configuration Debug` + `npx expo start` でdev server接続が必要
+  - dev server接続時、PCとiPhoneが**同じWi-Fi**であること。IPが変わった場合は手動入力
+- **prebuild後の.xcode.env.local再パッチ (CRITICAL):**
+  `rm -rf ios && npx expo prebuild --clean` を実行すると `.xcode.env.local` が初期化される。
+  環境変数の `.env` ロードパッチを毎回再適用する必要がある:
+  ```bash
+  cat >> ios/.xcode.env.local << 'PATCH'
+  # Load .env for Xcode direct builds
+  if [ -f "$PROJECT_DIR/../../.env" ]; then
+    set -a
+    source "$PROJECT_DIR/../../.env"
+    set +a
+  fi
+  PATCH
+  ```
+  `run-ios-manual.sh` にはこのパッチロジックが含まれているため、
+  `./run-ios-manual.sh` 経由でビルドすれば自動適用される。
+- **Sentry Source Map Upload in Local Builds:**
+  ローカルのReleaseビルドでは `sentry-cli` のauth tokenが未設定のためuploadが失敗する。
+  ローカルビルド時は環境変数で無効化:
+  ```bash
+  SENTRY_DISABLE_AUTO_UPLOAD=true npx expo run:ios --device <UDID> --configuration Release
+  ```
+- **iOS Codegen キャッシュ不整合:**
+  `ios/build/generated/` のキャッシュが壊れると `rnworkletsJSI-generated.cpp` 等が見つからないエラーが発生。
+  解決: `rm -rf ios && npx expo prebuild --clean` でクリーンリビルド。

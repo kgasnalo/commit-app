@@ -3,8 +3,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking, Alert } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
+import { View, Text, Image, ActivityIndicator, StyleSheet, DeviceEventEmitter, Platform, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
@@ -16,6 +15,7 @@ import { AnalyticsProvider, useAnalytics } from '../contexts/AnalyticsContext';
 import { OfflineProvider } from '../contexts/OfflineContext';
 import { UnreadProvider, useUnread } from '../contexts/UnreadContext';
 import { OfflineBanner } from '../components/OfflineBanner';
+import { OnboardingAtmosphereProvider } from '../context/OnboardingAtmosphereContext';
 import { colors, typography } from '../theme';
 import { NotificationService } from '../lib/NotificationService';
 import i18n from '../i18n';
@@ -822,13 +822,6 @@ function NavigationContent() {
     };
   }, []);
 
-  // Hide splash screen once auth state is resolved
-  useEffect(() => {
-    if (authState.status !== 'loading') {
-      SplashScreen.hideAsync();
-    }
-  }, [authState.status]);
-
   // 統一状態から値を取得
   const isLoading = authState.status === 'loading';
   const session = authState.status === 'authenticated' ? authState.session : null;
@@ -907,15 +900,16 @@ function NavigationContent() {
     );
   }
 
-  // ローディング中はブランドローディング画面を表示
+  // ローディング中はJSスプラッシュビューを表示
+  // ネイティブsplash → JSスプラッシュ → 実際の画面 とシームレスに遷移
   if (isLoading) {
     return (
       <View style={loadingStyles.container}>
-        <ActivityIndicator size="large" color={colors.signal.active} />
-        <View style={loadingStyles.textContainer}>
-          <Text style={loadingStyles.title}>COMMIT</Text>
-          <Text style={loadingStyles.subtitle}>SYSTEM INITIALIZING...</Text>
-        </View>
+        <Image
+          source={require('../../assets/splash-icon.png')}
+          style={loadingStyles.splashIcon}
+          resizeMode="contain"
+        />
       </View>
     );
   }
@@ -943,11 +937,11 @@ function NavigationContent() {
     );
   }
 
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!session ? (
-        <>
-          {/* Onboarding flow screens (14 screens total) */}
+  // Onboarding stacks: wrap with OnboardingAtmosphereProvider for ambient audio
+  if (!session) {
+    return (
+      <OnboardingAtmosphereProvider>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Onboarding0" component={OnboardingScreen0} options={{ gestureEnabled: false }} />
           <Stack.Screen name="Onboarding1" component={OnboardingScreen1} />
           <Stack.Screen name="OnboardingJobCategory" component={OnboardingJobCategory} />
@@ -965,15 +959,16 @@ function NavigationContent() {
           <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
           <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
           <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
-
-          {/* Legacy auth screen (for existing users or testing) */}
-
-          {/* Legacy auth screen (for existing users or testing) */}
           <Stack.Screen name="Auth" component={AuthScreen} />
-        </>
-      ) : !hasCompletedOnboarding ? (
-        <>
-          {/* Authenticated but onboarding not completed - show Onboarding7-13 + MainTabs for transition */}
+        </Stack.Navigator>
+      </OnboardingAtmosphereProvider>
+    );
+  }
+
+  if (!hasCompletedOnboarding) {
+    return (
+      <OnboardingAtmosphereProvider>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Onboarding7" component={OnboardingScreen7} options={{ gestureEnabled: false }} />
           <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />
           <Stack.Screen name="Onboarding9" component={OnboardingScreen9} />
@@ -982,16 +977,15 @@ function NavigationContent() {
           <Stack.Screen name="Onboarding12" component={OnboardingScreen12} />
           <Stack.Screen name="Onboarding13" component={OnboardingScreen13} />
           <Stack.Screen name="WarpTransition" component={WarpTransitionScreen} />
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+        </Stack.Navigator>
+      </OnboardingAtmosphereProvider>
+    );
+  }
 
-          {/* Main tabs for direct navigation after subscription */}
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-        </>
-      ) : (
-        <>
-          {/* Authenticated and onboarding completed - show MainTabs (regardless of subscription status) */}
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-        </>
-      )}
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
     </Stack.Navigator>
   );
 }
@@ -1015,30 +1009,44 @@ function AppNavigatorInner() {
   const navigationRef = useNavigationContainerRef();
   const routeNameRef = useRef<string | null>(null);
 
+  const navigationContent = (
+    <NavigationContainer
+      ref={navigationRef}
+      key={language}
+      onReady={() => {
+        // Set initial route name
+        routeNameRef.current = getActiveRouteName(navigationRef.getRootState());
+      }}
+      onStateChange={() => {
+        const currentRouteName = getActiveRouteName(navigationRef.getRootState());
+        // Only track if route actually changed
+        if (currentRouteName && currentRouteName !== routeNameRef.current) {
+          trackScreenView(currentRouteName);
+        }
+        routeNameRef.current = currentRouteName;
+      }}
+    >
+      <AnalyticsProvider>
+        <UnreadProvider>
+          <NavigationContent />
+        </UnreadProvider>
+      </AnalyticsProvider>
+    </NavigationContainer>
+  );
+
+  // Skip StripeProvider if env vars are missing/invalid to prevent native crash
+  if (ENV_INIT_ERROR || !STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY === 'pk_placeholder') {
+    return (
+      <>
+        {navigationContent}
+        <OfflineBanner />
+      </>
+    );
+  }
+
   return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-      <NavigationContainer
-        ref={navigationRef}
-        key={language}
-        onReady={() => {
-          // Set initial route name
-          routeNameRef.current = getActiveRouteName(navigationRef.getRootState());
-        }}
-        onStateChange={() => {
-          const currentRouteName = getActiveRouteName(navigationRef.getRootState());
-          // Only track if route actually changed
-          if (currentRouteName && currentRouteName !== routeNameRef.current) {
-            trackScreenView(currentRouteName);
-          }
-          routeNameRef.current = currentRouteName;
-        }}
-      >
-        <AnalyticsProvider>
-          <UnreadProvider>
-            <NavigationContent />
-          </UnreadProvider>
-        </AnalyticsProvider>
-      </NavigationContainer>
+      {navigationContent}
       <OfflineBanner />
     </StripeProvider>
   );
@@ -1061,28 +1069,12 @@ export default function AppNavigator() {
 const loadingStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  textContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  title: {
-    fontFamily: typography.fontFamily.heading,
-    fontSize: 40,
-    fontWeight: '800',
-    letterSpacing: 4,
-    color: colors.text.primary,
-  },
-  subtitle: {
-    ...typography.microCaps,
-    color: colors.text.secondary,
-    marginTop: 8,
-    letterSpacing: 2,
-  },
-  spinner: {
-    marginTop: 32,
+  splashIcon: {
+    width: 200,
+    height: 200,
   },
 });
