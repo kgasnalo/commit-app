@@ -26,6 +26,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { HapticsService } from '../../lib/HapticsService';
+import { SoundManager, MonkModeSoundKey } from '../../lib/audio';
 import { colors } from '../../theme/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -41,10 +42,12 @@ import * as AnalyticsService from '../../lib/AnalyticsService';
 
 export default function MonkModeActiveScreen({ route, navigation }: any) {
   useKeepAwake(); // Keep screen on while timer is active
-  const { durationMinutes, bookId, bookTitle } = route.params;
+  const { durationMinutes, bookId, bookTitle, soundKey = 'bonfire' } = route.params;
+  const monkSoundKey: MonkModeSoundKey = soundKey;
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   // Animation values for entry
   const overlayOpacity = useSharedValue(1);
@@ -67,7 +70,7 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
     onComplete: handleTimerComplete,
   });
 
-  // Start timer on mount with entry animation
+  // Start timer on mount with entry animation + ambient sound
   useEffect(() => {
     // Entry animation
     setTimeout(() => {
@@ -82,10 +85,23 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
       contentScale.value = withSpring(1, SPRING_CONFIGS.smooth);
     }, 100);
 
-    // Start timer after animation
+    // Start timer and ambient sound after animation
     setTimeout(() => {
       start();
+      // Initialize and play selected ambient sound
+      SoundManager.initialize().then(() => {
+        if (__DEV__) console.log('[MonkMode] SoundManager initialized, starting sound:', monkSoundKey);
+        SoundManager.setMuted(false);
+        SoundManager.playMonkModeSound(monkSoundKey);
+      }).catch((err) => {
+        if (__DEV__) console.warn('[MonkMode] SoundManager init failed:', err);
+      });
     }, 400);
+
+    return () => {
+      // Stop ambient sound on unmount
+      SoundManager.stopAll();
+    };
   }, []);
 
   // Handle timer completion
@@ -127,6 +143,7 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
       durationMinutes,
       bookId,
       bookTitle,
+      soundKey: monkSoundKey,
     });
   };
 
@@ -135,8 +152,25 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
     HapticsService.feedbackLight();
     if (status === 'running') {
       pause();
+      SoundManager.stopMonkModeSound();
     } else if (status === 'paused') {
       resume();
+      if (!isMuted) {
+        SoundManager.playMonkModeSound(monkSoundKey);
+      }
+    }
+  };
+
+  // Handle mute toggle
+  const handleMuteToggle = () => {
+    HapticsService.feedbackLight();
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    SoundManager.setMuted(newMuted);
+    if (newMuted) {
+      SoundManager.stopMonkModeSound();
+    } else if (status === 'running') {
+      SoundManager.playMonkModeSound(monkSoundKey);
     }
   };
 
@@ -218,6 +252,19 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="close" size={28} color={colors.text.secondary} />
+          </TouchableOpacity>
+
+          {/* Mute button (top-right) */}
+          <TouchableOpacity
+            style={styles.muteButton}
+            onPress={handleMuteToggle}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name={isMuted ? 'volume-mute' : 'volume-medium'}
+              size={24}
+              color={colors.text.secondary}
+            />
           </TouchableOpacity>
 
           {/* Timer area */}
@@ -334,6 +381,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     left: 20,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  muteButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
     width: 44,
     height: 44,
     justifyContent: 'center',
