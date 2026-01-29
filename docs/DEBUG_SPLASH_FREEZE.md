@@ -195,11 +195,41 @@ export const isSupabaseInitialized = (): boolean => supabaseClient !== null;
 
 ### 修正2: AppNavigator.tsx の初期化チェック
 
+**重要:** `initializeAuth()` 関数内だけでなく、**全ての** `supabase` 呼び出しを保護する必要がある（全9箇所）。
+
 ```typescript
 import { supabase, AUTH_REFRESH_EVENT, isSupabaseInitialized } from '../lib/supabase';
 
+// ===== 1. checkUserStatus内のチェック (Build #35で追加) =====
+async function checkUserStatus(userId: string, retryCount = 0): Promise<UserStatus> {
+  if (!isSupabaseInitialized()) {
+    if (__DEV__) console.warn('📊 checkUserStatus: Supabase not initialized, returning default');
+    return defaultStatus;
+  }
+  // supabase.auth.getSession(), supabase.from()を使用...
+}
+
+// ===== 2. createUserRecordFromOnboardingData内のチェック (Build #35で追加) =====
+async function createUserRecordFromOnboardingData(session: Session): Promise<void> {
+  if (!isSupabaseInitialized()) {
+    if (__DEV__) console.warn('🔗 createUserRecord: Supabase not initialized, skipping');
+    return;
+  }
+  // supabase.from('users').upsert()を使用...
+}
+
+// ===== 3. handleDeepLink内のチェック (Build #35で追加) =====
+async function handleDeepLink(url: string | null) {
+  // ...token validation...
+  if (!isSupabaseInitialized()) {
+    if (__DEV__) console.warn('🔗 Deep Link: Supabase not initialized, cannot set session');
+    return;
+  }
+  // supabase.auth.setSession()を使用...
+}
+
+// ===== 4. initializeAuth内のチェック =====
 async function initializeAuth() {
-  // 環境変数エラーチェック
   if (ENV_INIT_ERROR) {
     console.error('🚀 initializeAuth: ENV_INIT_ERROR detected:', ENV_INIT_ERROR);
     captureError(new Error(`ENV_INIT_ERROR: ${ENV_INIT_ERROR}`), { location: 'AppNavigator.initializeAuth' });
@@ -207,16 +237,53 @@ async function initializeAuth() {
     return;
   }
 
-  // Supabaseクライアント初期化チェック
   if (!isSupabaseInitialized()) {
     console.error('🚀 initializeAuth: Supabase client not initialized');
     captureError(new Error('Supabase client not initialized'), { location: 'AppNavigator.initializeAuth' });
     if (isMounted) setAuthState({ status: 'unauthenticated' });
     return;
   }
-
-  // 正常な認証フロー続行...
+  // supabase.auth.getSession()を使用...
 }
+
+// ===== 5. onAuthStateChange呼び出しの保護 =====
+let authSubscription: { unsubscribe: () => void } | null = null;
+
+if (!isSupabaseInitialized()) {
+  if (__DEV__) console.warn('⚠️ Auth: Skipping onAuthStateChange (Supabase not initialized)');
+} else {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(...);
+  authSubscription = subscription;
+}
+
+// ===== 6. setupRealtimeSubscription内の二重チェック =====
+async function setupRealtimeSubscription() {
+  if (!isSupabaseInitialized()) {
+    if (__DEV__) console.warn('⚠️ setupRealtimeSubscription: Supabase not initialized');
+    return;
+  }
+  // supabase.auth.getSession(), supabase.channel()を使用...
+}
+
+// ===== 7. setupRealtimeSubscription呼び出しの保護 =====
+if (isSupabaseInitialized()) {
+  setupRealtimeSubscription();
+}
+
+// ===== 8. refreshListener内の保護 =====
+const refreshListener = DeviceEventEmitter.addListener(AUTH_REFRESH_EVENT, async () => {
+  if (!isSupabaseInitialized()) {
+    if (__DEV__) console.warn('⚠️ Auth Refresh: Skipping (Supabase not initialized)');
+    return;
+  }
+  // supabase.auth.getSession()を使用...
+});
+
+// ===== 9. クリーンアップ時のnullチェック =====
+return () => {
+  authSubscription?.unsubscribe(); // オプショナルチェイニング必須
+  // ...
+};
 ```
 
 ### 修正3: セーフティタイマー短縮
@@ -274,6 +341,7 @@ useEffect(() => {
 | #6〜#21 | 〜2026-01-27 | (様々な修正) | ❌ フリーズ |
 | #22 | 2026-01-28 | dev-client除外 + preventAutoHideAsync + 10秒タイマー | ❌ 効果なし |
 | #25 | 2026-01-29 | 防御的supabase初期化 + isSupabaseInitialized() + セーフティタイマー5秒 | ✅ ローカル成功 |
+| #35 | 2026-01-29 | onAuthStateChange/setupRealtimeSubscription/refreshListenerにisSupabaseInitialized()チェック追加 | 🔄 検証中 |
 
 ### コミット履歴
 - `d1e2e386` - fix: prevent splash freeze when Supabase credentials missing
@@ -300,6 +368,86 @@ useEffect(() => {
 ---
 
 ## ✅ 解決済み - ビルド手順
+
+### EAS Build vs EAS Local Build の比較
+
+| 方法 | コマンド | EAS枠消費 | ビルド場所 | 用途 |
+|------|----------|-----------|------------|------|
+| **EAS Build** | `eas build --profile production` | **する (30回/月)** | Expoクラウド | 手軽にビルド |
+| **EAS Local Build** | `./build-eas-local.sh` | **しない** | ローカルマシン | 枠節約、高速 |
+
+#### EAS月間ビルド枠について
+- **無料プラン:** 30ビルド/月
+- **上限到達時:** `./build-eas-local.sh` を使用（枠消費しない）
+- **枠リセット:** 毎月1日
+- **確認方法:** [EAS Dashboard](https://expo.dev/) でビルド履歴を確認
+
+#### build-eas-local.sh の仕組み
+```bash
+#!/bin/bash
+# 1. .env から環境変数を読み込み
+set -a && source .env && set +a
+
+# 2. eas build --local を実行
+# → EASサーバーを使わずローカルマシンでビルド
+# → 生成されるIPAはEAS Buildと同等
+eas build --profile production --platform ios --local
+```
+
+---
+
+### TestFlight配信の完全手順
+
+#### 方法1: EAS Local Build → TestFlight（推奨・枠消費なし）
+
+```bash
+# Step 1: ローカルでビルド（EAS枠消費しない）
+./build-eas-local.sh
+# → 成功すると build-XXXX.ipa が生成される
+
+# Step 2: TestFlightに配信
+eas submit --platform ios --path ./build-*.ipa
+# または最新のIPAを自動検出
+eas submit --platform ios --latest
+
+# Step 3: TestFlightアプリで更新を確認
+# → App Store Connect で処理完了後、TestFlightに配信される（通常5〜30分）
+```
+
+#### 方法2: EAS Build → TestFlight（枠消費あり）
+
+```bash
+# Step 1: クラウドでビルド（EAS枠消費）
+eas build --profile production --platform ios
+
+# Step 2: TestFlightに配信（自動でlatest選択）
+eas submit --platform ios
+
+# または特定のビルドIDを指定
+eas submit --platform ios --id <BUILD_ID>
+```
+
+#### eas submit が失敗する場合
+
+```bash
+# ascAppId が設定されていない場合
+# eas.json に追加:
+{
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6758319830"
+      }
+    }
+  }
+}
+
+# Apple ID認証エラーの場合
+# → App Store Connect API Key を使用
+eas credentials
+```
+
+---
 
 ### ローカル実機ビルド手順（成功した手順）
 
@@ -377,6 +525,7 @@ eas submit --platform ios
 | エラー | 原因 | 解決策 |
 |--------|------|--------|
 | `supabaseUrl is required` | 環境変数未設定 | EAS Secrets設定 or `.env` 確認 |
+| `Cannot read property 'auth' of null` | supabase=nullで.auth呼び出し | 全てのsupabase呼び出しを`isSupabaseInitialized()`で保護 |
 | `safeareacontextJSI-generated.cpp not found` | Codegenキャッシュ破損 | `rm -rf ios && npx expo prebuild --clean` |
 | `No devices are booted` | シミュレータ未起動 | `xcrun simctl boot "iPhone 17 Pro"` |
 | `Invalid device or device pair` | デバイス名不正 | `xcrun simctl list devices` で確認 |
@@ -401,6 +550,25 @@ eas submit --platform ios
 3. **エラーハンドリングの階層**
    - try-catchはimport時のエラーをキャッチできない
    - 関数内でエラーを発生させ、呼び出し側でハンドリング
+
+4. **⚠️ nullableクライアントの全呼び出し箇所を保護 (Build #35教訓)**
+   - `supabase` が `null` になる可能性がある場合、**全ての**呼び出し箇所で `isSupabaseInitialized()` チェックが必要
+   - 特に `useEffect` 内の複数箇所に注意（`initializeAuth()` 内だけでは不十分）
+   - **保護必須箇所（全9箇所）:**
+
+     | 箇所 | 使用メソッド | 行番号 |
+     |------|-------------|--------|
+     | `checkUserStatus` 内 | `supabase.auth.getSession()`, `supabase.from()` | L302 |
+     | `createUserRecordFromOnboardingData` 内 | `supabase.from().upsert()` | L403 |
+     | `handleDeepLink` 内 | `supabase.auth.setSession()` | L566 |
+     | `initializeAuth` 内 | `supabase.auth.getSession()` | L615 |
+     | `onAuthStateChange` 呼び出し | `supabase.auth.onAuthStateChange()` | L672 |
+     | `setupRealtimeSubscription` 内 | `supabase.auth.getSession()`, `supabase.channel()` | L774 |
+     | `setupRealtimeSubscription` 呼び出し | (関数呼び出し) | L822 |
+     | `refreshListener` 内 | `supabase.auth.getSession()` | L828 |
+     | クリーンアップ関数 | `authSubscription?.unsubscribe()` | L862 |
+
+   - クリーンアップ関数では `?.` オプショナルチェイニングを使用
 
 ### プロセス的教訓
 
@@ -427,3 +595,5 @@ eas submit --platform ios
 | 2026-01-28 | 試行#2結果記録（❌効果なし）、次回アクション更新 |
 | 2026-01-29 | ✅ **解決** - 試行#3で根本原因特定、コード修正実装、ローカルビルド成功 |
 | 2026-01-29 | 詳細な解決策、ビルド手順、教訓を追加 |
+| 2026-01-29 | Build #35: `Cannot read property 'auth' of null` 修正 - 全9箇所のsupabase呼び出しを保護 |
+| 2026-01-29 | EAS Build vs EAS Local Build 比較、TestFlight配信手順を追加 |
