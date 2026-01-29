@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
@@ -12,6 +12,15 @@ import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
 import * as AnalyticsService from '../../lib/AnalyticsService';
 import { captureError } from '../../utils/errorLogger';
+import {
+  initializeIAP,
+  getProducts,
+  setPurchaseListener,
+  purchaseSubscription,
+  IAP_PRODUCT_IDS,
+  IAPProduct,
+  isIAPAvailable,
+} from '../../lib/IAPService';
 
 type Plan = 'yearly' | 'monthly';
 
@@ -35,6 +44,51 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const [loading, setLoading] = useState(false);
   const [showWarpTransition, setShowWarpTransition] = useState(false);
   const [pageCount, setPageCount] = useState<number>(0);
+  const [iapProducts, setIapProducts] = useState<IAPProduct[]>([]);
+  const [iapLoading, setIapLoading] = useState(false);
+
+  // IAP の初期化と商品情報取得
+  useEffect(() => {
+    const initIAP = async () => {
+      if (!isIAPAvailable()) {
+        if (__DEV__) console.log('[Screen13] IAP not available on this platform');
+        return;
+      }
+
+      setIapLoading(true);
+      try {
+        const initialized = await initializeIAP();
+        if (!initialized) {
+          if (__DEV__) console.warn('[Screen13] IAP initialization failed');
+          return;
+        }
+
+        // 商品情報を取得
+        const products = await getProducts();
+        if (__DEV__) console.log('[Screen13] IAP products loaded:', products);
+        setIapProducts(products);
+
+        // 購入リスナーを設定
+        setPurchaseListener(
+          async (productId, transactionId) => {
+            if (__DEV__) console.log('[Screen13] Purchase success:', productId, transactionId);
+            // 購入成功時の処理は handleSubscribe 内で継続
+          },
+          (error) => {
+            if (__DEV__) console.error('[Screen13] Purchase error:', error);
+            setLoading(false);
+            Alert.alert(i18n.t('common.error'), i18n.t('errors.iap_purchase_failed'));
+          }
+        );
+      } catch (error) {
+        captureError(error, { location: 'OnboardingScreen13.initIAP' });
+      } finally {
+        setIapLoading(false);
+      }
+    };
+
+    initIAP();
+  }, []);
 
   // オンボーディングデータを読み込む
   useEffect(() => {
@@ -110,6 +164,63 @@ export default function OnboardingScreen13({ navigation, route }: any) {
     setLoading(true);
     try {
       if (__DEV__) console.log('[Screen13] Starting subscription flow...');
+
+      // iOS の場合は IAP を使用
+      if (Platform.OS === 'ios' && isIAPAvailable()) {
+        const productId = selectedPlan === 'yearly'
+          ? IAP_PRODUCT_IDS.YEARLY
+          : IAP_PRODUCT_IDS.MONTHLY;
+
+        if (__DEV__) console.log('[Screen13] Starting IAP purchase for:', productId);
+
+        // IAP 購入を開始
+        const result = await purchaseSubscription(productId);
+
+        if (!result.success) {
+          if (__DEV__) console.error('[Screen13] IAP purchase initiation failed:', result.error);
+          // ユーザーがキャンセルした場合はエラー表示しない
+          if (result.error && !result.error.includes('canceled') && !result.error.includes('cancelled')) {
+            Alert.alert(i18n.t('common.error'), i18n.t('errors.iap_purchase_failed'));
+          }
+          setLoading(false);
+          return;
+        }
+
+        // 購入処理は purchaseListener で継続される
+        // verify-iap-receipt が subscription_status を更新する
+        // ここでは購入開始を待つ（リスナーが成功を検知したら続行）
+
+        // 購入完了を待つためのポーリング（最大30秒）
+        let attempts = 0;
+        const maxAttempts = 30;
+        const checkSubscription = async (): Promise<boolean> => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return false;
+
+          const { data, error } = await supabase
+            .from('users')
+            .select('subscription_status')
+            .eq('id', user.id)
+            .single();
+
+          return !error && data?.subscription_status === 'active';
+        };
+
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const isActive = await checkSubscription();
+          if (isActive) {
+            if (__DEV__) console.log('[Screen13] Subscription activated!');
+            break;
+          }
+          attempts++;
+        }
+
+        if (attempts >= maxAttempts) {
+          // タイムアウトしても手動でリフレッシュを試みる
+          if (__DEV__) console.warn('[Screen13] Subscription check timed out, proceeding anyway');
+        }
+      }
 
       // Step 1: セッションをリフレッシュして最新のトークンを取得
       // INITIAL_SESSION（AsyncStorageから復元）のトークンが期限切れの可能性があるため、
@@ -268,6 +379,18 @@ export default function OnboardingScreen13({ navigation, route }: any) {
     triggerAuthRefresh();
   }, []);
 
+  // IAP から取得した価格を表示用にフォーマット
+  const getDisplayPrice = (productId: string): string => {
+    const product = iapProducts.find(p => p.productId === productId);
+    if (product) {
+      return product.price;
+    }
+    // フォールバック（IAP が利用できない場合）
+    return productId === IAP_PRODUCT_IDS.YEARLY
+      ? i18n.t('onboarding.screen13_annual_price')
+      : i18n.t('onboarding.screen13_monthly_price');
+  };
+
   return (
     <>
       <CinematicCommitReveal
@@ -298,35 +421,46 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         </View>
       }
     >
-      <View style={styles.plans}>
-        <TouchableOpacity
-          style={[styles.planCard, selectedPlan === 'yearly' && styles.planCardSelected]}
-          onPress={() => setSelectedPlan('yearly')}
-        >
-          <View style={styles.planBadge}>
-            <Text style={styles.planBadgeText}>50% OFF</Text>
-          </View>
-          <Text style={styles.planName}>{i18n.t('onboarding.screen13_annual')}</Text>
-          <Text style={styles.planPrice}>{i18n.t('onboarding.screen13_annual_price')}</Text>
-          <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_annual_note')}</Text>
-          <Text style={styles.planLabel}>{i18n.t('paywall.for_serious')}</Text>
-        </TouchableOpacity>
+      {iapLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent.primary} />
+        </View>
+      ) : (
+        <View style={styles.plans}>
+          <TouchableOpacity
+            style={[styles.planCard, selectedPlan === 'yearly' && styles.planCardSelected]}
+            onPress={() => setSelectedPlan('yearly')}
+          >
+            <View style={styles.planBadge}>
+              <Text style={styles.planBadgeText}>50% OFF</Text>
+            </View>
+            <Text style={styles.planName}>{i18n.t('onboarding.screen13_annual')}</Text>
+            <Text style={styles.planPrice}>{getDisplayPrice(IAP_PRODUCT_IDS.YEARLY)}</Text>
+            <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_annual_note')}</Text>
+            <Text style={styles.planLabel}>{i18n.t('paywall.for_serious')}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
-          onPress={() => setSelectedPlan('monthly')}
-        >
-          <Text style={styles.planName}>{i18n.t('onboarding.screen13_monthly')}</Text>
-          <Text style={styles.planPrice}>{i18n.t('onboarding.screen13_monthly_price')}</Text>
-          <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_monthly_note')}</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
+            onPress={() => setSelectedPlan('monthly')}
+          >
+            <Text style={styles.planName}>{i18n.t('onboarding.screen13_monthly')}</Text>
+            <Text style={styles.planPrice}>{getDisplayPrice(IAP_PRODUCT_IDS.MONTHLY)}</Text>
+            <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_monthly_note')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       </OnboardingLayout>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    paddingVertical: spacing.xl * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   plans: {
     gap: spacing.md,
     marginTop: spacing.lg,

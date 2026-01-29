@@ -25,6 +25,9 @@ export interface Database {
           legal_consent_version: string | null
           show_in_ranking: boolean
           job_category: string | null
+          apple_original_transaction_id: string | null
+          subscription_expires_at: string | null
+          subscription_platform: string | null
           created_at: string
         }
         Insert: {
@@ -42,6 +45,9 @@ export interface Database {
           legal_consent_version?: string | null
           show_in_ranking?: boolean
           job_category?: string | null
+          apple_original_transaction_id?: string | null
+          subscription_expires_at?: string | null
+          subscription_platform?: string | null
           created_at?: string
         }
         Update: {
@@ -59,6 +65,9 @@ export interface Database {
           legal_consent_version?: string | null
           show_in_ranking?: boolean
           job_category?: string | null
+          apple_original_transaction_id?: string | null
+          subscription_expires_at?: string | null
+          subscription_platform?: string | null
           created_at?: string
         }
         Relationships: []

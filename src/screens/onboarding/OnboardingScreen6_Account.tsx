@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
@@ -294,10 +295,101 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     return false;
   };
 
+  /**
+   * Apple Sign In (ネイティブ認証)
+   * expo-apple-authentication を使用してネイティブのApple認証を行い、
+   * 取得したIDトークンをSupabaseに渡してセッションを確立
+   */
+  const handleAppleSignIn = async () => {
+    // iOS以外では使用不可
+    if (Platform.OS !== 'ios') {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_ios_only'));
+      return;
+    }
+
+    // Apple認証が利用可能かチェック
+    const isAvailable = await AppleAuthentication.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_unavailable'));
+      return;
+    }
+
+    setOauthLoading('apple');
+    try {
+      // オンボーディングデータをAsyncStorageに保存
+      await AsyncStorage.setItem('onboardingData', JSON.stringify({
+        selectedBook,
+        deadline,
+        pledgeAmount,
+        currency,
+        tsundokuCount,
+        username,
+      }));
+
+      // ネイティブのApple認証ダイアログを表示
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      // identityTokenが取得できなかった場合はエラー
+      if (!credential.identityToken) {
+        throw new Error('Apple Sign In: identityToken not received');
+      }
+
+      // Supabaseに IDトークンを渡してセッションを確立
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+
+      if (sessionError) {
+        captureError(sessionError, { location: 'OnboardingScreen6.handleAppleSignIn.signInWithIdToken' });
+        Alert.alert(i18n.t('common.error'), sessionError.message);
+        return;
+      }
+
+      if (sessionData.user) {
+        // Apple認証では初回のみfullNameが返される
+        // credential.fullName からユーザー名を取得（なければusernameフィールドを使用）
+        const appleFullName = credential.fullName
+          ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
+          : null;
+        const displayName = username || appleFullName || null;
+
+        await syncUserToDatabase(
+          sessionData.user.id,
+          sessionData.user.email,
+          displayName
+        );
+
+        navigation.navigate('Onboarding7', {
+          selectedBook,
+          deadline,
+          pledgeAmount,
+          currency,
+          tsundokuCount,
+          userId: sessionData.user.id,
+        });
+      }
+    } catch (error: unknown) {
+      // ユーザーがキャンセルした場合は何もしない
+      if ((error as { code?: string })?.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      captureError(error, { location: 'OnboardingScreen6.handleAppleSignIn' });
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error));
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
   const handleOAuth = async (provider: 'google' | 'apple') => {
-    // Apple Sign Inは別途セットアップが必要
+    // Apple Sign In はネイティブ認証を使用
     if (provider === 'apple') {
-      Alert.alert(i18n.t('common.coming_soon'), i18n.t('errors.oauth_coming_soon', { provider: 'Apple' }));
+      await handleAppleSignIn();
       return;
     }
 
@@ -445,20 +537,23 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.oauthButton, oauthLoading === 'apple' && styles.oauthButtonDisabled]}
-          onPress={() => handleOAuth('apple')}
-          disabled={oauthLoading !== null || loading}
-        >
-          {oauthLoading === 'apple' ? (
-            <ActivityIndicator size="small" color={colors.text.primary} />
-          ) : (
-            <>
-              <Ionicons name="logo-apple" size={20} color={colors.text.primary} />
-              <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_apple')}</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {/* Apple Sign In - iOS のみ表示 */}
+        {Platform.OS === 'ios' && (
+          <TouchableOpacity
+            style={[styles.oauthButton, styles.appleButton, oauthLoading === 'apple' && styles.oauthButtonDisabled]}
+            onPress={() => handleOAuth('apple')}
+            disabled={oauthLoading !== null || loading}
+          >
+            {oauthLoading === 'apple' ? (
+              <ActivityIndicator size="small" color={colors.text.primary} />
+            ) : (
+              <>
+                <Ionicons name="logo-apple" size={20} color={colors.text.primary} />
+                <Text style={styles.oauthButtonText}>{i18n.t('onboarding.screen6_apple')}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </OnboardingLayout>
   );
@@ -541,6 +636,9 @@ const styles = StyleSheet.create({
   },
   oauthButtonDisabled: {
     opacity: 0.6,
+  },
+  appleButton: {
+    // Apple ボタン用の追加スタイル（必要に応じて調整可能）
   },
   oauthButtonText: {
     color: colors.text.primary,

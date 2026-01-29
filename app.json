@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.kgxxx.commitapp",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -40,7 +41,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-splash-screen",
+      "expo-apple-authentication",
       [
         "expo-image-picker",
         {

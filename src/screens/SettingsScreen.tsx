@@ -8,6 +8,8 @@ import {
   Modal,
   ScrollView,
   Switch,
+  Platform,
+  Linking,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +25,7 @@ import { safeOpenURL } from '../utils/linkingUtils';
 import { captureError } from '../utils/errorLogger';
 import LegalBottomSheet, { LegalDocumentType } from '../components/LegalBottomSheet';
 import type { JobCategory } from '../types';
+import { restorePurchases, isIAPAvailable } from '../lib/IAPService';
 
 const JOB_CATEGORY_LABELS: Record<JobCategory, string> = {
   engineer: 'onboarding.job_categories.engineer',
@@ -219,6 +222,45 @@ export default function SettingsScreen({ navigation }: any) {
     }
   };
 
+  // 購入復元ハンドラ（iOS のみ）
+  const handleRestorePurchases = async () => {
+    if (!isIAPAvailable()) return;
+
+    try {
+      const result = await restorePurchases();
+
+      if (result.success) {
+        Alert.alert(
+          i18n.t('common.success'),
+          i18n.t('errors.iap_restore_success')
+        );
+      } else {
+        if (result.error === 'NO_PURCHASES_FOUND') {
+          Alert.alert(
+            i18n.t('common.error'),
+            i18n.t('errors.iap_restore_no_purchases')
+          );
+        } else {
+          Alert.alert(
+            i18n.t('common.error'),
+            i18n.t('errors.iap_restore_failed')
+          );
+        }
+      }
+    } catch (error) {
+      captureError(error, { location: 'SettingsScreen.handleRestorePurchases' });
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.iap_restore_failed'));
+    }
+  };
+
+  // サブスクリプション管理（App Store設定を開く）
+  const handleManageSubscription = () => {
+    if (Platform.OS === 'ios') {
+      // iOS: App Store のサブスクリプション管理画面を開く
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+    }
+  };
+
   const SectionHeader = ({ title }: { title: string }) => (
     <View style={styles.sectionHeader}>
       <MicroLabel color={colors.text.muted}>{title}</MicroLabel>
@@ -246,11 +288,25 @@ export default function SettingsScreen({ navigation }: any) {
 
       <ScrollView style={styles.content}>
         <SectionHeader title={i18n.t('settings.account')} />
-        <MenuItem 
-          icon="person-outline" 
-          label={i18n.t('profile.title')} 
-          onPress={() => navigation.navigate('Profile')} 
+        <MenuItem
+          icon="person-outline"
+          label={i18n.t('profile.title')}
+          onPress={() => navigation.navigate('Profile')}
         />
+        {Platform.OS === 'ios' && isIAPAvailable() && (
+          <>
+            <MenuItem
+              icon="refresh-outline"
+              label={i18n.t('settings.restore_purchases')}
+              onPress={handleRestorePurchases}
+            />
+            <MenuItem
+              icon="settings-outline"
+              label={i18n.t('settings.manage_subscription')}
+              onPress={handleManageSubscription}
+            />
+          </>
+        )}
         <MenuItem
           icon="card-outline"
           label={i18n.t('settings.manage_payment')}

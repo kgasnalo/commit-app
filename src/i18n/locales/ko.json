@@ -389,7 +389,9 @@
     "show_in_ranking_description": "주간 및 월간 랭킹에 참여합니다",
     "job_category": "직업",
     "job_category_description": "직업에 따른 추천 도서를 받습니다",
-    "view_job_rankings": "직업별 랭킹 보기"
+    "view_job_rankings": "직업별 랭킹 보기",
+    "restore_purchases": "구매 복원",
+    "manage_subscription": "구독 관리"
   },
   "announcements": {
     "title": "공지사항",
@@ -535,6 +537,8 @@
     "account_creation": "계정 생성에 실패했습니다",
     "invalid_email_format": "유효한 이메일 주소를 입력해주세요",
     "oauth_coming_soon": "{{provider}} 로그인은 준비 중입니다",
+    "apple_signin_ios_only": "Apple 로그인은 iOS에서만 사용 가능합니다",
+    "apple_signin_unavailable": "이 기기에서는 Apple 로그인을 사용할 수 없습니다",
     "deadline_error": "기한 오류",
     "deadline_tomorrow_or_later": "기한은 내일 이후로 선택해주세요.",
     "deadline_max_one_month": "기한은 최대 1개월 후까지입니다.",
@@ -553,6 +557,12 @@
     "photo_required": "책의 마지막 페이지 사진을 촬영해주세요",
     "verification_failed": "완료 확인 저장에 실패했습니다",
     "subscription_failed": "구독 시작에 실패했습니다",
+    "iap_not_available": "이 기기에서는 인앱 구매를 사용할 수 없습니다",
+    "iap_purchase_failed": "구매 처리에 실패했습니다",
+    "iap_restore_failed": "구매 복원에 실패했습니다",
+    "iap_restore_no_purchases": "복원 가능한 구매가 없습니다",
+    "iap_restore_success": "구매가 복원되었습니다",
+    "iap_already_subscribed": "이미 구독 중입니다",
     "commitment_not_found": "커밋먼트를 찾을 수 없습니다",
     "fetch_commitment_failed": "커밋먼트 정보 가져오기에 실패했습니다.",
     "create_commitment_failed": "커밋먼트 생성에 실패했습니다.",

@@ -367,7 +367,9 @@
     "show_in_ranking_description": "Participate in weekly and monthly rankings",
     "job_category": "Profession",
     "job_category_description": "Get book recommendations based on your profession",
-    "view_job_rankings": "View Job Rankings"
+    "view_job_rankings": "View Job Rankings",
+    "restore_purchases": "Restore Purchases",
+    "manage_subscription": "Manage Subscription"
   },
   "announcements": {
     "title": "Announcements",
@@ -535,6 +537,8 @@
     "account_creation": "Failed to create account",
     "invalid_email_format": "Please enter a valid email address",
     "oauth_coming_soon": "{{provider}} login coming soon",
+    "apple_signin_ios_only": "Apple Sign In is only available on iOS",
+    "apple_signin_unavailable": "Apple Sign In is not available on this device",
     "deadline_error": "Deadline Error",
     "deadline_tomorrow_or_later": "Deadline must be tomorrow or later.",
     "deadline_max_one_month": "Deadline must be within 1 month.",
@@ -553,6 +557,12 @@
     "photo_required": "Please take a photo of the last page",
     "verification_failed": "Failed to save verification",
     "subscription_failed": "Failed to start subscription",
+    "iap_not_available": "In-app purchases are not available on this device",
+    "iap_purchase_failed": "Purchase failed",
+    "iap_restore_failed": "Failed to restore purchases",
+    "iap_restore_no_purchases": "No purchases found to restore",
+    "iap_restore_success": "Purchases restored successfully",
+    "iap_already_subscribed": "You already have an active subscription",
     "commitment_not_found": "Commitment not found",
     "fetch_commitment_failed": "Failed to fetch commitment info.",
     "create_commitment_failed": "Failed to create commitment.",

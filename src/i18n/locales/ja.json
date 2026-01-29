@@ -367,7 +367,9 @@
     "show_in_ranking_description": "週間・月間ランキングに参加します",
     "job_category": "職種",
     "job_category_description": "職種に基づいた本のおすすめを受け取る",
-    "view_job_rankings": "職種別ランキングを見る"
+    "view_job_rankings": "職種別ランキングを見る",
+    "restore_purchases": "購入を復元",
+    "manage_subscription": "サブスクリプション管理"
   },
   "announcements": {
     "title": "お知らせ",
@@ -535,6 +537,8 @@
     "account_creation": "アカウント作成に失敗しました",
     "invalid_email_format": "有効なメールアドレスを入力してください",
     "oauth_coming_soon": "{{provider}}ログインは準備中です",
+    "apple_signin_ios_only": "Apple Sign InはiOSでのみ利用可能です",
+    "apple_signin_unavailable": "このデバイスではApple Sign Inを利用できません",
     "deadline_error": "期限エラー",
     "deadline_tomorrow_or_later": "期限は明日以降を選択してください。",
     "deadline_max_one_month": "期限は最大1ヶ月先までです。",
@@ -553,6 +557,12 @@
     "photo_required": "本の最終ページの写真を撮影してください",
     "verification_failed": "読了確認の保存に失敗しました",
     "subscription_failed": "サブスクリプションの開始に失敗しました",
+    "iap_not_available": "アプリ内課金はこのデバイスでは利用できません",
+    "iap_purchase_failed": "購入処理に失敗しました",
+    "iap_restore_failed": "購入の復元に失敗しました",
+    "iap_restore_no_purchases": "復元可能な購入が見つかりません",
+    "iap_restore_success": "購入を復元しました",
+    "iap_already_subscribed": "すでにサブスクリプション中です",
     "commitment_not_found": "コミットメントが見つかりません",
     "fetch_commitment_failed": "コミットメント情報の取得に失敗しました。",
     "create_commitment_failed": "コミットメントの作成に失敗しました。",
