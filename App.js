@@ -2,14 +2,20 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Sentry from '@sentry/react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { SENTRY_DSN } from './src/config/env';
 import 'react-native-gesture-handler';
 
-import * as SplashScreen from 'expo-splash-screen';
+// モジュールレベルでスプラッシュ制御（関数の外で実行）
 SplashScreen.preventAutoHideAsync();
+
+// 最上位セーフティ: Reactツリーに依存せず、10秒後に確実にスプラッシュを消す
+setTimeout(() => {
+  SplashScreen.hideAsync().catch(() => {});
+}, 10000);
 
 // Initialize Sentry for crash monitoring
 if (SENTRY_DSN) {
@@ -51,12 +57,11 @@ const styles = StyleSheet.create({
 });
 
 // Wrap with Sentry for automatic error boundary and performance monitoring
-let WrappedApp = App;
+let WrappedApp;
 try {
-  if (SENTRY_DSN) {
-    WrappedApp = Sentry.wrap(App);
-  }
+  WrappedApp = SENTRY_DSN ? Sentry.wrap(App) : App;
 } catch (e) {
   console.error('[App] Sentry.wrap failed:', e);
+  WrappedApp = App;
 }
 export default WrappedApp;

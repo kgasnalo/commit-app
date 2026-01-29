@@ -134,23 +134,27 @@ function buildEnvConfig(): EnvConfig {
 // ============================================
 
 /**
+ * Error captured during env initialization.
+ * If set, the app should show an error state instead of crashing.
+ */
+export let ENV_INIT_ERROR: string | null = null;
+
+/**
  * Validated environment configuration.
  * Importing this module will trigger validation.
- * The app will crash if required variables are missing.
+ * If validation fails, ENV_INIT_ERROR is set and fallback values are used.
  */
 let _env: EnvConfig;
-export let ENV_INIT_ERROR: string | null = null;
 try {
   _env = buildEnvConfig();
-} catch (error) {
-  ENV_INIT_ERROR = String(error);
-  console.error('[ENV] Configuration failed:', error);
-  // Provide fallback so the app can at least render an error screen
-  // instead of crashing before ErrorBoundary mounts
+} catch (error: any) {
+  ENV_INIT_ERROR = error?.message ?? 'Unknown env initialization error';
+  console.error('[ENV] Initialization failed:', ENV_INIT_ERROR);
+  // Fallback values to prevent module-level crash
   _env = {
     SUPABASE_URL: '',
     SUPABASE_ANON_KEY: '',
-    STRIPE_PUBLISHABLE_KEY: 'pk_placeholder',
+    STRIPE_PUBLISHABLE_KEY: '',
     GOOGLE_API_KEY: undefined,
     SENTRY_DSN: undefined,
     POSTHOG_API_KEY: undefined,

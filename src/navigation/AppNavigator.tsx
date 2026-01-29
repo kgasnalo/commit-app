@@ -298,6 +298,12 @@ function NavigationContent() {
       legalConsentVersion: null,
     };
 
+    // Supabaseが初期化されていない場合は即座にデフォルト値を返す
+    if (!isSupabaseInitialized()) {
+      if (__DEV__) console.warn('📊 checkUserStatus: Supabase not initialized, returning default');
+      return defaultStatus;
+    }
+
     if (__DEV__) console.log(`📊 checkUserStatus: Attempt ${retryCount + 1}/${maxRetries + 1} for user ${userId.slice(0, 8)}...`);
 
     try {
@@ -393,6 +399,12 @@ function NavigationContent() {
    * 注意: useEffectの外に定義することでonAuthStateChangeからもアクセス可能
    */
   async function createUserRecordFromOnboardingData(session: Session): Promise<void> {
+    // Supabaseが初期化されていない場合はスキップ
+    if (!isSupabaseInitialized()) {
+      if (__DEV__) console.warn('🔗 createUserRecord: Supabase not initialized, skipping');
+      return;
+    }
+
     try {
       const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
       if (!onboardingDataStr) {
@@ -550,6 +562,12 @@ function NavigationContent() {
             return;
           }
 
+          // Supabaseが初期化されていない場合はスキップ
+          if (!isSupabaseInitialized()) {
+            if (__DEV__) console.warn('🔗 Deep Link: Supabase not initialized, cannot set session');
+            return;
+          }
+
           if (__DEV__) console.log('🔗 Deep Link: Found Implicit flow tokens, setting session...');
           const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
             access_token,
@@ -648,7 +666,13 @@ function NavigationContent() {
     initializeAuth();
 
     // 認証状態の変化を監視
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // NOTE: supabase が null の場合（環境変数未設定）はスキップ
+    let authSubscription: { unsubscribe: () => void } | null = null;
+
+    if (!isSupabaseInitialized()) {
+      if (__DEV__) console.warn('⚠️ Auth: Skipping onAuthStateChange (Supabase not initialized)');
+    } else {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (__DEV__) console.log('✅ Auth State Changed:', event, session?.user?.id ?? '(no session)');
 
       // INITIAL_SESSION は initializeAuth で処理済み
@@ -739,11 +763,19 @@ function NavigationContent() {
         }
       }
     });
+      authSubscription = subscription;
+    }
 
     // usersテーブルのsubscription_status/onboarding_completedの変更を監視
     let realtimeSubscription: RealtimeChannel | null = null;
 
     async function setupRealtimeSubscription() {
+      // 二重チェック: 呼び出し元でもチェックしているが、念のため
+      if (!isSupabaseInitialized()) {
+        if (__DEV__) console.warn('⚠️ setupRealtimeSubscription: Supabase not initialized');
+        return;
+      }
+
       const { data: { session } } = await withTimeout(
         supabase.auth.getSession(),
         10000,
@@ -786,10 +818,18 @@ function NavigationContent() {
       }
     }
 
-    setupRealtimeSubscription();
+    // Supabaseが初期化されている場合のみRealtimeを設定
+    if (isSupabaseInitialized()) {
+      setupRealtimeSubscription();
+    }
 
     // Listen for manual auth refresh events (from OnboardingScreen13 after subscription update)
     const refreshListener = DeviceEventEmitter.addListener(AUTH_REFRESH_EVENT, async () => {
+      // Supabaseが初期化されていない場合はスキップ
+      if (!isSupabaseInitialized()) {
+        if (__DEV__) console.warn('⚠️ Auth Refresh: Skipping (Supabase not initialized)');
+        return;
+      }
 
       const { data: { session } } = await withTimeout(
         supabase.auth.getSession(),
@@ -819,7 +859,7 @@ function NavigationContent() {
     return () => {
       isMounted = false;
       linkingSubscription.remove();
-      authSubscription.unsubscribe();
+      authSubscription?.unsubscribe();
       refreshListener.remove();
       if (realtimeSubscription) {
         try {

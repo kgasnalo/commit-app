@@ -17,8 +17,8 @@ import { captureError } from '../utils/errorLogger';
 
 // 商品ID（App Store Connect で登録する必要がある）
 export const IAP_PRODUCT_IDS = {
-  YEARLY: 'com.kgxxx.commitapp.yearly',
-  MONTHLY: 'com.kgxxx.commitapp.monthly',
+  YEARLY: 'com.kgxxx.commitapp.premium.yearly',
+  MONTHLY: 'com.kgxxx.commitapp.premium.monthly',
 } as const;
 
 export type IAPProductId = (typeof IAP_PRODUCT_IDS)[keyof typeof IAP_PRODUCT_IDS];
@@ -90,6 +90,7 @@ export async function disconnectIAP(): Promise<void> {
 
 /**
  * 商品情報を取得する
+ * ネットワーク問題に対応するため、リトライロジックを含む
  */
 export async function getProducts(): Promise<IAPProduct[]> {
   if (Platform.OS !== 'ios') {
@@ -101,34 +102,61 @@ export async function getProducts(): Promise<IAPProduct[]> {
     if (!initialized) return [];
   }
 
-  try {
-    const { results, responseCode } = await InAppPurchases.getProductsAsync([
-      IAP_PRODUCT_IDS.YEARLY,
-      IAP_PRODUCT_IDS.MONTHLY,
-    ]);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000;
 
-    if (responseCode !== InAppPurchases.IAPResponseCode.OK) {
-      if (__DEV__) console.warn('[IAPService] Failed to get products, responseCode:', responseCode);
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const { results, responseCode } = await InAppPurchases.getProductsAsync([
+        IAP_PRODUCT_IDS.YEARLY,
+        IAP_PRODUCT_IDS.MONTHLY,
+      ]);
+
+      if (__DEV__) {
+        console.log(`[IAPService] getProducts attempt ${attempt}/${MAX_RETRIES}:`, {
+          responseCode,
+          resultCount: results?.length ?? 0,
+          productIds: results?.map(p => p.productId) ?? [],
+        });
+      }
+
+      if (responseCode !== InAppPurchases.IAPResponseCode.OK) {
+        if (__DEV__) console.warn('[IAPService] responseCode:', responseCode);
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, RETRY_DELAY * attempt));
+          continue;
+        }
+        return [];
+      }
+
+      if (!results || results.length === 0) {
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, RETRY_DELAY * attempt));
+          continue;
+        }
+        return [];
+      }
+
+      // expo-in-app-purchases の形式から IAPProduct に変換
+      return results.map((product) => ({
+        productId: product.productId,
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        priceAmountMicros: product.priceAmountMicros,
+        priceCurrencyCode: product.priceCurrencyCode,
+      }));
+    } catch (error) {
+      captureError(error, { location: 'IAPService.getProducts', extra: { attempt } });
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, RETRY_DELAY * attempt));
+        continue;
+      }
       return [];
     }
-
-    if (!results) {
-      return [];
-    }
-
-    // expo-in-app-purchases の形式から IAPProduct に変換
-    return results.map((product) => ({
-      productId: product.productId,
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      priceAmountMicros: product.priceAmountMicros,
-      priceCurrencyCode: product.priceCurrencyCode,
-    }));
-  } catch (error) {
-    captureError(error, { location: 'IAPService.getProducts' });
-    return [];
   }
+
+  return [];
 }
 
 /**
@@ -189,6 +217,21 @@ export async function purchaseSubscription(productId: IAPProductId): Promise<IAP
   }
 
   try {
+    // FIX: 購入前に商品を再クエリしてネイティブキャッシュを確実に有効化
+    // expo-in-app-purchasesのネイティブモジュールは、getProductsAsync()で取得した
+    // 商品のキャッシュを保持し、purchaseItemAsync()呼び出し時にこのキャッシュを参照する。
+    // アプリのバックグラウンド化やネットワーク問題でキャッシュがクリアされると
+    // "Must query item from store before calling purchase" エラーが発生する。
+    const products = await getProducts();
+    if (products.length === 0) {
+      if (__DEV__) console.warn('[IAPService] No products returned from store');
+      return { success: false, error: 'STORE_CONNECTION_FAILED' };
+    }
+    if (!products.some(p => p.productId === productId)) {
+      if (__DEV__) console.warn('[IAPService] Product not found:', productId);
+      return { success: false, error: 'PRODUCT_NOT_FOUND' };
+    }
+
     // 購入を開始（結果はリスナーで受け取る）
     await InAppPurchases.purchaseItemAsync(productId);
 

@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../theme';
@@ -17,9 +17,11 @@ interface State {
 
 interface FallbackProps {
   onRetry: () => void;
+  errorMessage?: string;
+  errorStack?: string;
 }
 
-function ErrorFallbackUI({ onRetry }: FallbackProps) {
+function ErrorFallbackUI({ onRetry, errorMessage, errorStack }: FallbackProps) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -30,6 +32,23 @@ function ErrorFallbackUI({ onRetry }: FallbackProps) {
         />
         <Text style={styles.title}>{i18n.t('errorBoundary.title')}</Text>
         <Text style={styles.message}>{i18n.t('errorBoundary.message')}</Text>
+
+        {/* DEBUG: エラー詳細を表示（本番デバッグ用 - 原因特定後に削除） */}
+        {errorMessage && (
+          <View style={styles.errorDetails}>
+            <Text style={styles.errorLabel}>Error:</Text>
+            <ScrollView style={styles.errorScroll}>
+              <Text style={styles.errorText} selectable>{errorMessage}</Text>
+              {errorStack && (
+                <>
+                  <Text style={[styles.errorLabel, { marginTop: 8 }]}>Stack:</Text>
+                  <Text style={styles.errorText} selectable>{errorStack}</Text>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        )}
+
         <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
           <Text style={styles.retryButtonText}>
             {i18n.t('errorBoundary.retry')}
@@ -60,7 +79,13 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return <ErrorFallbackUI onRetry={this.handleRetry} />;
+      return (
+        <ErrorFallbackUI
+          onRetry={this.handleRetry}
+          errorMessage={this.state.error?.message}
+          errorStack={this.state.error?.stack}
+        />
+      );
     }
     return this.props.children;
   }
@@ -102,5 +127,30 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.button,
     fontWeight: typography.fontWeight.semibold,
     color: colors.text.primary,
+  },
+  errorDetails: {
+    marginTop: spacing.md,
+    padding: spacing.sm,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.3)',
+    width: '100%',
+    maxHeight: 250,
+  },
+  errorScroll: {
+    maxHeight: 200,
+  },
+  errorLabel: {
+    fontSize: typography.fontSize.caption,
+    fontWeight: typography.fontWeight.bold as '700',
+    color: colors.status.error,
+    marginBottom: 4,
+  },
+  errorText: {
+    fontSize: 11,
+    color: colors.status.error,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    lineHeight: 16,
   },
 });
