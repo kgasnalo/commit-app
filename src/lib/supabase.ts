@@ -1,18 +1,51 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient, Session } from '@supabase/supabase-js';
+import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
 import { DeviceEventEmitter } from 'react-native';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, ENV_INIT_ERROR } from '../config/env';
 import { Database } from '../types/database.types';
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+/**
+ * Guard against empty credentials (EAS build without secrets configured).
+ * If credentials are missing, supabaseClient will be null.
+ * The exported `supabase` is non-null typed for convenience, but callers
+ * should check ENV_INIT_ERROR before using it in critical paths.
+ */
+function createSafeClient(): SupabaseClient<Database> | null {
+  if (ENV_INIT_ERROR || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('[Supabase] Cannot initialize: missing credentials', {
+      hasEnvError: !!ENV_INIT_ERROR,
+      hasUrl: !!SUPABASE_URL,
+      hasKey: !!SUPABASE_ANON_KEY,
+    });
+    return null;
+  }
+
+  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storage: AsyncStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
+const supabaseClient = createSafeClient();
+
+/**
+ * Supabase client instance.
+ * IMPORTANT: This is typed as non-null for convenience, but may actually be null
+ * if ENV_INIT_ERROR is set. Always check ENV_INIT_ERROR in critical initialization paths
+ * (like AppNavigator.initializeAuth) before using supabase methods.
+ */
+export const supabase = supabaseClient as SupabaseClient<Database>;
+
+/**
+ * Check if supabase client was successfully initialized.
+ * Use this in critical paths where supabase operations are required.
+ */
+export const isSupabaseInitialized = (): boolean => supabaseClient !== null;
 
 // Auth refresh event name
 export const AUTH_REFRESH_EVENT = 'REFRESH_AUTH';
@@ -37,6 +70,11 @@ export async function waitForSession(
   timeoutMs: number = 5000,
   intervalMs: number = 200
 ): Promise<Session | null> {
+  if (!isSupabaseInitialized()) {
+    console.error('[waitForSession] Supabase client not initialized');
+    return null;
+  }
+
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeoutMs) {

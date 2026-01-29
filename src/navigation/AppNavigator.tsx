@@ -7,7 +7,7 @@ import { View, Text, Image, ActivityIndicator, StyleSheet, DeviceEventEmitter, P
 import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase, AUTH_REFRESH_EVENT } from '../lib/supabase';
+import { supabase, AUTH_REFRESH_EVENT, isSupabaseInitialized } from '../lib/supabase';
 import { Session, RealtimeChannel } from '@supabase/supabase-js';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { STRIPE_PUBLISHABLE_KEY, ENV_INIT_ERROR } from '../config/env';
@@ -585,9 +585,18 @@ function NavigationContent() {
     async function initializeAuth() {
       if (__DEV__) console.log('🚀 initializeAuth: Starting...');
 
-      // ENV_INIT_ERROR がある場合、Supabase接続は不可能
+      // ENV_INIT_ERROR: env.ts の初期化が失敗した場合、Supabase接続不可
       if (ENV_INIT_ERROR) {
-        console.error('🚀 initializeAuth: ENV error, skipping auth:', ENV_INIT_ERROR);
+        console.error('🚀 initializeAuth: ENV_INIT_ERROR detected:', ENV_INIT_ERROR);
+        captureError(new Error(`ENV_INIT_ERROR: ${ENV_INIT_ERROR}`), { location: 'AppNavigator.initializeAuth' });
+        if (isMounted) setAuthState({ status: 'unauthenticated' });
+        return;
+      }
+
+      // supabase client が初期化に失敗した場合（env varsが空でcreateClientがスキップされた）
+      if (!isSupabaseInitialized()) {
+        console.error('🚀 initializeAuth: Supabase client not initialized (credentials missing)');
+        captureError(new Error('Supabase client not initialized'), { location: 'AppNavigator.initializeAuth' });
         if (isMounted) setAuthState({ status: 'unauthenticated' });
         return;
       }
@@ -835,10 +844,10 @@ function NavigationContent() {
     const safetyTimer = setTimeout(() => {
       SplashScreen.hideAsync();
       if (authState.status === 'loading') {
-        console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 15s');
+        console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 5s');
         setAuthState({ status: 'unauthenticated' });
       }
-    }, 15000);
+    }, 5000);
     return () => clearTimeout(safetyTimer);
   }, []);
 
@@ -920,16 +929,15 @@ function NavigationContent() {
     );
   }
 
-  // ローディング中はJSスプラッシュビューを表示
-  // ネイティブsplash → JSスプラッシュ → 実際の画面 とシームレスに遷移
+  // ローディング中はローディング画面を表示
   if (isLoading) {
     return (
       <View style={loadingStyles.container}>
-        <Image
-          source={require('../../assets/splash-icon.png')}
-          style={loadingStyles.splashIcon}
-          resizeMode="contain"
-        />
+        <ActivityIndicator size="large" color={colors.signal.active} />
+        <View style={loadingStyles.textContainer}>
+          <Text style={loadingStyles.title}>COMMIT</Text>
+          <Text style={loadingStyles.subtitle}>SYSTEM INITIALIZING...</Text>
+        </View>
       </View>
     );
   }
@@ -1055,7 +1063,7 @@ function AppNavigatorInner() {
   );
 
   // Skip StripeProvider if env vars are missing/invalid to prevent native crash
-  if (ENV_INIT_ERROR || !STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY === 'pk_placeholder') {
+  if (ENV_INIT_ERROR || !STRIPE_PUBLISHABLE_KEY) {
     return (
       <>
         {navigationContent}
@@ -1093,8 +1101,21 @@ const loadingStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  splashIcon: {
-    width: 200,
-    height: 200,
+  textContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 4,
+  },
+  subtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#666666',
+    letterSpacing: 2,
+    marginTop: 8,
   },
 });
