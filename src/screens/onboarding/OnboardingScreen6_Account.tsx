@@ -72,6 +72,29 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   });
 
   /**
+   * displayNameをDB制約に合わせてサニタイズ
+   * 制約: ^[a-zA-Z0-9_]{3,20}$
+   */
+  const sanitizeUsername = (displayName: string | null, fallbackId: string): string => {
+    if (!displayName) {
+      return 'user_' + fallbackId.substring(0, 8);
+    }
+
+    // スペースをアンダースコアに変換、許可されない文字を除去
+    let sanitized = displayName
+      .replace(/\s+/g, '_')           // スペース → アンダースコア
+      .replace(/[^a-zA-Z0-9_]/g, '')  // 英数字とアンダースコア以外を除去
+      .substring(0, 20);               // 最大20文字
+
+    // 最小3文字を保証
+    if (sanitized.length < 3) {
+      sanitized = 'user_' + fallbackId.substring(0, 8);
+    }
+
+    return sanitized;
+  };
+
+  /**
    * ユーザーレコードをusersテーブルに同期（upsert）
    * Auth Triggerのタイミングに依存しない堅牢な実装
    */
@@ -98,7 +121,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
             {
               id: userId,
               email: userEmail,
-              username: displayName || ('user_' + userId.substring(0, 8)),
+              username: sanitizeUsername(displayName, userId),
               subscription_status: 'inactive',
             },
             {
