@@ -1494,3 +1494,166 @@
 - **iOS Codegen キャッシュ不整合:**
   `ios/build/generated/` のキャッシュが壊れると `rnworkletsJSI-generated.cpp` 等が見つからないエラーが発生。
   解決: `rm -rf ios && npx expo prebuild --clean` でクリーンリビルド。
+
+---
+
+# Troubleshooting: スプラッシュ画面フリーズ
+
+## 症状
+アプリ起動後、スプラッシュ画面（黒画面 or splash-icon）で永久に停止し、先に進まない。
+
+## 根本原因
+```
+環境変数未設定 → env.ts で空文字列フォールバック → supabase.ts で createClient('', '') 実行
+→ "supabaseUrl is required" エラー（未ハンドル） → JSランタイムフリーズ
+→ SplashScreen.hideAsync() 未実行 → 永久フリーズ
+```
+
+## 解決策（コード修正済み - 2026-01-29）
+
+### 1. supabase.ts の防御的初期化
+```typescript
+// src/lib/supabase.ts
+function createSafeClient(): SupabaseClient<Database> | null {
+  if (ENV_INIT_ERROR || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('[Supabase] Cannot initialize: missing credentials');
+    return null;
+  }
+  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {...});
+}
+
+export const supabase = supabaseClient as SupabaseClient<Database>;
+export const isSupabaseInitialized = (): boolean => supabaseClient !== null;
+```
+
+### 2. AppNavigator での初期化チェック
+```typescript
+// src/navigation/AppNavigator.tsx - initializeAuth()
+if (ENV_INIT_ERROR) {
+  setAuthState({ status: 'unauthenticated' });
+  return;
+}
+if (!isSupabaseInitialized()) {
+  setAuthState({ status: 'unauthenticated' });
+  return;
+}
+```
+
+### 3. セーフティタイマー（5秒）
+```typescript
+useEffect(() => {
+  const safetyTimer = setTimeout(() => {
+    SplashScreen.hideAsync();
+    if (authState.status === 'loading') {
+      setAuthState({ status: 'unauthenticated' });
+    }
+  }, 5000);  // 15秒→5秒に短縮
+  return () => clearTimeout(safetyTimer);
+}, []);
+```
+
+---
+
+# EAS Build チェックリスト
+
+## ビルド前の必須確認
+
+### 1. EAS Secrets の確認
+```bash
+eas secret:list
+```
+**必須シークレット:**
+| Secret Name | 用途 |
+|-------------|------|
+| EXPO_PUBLIC_SUPABASE_URL | Supabase接続URL |
+| EXPO_PUBLIC_SUPABASE_ANON_KEY | Supabase匿名キー |
+| EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY | Stripe公開キー |
+| EXPO_PUBLIC_GOOGLE_API_KEY | Google Books API |
+| EXPO_PUBLIC_SENTRY_DSN | Sentryエラー監視 |
+| EXPO_PUBLIC_POSTHOG_API_KEY | PostHog分析 |
+| EXPO_PUBLIC_POSTHOG_HOST | PostHogホスト |
+
+### 2. 不足シークレットの設定
+```bash
+# .env から値を取得して設定
+eas secret:create --name EXPO_PUBLIC_SUPABASE_URL --value "$(grep EXPO_PUBLIC_SUPABASE_URL .env | cut -d '=' -f2)"
+```
+
+### 3. ビルド実行
+```bash
+# Production (TestFlight/App Store)
+eas build --profile production --platform ios
+
+# Preview (内部テスト用)
+eas build --profile preview --platform ios
+```
+
+### 4. 月間ビルド上限に注意
+無料プランは月間ビルド数に上限あり。上限到達時は月初リセットを待つか、プランアップグレード。
+
+---
+
+# ローカル実機ビルド チェックリスト
+
+## 手順
+
+### 1. クリーンprebuild（推奨）
+```bash
+rm -rf ios && npx expo prebuild --clean
+```
+
+### 2. .xcode.env.local パッチ
+```bash
+cat >> ios/.xcode.env.local << 'PATCH'
+# Load .env for Xcode direct builds
+if [ -f "$PROJECT_DIR/../../.env" ]; then
+  set -a
+  source "$PROJECT_DIR/../../.env"
+  set +a
+fi
+PATCH
+```
+**注意:** `./run-ios-manual.sh` 使用時は自動適用される。
+
+### 3. 接続デバイス確認
+```bash
+xcrun xctrace list devices 2>&1 | grep iPhone
+# 出力例: iPhone (26.2) (00008120-001C29E12684201E)
+```
+
+### 4. ビルド＆インストール
+```bash
+npx expo run:ios --device <UDID>
+```
+
+### 5. インストールが止まった場合の手動インストール
+```bash
+# アプリのパスを確認
+ls ~/Library/Developer/Xcode/DerivedData/COMMIT-*/Build/Products/Debug-iphoneos/
+
+# 手動インストール
+xcrun devicectl device install app --device <UDID> \
+  ~/Library/Developer/Xcode/DerivedData/COMMIT-*/Build/Products/Debug-iphoneos/COMMIT.app
+
+# アプリ起動
+xcrun devicectl device process launch --device <UDID> com.kgxxx.commitapp
+```
+
+### 6. dev server 起動（別ターミナル）
+```bash
+npx expo start
+```
+**重要:** PCとiPhoneが**同じWi-Fi**に接続されていること。
+
+---
+
+## よくあるエラーと解決策
+
+| エラー | 原因 | 解決策 |
+|--------|------|--------|
+| `safeareacontextJSI-generated.cpp not found` | Codegenキャッシュ破損 | `rm -rf ios && npx expo prebuild --clean` |
+| `supabaseUrl is required` | 環境変数未設定 | EAS Secrets設定 or `.env` 確認 |
+| `No devices are booted` | シミュレータ未起動 | `xcrun simctl boot "iPhone 17 Pro"` |
+| `Invalid device or device pair` | デバイス名不正 | `xcrun simctl list devices` で確認 |
+| `The item is not a valid bundle` | ビルド不完全 | DerivedData削除後、再ビルド |
+| 月間ビルド上限到達 | EAS無料プラン制限 | 月初リセット待ち or プランアップグレード |
