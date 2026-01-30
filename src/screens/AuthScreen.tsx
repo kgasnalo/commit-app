@@ -3,7 +3,24 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityInd
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseInitialized } from '../lib/supabase';
+import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
 import { MaterialIcons } from '@expo/vector-icons';
+
+/**
+ * デバッグ用: Supabase初期化エラーの詳細を取得
+ */
+function getSupabaseErrorDetail(): string {
+  if (ENV_INIT_ERROR) {
+    return `ENV Error: ${ENV_INIT_ERROR}`;
+  }
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+  if (!SUPABASE_ANON_KEY) missing.push('SUPABASE_ANON_KEY');
+  if (missing.length > 0) {
+    return `Missing: ${missing.join(', ')}`;
+  }
+  return 'Unknown initialization error';
+}
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { getErrorMessage } from '../utils/errorUtils';
@@ -27,7 +44,10 @@ export default function AuthScreen({ navigation }: any) {
   async function handleAuth() {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      Alert.alert(
+        i18n.t('common.error'),
+        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+      );
       return;
     }
 
@@ -120,7 +140,10 @@ export default function AuthScreen({ navigation }: any) {
   async function handleGoogleSignIn() {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      Alert.alert(
+        i18n.t('common.error'),
+        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+      );
       return;
     }
 

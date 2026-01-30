@@ -9,7 +9,24 @@ import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase, isSupabaseInitialized } from '../../lib/supabase';
+import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config/env';
 import i18n from '../../i18n';
+
+/**
+ * デバッグ用: Supabase初期化エラーの詳細を取得
+ */
+function getSupabaseErrorDetail(): string {
+  if (ENV_INIT_ERROR) {
+    return `ENV Error: ${ENV_INIT_ERROR}`;
+  }
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+  if (!SUPABASE_ANON_KEY) missing.push('SUPABASE_ANON_KEY');
+  if (missing.length > 0) {
+    return `Missing: ${missing.join(', ')}`;
+  }
+  return 'Unknown initialization error';
+}
 import { getErrorMessage } from '../../utils/errorUtils';
 import { captureError } from '../../utils/errorLogger';
 import { validateUsernameFormat, checkUsernameAvailability } from '../../utils/usernameValidator';
@@ -163,7 +180,10 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const handleEmailSignup = async () => {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      Alert.alert(
+        i18n.t('common.error'),
+        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+      );
       return;
     }
 
@@ -252,7 +272,10 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const handleOAuthCallback = async (callbackUrl: string): Promise<boolean> => {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      Alert.alert(
+        i18n.t('common.error'),
+        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+      );
       return false;
     }
 
@@ -344,7 +367,10 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const handleAppleSignIn = async () => {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      Alert.alert(
+        i18n.t('common.error'),
+        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+      );
       return;
     }
 
@@ -442,7 +468,10 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
     // Supabase初期化チェック（Google OAuth用）
     if (!isSupabaseInitialized()) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      Alert.alert(
+        i18n.t('common.error'),
+        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+      );
       return;
     }
 
