@@ -528,6 +528,7 @@
     "network": "네트워크 오류가 발생했습니다",
     "auth": "인증 오류가 발생했습니다. 다시 로그인해주세요.",
     "unknown": "오류가 발생했습니다",
+    "service_unavailable": "서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
     "continue_flow_failed": "책 데이터 로드에 실패했습니다.",
     "page_count_overlap": "페이지 목표는 이전 읽은 페이지 수({{pages}}페이지)보다 많아야 합니다.",
     "fill_all_fields": "모든 항목을 입력해주세요",

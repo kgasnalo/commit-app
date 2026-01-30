@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseInitialized } from '../lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -25,6 +25,12 @@ export default function AuthScreen({ navigation }: any) {
   });
 
   async function handleAuth() {
+    // Supabase初期化チェック
+    if (!isSupabaseInitialized()) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      return;
+    }
+
     if (!email || !password) {
       Alert.alert(i18n.t('common.error'), i18n.t('auth.error_empty_fields'));
       return;
@@ -89,6 +95,7 @@ export default function AuthScreen({ navigation }: any) {
 
   // Helper: Ensure user record exists in users table
   const ensureUserRecord = async (userId: string, userEmail: string | undefined) => {
+    if (!isSupabaseInitialized()) return;
     if (!userEmail) return;
 
     const { data: userData } = await supabase
@@ -111,6 +118,12 @@ export default function AuthScreen({ navigation }: any) {
 
   // Google Sign In
   async function handleGoogleSignIn() {
+    // Supabase初期化チェック
+    if (!isSupabaseInitialized()) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      return;
+    }
+
     try {
       setLoading(true);
 

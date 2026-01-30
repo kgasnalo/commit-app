@@ -528,6 +528,7 @@
     "network": "Network error occurred",
     "auth": "Authentication error. Please log in again.",
     "unknown": "An error occurred",
+    "service_unavailable": "Service unavailable. Please try again later.",
     "continue_flow_failed": "Failed to load book data.",
     "page_count_overlap": "Page goal must be greater than previously read pages ({{pages}} pages).",
     "fill_all_fields": "Please fill in all fields",

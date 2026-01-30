@@ -8,7 +8,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseInitialized } from '../../lib/supabase';
 import i18n from '../../i18n';
 import { getErrorMessage } from '../../utils/errorUtils';
 import { captureError } from '../../utils/errorLogger';
@@ -103,6 +103,12 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     userEmail: string | undefined,
     displayName: string | null
   ): Promise<void> => {
+    // Supabase初期化チェック
+    if (!isSupabaseInitialized()) {
+      if (__DEV__) console.warn('syncUserToDatabase: Supabase not initialized');
+      return;
+    }
+
     // emailが必須フィールドなので、存在しない場合は同期をスキップ
     if (!userEmail) {
       if (__DEV__) console.warn('syncUserToDatabase: email is required but not provided');
@@ -155,6 +161,12 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   };
 
   const handleEmailSignup = async () => {
+    // Supabase初期化チェック
+    if (!isSupabaseInitialized()) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      return;
+    }
+
     if (!username.trim() || !email.trim() || !password.trim()) {
       Alert.alert(i18n.t('common.error'), i18n.t('errors.fill_all_fields'));
       return;
@@ -238,6 +250,12 @@ export default function OnboardingScreen6({ navigation, route }: any) {
    * PKCE Flow（code）とImplicit Flow（access_token）の両方に対応
    */
   const handleOAuthCallback = async (callbackUrl: string): Promise<boolean> => {
+    // Supabase初期化チェック
+    if (!isSupabaseInitialized()) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      return false;
+    }
+
     // URLパラメータを解析
     const urlObj = new URL(callbackUrl);
     const hashParams = new URLSearchParams(urlObj.hash.slice(1));
@@ -324,6 +342,12 @@ export default function OnboardingScreen6({ navigation, route }: any) {
    * 取得したIDトークンをSupabaseに渡してセッションを確立
    */
   const handleAppleSignIn = async () => {
+    // Supabase初期化チェック
+    if (!isSupabaseInitialized()) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      return;
+    }
+
     // iOS以外では使用不可
     if (Platform.OS !== 'ios') {
       Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_ios_only'));
@@ -413,6 +437,12 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     // Apple Sign In はネイティブ認証を使用
     if (provider === 'apple') {
       await handleAppleSignIn();
+      return;
+    }
+
+    // Supabase初期化チェック（Google OAuth用）
+    if (!isSupabaseInitialized()) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
       return;
     }
 
