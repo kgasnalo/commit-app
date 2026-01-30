@@ -102,6 +102,20 @@
 - **Edit Verification:** After making file edits, ALWAYS re-read the file to confirm changes were applied correctly before reporting task completion. Never assume edits succeeded without verification.
 - **Environment Variables:** NEVER use `process.env.EXPO_PUBLIC_*` directly. Always import from `src/config/env.ts` which provides validated, type-safe access. This ensures the app crashes immediately on startup if required env vars are missing.
 - **Supabase Types:** When updating `src/types/database.types.ts`, ALWAYS include `Relationships: []` (or actual relations) for each table. Without this, Supabase JS v2.89+ resolves types to `never`, breaking all queries. Also add `CompositeTypes: { [_ in never]: never }` to the database interface.
+- **Supabase Null Safety (CRITICAL):** The `supabase` variable can be `null` when environment variables are missing. Before calling `supabase.channel()`, `supabase.from()`, `supabase.auth.*`, etc., ALWAYS check `isSupabaseInitialized()`:
+  ```typescript
+  import { supabase, isSupabaseInitialized } from '../lib/supabase';
+
+  // In useEffect or function
+  if (!isSupabaseInitialized()) {
+    console.warn('Supabase not initialized, skipping');
+    return; // Or return safe default value
+  }
+
+  const { data } = await supabase.from('table').select();
+  ```
+  - **Files that MUST have protection:** `AppNavigator.tsx`, `UnreadContext.tsx`, `UnreadService.ts`, and any new Context/Service using Supabase
+  - **Build #41 Success Factor:** Adding `isSupabaseInitialized()` check to `UnreadContext.tsx` and `UnreadService.ts` resolved the TestFlight freeze issue
 - **DB Field Naming:** The database uses `pledge_amount` and `currency` for commitment penalties. Do NOT use `penalty_amount` or `penalty_currency` - these are deprecated field names from an earlier schema.
 - **Reanimated SharedValue:** NEVER read `.value` directly during JSX render (causes "[Reanimated] Reading from 'value' during component render" warning). Follow these patterns:
   - **Wrap in useDerivedValue:** `const colors = useDerivedValue(() => [color.value, 'transparent']);`
