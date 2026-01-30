@@ -743,3 +743,105 @@ eas submit --platform ios
 | 2026-01-29 | EAS Build vs EAS Local Build 比較、TestFlight配信手順を追加 |
 | 2026-01-29 | ローカル実機ビルド vs TestFlight の詳細比較セクション追加 |
 | 2026-01-30 | ✅ **Build #41 TestFlight成功** - `UnreadContext.tsx` + `UnreadService.ts` に保護追加 |
+| 2026-01-30 | Build #42-44: 認証画面の `isSupabaseInitialized()` チェック追加、デバッグ表示追加 |
+
+---
+
+## 🔄 進行中: Build #44 認証エラー調査 (2026-01-30)
+
+### 現在の状況
+
+**Build #41**: アプリ起動成功 ✅、ただし**ログインボタンでクラッシュ**
+- Google/Apple/メールパスワード全てで `cannot read property auth of null` エラー
+
+**Build #42**: 認証画面に `isSupabaseInitialized()` チェック追加
+- クラッシュ → 「サービスに接続できません」アラート表示に改善 ✅
+- 根本原因: Supabaseが初期化されていない
+
+**Build #43**: `.env` の `SUPABASE_ANON_KEY` を修正
+- 旧値: `sb_publishable_YGIjkkJt4ZfBVzC-WCcTUQ_fIIbeB1y` (無効な形式)
+- 新値: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (正しいJWT形式)
+- 結果: **まだエラー継続**
+
+**Build #44**: エラーアラートに詳細デバッグ情報を追加 (現在TestFlight処理待ち)
+- アラートに `[Debug] Missing: SUPABASE_URL, SUPABASE_ANON_KEY` 等を表示
+- これで何が欠けているか特定可能
+
+### 修正済みファイル
+
+| ファイル | 修正内容 | コミット |
+|----------|----------|----------|
+| `OnboardingScreen6_Account.tsx` | `isSupabaseInitialized()` 5箇所追加 + デバッグ表示 | `43839313`, `e16162fb` |
+| `AuthScreen.tsx` | `isSupabaseInitialized()` 3箇所追加 + デバッグ表示 | `43839313`, `e16162fb` |
+| `ja/en/ko.json` | `errors.service_unavailable` キー追加 | `43839313` |
+| `.env` | `SUPABASE_ANON_KEY` を正しいJWTに更新 | (未コミット、機密情報) |
+
+### デバッグ用コード (Build #44)
+
+```typescript
+// src/screens/onboarding/OnboardingScreen6_Account.tsx
+// src/screens/AuthScreen.tsx
+
+import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
+
+function getSupabaseErrorDetail(): string {
+  if (ENV_INIT_ERROR) {
+    return `ENV Error: ${ENV_INIT_ERROR}`;
+  }
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+  if (!SUPABASE_ANON_KEY) missing.push('SUPABASE_ANON_KEY');
+  if (missing.length > 0) {
+    return `Missing: ${missing.join(', ')}`;
+  }
+  return 'Unknown initialization error';
+}
+
+// Alert表示
+Alert.alert(
+  i18n.t('common.error'),
+  `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+);
+```
+
+### 次のステップ
+
+1. **Build #44 TestFlight確認** (Apple処理待ち: 5-10分)
+2. **エラーアラートの `[Debug]` 部分を確認**
+   - `Missing: SUPABASE_URL` → URL環境変数が読み込めていない
+   - `Missing: SUPABASE_ANON_KEY` → キー環境変数が読み込めていない
+   - `ENV Error: ...` → env.ts でバリデーションエラー
+3. **根本原因に応じて対応**
+   - EAS Local Build が `.env` を正しく埋め込めていない可能性
+   - `eas.json` の `env` セクションで直接指定する方法を検討
+
+### 仮説
+
+**EAS Local Build の環境変数埋め込み問題**
+- `build-eas-local.sh` は `.env` を `source` してシェル環境変数にエクスポート
+- しかし、Expo/React Native が `process.env.EXPO_PUBLIC_*` を読み取るタイミングが異なる可能性
+- Metro bundler がビルド時に環境変数を埋め込む際、シェル変数が参照されない可能性
+
+**検証方法**
+```bash
+# eas.json に直接環境変数を記述してみる
+{
+  "build": {
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://...",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJ..."
+      }
+    }
+  }
+}
+```
+
+### IPAファイル履歴
+
+| ファイル | 日時 | ビルド番号 | 内容 |
+|----------|------|------------|------|
+| `build-1769735155801.ipa` | 01/30 10:05 | #41 | UnreadContext修正 |
+| `build-1769739002861.ipa` | 01/30 11:10 | #42 | 認証画面チェック追加 |
+| `build-1769741425083.ipa` | 01/30 11:50 | #43 | ANON_KEY修正 |
+| `build-1769745659997.ipa` | 01/30 13:01 | #44 | デバッグ表示追加 |
