@@ -9,6 +9,7 @@
     "new_user": "New user? Sign up here",
     "or": "or",
     "google_login": "Sign in with Google",
+    "apple_login": "Sign in with Apple",
     "error_empty_fields": "Please enter both email and password.",
     "error_signup": "Sign Up Error",
     "success_email_sent": "Confirmation email sent.",

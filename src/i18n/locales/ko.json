@@ -9,6 +9,7 @@
     "new_user": "계정이 없으신가요? 가입하기",
     "or": "또는",
     "google_login": "Google로 로그인",
+    "apple_login": "Apple로 로그인",
     "error_empty_fields": "이메일과 비밀번호를 입력해주세요.",
     "error_signup": "가입 오류",
     "success_email_sent": "확인 이메일을 보냈습니다.",

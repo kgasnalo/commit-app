@@ -1758,3 +1758,45 @@ Authentication > Providers > Google に **Web Client ID** を追加（ネイテ�
 ## Apple Sign-In
 - **パッケージ:** `expo-apple-authentication` (既存実装)
 - 同様の `signInWithIdToken` パターンを使用
+
+---
+
+# Apple IAP Implementation
+
+## APPLE_APP_SHARED_SECRET（CRITICAL）
+`verify-iap-receipt` Edge FunctionがAppleレシートを検証するために**必須**。未設定だとIAP購入後にsubscription_statusが更新されず、画面遷移しない。
+
+```bash
+# 設定方法
+supabase secrets set APPLE_APP_SHARED_SECRET=<your_shared_secret>
+supabase functions deploy verify-iap-receipt --no-verify-jwt
+
+# 取得場所: App Store Connect → アプリ → App情報 → App用共有シークレット
+```
+
+## IAP購入後のポーリング最適化パターン
+purchaseListenerの成功を`useRef`で追跡し、DBポーリングを早期終了させる:
+
+```typescript
+// refでフラグ管理
+const iapVerifiedRef = useRef(false);
+
+// purchaseListenerの成功コールバックでフラグを立てる
+setPurchaseListener(async (productId, transactionId) => {
+  iapVerifiedRef.current = true;  // ← ポーリング早期終了トリガー
+}, onError);
+
+// ポーリングでフラグをチェック
+const checkSubscription = async (): Promise<boolean> => {
+  if (iapVerifiedRef.current) return true;  // ← DBチェック不要
+  // ...通常のDB subscription_status チェック
+};
+```
+
+## Sandbox課金テストの流れ
+1. **アプリアカウント作成**: 普通のGoogle/Appleアカウントで登録
+2. **課金画面で購入ボタン**: Apple IDを求められる
+3. **Sandboxアカウントでサインイン**: App Store Connectで作成したテスター
+4. **成功確認**: iPhoneの「設定」→「SANDBOXアカウント」項目が出現
+
+**注意**: Sandbox環境ではAppleがUSD表記で価格を返すことがある（$19.99など）。実際の課金はAppleが自動的に現地通貨に変換（¥3,000など）。本番環境では現地通貨で表示される。

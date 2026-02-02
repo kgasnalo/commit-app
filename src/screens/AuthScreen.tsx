@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseInitialized } from '../lib/supabase';
 import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../config/env';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { GoogleSignin, statusCodes, isErrorWithCode } from '@react-native-google-signin/google-signin';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { captureError } from '../utils/errorLogger';
 
 /**
@@ -230,6 +231,81 @@ export default function AuthScreen({ navigation }: any) {
     }
   }
 
+  /**
+   * Apple Sign In (ネイティブ認証)
+   * expo-apple-authentication を使用してネイティブのApple認証を行い、
+   * 取得したIDトークンをSupabaseに渡してセッションを確立
+   */
+  async function handleAppleSignIn() {
+    // Supabase初期化チェック
+    if (!isSupabaseInitialized()) {
+      Alert.alert(
+        i18n.t('common.error'),
+        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
+      );
+      return;
+    }
+
+    // iOS以外では使用不可
+    if (Platform.OS !== 'ios') {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_ios_only'));
+      return;
+    }
+
+    // Apple認証が利用可能かチェック
+    const isAvailable = await AppleAuthentication.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_unavailable'));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Auth画面からのログインであることを識別するフラグを設定
+      await AsyncStorage.setItem('loginSource', 'auth_screen');
+
+      // ネイティブのApple認証ダイアログを表示
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      // identityTokenが取得できなかった場合はエラー
+      if (!credential.identityToken) {
+        throw new Error('Apple Sign In: identityToken not received');
+      }
+
+      // Supabaseに IDトークンを渡してセッションを確立
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+
+      if (sessionError) {
+        captureError(sessionError, { location: 'AuthScreen.handleAppleSignIn.signInWithIdToken' });
+        Alert.alert(i18n.t('common.error'), sessionError.message);
+        return;
+      }
+
+      if (sessionData.user) {
+        if (__DEV__) console.log('[AuthScreen] SUCCESS - User authenticated via Apple Sign-In');
+        await ensureUserRecord(sessionData.user.id, sessionData.user.email);
+      }
+    } catch (error: unknown) {
+      // ユーザーがキャンセルした場合は何もしない
+      if ((error as { code?: string })?.code === 'ERR_REQUEST_CANCELED') {
+        if (__DEV__) console.log('[AuthScreen] User cancelled Apple Sign-In');
+        return;
+      }
+      captureError(error, { location: 'AuthScreen.handleAppleSignIn' });
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 戻るボタン */}
@@ -322,6 +398,21 @@ export default function AuthScreen({ navigation }: any) {
             <MaterialIcons name="login" size={20} color="#4285F4" />
             <Text style={styles.googleButtonText}>{i18n.t('auth.google_login')}</Text>
           </TouchableOpacity>
+
+          {/* Apple Sign In ボタン - iOS のみ */}
+          {Platform.OS === 'ios' && (
+            <TouchableOpacity
+              style={styles.appleButton}
+              onPress={handleAppleSignIn}
+              disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel={i18n.t('auth.apple_login')}
+              accessibilityState={{ disabled: loading }}
+            >
+              <Ionicons name="logo-apple" size={20} color="#000" />
+              <Text style={styles.appleButtonText}>{i18n.t('auth.apple_login')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -435,6 +526,23 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     color: '#4285F4',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  appleButton: {
+    backgroundColor: '#fff',
+    height: 56,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 12,
+  },
+  appleButtonText: {
+    color: '#000',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,

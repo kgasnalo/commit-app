@@ -1,169 +1,127 @@
-# Handoff: Session 2026-02-02 (Google Sign-In Fix Complete!)
+# Handoff: Session 2026-02-02 (Sandbox IAP Testing Complete!)
 
 ## Current Goal
-**✅ Build #61: Google Sign-In 完全動作確認済み！**
+**✅ Build #64: Sandbox課金テスト成功、Appleログイン追加**
 
 ---
 
 ## Current Critical Status
 
-### 🎉 Google Sign-In 修正完了
+### 🎉 Sandbox IAP テスト成功
 
-**Build #61 で Google Sign-In が正常動作することを確認！**
-
-| 変更 | 内容 | ファイル |
-|------|------|----------|
-| iOS Client ID タイポ修正 | `ogejlon...` → `ogejion...` (l→i) | `app.json` L48 |
-| EAS Secrets更新 | 正しいiOS Client IDに更新 | EAS env:update |
+**Build #64 で以下を確認:**
+- Google Sign-In ✅
+- Apple Sign-In ✅
+- IAP課金フロー ✅（Sandbox環境）
+- ダッシュボード遷移 ✅
 
 ### ビルド状況
 
 | Build | 状態 | 内容 |
 |-------|------|------|
-| #42-56 | ❌ Google Sign-In失敗 | 様々な試行（下記参照） |
-| #57-60 | ❌ Google Sign-In失敗 | OAuth環境変数は修正済みだがタイポ残存 |
-| #61 | ✅ **成功** | iOS Client ID タイポ修正で解決 |
+| #61 | ✅ | Google Sign-In修正 |
+| #62 | ✅ | APPLE_APP_SHARED_SECRET設定前 |
+| #63 | ✅ | アカウント作成画面レイアウト修正 |
+| #64 | ✅ | ポーリング最適化 + Appleログイン追加 |
 
 ---
 
-## Google Sign-In トラブルシューティング履歴
+## What We Fixed Today
 
-### ❌ 試行済み（効果なし - 繰り返し不要）
+### 1. APPLE_APP_SHARED_SECRET（CRITICAL）
 
-| # | 試行内容 | 結果 | 理由 |
-|---|----------|------|------|
-| 1 | Web OAuth (expo-web-browser) | `flow_state_not_found` | PKCE state管理の不一致、Supabaseとの相性問題 |
-| 2 | EAS Secrets のみ設定 | 効果なし | `eas.json` の `env` セクションが優先される |
-| 3 | `app.config.js` で直接 Client ID 参照 | 効果なし | EAS Build時に `process.env` が空 |
-| 4 | Supabase Dashboard に Web Client ID 追加 | 必要だが不十分 | ネイティブ認証には iOS Client ID も必要 |
-| 5 | `eas.json` に Client ID 追加 | 部分的に解決 | タイポがあったため `invalid_client` 継続 |
+**問題**: IAP購入後、subscription_statusがactiveに更新されず、画面遷移しない
 
-### ✅ 最終的な修正（Build #61）
+**原因**: `verify-iap-receipt` Edge FunctionがAppleレシート検証に必要な共有シークレットが未設定
 
-**根本原因**: iOS Client ID にタイポがあった
-
-```
-GCP Console (正): 257018379058-ogej**i**on6g0bt4nua9ae1n9744f1ivpuh.apps.googleusercontent.com
-設定ファイル (誤): 257018379058-ogej**l**on6g0bt4nua9ae1n9744f1ivpuh.apps.googleusercontent.com
-                                    ↑
-                              小文字 i と l が見た目ほぼ同じ
+**修正**:
+```bash
+supabase secrets set APPLE_APP_SHARED_SECRET=55cbc0d892194a1094ab20dff8f8ff4d
+supabase functions deploy verify-iap-receipt --no-verify-jwt
 ```
 
-**修正箇所:**
-1. `app.json` の `iosUrlScheme` (l → i)
-2. EAS Secrets の `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (l → i)
+### 2. ポーリング最適化
 
-### 正しい設定状態（Build #61時点）
+**問題**: サブスク購入後、課金画面で1分近く待たされる
 
-```
-# eas.json production.env
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=257018379058-d7vbpXXX...apps.googleusercontent.com
-EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=257018379058-ogejion6g0bt4nua9ae1n9744f1ivpuh.apps.googleusercontent.com
+**原因**: purchaseListenerの成功を待たずに、1秒ごと×30回のDBポーリングを続行
 
-# app.json plugins
-"@react-native-google-signin/google-signin": {
-  "iosUrlScheme": "com.googleusercontent.apps.257018379058-ogejion6g0bt4nua9ae1n9744f1ivpuh"
+**修正** (`OnboardingScreen13_Paywall.tsx`):
+```typescript
+// useRefでフラグ管理
+const iapVerifiedRef = useRef(false);
+
+// purchaseListenerの成功コールバックでフラグを立てる
+setPurchaseListener(async (productId, transactionId) => {
+  iapVerifiedRef.current = true;  // ← 追加
+}, onError);
+
+// ポーリングでフラグをチェック（500msに短縮）
+while (attempts < maxAttempts) {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  if (iapVerifiedRef.current) return true;  // ← 早期終了
+  // ...DB check
 }
-
-# Supabase Dashboard (Authentication > Providers > Google)
-- Web Client ID: 257018379058-d7vbpXXX... (IDトークン検証用)
 ```
+
+### 3. Appleログイン追加 (AuthScreen)
+
+**問題**: ログイン画面にGoogleログインしかなかった
+
+**修正**: `AuthScreen.tsx`にAppleログインボタン追加（iOSのみ表示）
+
+### 4. アカウント作成画面レイアウト修正
+
+**問題**: パスワードフィールドと「アカウントを作成」ボタンが重なっていた
+
+**修正**: `OnboardingScreen6_Account.tsx`でフォームを`ScrollView`でラップ
 
 ---
 
-## 前回セッションの内容
+## Sandbox課金テストの学び
 
-### Day 14 日本語投稿の根本改訂
+### $表記問題（正常な動作）
+- **アプリ表示**: $19.99 / $2.99（Sandbox環境ではUSD表記になることがある）
+- **実際の課金**: ¥3,000 / ¥480（Appleが自動的に日本円に変換）
+- **本番環境**: 日本のApp Storeでは¥表記になる
 
-**問題**: 「振り返り型」投稿は低パフォーマンス傾向（CSVデータ分析で確認）
+### 2種類のアカウントの使い分け
+| 用途 | アカウント | タイミング |
+|------|-----------|----------|
+| アプリ登録 | 普通のGoogle/Apple | オンボーディング時 |
+| 課金テスト | Sandboxアカウント | 購入ボタン押下後 |
 
-**CSVデータ分析結果（63投稿）:**
-| タイプ | 平均Imp | 評価 |
-|--------|---------|------|
-| 進捗報告型（「作れた」「できた」） | **185** | ⭐⭐⭐⭐⭐ 最強 |
-| 洞察/格言型 | 41.8 | ⭐⭐⭐ |
-| 質問型 | 39.8 | ⭐⭐⭐ |
-| 振り返り型 | 低い傾向 | ❌ |
-
-**Before（振り返り型）:**
-```
-2週間、毎日投稿してみた。
-一番反応あったの「積読23冊」って書いたやつ。
-機能の話じゃないんかい。
-```
-
-**After（進捗報告型 - リアルタイム開発状況）:**
-```
-Build #57、処理待ち中。
-56回ビルドして、まだゴールが見えない。
-個人開発、こういう日もある。
-```
-
-**成功要因:**
-- 進捗報告型 = 平均185 imp（他の9倍）
-- 具体的数字（57回、56回）= 132%高いImp
-- 画像付き = 高Imp投稿は100%画像付き
-- リアルタイムの苦労 = 共感
-- 「こういう日もある」= 前向きすぎない正直さ
-
-**画像準備（要対応）:**
-- EASビルド履歴画面
-- Expo Dashboardのビルドリスト
-
----
-
-### Google Sign-In 実装の教訓
-
-```
-1. Web OAuth vs ネイティブ認証
-   - Web OAuth (expo-web-browser) は PKCE state 管理で問題が発生しやすい
-   - ネイティブ認証 (@react-native-google-signin/google-signin) を推奨
-
-2. EAS Build 環境変数の優先順位
-   - eas.json の env セクション > EAS Secrets
-   - EXPO_PUBLIC_* は必ず eas.json production.env に記載
-
-3. Client ID の種類と用途
-   - Web Client ID: Supabase IDトークン検証用 (Supabase Dashboard に設定)
-   - iOS Client ID: ネイティブ認証用 (app.json iosUrlScheme + EAS env)
-
-4. タイポ検出のコツ
-   - Client ID をコピペ後、必ず diff で検証
-   - 特に i/l, 0/O, 1/l の混同に注意
-```
+### Sandboxアカウント確認方法
+iPhoneの「設定」アプリ → 一番下にスクロール → 「SANDBOXアカウント」項目が出現
 
 ---
 
 ## Immediate Next Steps
 
 ### ✅ 完了した項目
-- [x] Build #61のTestFlightインストール
-- [x] Google Sign-In 動作確認 → **成功！**
-- [x] ネイティブGoogleアカウントピッカー表示確認
+- [x] APPLE_APP_SHARED_SECRET設定
+- [x] verify-iap-receipt Edge Function再デプロイ
+- [x] Sandbox課金テスト成功
+- [x] ポーリング最適化
+- [x] Appleログイン追加
+- [x] Build #64 TestFlight提出
 
 ### 次のタスク
-- [ ] Apple Sign-In も併せてテスト
-- [ ] オンボーディング完了フロー確認
-- [ ] MonkMode環境音確認（前セッション修正）
-- [ ] App Store 審査準備（IAP実装が残っている）
-
-### トラブルシューティング（参考）
-- Metroキャッシュクリア: `npx expo start --clear`
-- Edge Function再デプロイ: `supabase functions deploy create-commitment --no-verify-jwt`
+- [ ] Build #64のTestFlight動作確認
+- [ ] ポーリング最適化の効果確認（待ち時間短縮）
+- [ ] App Store Connect Webhook URL設定（サブスク状態自動更新）
+- [ ] 本番リリース前のStripeキー差し替え
 
 ---
 
 ## Remaining SHOWSTOPPERs
 
-### ✅ Apple IAP 実装完了 (ROADMAP 7.9)
-- `OnboardingScreen13_Paywall.tsx` - IAP完全統合済み
-- `IAPService.ts` - 購入処理、リスナー、レシート検証
-- `verify-iap-receipt` Edge Function - サーバー検証
-- `apple-iap-webhook` Edge Function - サブスク状態自動更新
-- App Store Connect - yearly/monthly商品登録済み
-
-**残り: App Store ConnectでWebhook URL設定**
-- URL: `https://[supabase-url]/functions/v1/apple-iap-webhook`
+### App Store Connect Webhook URL設定（推奨）
+サブスクリプション状態の自動更新用：
+```
+URL: https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/apple-iap-webhook
+```
+設定場所: App Store Connect → アプリ → App Store → App情報 → サーバー通知URL
 
 ### Stripe 本番キー (.env)
 - 現在: `pk_test_*` (テストモード)
@@ -173,15 +131,15 @@ Build #57、処理待ち中。
 
 ## Previous Sessions Summary
 
-**✅ Google Sign-In Fix Complete (2026-02-02 現セッション):**
-- iOS Client ID のタイポ修正 (`ogejlon...` → `ogejion...`)
-- Build #61 で Google Sign-In 動作確認成功！
-- 20ビルド（#42-61）にわたる問題がついに解決
+**Sandbox IAP Testing Complete (2026-02-02 現セッション):**
+- APPLE_APP_SHARED_SECRET設定でレシート検証成功
+- ポーリング最適化（1分→数秒に短縮）
+- Appleログイン追加（AuthScreen）
+- アカウント作成画面レイアウト修正
 
-**Marketing Optimization + Google Sign-In Env Fix (2026-02-02 earlier):**
-- Day 14 日本語投稿を「振り返り型」→「進捗報告型」に改訂
-- CSVデータ分析に基づく最適化（進捗報告型 = 平均185 imp）
-- eas.json に Google OAuth Client ID を追加（タイポあり）
+**Google Sign-In Fix Complete (2026-02-02 earlier):**
+- iOS Client ID のタイポ修正 (`ogejlon...` → `ogejion...`)
+- Build #61 で Google Sign-In 動作確認成功
 
 **MonkMode Sound Fix (2026-01-28):**
 - SoundManagerシングルトンのisMuted残留バグを修正
@@ -189,14 +147,5 @@ Build #57、処理待ち中。
 **UserStatus Cache Strategy (2026-01-27):**
 - AsyncStorageキャッシュでDB障害時のフォールバック実装
 
-**Screen13 500 Error Fix (2026-01-27):**
-- Edge Function再デプロイ + Metroキャッシュクリアで500エラー解消
-
 **TestFlight Black Screen Fix (2026-01-27):**
-- expo-splash-screen制御追加、env.tsクラッシュ防止、eas.json ascAppId設定
-
-**Edge Function Retry Logic (2026-01-26):**
-- クライアントサイドリトライロジック実装 (WORKER_ERROR対策)
-
-**Security Audit Phase 1-3 (2026-01-25~26):**
-- CRITICAL 4件 + HIGH 7件のセキュリティ修正
+- expo-splash-screen制御追加、env.tsクラッシュ防止

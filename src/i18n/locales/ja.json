@@ -9,6 +9,7 @@
     "new_user": "新規登録はこちら",
     "or": "または",
     "google_login": "Googleでログイン",
+    "apple_login": "Appleでログイン",
     "error_empty_fields": "メールアドレスとパスワードを入力してください。",
     "error_signup": "サインアップエラー",
     "success_email_sent": "確認メールを送信しました。",

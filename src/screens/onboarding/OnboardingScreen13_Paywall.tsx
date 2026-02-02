@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +47,9 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const [iapProducts, setIapProducts] = useState<IAPProduct[]>([]);
   const [iapLoading, setIapLoading] = useState(false);
 
+  // IAP購入成功フラグ（ポーリング早期終了用）
+  const iapVerifiedRef = useRef(false);
+
   // IAP の初期化と商品情報取得
   useEffect(() => {
     const initIAP = async () => {
@@ -72,7 +75,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         setPurchaseListener(
           async (productId, transactionId) => {
             if (__DEV__) console.log('[Screen13] Purchase success:', productId, transactionId);
-            // 購入成功時の処理は handleSubscribe 内で継続
+            // 購入検証成功 - ポーリングを早期終了させるフラグを立てる
+            iapVerifiedRef.current = true;
           },
           (error) => {
             if (__DEV__) console.error('[Screen13] Purchase error:', error);
@@ -204,14 +208,21 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
         // 購入処理は purchaseListener で継続される
         // verify-iap-receipt が subscription_status を更新する
-        // ここでは購入開始を待つ（リスナーが成功を検知したら続行）
+        // purchaseListenerが成功を検知したらiapVerifiedRef.currentがtrueになる
 
-        // 購入完了を待つためのポーリング（最大30秒）
+        // 購入完了を待つ（最大15秒、500msごとにチェック）
+        // iapVerifiedRef.currentがtrueになったら即座に終了
         let attempts = 0;
-        const maxAttempts = 30;
+        const maxAttempts = 30; // 500ms x 30 = 15秒
         let subscriptionActivated = false;
 
         const checkSubscription = async (): Promise<boolean> => {
+          // purchaseListenerが成功を検知していたら即座にtrue
+          if (iapVerifiedRef.current) {
+            if (__DEV__) console.log('[Screen13] iapVerifiedRef is true - skipping DB check');
+            return true;
+          }
+
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return false;
 
@@ -225,7 +236,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         };
 
         while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500msに短縮
           const isActive = await checkSubscription();
           if (isActive) {
             if (__DEV__) console.log('[Screen13] Subscription activated!');
