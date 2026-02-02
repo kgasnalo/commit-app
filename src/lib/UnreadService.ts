@@ -6,7 +6,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from './supabase';
+import { supabase, isSupabaseInitialized } from './supabase';
 import { getNowUTC } from './DateUtils';
 
 // AsyncStorage keys
@@ -39,6 +39,11 @@ async function setLastSeenTimestamp(type: 'announcements' | 'donations'): Promis
  * Get count of unread announcements (published after last seen)
  */
 async function getUnreadAnnouncementsCount(): Promise<number> {
+  // Supabase が初期化されていない場合は 0 を返す
+  if (!isSupabaseInitialized()) {
+    return 0;
+  }
+
   try {
     const lastSeen = await getLastSeenTimestamp('announcements');
 
@@ -75,6 +80,11 @@ async function getUnreadAnnouncementsCount(): Promise<number> {
  * Get count of unread donations (created after last seen)
  */
 async function getUnreadDonationsCount(): Promise<number> {
+  // Supabase が初期化されていない場合は 0 を返す
+  if (!isSupabaseInitialized()) {
+    return 0;
+  }
+
   try {
     const lastSeen = await getLastSeenTimestamp('donations');
 

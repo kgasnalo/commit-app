@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -506,6 +506,11 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         />
       }
     >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.form}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>{i18n.t('onboarding.screen6_username')}</Text>
@@ -605,11 +610,16 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           </TouchableOpacity>
         )}
       </View>
+      </ScrollView>
     </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.md,
+  },
   form: {
     gap: spacing.md,
   },

@@ -3,7 +3,13 @@
  * This module validates ALL required environment variables at import time.
  * If any required variable is missing, the app will crash immediately
  * with a clear error message.
+ *
+ * Environment variables are loaded from two sources:
+ * 1. process.env (local development, Expo Go)
+ * 2. Constants.expoConfig.extra (EAS builds via app.config.js)
  */
+
+import Constants from 'expo-constants';
 
 // ============================================
 // Type Definitions
@@ -19,9 +25,24 @@ interface OptionalEnvVars {
   GOOGLE_API_KEY: string | undefined;
   SENTRY_DSN: string | undefined;
   POSTHOG_API_KEY: string | undefined;
+  GOOGLE_WEB_CLIENT_ID: string | undefined;
+  GOOGLE_IOS_CLIENT_ID: string | undefined;
 }
 
 export interface EnvConfig extends RequiredEnvVars, OptionalEnvVars {}
+
+// ============================================
+// Extra Config from app.config.js
+// ============================================
+
+// EASビルドではapp.config.jsのextraフィールドから読み込む
+const extraConfig: Record<string, string | undefined> =
+  (Constants.expoConfig?.extra as Record<string, string | undefined>) ?? {};
+
+// デバッグログ
+if (__DEV__) {
+  console.log('[env.ts] extraConfig keys:', Object.keys(extraConfig));
+}
 
 // ============================================
 // Validation Functions
@@ -29,12 +50,22 @@ export interface EnvConfig extends RequiredEnvVars, OptionalEnvVars {}
 
 function getRequiredEnv(key: string): string {
   const fullKey = `EXPO_PUBLIC_${key}`;
-  const value = process.env[fullKey];
+
+  // 1. process.envから試行（ローカル開発、Expo Go）
+  let value = process.env[fullKey];
+
+  // 2. Constants.expoConfig.extraからフォールバック（EASビルド）
+  if (!value || value.trim() === '') {
+    value = extraConfig[key];
+    if (__DEV__ && value) {
+      console.log(`[env.ts] ${key}: loaded from extraConfig`);
+    }
+  }
 
   if (!value || value.trim() === '') {
     throw new Error(
       `[ENV ERROR] Missing required environment variable: ${fullKey}\n` +
-        `Please check your .env file and ensure ${fullKey} is set.\n` +
+        `Please check your .env file or eas.json env section.\n` +
         `See .env.example for reference.`
     );
   }
@@ -44,7 +75,14 @@ function getRequiredEnv(key: string): string {
 
 function getOptionalEnv(key: string): string | undefined {
   const fullKey = `EXPO_PUBLIC_${key}`;
-  const value = process.env[fullKey];
+
+  // 1. process.envから試行
+  let value = process.env[fullKey];
+
+  // 2. extraからフォールバック
+  if (!value || value.trim() === '') {
+    value = extraConfig[key];
+  }
 
   if (!value || value.trim() === '') {
     console.warn(
@@ -118,6 +156,8 @@ function buildEnvConfig(): EnvConfig {
   const googleApiKey = getOptionalEnv('GOOGLE_API_KEY');
   const sentryDsn = getOptionalEnv('SENTRY_DSN');
   const posthogApiKey = getOptionalEnv('POSTHOG_API_KEY');
+  const googleWebClientId = getOptionalEnv('GOOGLE_WEB_CLIENT_ID');
+  const googleIosClientId = getOptionalEnv('GOOGLE_IOS_CLIENT_ID');
 
   return {
     SUPABASE_URL: supabaseUrl,
@@ -126,6 +166,8 @@ function buildEnvConfig(): EnvConfig {
     GOOGLE_API_KEY: googleApiKey,
     SENTRY_DSN: sentryDsn,
     POSTHOG_API_KEY: posthogApiKey,
+    GOOGLE_WEB_CLIENT_ID: googleWebClientId,
+    GOOGLE_IOS_CLIENT_ID: googleIosClientId,
   };
 }
 
@@ -158,6 +200,8 @@ try {
     GOOGLE_API_KEY: undefined,
     SENTRY_DSN: undefined,
     POSTHOG_API_KEY: undefined,
+    GOOGLE_WEB_CLIENT_ID: undefined,
+    GOOGLE_IOS_CLIENT_ID: undefined,
   };
 }
 
@@ -171,4 +215,6 @@ export const {
   GOOGLE_API_KEY,
   SENTRY_DSN,
   POSTHOG_API_KEY,
+  GOOGLE_WEB_CLIENT_ID,
+  GOOGLE_IOS_CLIENT_ID,
 } = env;

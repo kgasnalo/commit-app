@@ -12,6 +12,10 @@
 | UI文言追加・i18n作業 | `/i18n-check` |
 | iOSビルド・動作確認 | `/build-ios` |
 | DB/Edge Functionデプロイ | `/deploy-supabase` |
+| X投稿を対話で作成したい | `/create-x-post` |
+| X投稿を自動生成したい | `/generate-x-post` |
+| 投稿パフォーマンス確認 | `/analyze-x-performance` |
+| 有益なツイート・記事発見 | `/save-knowledge` |
 
 ## スキルの自動作成
 同じパターンの作業を3回以上行った場合:
@@ -28,6 +32,10 @@
 | `/build-ios` | iOSビルド自走 | 動作確認時、ネイティブモジュール追加後 |
 | `/deploy-supabase` | 本番デプロイ | DB変更後、Edge Function修正後 |
 | `/save-knowledge` | ナレッジ保存 | 有益なツイート・記事を見つけた時 |
+| `/create-x-post` | X投稿作成（対話型） | Claudeと対話しながら投稿を調整したい時 |
+| `/generate-x-post` | X投稿生成（自動） | Edge Function経由で自動生成したい時 |
+| `/manage-x-queue` | X投稿キュー管理 | 投稿スケジュール確認・変更時 |
+| `/analyze-x-performance` | X投稿分析 | パフォーマンス確認、改善提案取得時 |
 
 ## Tech Knowledge Policy
 - 開発手法・ツール・アーキテクチャの質問時は `mcp__memory__search_nodes` でTech系ナレッジを検索してから回答
@@ -1455,6 +1463,19 @@
   ```
   - `ascAppId` は App Store Connect > アプリ > 一般情報 > Apple ID で確認
   - このプロジェクトの ascAppId: `6758319830`
+- **EAS Build 環境変数の優先順位 (CRITICAL):** EAS Build では環境変数の読み込みに優先順位がある。`eas.json` の `env` セクションが **最優先** され、EAS Secrets は `env` に記載がない場合のみ使用される。Native モジュール（Google Sign-In等）で API キーが必要な場合、**必ず `eas.json` production.env に明示的に記載すること**：
+  ```json
+  // eas.json
+  "production": {
+    "env": {
+      "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "xxx.apps.googleusercontent.com",
+      "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "yyy.apps.googleusercontent.com"
+    }
+  }
+  ```
+  - EAS Secrets だけでは不十分（`app.config.js` が `process.env` を読む設計のため）
+  - 新しい `EXPO_PUBLIC_*` 環境変数を追加したら、必ず `eas.json` production.env も更新
+  - 症状: Native SDK が「invalid_client」「API key not found」等のエラーを返す
 - **withTimeout Nested Fallback (CRITICAL):** `withTimeout(innerFn(), timeout, fallback)` でラップする場合、`innerFn` 内部のフォールバック機構（キャッシュ読み込み、リトライ等）は外側タイムアウトが先に発火すると**実行されない**。外側フォールバック値にもキャッシュ等の適切な値を渡すこと:
   ```typescript
   // BAD - 内部のキャッシュフォールバックが無効化される
@@ -1671,3 +1692,69 @@ npx expo start
 | `Invalid device or device pair` | デバイス名不正 | `xcrun simctl list devices` で確認 |
 | `The item is not a valid bundle` | ビルド不完全 | DerivedData削除後、再ビルド |
 | 月間ビルド上限到達 | EAS無料プラン制限 | 月初リセット待ち or プランアップグレード |
+
+---
+
+# Native OAuth Implementation
+
+## Google Sign-In (ネイティブ認証)
+- **パッケージ:** `@react-native-google-signin/google-signin`
+- **ネイティブモジュール:** prebuild/リビルドが必要
+- **Web OAuthの問題:** `flow_state_not_found` エラー (PKCE state管理の不一致)
+- **解決策:** Web OAuth → ネイティブGoogle認証 + `signInWithIdToken`
+
+### 環境変数
+```
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=xxx.apps.googleusercontent.com  # Supabase IDトークン検証用
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=yyy.apps.googleusercontent.com  # iOS認証用
+```
+
+### 実装パターン
+```typescript
+import { GoogleSignin, statusCodes, isErrorWithCode } from '@react-native-google-signin/google-signin';
+
+// 初期化 (useEffect内)
+GoogleSignin.configure({
+  webClientId: GOOGLE_WEB_CLIENT_ID,
+  iosClientId: GOOGLE_IOS_CLIENT_ID,
+  offlineAccess: true,
+});
+
+// 認証実行
+const signInResult = await GoogleSignin.signIn();
+const idToken = signInResult.data?.idToken;
+if (!idToken) throw new Error('idToken not received');
+
+// Supabaseセッション確立
+const { data, error } = await supabase.auth.signInWithIdToken({
+  provider: 'google',
+  token: idToken,
+});
+
+// エラーハンドリング
+if (isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED) {
+  // ユーザーキャンセル - 何もしない
+  return;
+}
+```
+
+### app.json 設定
+```json
+{
+  "plugins": [
+    [
+      "@react-native-google-signin/google-signin",
+      {
+        "iosUrlScheme": "com.googleusercontent.apps.{IOS_CLIENT_ID_PREFIX}"
+      }
+    ]
+  ]
+}
+```
+
+### Supabase Dashboard 設定
+Authentication > Providers > Google に **Web Client ID** を追加（ネイティブ認証のIDトークン検証に使用）
+
+## Apple Sign-In
+- **パッケージ:** `expo-apple-authentication` (既存実装)
+- 同様の `signInWithIdToken` パターンを使用

@@ -508,11 +508,11 @@ Monk Modeと名付けた。
 ---
 ---
 
-# Day 14: 2週間の振り返り
+# Day 14: Google Sign-In成功（20ビルドの苦闘）
 
 **投稿時間**: 23:00 JST
 **投稿先**: X Community "Build in Public"
-**メディア**: なし
+**メディア**: EASビルド履歴画面 or GCPコンソールのClient ID画面
 **ハッシュタグ（英語）**: #buildinpublic #indiehacker
 **ハッシュタグ（日本語）**: #buildinpublic #個人開発
 
@@ -523,18 +523,13 @@ Monk Modeと名付けた。
 ### メイン投稿
 
 ```
-14 days. 14 posts. Here's what I learned:
+Google Sign-In finally works. Build #61.
 
-People relate more to the problem
-than the solution.
+The cause? A single character typo.
+"l" vs "i" in the Client ID.
+They look almost identical.
 
-"I have 20+ unread books" gets more replies
-than any feature screenshot.
-
-Next week:
-The scariest part. In-App Purchases.
-
-Follow for the App Store submission saga.
+20 builds. All wasted on this.
 
 #buildinpublic #indiehacker
 ```
@@ -543,47 +538,53 @@ Follow for the App Store submission saga.
 
 **Micro 1:**
 ```
-2 weeks. Posted every day. I think I changed before any reader did.
+One typo. 20 builds. Solo dev life.
 ```
 
 **Micro 2:**
 ```
-Tsundoku doesn't shrink. But you can change how you face it.
+The hardest bugs are the ones that make you question your sanity.
 ```
 
 ---
 
 ## 🇯🇵 日本語 Posts（翌7:00 JST）
 
-### メイン投稿
+### メイン投稿（画像付き）
 
 ```
-14日。14投稿。わかったこと:
+Google Sign-In、Build #61でやっと動いた。
 
-人はソリューションより、
-問題に共感する。
+原因は、Client IDの1文字タイポ。
+「l」と「i」、見た目ほぼ同じ。
 
-「積読20冊以上ある」のほうが、
-どんな機能スクショより反応がある。
-
-来週:
-一番怖い部分。アプリ内課金。
-
-App Store申請サーガをフォローして。
+20ビルド、ここに費やした。
 
 #buildinpublic #個人開発
 ```
+📎 添付: EASビルド履歴画面 or GCPコンソールのClient ID画面
+
+**成功要因（CSVデータ分析より）:**
+- 進捗報告型 = 平均185 imp（最強パターン）
+- 具体的数字（#61、20ビルド、1文字）= 数字入りは132%高いImp
+- 画像付き（高Imp投稿は100%画像付き）
+- 文字数約80文字（最適範囲50-131文字）
+- リアルタイムの苦労 = 共感（個人開発あるある）
+- タイポという普遍的な失敗 = 誰もが経験
 
 ### マイクロ投稿
 
-**Micro 1:**
+**Micro 1（リアルタイム）:**
 ```
-2週間、毎日書いた。読者より先に、自分が変わった気がする。
+1文字のタイポで20ビルド。
+個人開発、こういうのが一番つらい。
 ```
 
-**Micro 2:**
+**Micro 2（普遍的）:**
 ```
-積読は減らない。でも、向き合い方は変えられる。
+積読、減らないよね。
+でも「いつか読む」を「いつまでに読む」に変えるだけで、
+ちょっとだけ違う。
 ```
 
 ---
@@ -599,7 +600,7 @@ App Store申請サーガをフォローして。
 | 11 | 設計思想 | 期限を自分で決める | 普遍 | 2 |
 | 12 | プロダクトのwhy | 寄付にした理由 | 過去形 | 2 |
 | 13 | 進捗 + 動画 | Monk Mode UI（デモ動画付き） | 時間軸なし | 2 |
-| 14 | 振り返り + 予告 | 2週間の気づき + IAP/審査予告 | 現在形予告 | 2 |
+| 14 | 進捗報告 | Google Sign-In成功（20ビルドの苦闘） | 現在形 | 2 |
 
 **Week 2合計**: メイン7 + マイクロ14 + 動画1 = **22コンテンツ**
 
@@ -650,8 +651,8 @@ Week 3のテーマ候補:
 
 ---
 
-**Last Updated**: 2026-01-26
-**Version**: v5（二層構造 + 時制リフレーム + ハッシュタグ最適化）
+**Last Updated**: 2026-02-02
+**Version**: v6（Day 14 Google Sign-In成功版に更新）
 
 ---
 

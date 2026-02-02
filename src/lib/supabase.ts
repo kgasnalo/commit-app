@@ -27,6 +27,8 @@ function createSafeClient(): SupabaseClient<Database> | null {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // PKCE flowを強制（Implicit flowはSupabaseで非推奨・無効化済み）
+      flowType: 'pkce',
     },
   });
 }

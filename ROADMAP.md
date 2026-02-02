@@ -1048,3 +1048,126 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [ ] **D.4 UI Timer Interpolation**
     - **Problem:** `useMonkModeTimer` relies on 1s interval, risking skipped seconds under load.
     - **Fix:** Implement `requestAnimationFrame` or drift-correction logic.
+
+---
+
+## 🚀 Release Status (2026-02-02)
+
+**Target: App Store提出 2/9-2/15**
+**対象市場:** 日本・英語圏（韓国語は v1.1）
+
+### ✅ 完了済み (Phase 1-4.12 + IAP)
+
+| カテゴリ | 項目 | 状態 | 備考 |
+|----------|------|------|------|
+| **認証** | Google Sign-In | ✅ | Build #61成功 (iOS Client IDタイポ修正) |
+| **認証** | Apple Sign-In | ✅ | ネイティブ認証実装 |
+| **認証** | Email認証 | ✅ | Supabase Auth |
+| **IAP** | IAPService.ts | ✅ | expo-in-app-purchases統合 |
+| **IAP** | OnboardingScreen13_Paywall | ✅ | 購入フロー実装 |
+| **IAP** | verify-iap-receipt | ✅ | Edge Function デプロイ済み |
+| **IAP** | apple-iap-webhook | ✅ | Edge Function デプロイ済み |
+| **IAP** | App Store Connect商品 | ✅ | yearly/monthly登録済み |
+| **DB** | RLSポリシー | ✅ | 全テーブル監査完了 |
+| **Secrets** | Supabase Secrets | ✅ | APPLE_APP_SHARED_SECRET含む全設定 |
+| **Secrets** | EAS Secrets | ✅ | 11シークレット設定済み |
+| **Assets** | アプリアイコン | ✅ | 2048x2048 PNG |
+| **コンテンツ** | App Store説明文 | ✅ | 日本語/英語準備済み |
+
+---
+
+### 🔴 CRITICAL - 提出ブロッカー
+
+#### C1. Stripe本番キー設定
+- [ ] Stripe Dashboard → 本番キー取得
+- [ ] Supabase: `supabase secrets set STRIPE_SECRET_KEY=sk_live_...`
+- [ ] EAS: `eas secret:create --name EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY --value pk_live_...`
+- [ ] Vercel: `printf '%s' 'pk_live_...' | npx vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production`
+- [ ] Web Portal再デプロイ: `npx vercel --prod --yes`
+
+#### C2. プロダクションビルド
+- [ ] `eas build --profile production --platform ios`
+- [ ] TestFlight最終動作確認
+
+---
+
+### 🟠 HIGH - App Store Connect設定 (手動作業)
+
+#### H1. アプリ情報
+- [ ] アプリ名: `COMMIT` (確定済み)
+- [ ] サブタイトル: `積読を資産に変える読書コミットアプリ`
+- [ ] プライマリカテゴリ: 書籍 (Books)
+- [ ] セカンダリカテゴリ: 教育 (Education)
+
+#### H2. スクリーンショット (必須)
+- [x] 6.7インチ (iPhone 15 Pro Max)
+- [x] 6.5インチ (iPhone 14 Plus)
+- [x] 12.9インチ iPad (supportsTablet=true)
+
+#### H3. App Privacy申告
+- [ ] 収集データ: メール、ユーザーID、使用状況、診断
+- [ ] データ使用目的: アプリ機能、分析
+
+#### H4. IAP Server Notifications (Webhook)
+- [ ] Production URL設定:
+  ```
+  https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/apple-iap-webhook
+  ```
+
+#### H5. 年齢制限アンケート
+- [ ] 課金あり: はい
+- [ ] 暴力/性的/ギャンブル: なし
+
+---
+
+### 🟡 MEDIUM - テスト
+
+#### M1. IAP サンドボックステスト
+- [ ] サンドボックステスターアカウント作成
+- [ ] TestFlightで購入フロー確認
+- [ ] 購入成功 → subscription_status更新確認
+
+#### M2. 実機マルチデバイステスト
+- [ ] iPhone SE (小画面)
+- [ ] iPhone 14/15 (標準)
+- [ ] iPhone 15 Pro Max (大画面)
+- [ ] iPad (タブレット)
+
+#### M3. 言語別テスト
+- [ ] 日本語設定
+- [ ] 英語設定
+
+---
+
+### 📝 提出手順
+
+1. **Stripe本番キー設定** → C1完了
+2. **App Store Connect設定** → H1-H5完了
+3. **Production ビルド** → `eas build --profile production --platform ios`
+4. **提出** → `eas submit --platform ios`
+5. **審査待ち** → 通常1-2日
+
+---
+
+### 🔧 ファイルリファレンス
+
+| 項目 | パス |
+|------|------|
+| IAP Service | `src/lib/IAPService.ts` |
+| Paywall画面 | `src/screens/onboarding/OnboardingScreen13_Paywall.tsx` |
+| Receipt検証 | `supabase/functions/verify-iap-receipt/index.ts` |
+| Webhook | `supabase/functions/apple-iap-webhook/index.ts` |
+| 説明文(ja) | `scripts/screenshots/templates/app-store-description-ja.md` |
+| 説明文(en) | `scripts/screenshots/templates/app-store-description-en.md` |
+| アイコン | `assets/icon.png` (2048x2048) |
+
+---
+
+### 📊 ビルド履歴
+
+| Build | 状態 | 内容 |
+|-------|------|------|
+| #42-56 | ❌ | Google Sign-In様々な試行 |
+| #57-60 | ❌ | OAuth環境変数修正済みだがタイポ残存 |
+| #61 | ✅ | iOS Client IDタイポ修正で解決 |
+| #62 | ⏳ | Production build (App Store提出用) |

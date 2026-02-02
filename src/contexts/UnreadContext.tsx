@@ -6,7 +6,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseInitialized } from '../lib/supabase';
 import {
   UnreadCounts,
   getUnreadCounts,
@@ -75,6 +75,13 @@ export function UnreadProvider({ children }: UnreadProviderProps) {
    */
   useEffect(() => {
     async function initialize() {
+      // Supabase が初期化されていない場合はスキップ
+      if (!isSupabaseInitialized()) {
+        console.warn('[UnreadContext] Supabase not initialized, skipping');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         // Initialize last seen timestamps for new users
         await initializeLastSeenTimestamps();
@@ -96,6 +103,12 @@ export function UnreadProvider({ children }: UnreadProviderProps) {
    */
   useEffect(() => {
     if (!isInitialized) return;
+
+    // Supabase が初期化されていない場合は Realtime をスキップ
+    if (!isSupabaseInitialized()) {
+      console.warn('[UnreadContext] Supabase not initialized, skipping Realtime');
+      return;
+    }
 
     // Subscribe to announcements table changes
     const announcementsChannel = supabase
