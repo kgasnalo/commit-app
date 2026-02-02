@@ -210,10 +210,10 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         // verify-iap-receipt が subscription_status を更新する
         // purchaseListenerが成功を検知したらiapVerifiedRef.currentがtrueになる
 
-        // 購入完了を待つ（最大15秒、500msごとにチェック）
+        // 購入完了を待つ（最大30秒、500msごとにチェック）
         // iapVerifiedRef.currentがtrueになったら即座に終了
         let attempts = 0;
-        const maxAttempts = 30; // 500ms x 30 = 15秒
+        const maxAttempts = 60; // 500ms x 60 = 30秒
         let subscriptionActivated = false;
 
         const checkSubscription = async (): Promise<boolean> => {
