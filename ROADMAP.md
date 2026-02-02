@@ -1056,7 +1056,7 @@ Each task is atomic, role-specific, and has a clear definition of done.
 **Target: App Store提出 2/9-2/15**
 **対象市場:** 日本・英語圏（韓国語は v1.1）
 
-### ✅ 完了済み (Phase 1-4.12 + IAP)
+### ✅ 完了済み (Phase 1-4.12 + IAP + セキュリティ監査修正)
 
 | カテゴリ | 項目 | 状態 | 備考 |
 |----------|------|------|------|
@@ -1065,10 +1065,11 @@ Each task is atomic, role-specific, and has a clear definition of done.
 | **認証** | Email認証 | ✅ | Supabase Auth |
 | **IAP** | IAPService.ts | ✅ | expo-in-app-purchases統合 |
 | **IAP** | OnboardingScreen13_Paywall | ✅ | 購入フロー実装 |
-| **IAP** | verify-iap-receipt | ✅ | Edge Function デプロイ済み |
-| **IAP** | apple-iap-webhook | ✅ | Edge Function デプロイ済み |
+| **IAP** | verify-iap-receipt | ✅ | Edge Function デプロイ済み + タイムアウト追加 |
+| **IAP** | apple-iap-webhook | ✅ | JWS署名検証 + 冪等性実装 |
 | **IAP** | App Store Connect商品 | ✅ | yearly/monthly登録済み |
 | **DB** | RLSポリシー | ✅ | 全テーブル監査完了 |
+| **DB** | apple_notifications_processed | ✅ | Webhook冪等性用テーブル |
 | **Secrets** | Supabase Secrets | ✅ | APPLE_APP_SHARED_SECRET含む全設定 |
 | **Secrets** | EAS Secrets | ✅ | 11シークレット設定済み |
 | **Assets** | アプリアイコン | ✅ | 2048x2048 PNG |
@@ -1076,7 +1077,28 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ---
 
-### 🔴 CRITICAL - 提出ブロッカー
+### ✅ CRITICAL セキュリティ修正 (2026-02-02 完了)
+
+技術監査で発見されたCRITICAL/HIGH問題を提出前に全て修正完了。
+
+| ID | 問題 | 修正内容 | コミット |
+|----|------|----------|----------|
+| **CRITICAL-1** | apple-iap-webhook JWS署名検証なし | x5c証明書チェーンで署名検証実装 | `aebddbe8` |
+| **CRITICAL-2** | apple-iap-webhook 冪等性なし | `apple_notifications_processed`テーブル + notificationUUID重複チェック | `aebddbe8` |
+| **CRITICAL-3** | OnboardingScreen13 タイムアウト処理 | タイムアウト時にreturnで続行禁止、リトライ促進 | `aebddbe8` |
+| **CRITICAL-4** | IAPService purchaseListener | 空results処理、DEFERREDケース対応、全エラーonError呼出 | `aebddbe8` |
+| **CRITICAL-5** | subscription_status二重更新 | handleWarpCompleteはonboarding_completedのみ更新 | `aebddbe8` |
+| **CRITICAL-6** | send-push-notification JSON parse | Expo Push APIレスポンスにtry-catch追加 | `aebddbe8` |
+| **HIGH-1** | Safety Timer 5秒は短すぎ | 8秒に延長 + isMountedチェック | `aebddbe8` |
+| **HIGH-4** | verify-iap-receipt タイムアウト | AbortControllerで10秒タイムアウト追加 | `aebddbe8` |
+
+**デプロイ状況:**
+- ✅ DB Migration適用済み: `20260202120000_add_apple_notifications_processed.sql`
+- ✅ Edge Functions再デプロイ済み: `apple-iap-webhook`, `verify-iap-receipt`, `send-push-notification`
+
+---
+
+### 🔴 CRITICAL - 提出ブロッカー (残り)
 
 #### C1. Stripe本番キー設定
 - [ ] Stripe Dashboard → 本番キー取得
