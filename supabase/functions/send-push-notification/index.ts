@@ -283,7 +283,23 @@ Deno.serve(async (req) => {
         body: JSON.stringify(batch),
       })
 
-      const result = await response.json()
+      // CRITICAL: JSON parse エラーを処理
+      let result: { data?: ExpoPushTicket[] }
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        console.error('Failed to parse Expo Push API response:', parseError)
+        captureException(parseError, {
+          functionName: 'send-push-notification',
+          extra: {
+            batchIndex: Math.floor(i / effectiveBatchSize),
+            batchSize: batch.length,
+            responseStatus: response.status,
+          },
+        })
+        // このバッチはスキップして次へ
+        continue
+      }
 
       if (result.data) {
         allTickets.push(...result.data)

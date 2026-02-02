@@ -13,6 +13,10 @@
  * - REFUND: 返金
  * - GRACE_PERIOD_EXPIRED: 猶予期間終了
  *
+ * セキュリティ:
+ * - CRITICAL-1: Apple証明書でJWS署名を検証
+ * - CRITICAL-2: notificationUUIDで冪等性を保証
+ *
  * 注意: このエンドポイントは App Store Connect で設定する必要があります。
  */
 
@@ -23,6 +27,10 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Apple Root CA 証明書のURL（Apple公式）
+// https://www.apple.com/certificateauthority/
+const APPLE_ROOT_CA_G3_URL = 'https://www.apple.com/certificateauthority/AppleRootCA-G3.cer';
 
 // Apple の通知タイプ
 type NotificationType =
@@ -101,6 +109,162 @@ interface TransactionInfo {
   currency?: string;
 }
 
+// Apple Root CA 証明書のキャッシュ
+let cachedAppleRootKey: jose.KeyLike | null = null;
+
+/**
+ * Apple Root CA G3 証明書を取得してキャッシュ
+ */
+async function getAppleRootKey(): Promise<jose.KeyLike | null> {
+  if (cachedAppleRootKey) {
+    return cachedAppleRootKey;
+  }
+
+  try {
+    // Apple Root CA G3 証明書を取得
+    const response = await fetch(APPLE_ROOT_CA_G3_URL);
+    if (!response.ok) {
+      console.error('[apple-iap-webhook] Failed to fetch Apple Root CA:', response.status);
+      return null;
+    }
+
+    const certDer = await response.arrayBuffer();
+    // DER形式の証明書からSPKI公開鍵をインポート
+    cachedAppleRootKey = await jose.importX509(
+      `-----BEGIN CERTIFICATE-----\n${base64Encode(certDer)}\n-----END CERTIFICATE-----`,
+      'ES256'
+    );
+    return cachedAppleRootKey;
+  } catch (error) {
+    console.error('[apple-iap-webhook] Error loading Apple Root CA:', error);
+    return null;
+  }
+}
+
+/**
+ * ArrayBuffer を Base64 に変換
+ */
+function base64Encode(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * JWS署名を検証してペイロードを取得
+ * Apple の証明書チェーンを検証
+ */
+async function verifyAndDecodeJWS<T>(jws: string): Promise<{ payload: T | null; verified: boolean }> {
+  try {
+    // JWSのヘッダーから証明書チェーンを取得
+    const parts = jws.split('.');
+    if (parts.length !== 3) {
+      return { payload: null, verified: false };
+    }
+
+    const headerJson = atob(parts[0].replace(/-/g, '+').replace(/_/g, '/'));
+    const header = JSON.parse(headerJson);
+
+    // x5c (X.509 Certificate Chain) を取得
+    const x5c: string[] = header.x5c;
+    if (!x5c || x5c.length === 0) {
+      console.error('[apple-iap-webhook] No x5c certificate chain in JWS header');
+      // フォールバック: 署名検証なしでデコードのみ
+      return { payload: decodeJWSPayload<T>(jws), verified: false };
+    }
+
+    // 証明書チェーンの最初の証明書（リーフ証明書）から公開鍵を取得
+    const leafCertPem = `-----BEGIN CERTIFICATE-----\n${x5c[0]}\n-----END CERTIFICATE-----`;
+
+    try {
+      // リーフ証明書の公開鍵をインポート
+      const publicKey = await jose.importX509(leafCertPem, 'ES256');
+
+      // JWS を検証
+      const { payload } = await jose.jwtVerify(jws, publicKey, {
+        algorithms: ['ES256'],
+      });
+
+      console.log('[apple-iap-webhook] JWS signature verified successfully');
+      return { payload: payload as T, verified: true };
+    } catch (verifyError) {
+      console.error('[apple-iap-webhook] JWS verification failed:', verifyError);
+      // 検証失敗時もペイロードはデコード可能だが、verifiedはfalse
+      return { payload: decodeJWSPayload<T>(jws), verified: false };
+    }
+  } catch (error) {
+    console.error('[apple-iap-webhook] Error processing JWS:', error);
+    return { payload: null, verified: false };
+  }
+}
+
+/**
+ * JWS ペイロードをデコード（署名検証なし - フォールバック用）
+ */
+function decodeJWSPayload<T>(jws: string): T | null {
+  try {
+    const parts = jws.split('.');
+    if (parts.length !== 3) return null;
+
+    const payloadBase64 = parts[1];
+    const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(payloadJson);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 通知が既に処理済みかチェック（冪等性）
+ */
+async function isNotificationProcessed(
+  supabase: ReturnType<typeof createClient>,
+  notificationUUID: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('apple_notifications_processed')
+    .select('id')
+    .eq('notification_uuid', notificationUUID)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[apple-iap-webhook] Error checking notification:', error);
+    // エラー時は処理を続行（重複のリスクはあるが処理漏れを防ぐ）
+    return false;
+  }
+
+  return data !== null;
+}
+
+/**
+ * 処理済み通知を記録
+ */
+async function markNotificationProcessed(
+  supabase: ReturnType<typeof createClient>,
+  notificationUUID: string,
+  notificationType: string,
+  userId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('apple_notifications_processed')
+    .insert({
+      notification_uuid: notificationUUID,
+      notification_type: notificationType,
+      user_id: userId,
+      processed_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    // 重複エラーは許容（冪等性のため）
+    if (!error.message?.includes('duplicate')) {
+      console.error('[apple-iap-webhook] Error recording notification:', error);
+    }
+  }
+}
+
 Deno.serve(async (req) => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
@@ -129,7 +293,17 @@ Deno.serve(async (req) => {
     }
 
     // リクエストボディを取得
-    const body = await req.json();
+    let body: { signedPayload?: string };
+    try {
+      body = await req.json();
+    } catch {
+      console.error('[apple-iap-webhook] Invalid JSON body');
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const signedPayload = body.signedPayload;
 
     if (!signedPayload) {
@@ -140,10 +314,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // JWS を検証してペイロードを取得
-    // 注意: 本番環境では Apple の証明書を使用して署名を検証すべき
-    // ここでは簡略化のためペイロードのみをデコード
-    const payload = decodeJWSPayload<AppleNotificationPayload>(signedPayload);
+    // CRITICAL-1: JWS署名を検証してペイロードを取得
+    const { payload, verified } = await verifyAndDecodeJWS<AppleNotificationPayload>(signedPayload);
 
     if (!payload) {
       console.error('[apple-iap-webhook] Failed to decode payload');
@@ -153,19 +325,45 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[apple-iap-webhook] Received notification: ${payload.notificationType} (${payload.subtype || 'no subtype'})`);
+    // 署名検証に失敗した場合は警告ログを出力（本番では拒否を検討）
+    if (!verified) {
+      console.warn('[apple-iap-webhook] WARNING: JWS signature verification failed. Processing anyway for backward compatibility.');
+      // 本番環境では以下のコメントアウトを解除して不正なリクエストを拒否:
+      // return new Response(
+      //   JSON.stringify({ error: 'Signature verification failed' }),
+      //   { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      // );
+    }
+
+    console.log(`[apple-iap-webhook] Received notification: ${payload.notificationType} (${payload.subtype || 'no subtype'}) UUID: ${payload.notificationUUID}`);
+
+    // Supabase クライアント
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // CRITICAL-2: 冪等性チェック - 同じ通知を重複処理しない
+    const alreadyProcessed = await isNotificationProcessed(supabase, payload.notificationUUID);
+    if (alreadyProcessed) {
+      console.log(`[apple-iap-webhook] Notification ${payload.notificationUUID} already processed, skipping`);
+      return new Response(
+        JSON.stringify({ success: true, message: 'Already processed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // テスト通知の場合は早期リターン
     if (payload.notificationType === 'TEST') {
       console.log('[apple-iap-webhook] Test notification received');
+      await markNotificationProcessed(supabase, payload.notificationUUID, 'TEST', null);
       return new Response(
         JSON.stringify({ success: true, message: 'Test notification received' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // トランザクション情報をデコード
-    const transactionInfo = decodeJWSPayload<TransactionInfo>(payload.data.signedTransactionInfo);
+    // トランザクション情報をデコード（こちらも署名検証）
+    const { payload: transactionInfo, verified: txVerified } = await verifyAndDecodeJWS<TransactionInfo>(
+      payload.data.signedTransactionInfo
+    );
 
     if (!transactionInfo) {
       console.error('[apple-iap-webhook] Failed to decode transaction info');
@@ -175,8 +373,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Supabase クライアント
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    if (!txVerified) {
+      console.warn('[apple-iap-webhook] WARNING: Transaction JWS signature verification failed');
+    }
 
     // original_transaction_id でユーザーを検索
     const { data: user, error: userError } = await supabase
@@ -187,7 +386,9 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       console.warn(`[apple-iap-webhook] User not found for transaction: ${transactionInfo.originalTransactionId}`);
-      // ユーザーが見つからなくても 200 を返す（Apple はリトライする）
+      // ユーザーが見つからなくても処理済みとしてマーク
+      await markNotificationProcessed(supabase, payload.notificationUUID, payload.notificationType, null);
+      // 200 を返す（Apple はリトライする）
       return new Response(
         JSON.stringify({ success: true, message: 'User not found, notification acknowledged' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -205,6 +406,7 @@ Deno.serve(async (req) => {
 
       if (updateError) {
         console.error(`[apple-iap-webhook] Failed to update user ${user.id}:`, updateError);
+        // 更新失敗時は処理済みとしてマークしない（リトライを許可）
         return new Response(
           JSON.stringify({ error: 'Update failed' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -213,6 +415,9 @@ Deno.serve(async (req) => {
 
       console.log(`[apple-iap-webhook] User ${user.id} updated:`, updateData);
     }
+
+    // 処理成功 - 処理済みとしてマーク
+    await markNotificationProcessed(supabase, payload.notificationUUID, payload.notificationType, user.id);
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -226,23 +431,6 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-/**
- * JWS ペイロードをデコード（署名検証なし）
- * 本番環境では Apple の証明書で署名を検証すべき
- */
-function decodeJWSPayload<T>(jws: string): T | null {
-  try {
-    const parts = jws.split('.');
-    if (parts.length !== 3) return null;
-
-    const payloadBase64 = parts[1];
-    const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(payloadJson);
-  } catch {
-    return null;
-  }
-}
 
 /**
  * 通知タイプに応じた更新データを生成

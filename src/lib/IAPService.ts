@@ -13,6 +13,7 @@
 import { Platform } from 'react-native';
 import * as InAppPurchases from 'expo-in-app-purchases';
 import { supabase } from './supabase';
+import { invokeFunctionWithRetry } from './supabaseHelpers';
 import { captureError } from '../utils/errorLogger';
 
 // 商品ID（App Store Connect で登録する必要がある）
@@ -172,7 +173,14 @@ export function setPurchaseListener(
   InAppPurchases.setPurchaseListener(async (result: InAppPurchases.IAPQueryResponse<InAppPurchases.InAppPurchase>) => {
     const { responseCode, results } = result;
 
-    if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
+    if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+      // responseCode が OK でも results が空/null の場合がある
+      if (!results || results.length === 0) {
+        if (__DEV__) console.warn('[IAPService] OK response but no purchase results');
+        onError('No purchase results received');
+        return;
+      }
+
       for (const purchase of results) {
         if (!purchase.acknowledged) {
           try {
@@ -195,7 +203,13 @@ export function setPurchaseListener(
     } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
       // ユーザーがキャンセル - エラーとして扱わない
       if (__DEV__) console.log('[IAPService] User cancelled purchase');
+    } else if (responseCode === InAppPurchases.IAPResponseCode.DEFERRED) {
+      // 承認待ち（Ask to Buy 等）- エラーではないがユーザーに通知が必要
+      if (__DEV__) console.log('[IAPService] Purchase deferred (pending approval)');
+      onError('Purchase pending approval');
     } else {
+      // その他すべてのエラーケース
+      if (__DEV__) console.error('[IAPService] Purchase failed with responseCode:', responseCode);
       onError(`Purchase failed with code: ${responseCode}`);
     }
   });
@@ -298,27 +312,42 @@ export async function restorePurchases(): Promise<IAPPurchaseResult> {
 
 /**
  * サーバーでレシートを検証する
+ * WORKER_ERROR対策としてリトライロジックを使用
  */
 async function verifyPurchaseOnServer(
   purchase: InAppPurchases.InAppPurchase
 ): Promise<boolean> {
   try {
-    const { data, error } = await supabase.functions.invoke('verify-iap-receipt', {
-      body: {
-        receipt: purchase.transactionReceipt,
-        productId: purchase.productId,
-        transactionId: purchase.orderId,
-      },
+    const { data, error } = await invokeFunctionWithRetry<{
+      success: boolean;
+      error?: string;
+      details?: string;
+    }>('verify-iap-receipt', {
+      receipt: purchase.transactionReceipt,
+      productId: purchase.productId,
+      transactionId: purchase.orderId,
     });
 
     if (error) {
-      captureError(error, { location: 'IAPService.verifyPurchaseOnServer' });
+      captureError(error, {
+        location: 'IAPService.verifyPurchaseOnServer',
+        extra: {
+          productId: purchase.productId,
+          transactionId: purchase.orderId,
+        },
+      });
       return false;
     }
 
     return data?.success === true;
   } catch (error) {
-    captureError(error, { location: 'IAPService.verifyPurchaseOnServer' });
+    captureError(error, {
+      location: 'IAPService.verifyPurchaseOnServer',
+      extra: {
+        productId: purchase.productId,
+        transactionId: purchase.orderId,
+      },
+    });
     return false;
   }
 }

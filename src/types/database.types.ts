@@ -316,6 +316,41 @@ export interface Database {
           }
         ]
       }
+      apple_notifications_processed: {
+        Row: {
+          id: string
+          notification_uuid: string
+          notification_type: string
+          user_id: string | null
+          processed_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          notification_uuid: string
+          notification_type: string
+          user_id?: string | null
+          processed_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          notification_uuid?: string
+          notification_type?: string
+          user_id?: string | null
+          processed_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apple_notifications_processed_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       expo_push_tokens: {
         Row: {
           id: string

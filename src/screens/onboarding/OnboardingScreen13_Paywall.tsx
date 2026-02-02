@@ -76,8 +76,24 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           },
           (error) => {
             if (__DEV__) console.error('[Screen13] Purchase error:', error);
+
+            // Sentryにエラーを送信（デバッグ用）
+            captureError(new Error(`IAP purchase failed: ${error}`), {
+              location: 'OnboardingScreen13.purchaseListener',
+              extra: { errorMessage: error },
+            });
+
             setLoading(false);
-            Alert.alert(i18n.t('common.error'), i18n.t('errors.iap_purchase_failed'));
+
+            // エラーコード別のメッセージ表示
+            let errorMessage = i18n.t('errors.iap_purchase_failed');
+            if (error.includes('verification failed') || error.includes('Receipt verification')) {
+              errorMessage = i18n.t('errors.iap_receipt_invalid');
+            } else if (error.includes('STORE_CONNECTION') || error.includes('store')) {
+              errorMessage = i18n.t('errors.iap_store_connection_failed');
+            }
+
+            Alert.alert(i18n.t('common.error'), errorMessage);
           }
         );
       } catch (error) {
@@ -193,6 +209,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         // 購入完了を待つためのポーリング（最大30秒）
         let attempts = 0;
         const maxAttempts = 30;
+        let subscriptionActivated = false;
+
         const checkSubscription = async (): Promise<boolean> => {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return false;
@@ -211,14 +229,37 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           const isActive = await checkSubscription();
           if (isActive) {
             if (__DEV__) console.log('[Screen13] Subscription activated!');
+            subscriptionActivated = true;
             break;
           }
           attempts++;
         }
 
-        if (attempts >= maxAttempts) {
-          // タイムアウトしても手動でリフレッシュを試みる
-          if (__DEV__) console.warn('[Screen13] Subscription check timed out, proceeding anyway');
+        if (!subscriptionActivated) {
+          // タイムアウト：subscription_statusがactiveにならなかった
+          // CRITICAL: ここで続行するとIAP購入済みなのにコミットメント作成に進んでしまう
+          if (__DEV__) console.error('[Screen13] Subscription check timed out - subscription not activated');
+          captureError(new Error('IAP subscription verification timed out'), {
+            location: 'OnboardingScreen13.handleSubscribe.pollTimeout',
+            extra: { attempts, maxAttempts },
+          });
+
+          setLoading(false);
+          Alert.alert(
+            i18n.t('common.error'),
+            i18n.t('errors.iap_verification_timeout'),
+            [
+              {
+                text: i18n.t('common.retry'),
+                onPress: () => handleSubscribe(), // リトライ
+              },
+              {
+                text: i18n.t('common.cancel'),
+                style: 'cancel',
+              },
+            ]
+          );
+          return; // CRITICAL: 続行を禁止
         }
       }
 
@@ -350,14 +391,13 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         return;
       }
 
-      // Step 2: subscription_statusとonboarding_completedを更新（アニメーション完了後に実行）
-      // Note: handleSubscribe()ではなくここで更新することで、
-      // Realtimeがアニメーション完了前に発火することを防ぐ
-      if (__DEV__) console.log('[Screen13] Updating subscription_status to active and onboarding_completed to true...');
+      // Step 2: onboarding_completedのみを更新（アニメーション完了後に実行）
+      // CRITICAL: subscription_statusはverify-iap-receiptで既に更新済み
+      // ここで再度更新するとRealtimeが二重発火し、ナビゲーションエラーの原因になる
+      if (__DEV__) console.log('[Screen13] Updating onboarding_completed to true...');
       const { error: updateError } = await supabase
         .from('users')
         .update({
-          subscription_status: 'active',
           onboarding_completed: true,
         })
         .eq('id', session.user.id);
@@ -365,7 +405,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       if (updateError) {
         captureError(updateError, { location: 'OnboardingScreen13.handleWarpComplete.update' });
       } else {
-        if (__DEV__) console.log('[Screen13] subscription_status=active, onboarding_completed=true ✅');
+        if (__DEV__) console.log('[Screen13] onboarding_completed=true ✅');
       }
 
       // Step 3: Dashboard側でフェードインするためのフラグを設定

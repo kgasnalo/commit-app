@@ -879,16 +879,22 @@ function NavigationContent() {
     }
   }, [authState.status]);
 
-  // Safety: force hide splash after 15s even if auth never resolves
+  // Safety: force hide splash after 8s even if auth never resolves
+  // Increased from 5s to 8s to accommodate OAuth session establishment
   useEffect(() => {
+    let isMounted = true;
     const safetyTimer = setTimeout(() => {
+      if (!isMounted) return; // Component unmounted, skip
       SplashScreen.hideAsync();
       if (authState.status === 'loading') {
-        console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 5s');
+        console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 8s');
         setAuthState({ status: 'unauthenticated' });
       }
-    }, 5000);
-    return () => clearTimeout(safetyTimer);
+    }, 8000);
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   // 統一状態から値を取得

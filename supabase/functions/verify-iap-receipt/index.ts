@@ -183,6 +183,9 @@ Deno.serve(async (req) => {
   }
 });
 
+// Apple API呼び出しタイムアウト（10秒）
+const APPLE_API_TIMEOUT_MS = 10000;
+
 /**
  * Apple のサーバーでレシートを検証
  */
@@ -199,49 +202,75 @@ async function verifyWithApple(
     requestBody.password = appSharedSecret;
   }
 
-  // まず本番環境で検証
-  let response = await fetch(APPLE_PRODUCTION_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody),
-  });
+  // タイムアウト付きfetch用ヘルパー
+  const fetchWithTimeout = async (url: string, options: RequestInit): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), APPLE_API_TIMEOUT_MS);
 
-  let result: AppleVerifyResponse = await response.json();
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      return response;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
 
-  // status 21007 はサンドボックスレシートを本番環境に送った場合
-  // サンドボックス環境で再検証
-  if (result.status === 21007) {
-    response = await fetch(APPLE_SANDBOX_URL, {
+  try {
+    // まず本番環境で検証
+    let response = await fetchWithTimeout(APPLE_PRODUCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
     });
-    result = await response.json();
+
+    let result: AppleVerifyResponse = await response.json();
+
+    // status 21007 はサンドボックスレシートを本番環境に送った場合
+    // サンドボックス環境で再検証
+    if (result.status === 21007) {
+      response = await fetchWithTimeout(APPLE_SANDBOX_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+      result = await response.json();
+    }
+
+    // status 0 は成功
+    if (result.status === 0) {
+      return { isValid: true, data: result };
+    }
+
+    // エラーコードの説明
+    const errorMessages: Record<number, string> = {
+      21000: 'The request to the App Store was not made using the HTTP POST request method.',
+      21001: 'This status code is no longer sent by the App Store.',
+      21002: 'The data in the receipt-data property was malformed or the service experienced a temporary issue.',
+      21003: 'The receipt could not be authenticated.',
+      21004: 'The shared secret you provided does not match the shared secret on file for your account.',
+      21005: 'The receipt server was temporarily unable to provide the receipt.',
+      21006: 'This receipt is valid but the subscription has expired.',
+      21007: 'This receipt is from the test environment.',
+      21008: 'This receipt is from the production environment.',
+      21010: 'This receipt could not be authorized.',
+    };
+
+    return {
+      isValid: false,
+      error: errorMessages[result.status] || `Unknown error: ${result.status}`,
+    };
+  } catch (error) {
+    // タイムアウトまたはネットワークエラー
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[verify-iap-receipt] Apple API request timed out');
+      return { isValid: false, error: 'Apple API request timed out' };
+    }
+    console.error('[verify-iap-receipt] Apple API request failed:', error);
+    return { isValid: false, error: `Apple API request failed: ${error}` };
   }
-
-  // status 0 は成功
-  if (result.status === 0) {
-    return { isValid: true, data: result };
-  }
-
-  // エラーコードの説明
-  const errorMessages: Record<number, string> = {
-    21000: 'The request to the App Store was not made using the HTTP POST request method.',
-    21001: 'This status code is no longer sent by the App Store.',
-    21002: 'The data in the receipt-data property was malformed or the service experienced a temporary issue.',
-    21003: 'The receipt could not be authenticated.',
-    21004: 'The shared secret you provided does not match the shared secret on file for your account.',
-    21005: 'The receipt server was temporarily unable to provide the receipt.',
-    21006: 'This receipt is valid but the subscription has expired.',
-    21007: 'This receipt is from the test environment.',
-    21008: 'This receipt is from the production environment.',
-    21010: 'This receipt could not be authorized.',
-  };
-
-  return {
-    isValid: false,
-    error: errorMessages[result.status] || `Unknown error: ${result.status}`,
-  };
 }
 
 /**
