@@ -1,15 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { GoogleSignin, statusCodes, isErrorWithCode } from '@react-native-google-signin/google-signin';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase, isSupabaseInitialized } from '../../lib/supabase';
-import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config/env';
+import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../../config/env';
 import i18n from '../../i18n';
 
 /**
@@ -31,9 +30,6 @@ import { getErrorMessage } from '../../utils/errorUtils';
 import { captureError } from '../../utils/errorLogger';
 import { validateUsernameFormat, checkUsernameAvailability } from '../../utils/usernameValidator';
 
-// WebBrowserの結果を適切に処理するために必要
-WebBrowser.maybeCompleteAuthSession();
-
 export default function OnboardingScreen6({ navigation, route }: any) {
   const { selectedBook, deadline, pledgeAmount, currency = 'JPY', tsundokuCount } = route.params || {};
   const [username, setUsername] = useState('');
@@ -50,6 +46,28 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   // メールアドレスの形式チェック
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  // Google Sign-In 初期化
+  useEffect(() => {
+    // デバッグログ: 環境変数の状態を確認（本番ビルドでも出力）
+    console.log('[OnboardingScreen6] Google Sign-In config check:', {
+      webClientId: GOOGLE_WEB_CLIENT_ID ? 'SET' : 'UNDEFINED',
+      iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'UNDEFINED',
+      webClientIdLength: GOOGLE_WEB_CLIENT_ID?.length ?? 0,
+      iosClientIdLength: GOOGLE_IOS_CLIENT_ID?.length ?? 0,
+    });
+
+    if (GOOGLE_WEB_CLIENT_ID) {
+      GoogleSignin.configure({
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        iosClientId: GOOGLE_IOS_CLIENT_ID,
+        offlineAccess: true, // サーバー側でトークンを使用する場合に必要
+      });
+      console.log('[OnboardingScreen6] GoogleSignin.configure() called successfully');
+    } else {
+      console.warn('[OnboardingScreen6] GoogleSignin NOT configured - GOOGLE_WEB_CLIENT_ID is undefined');
+    }
+  }, []);
 
   const handleUsernameChange = (value: string) => {
     setUsername(value);
@@ -81,12 +99,6 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       }
     }, 500);
   };
-
-  // リダイレクトURIの設定
-  const redirectUri = makeRedirectUri({
-    scheme: 'commitapp',
-    path: 'auth/callback',
-  });
 
   /**
    * displayNameをDB制約に合わせてサニタイズ
@@ -266,74 +278,77 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   };
 
   /**
-   * OAuth認証後のセッション確立処理
-   * PKCE Flow（code）とImplicit Flow（access_token）の両方に対応
+   * Google Sign In (ネイティブ認証)
+   * @react-native-google-signin/google-signin を使用してネイティブのGoogle認証を行い、
+   * 取得したIDトークンをSupabaseに渡してセッションを確立
+   *
+   * これはWeb OAuthの「flow_state_not_found」エラーを回避するための実装
    */
-  const handleOAuthCallback = async (callbackUrl: string): Promise<boolean> => {
+  const handleGoogleSignIn = async () => {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
       Alert.alert(
         i18n.t('common.error'),
         `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
       );
-      return false;
+      return;
     }
 
-    // URLパラメータを解析
-    const urlObj = new URL(callbackUrl);
-    const hashParams = new URLSearchParams(urlObj.hash.slice(1));
-    const queryParams = urlObj.searchParams;
-
-    // PKCE Flow: codeパラメータをチェック
-    const code = queryParams.get('code');
-    if (code) {
-      const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (sessionError) {
-        Alert.alert(i18n.t('common.error'), sessionError.message);
-        return false;
-      }
-
-      if (sessionData.user) {
-        await syncUserToDatabase(
-          sessionData.user.id,
-          sessionData.user.email,
-          username || sessionData.user.user_metadata?.name || null
-        );
-
-        navigation.navigate('Onboarding7', {
-          selectedBook,
-          deadline,
-          pledgeAmount,
-          currency,
-          tsundokuCount,
-          userId: sessionData.user.id,
-        });
-        return true;
-      }
-      return false;
+    // Google Web Client ID チェック
+    if (!GOOGLE_WEB_CLIENT_ID) {
+      Alert.alert(
+        i18n.t('common.error'),
+        'Google Sign-In is not configured. Missing GOOGLE_WEB_CLIENT_ID.'
+      );
+      return;
     }
 
-    // Implicit Flow: access_token / refresh_token をチェック
-    const access_token = hashParams.get('access_token') || queryParams.get('access_token');
-    const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+    setOauthLoading('google');
+    try {
+      // オンボーディングデータをAsyncStorageに保存
+      await AsyncStorage.setItem('onboardingData', JSON.stringify({
+        selectedBook,
+        deadline,
+        pledgeAmount,
+        currency,
+        tsundokuCount,
+        username,
+      }));
 
-    if (access_token && refresh_token) {
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
+      // Google Play Services の確認（Android用、iOSでは何もしない）
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      // ネイティブのGoogle認証ダイアログを表示
+      const signInResult = await GoogleSignin.signIn();
+      if (__DEV__) console.log('[GoogleSignIn] signIn result:', { hasIdToken: !!signInResult.data?.idToken });
+
+      // idTokenが取得できなかった場合はエラー
+      const idToken = signInResult.data?.idToken;
+      if (!idToken) {
+        throw new Error('Google Sign In: idToken not received');
+      }
+
+      // Supabaseに IDトークンを渡してセッションを確立
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
       });
 
       if (sessionError) {
+        captureError(sessionError, { location: 'OnboardingScreen6.handleGoogleSignIn.signInWithIdToken' });
         Alert.alert(i18n.t('common.error'), sessionError.message);
-        return false;
+        return;
       }
 
       if (sessionData.user) {
+        // Google認証からユーザー名を取得
+        const googleName = signInResult.data?.user?.name;
+        const displayName = username || googleName || null;
+
         await syncUserToDatabase(
           sessionData.user.id,
           sessionData.user.email,
-          username || sessionData.user.user_metadata?.name || null
+          displayName
         );
 
         navigation.navigate('Onboarding7', {
@@ -344,19 +359,23 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           tsundokuCount,
           userId: sessionData.user.id,
         });
-        return true;
       }
+    } catch (error: unknown) {
+      // ユーザーがキャンセルした場合は何もしない
+      if (isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED) {
+        if (__DEV__) console.log('[GoogleSignIn] User cancelled');
+        return;
+      }
+      // Google Play Services が利用不可
+      if (isErrorWithCode(error) && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert(i18n.t('common.error'), 'Google Play Services is not available');
+        return;
+      }
+      captureError(error, { location: 'OnboardingScreen6.handleGoogleSignIn' });
+      Alert.alert(i18n.t('common.error'), getErrorMessage(error));
+    } finally {
+      setOauthLoading(null);
     }
-
-    // エラーチェック
-    const errorDescription = queryParams.get('error_description') || hashParams.get('error_description');
-    if (errorDescription) {
-      Alert.alert(i18n.t('common.error'), errorDescription);
-      return false;
-    }
-
-    if (__DEV__) console.warn('No authentication tokens found in callback URL');
-    return false;
   };
 
   /**
@@ -459,67 +478,16 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     }
   };
 
+  /**
+   * OAuth認証のエントリーポイント
+   * Apple: ネイティブ認証 (expo-apple-authentication)
+   * Google: ネイティブ認証 (@react-native-google-signin/google-signin)
+   */
   const handleOAuth = async (provider: 'google' | 'apple') => {
-    // Apple Sign In はネイティブ認証を使用
     if (provider === 'apple') {
       await handleAppleSignIn();
-      return;
-    }
-
-    // Supabase初期化チェック（Google OAuth用）
-    if (!isSupabaseInitialized()) {
-      Alert.alert(
-        i18n.t('common.error'),
-        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
-      );
-      return;
-    }
-
-    setOauthLoading(provider);
-    try {
-      // オンボーディングデータをAsyncStorageに保存
-      // username を含めることで、Deep Link 経由で AppNavigator に戻った場合でも
-      // ユーザー名を取得して users テーブルにレコードを作成できる
-      await AsyncStorage.setItem('onboardingData', JSON.stringify({
-        selectedBook,
-        deadline,
-        pledgeAmount,
-        currency,
-        tsundokuCount,
-        username, // OAuth後にAppNavigatorで使用
-      }));
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: 'commitapp://',
-          // openAuthSessionAsyncがブラウザライフサイクルを管理するため、
-          // Supabaseによる自動リダイレクトをスキップ
-          skipBrowserRedirect: true,
-        },
-      });
-
-      if (error) {
-        Alert.alert(i18n.t('common.error'), error.message);
-        return;
-      }
-
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(
-          data.url,
-          redirectUri
-        );
-
-        if (result.type === 'success') {
-          await handleOAuthCallback(result.url);
-        } else if (result.type === 'cancel') {
-          // ユーザーがキャンセルした場合は何もしない
-        }
-      }
-    } catch (error: unknown) {
-      Alert.alert(i18n.t('common.error'), getErrorMessage(error));
-    } finally {
-      setOauthLoading(null);
+    } else {
+      await handleGoogleSignIn();
     }
   };
 

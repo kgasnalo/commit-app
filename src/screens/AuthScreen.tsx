@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseInitialized } from '../lib/supabase';
-import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
+import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../config/env';
 import { MaterialIcons } from '@expo/vector-icons';
+import { GoogleSignin, statusCodes, isErrorWithCode } from '@react-native-google-signin/google-signin';
+import { captureError } from '../utils/errorLogger';
 
 /**
  * デバッグ用: Supabase初期化エラーの詳細を取得
@@ -21,13 +23,8 @@ function getSupabaseErrorDetail(): string {
   }
   return 'Unknown initialization error';
 }
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 import { getErrorMessage } from '../utils/errorUtils';
 import i18n from '../i18n';
-
-// WebBrowserの結果を適切に処理するために必要
-WebBrowser.maybeCompleteAuthSession();
 
 export default function AuthScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -35,11 +32,27 @@ export default function AuthScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
-  // リダイレクトURIの設定
-  const redirectUri = makeRedirectUri({
-    scheme: 'commitapp',
-    path: 'auth/callback',
-  });
+  // Google Sign-In 初期化
+  useEffect(() => {
+    // デバッグログ: 環境変数の状態を確認
+    console.log('[AuthScreen] Google Sign-In config check:', {
+      webClientId: GOOGLE_WEB_CLIENT_ID ? 'SET' : 'UNDEFINED',
+      iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'UNDEFINED',
+      webClientIdLength: GOOGLE_WEB_CLIENT_ID?.length ?? 0,
+      iosClientIdLength: GOOGLE_IOS_CLIENT_ID?.length ?? 0,
+    });
+
+    if (GOOGLE_WEB_CLIENT_ID) {
+      GoogleSignin.configure({
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        iosClientId: GOOGLE_IOS_CLIENT_ID,
+        offlineAccess: true,
+      });
+      console.log('[AuthScreen] GoogleSignin.configure() called successfully');
+    } else {
+      console.warn('[AuthScreen] GoogleSignin NOT configured - GOOGLE_WEB_CLIENT_ID is undefined');
+    }
+  }, []);
 
   async function handleAuth() {
     // Supabase初期化チェック
@@ -136,7 +149,13 @@ export default function AuthScreen({ navigation }: any) {
     }
   };
 
-  // Google Sign In
+  /**
+   * Google Sign In (ネイティブ認証)
+   * @react-native-google-signin/google-signin を使用してネイティブのGoogle認証を行い、
+   * 取得したIDトークンをSupabaseに渡してセッションを確立
+   *
+   * Web OAuth の「flow_state_not_found」エラーを回避するための実装
+   */
   async function handleGoogleSignIn() {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
@@ -147,75 +166,64 @@ export default function AuthScreen({ navigation }: any) {
       return;
     }
 
-    try {
-      setLoading(true);
+    // Google Web Client ID チェック
+    if (!GOOGLE_WEB_CLIENT_ID) {
+      Alert.alert(
+        i18n.t('common.error'),
+        'Google Sign-In is not configured. Missing GOOGLE_WEB_CLIENT_ID.'
+      );
+      return;
+    }
 
+    setLoading(true);
+    try {
       // Auth画面からのログインであることを識別するフラグを設定
-      // これにより、AppNavigatorでタイムアウト後もバックグラウンドで
-      // サブスクリプションチェックを継続できる
       await AsyncStorage.setItem('loginSource', 'auth_screen');
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Google Play Services の確認（Android用、iOSでは何もしない）
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      // ネイティブのGoogle認証ダイアログを表示
+      if (__DEV__) console.log('[AuthScreen] Starting native Google Sign-In...');
+      const signInResult = await GoogleSignin.signIn();
+      if (__DEV__) console.log('[AuthScreen] GoogleSignin.signIn result:', { hasIdToken: !!signInResult.data?.idToken });
+
+      // idTokenが取得できなかった場合はエラー
+      const idToken = signInResult.data?.idToken;
+      if (!idToken) {
+        throw new Error('Google Sign In: idToken not received');
+      }
+
+      // Supabaseに IDトークンを渡してセッションを確立
+      if (__DEV__) console.log('[AuthScreen] Calling signInWithIdToken...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
         provider: 'google',
-        options: {
-          redirectTo: 'commitapp://',
-          // openAuthSessionAsyncがブラウザライフサイクルを管理するため、
-          // Supabaseによる自動リダイレクトをスキップ
-          skipBrowserRedirect: true,
-        },
+        token: idToken,
       });
 
-      if (error) {
-        Alert.alert(i18n.t('auth.error_google'), error.message);
+      if (sessionError) {
+        captureError(sessionError, { location: 'AuthScreen.handleGoogleSignIn.signInWithIdToken' });
+        Alert.alert(i18n.t('common.error'), sessionError.message);
         return;
       }
 
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(
-          data.url,
-          redirectUri
-        );
-
-        if (result.type === 'success') {
-          const url = result.url;
-          const urlObj = new URL(url);
-          const hashParams = new URLSearchParams(urlObj.hash.slice(1));
-          const queryParams = urlObj.searchParams;
-
-          // PKCE Flow: codeパラメータをチェック（優先）
-          const code = queryParams.get('code');
-          if (code) {
-            const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-
-            if (sessionError) {
-              Alert.alert(i18n.t('auth.error_auth'), sessionError.message);
-              return;
-            }
-            // ユーザーレコード作成はonAuthStateChangeで処理されるため、ここでは不要
-            // DB競合を避けるため、ensureUserRecord呼び出しを削除
-            return;
-          }
-
-          // Implicit Flow: access_token / refresh_token をチェック
-          const access_token = hashParams.get('access_token') || queryParams.get('access_token');
-          const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
-
-          if (access_token && refresh_token) {
-            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-              access_token,
-              refresh_token,
-            });
-
-            if (sessionError) {
-              Alert.alert(i18n.t('auth.error_auth'), sessionError.message);
-              return;
-            }
-            // ユーザーレコード作成はonAuthStateChangeで処理されるため、ここでは不要
-            // DB競合を避けるため、ensureUserRecord呼び出しを削除
-          }
-        }
+      if (sessionData.user) {
+        if (__DEV__) console.log('[AuthScreen] SUCCESS - User authenticated via native Google Sign-In');
+        // ユーザーレコード作成はonAuthStateChangeで処理されるため、ここでは不要
+        await ensureUserRecord(sessionData.user.id, sessionData.user.email);
       }
     } catch (error: unknown) {
+      // ユーザーがキャンセルした場合は何もしない
+      if (isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED) {
+        if (__DEV__) console.log('[AuthScreen] User cancelled Google Sign-In');
+        return;
+      }
+      // Google Play Services が利用不可
+      if (isErrorWithCode(error) && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert(i18n.t('common.error'), 'Google Play Services is not available');
+        return;
+      }
+      captureError(error, { location: 'AuthScreen.handleGoogleSignIn' });
       Alert.alert(i18n.t('common.error'), getErrorMessage(error));
     } finally {
       setLoading(false);
