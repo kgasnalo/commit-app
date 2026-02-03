@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
       functionName: 'admin-actions',
       extra: { errorMessage: String(error) },
     })
-    return errorResponse(500, 'INTERNAL_ERROR', String(error))
+    return errorResponse(500, 'INTERNAL_ERROR', 'An unexpected error occurred')
   }
 })
 
