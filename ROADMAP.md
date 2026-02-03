@@ -1100,12 +1100,13 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ### 🔴 CRITICAL - 提出ブロッカー (残り)
 
-#### C1. Stripe本番キー設定
-- [ ] Stripe Dashboard → 本番キー取得
-- [ ] Supabase: `supabase secrets set STRIPE_SECRET_KEY=sk_live_...`
-- [ ] EAS: `eas secret:create --name EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY --value pk_live_...`
-- [ ] Vercel: `printf '%s' 'pk_live_...' | npx vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY production`
-- [ ] Web Portal再デプロイ: `npx vercel --prod --yes`
+#### C1. Stripe本番キー設定 ✅ (2026-02-03 完了)
+- [x] Stripe Dashboard → 本番キー取得
+- [x] Vercel: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (pk_live_...) 設定
+- [x] Vercel: `STRIPE_SECRET_KEY` (sk_live_...) 設定
+- [x] Vercel: `STRIPE_WEBHOOK_SECRET` (whsec_...) 設定
+- [x] Web Portal再デプロイ: `npx vercel --prod --yes`
+- **Note:** Stripe審査通過、Web Portal本番運用開始
 
 #### C2. プロダクションビルド
 - [ ] `eas build --profile production --platform ios`
