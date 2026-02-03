@@ -1823,15 +1823,35 @@ const checkSubscription = async (): Promise<boolean> => {
 
 # EAS Build & Local Build
 
-## EAS Free Plan クォータ超過時のローカルビルド
-EAS Free Plan の月間ビルド数上限に達した場合、ローカルでビルドできる：
-```bash
-# ローカルビルド（EASクォータを消費しない）
-eas build --local --profile production --platform ios --non-interactive
+## EAS ローカルビルド (CRITICAL)
+**NEVER run `eas build --local` directly!** EAS Secrets are NOT available in local builds.
+Direct execution causes `Missing required environment variable` errors at runtime.
 
-# 生成されたIPAをTestFlightに送信
-eas submit --platform ios --path ./build-XXXXX.ipa --non-interactive
+**ALWAYS use the build script:**
+```bash
+# ✅ CORRECT - uses build script that exports .env
+./build-eas-local.sh
+
+# ❌ WRONG - env vars will be missing, app will crash
+eas build --local --profile production --platform ios
 ```
+
+**Why this happens:**
+- `eas build --local` runs on your machine, not EAS servers
+- EAS Secrets (configured via `eas env:list`) are only available on EAS servers
+- Local builds need `.env` file variables to be explicitly exported
+
+**The script does:**
+1. Checks `.env` file exists
+2. Exports all variables with `set -a && source .env && set +a`
+3. Verifies all 9 required EXPO_PUBLIC_* variables are set
+4. Runs `eas build --local`
+
+**After build:**
+```bash
+eas submit --platform ios --path ./build-*.ipa --non-interactive
+```
+
 - ローカルビルドは約20〜40分かかる（Macのスペックによる）
 - 生成されるIPAはEAS Buildと同じ品質
 - App Store審査提出も問題なく可能
