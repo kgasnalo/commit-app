@@ -35,13 +35,15 @@ export default function AuthScreen({ navigation }: any) {
 
   // Google Sign-In 初期化
   useEffect(() => {
-    // デバッグログ: 環境変数の状態を確認
-    console.log('[AuthScreen] Google Sign-In config check:', {
-      webClientId: GOOGLE_WEB_CLIENT_ID ? 'SET' : 'UNDEFINED',
-      iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'UNDEFINED',
-      webClientIdLength: GOOGLE_WEB_CLIENT_ID?.length ?? 0,
-      iosClientIdLength: GOOGLE_IOS_CLIENT_ID?.length ?? 0,
-    });
+    // SECURITY: Only log config status in dev (prevents credential exposure)
+    if (__DEV__) {
+      console.log('[AuthScreen] Google Sign-In config check:', {
+        webClientId: GOOGLE_WEB_CLIENT_ID ? 'SET' : 'UNDEFINED',
+        iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'UNDEFINED',
+        webClientIdLength: GOOGLE_WEB_CLIENT_ID?.length ?? 0,
+        iosClientIdLength: GOOGLE_IOS_CLIENT_ID?.length ?? 0,
+      });
+    }
 
     if (GOOGLE_WEB_CLIENT_ID) {
       GoogleSignin.configure({
@@ -49,9 +51,9 @@ export default function AuthScreen({ navigation }: any) {
         iosClientId: GOOGLE_IOS_CLIENT_ID,
         offlineAccess: true,
       });
-      console.log('[AuthScreen] GoogleSignin.configure() called successfully');
+      if (__DEV__) console.log('[AuthScreen] GoogleSignin.configure() called successfully');
     } else {
-      console.warn('[AuthScreen] GoogleSignin NOT configured - GOOGLE_WEB_CLIENT_ID is undefined');
+      if (__DEV__) console.warn('[AuthScreen] GoogleSignin NOT configured - GOOGLE_WEB_CLIENT_ID is undefined');
     }
   }, []);
 

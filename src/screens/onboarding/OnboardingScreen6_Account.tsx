@@ -49,13 +49,15 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   // Google Sign-In 初期化
   useEffect(() => {
-    // デバッグログ: 環境変数の状態を確認（本番ビルドでも出力）
-    console.log('[OnboardingScreen6] Google Sign-In config check:', {
-      webClientId: GOOGLE_WEB_CLIENT_ID ? 'SET' : 'UNDEFINED',
-      iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'UNDEFINED',
-      webClientIdLength: GOOGLE_WEB_CLIENT_ID?.length ?? 0,
-      iosClientIdLength: GOOGLE_IOS_CLIENT_ID?.length ?? 0,
-    });
+    // SECURITY: Only log config status in dev (prevents credential exposure)
+    if (__DEV__) {
+      console.log('[OnboardingScreen6] Google Sign-In config check:', {
+        webClientId: GOOGLE_WEB_CLIENT_ID ? 'SET' : 'UNDEFINED',
+        iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'UNDEFINED',
+        webClientIdLength: GOOGLE_WEB_CLIENT_ID?.length ?? 0,
+        iosClientIdLength: GOOGLE_IOS_CLIENT_ID?.length ?? 0,
+      });
+    }
 
     if (GOOGLE_WEB_CLIENT_ID) {
       GoogleSignin.configure({
@@ -63,9 +65,9 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         iosClientId: GOOGLE_IOS_CLIENT_ID,
         offlineAccess: true, // サーバー側でトークンを使用する場合に必要
       });
-      console.log('[OnboardingScreen6] GoogleSignin.configure() called successfully');
+      if (__DEV__) console.log('[OnboardingScreen6] GoogleSignin.configure() called successfully');
     } else {
-      console.warn('[OnboardingScreen6] GoogleSignin NOT configured - GOOGLE_WEB_CLIENT_ID is undefined');
+      if (__DEV__) console.warn('[OnboardingScreen6] GoogleSignin NOT configured - GOOGLE_WEB_CLIENT_ID is undefined');
     }
   }, []);
 

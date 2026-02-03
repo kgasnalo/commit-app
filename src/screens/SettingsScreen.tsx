@@ -152,7 +152,9 @@ export default function SettingsScreen({ navigation }: any) {
               const { error } = await supabase.auth.signOut();
               if (error) throw error;
             } catch (error) {
-              console.error('Logout error:', error);
+              // SECURITY: Only log error details in dev, send to Sentry in production
+              if (__DEV__) console.error('Logout error:', error);
+              captureError(error, { location: 'SettingsScreen.handleLogout' });
               Alert.alert(i18n.t('common.error'), i18n.t('settings.logout_error'));
             }
           },

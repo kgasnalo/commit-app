@@ -74,7 +74,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         // 購入リスナーを設定
         setPurchaseListener(
           async (productId, transactionId) => {
-            if (__DEV__) console.log('[Screen13] Purchase success:', productId, transactionId);
+            // SECURITY: Only log productId in dev, never log transactionId (sensitive)
+            if (__DEV__) console.log('[Screen13] Purchase success:', productId);
             // 購入検証成功 - ポーリングを早期終了させるフラグを立てる
             iapVerifiedRef.current = true;
           },

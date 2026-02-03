@@ -482,6 +482,7 @@ function NavigationContent() {
     // Deep Link Handler: Process OAuth callback URLs
     // Security: Validates state parameter (CSRF), sanitizes error messages
     async function handleDeepLink(url: string | null) {
+      // SECURITY: Only log URL in dev (contains access_token in production)
       if (__DEV__) console.log('🔗 Deep Link received:', url);
       if (!url || !url.startsWith('commitapp://')) {
         if (__DEV__) console.log('🔗 Deep Link: Ignored (not commitapp://)');
@@ -511,6 +512,7 @@ function NavigationContent() {
           const safeMessage = errorDescription
             ? errorDescription.replace(/[<>]/g, '').slice(0, 200)
             : i18n.t('common.error');
+          // SECURITY: Only log OAuth errors in dev
           if (__DEV__) console.warn('🔗 Deep Link: OAuth error:', errorParam);
           Alert.alert(i18n.t('common.error'), safeMessage);
           return;
@@ -521,6 +523,7 @@ function NavigationContent() {
         if (state) {
           const expectedState = await AsyncStorage.getItem('oauth_state');
           if (expectedState && state !== expectedState) {
+            // SECURITY: Only log CSRF failures in dev (state contains sensitive info)
             if (__DEV__) console.warn('🔗 Deep Link: CSRF validation failed');
             captureError(new Error('OAuth CSRF validation failed'), {
               location: 'AppNavigator.handleDeepLink.CSRF',

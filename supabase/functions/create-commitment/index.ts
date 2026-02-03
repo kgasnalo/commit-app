@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid auth header format')
     }
 
-    console.log('[create-commitment] Token snippet:', authHeader.substring(7, 27) + '...')
+    // SECURITY: Token snippet logging removed - sensitive information should not be logged
 
     // Validate environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
