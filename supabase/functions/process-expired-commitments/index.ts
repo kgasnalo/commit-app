@@ -333,7 +333,7 @@ Deno.serve(async (req) => {
       if (fetchError) {
         console.error('[Reaper] Error fetching failed charges:', fetchError)
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch charges for retry', details: fetchError }),
+          JSON.stringify({ error: 'Failed to fetch charges for retry' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -483,7 +483,7 @@ Deno.serve(async (req) => {
       extra: { stats },
     })
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(error) }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

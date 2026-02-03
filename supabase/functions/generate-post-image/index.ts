@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
 
     if (fetchError) {
       console.error('[generate-post-image] Fetch error:', fetchError)
-      return errorResponse(500, 'FETCH_FAILED', fetchError.message)
+      return errorResponse(500, 'FETCH_FAILED')
     }
 
     const postsToProcess = scheduled_post_id ? [posts] : (posts || [])
@@ -284,6 +284,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[generate-post-image] Unexpected error:', error)
-    return errorResponse(500, 'INTERNAL_ERROR', String(error))
+    return errorResponse(500, 'INTERNAL_ERROR')
   }
 })

@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
       console.error('[create-commitment] Auth verification failed:', authError?.message)
       console.error('[create-commitment] Auth error code:', authError?.status)
       addBreadcrumb('Auth failed', 'auth', { error: authError?.message })
-      return errorResponse(401, 'UNAUTHORIZED', authError?.message || 'Token validation failed')
+      return errorResponse(401, 'UNAUTHORIZED')
     }
 
     // Set user context for Sentry

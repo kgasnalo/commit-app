@@ -419,7 +419,7 @@ Deno.serve(async (req) => {
 
       if (insertError) {
         console.error('[generate-x-posts] Insert error:', insertError)
-        return errorResponse(500, 'INSERT_FAILED', insertError.message)
+        return errorResponse(500, 'INSERT_FAILED')
       }
 
       // Log generation

@@ -373,7 +373,7 @@ Deno.serve(async (req) => {
 
     if (fetchError) {
       console.error('[post-to-x] Fetch error:', fetchError)
-      return errorResponse(500, 'FETCH_FAILED', fetchError.message)
+      return errorResponse(500, 'FETCH_FAILED')
     }
 
     const postsToProcess: ScheduledPost[] = scheduled_post_id ? [posts as ScheduledPost] : (posts as ScheduledPost[] || [])
@@ -497,6 +497,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[post-to-x] Unexpected error:', error)
-    return errorResponse(500, 'INTERNAL_ERROR', String(error))
+    return errorResponse(500, 'INTERNAL_ERROR')
   }
 })
