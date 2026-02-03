@@ -1920,3 +1920,22 @@ const isSilentMode = silentSwitch?.isMuted ?? false;
 ```
 - iOSのみ対応（Androidは物理サイレントスイッチがない）
 - ネイティブモジュールのため、インストール後にリビルドが必要
+
+---
+
+# ビルド前チェックリスト
+
+## ローカルビルド（EASクォータ超過時）
+1. `./build-eas-local.sh` を使用（**直接 `eas build --local` は禁止**）
+2. スクリプトが全環境変数を✅表示することを確認
+3. ビルド成功後: `eas submit --platform ios --path ./build-*.ipa --non-interactive`
+
+## リモートビルド（通常時）
+1. `eas build --profile production --platform ios`
+2. EAS環境変数確認: `eas env:list --environment production`
+
+## 新しい環境変数を追加する場合
+1. `.env` に追加
+2. `eas env:create --environment production` で EAS にも追加
+3. `build-eas-local.sh` の REQUIRED_VARS 配列に追加
+4. `app.config.js` の extra セクションに追加
