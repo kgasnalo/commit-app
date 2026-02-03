@@ -147,10 +147,11 @@ Deno.serve(async (req) => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     const { data: recentLifeline, error: globalCheckError } = await supabaseClient
       .from('commitments')
-      .select('id, updated_at')
+      .select('id, freeze_used_at')
       .eq('user_id', user.id)
       .eq('is_freeze_used', true)
-      .gte('updated_at', thirtyDaysAgo)
+      .not('freeze_used_at', 'is', null)
+      .gte('freeze_used_at', thirtyDaysAgo)
       .limit(1)
 
     if (globalCheckError) {
@@ -179,12 +180,14 @@ Deno.serve(async (req) => {
     // Update commitment: extend deadline and mark lifeline as used
     // Optimistic locking: only update if is_freeze_used is still false (prevents race condition)
     // Note: new Date().toISOString() returns UTC timestamp (ISO 8601 format)
+    const nowUtc = new Date().toISOString()
     const { data: updatedCommitment, error: updateError } = await supabaseAdmin
       .from('commitments')
       .update({
         deadline: newDeadline.toISOString(),
         is_freeze_used: true,
-        updated_at: new Date().toISOString(), // UTC timestamp
+        freeze_used_at: nowUtc, // Track when lifeline was used for cooldown calculation
+        updated_at: nowUtc,
       })
       .eq('id', commitment_id)
       .eq('is_freeze_used', false) // Optimistic lock: ensures no concurrent update

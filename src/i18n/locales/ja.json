@@ -327,7 +327,9 @@
     "lifeline_confirm_message": "期限を7日間延長しますか？この機能はこの本につき1回のみ使用できます。",
     "lifeline_success": "期限が7日間延長されました",
     "lifeline_already_used": "この本ではすでにライフラインを使用済みです",
-    "lifeline_unavailable": "ライフライン使用不可"
+    "lifeline_unavailable": "ライフライン使用不可",
+    "lifeline_cooldown": "クールダウン中（残り{{days}}日）",
+    "lifeline_hint": "※ Lifelineは全ての本に対して30日に1回使用可能です"
   },
   "verification": {
     "title": "読了確認",
@@ -457,7 +459,8 @@
     "sound_bonfire": "たき火",
     "sound_ocean": "波の音",
     "sound_stream": "渓流",
-    "sound_rain": "雨音"
+    "sound_rain": "雨音",
+    "silent_mode_warning": "消音中 - 環境音は再生されません"
   },
   "notifications": {
     "settings_title": "通知設定",
@@ -551,6 +554,7 @@
     "no_results": "検索結果なし",
     "no_books_found": "該当する書籍が見つかりませんでした。",
     "search_failed": "書籍の検索に失敗しました。",
+    "api_quota_exceeded": "検索サービスが一時的に利用できません。しばらくお待ちいただくか、手動で本を追加してください。",
     "select_book": "書籍を選択してください。",
     "select_penalty": "ペナルティ金額を選択してください。",
     "agree_penalty": "ペナルティに同意してください。",

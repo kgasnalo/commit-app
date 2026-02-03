@@ -249,6 +249,9 @@ function NavigationContent() {
   // 統一された認証状態（フリッカー防止のためアトミックに更新）
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
+  // セーフティタイマー用に最新の状態を追跡（クロージャ問題を回避）
+  const authStateRef = useRef<AuthState>({ status: 'loading' });
+
   // ユーザーステータスを確認する純粋関数
   // isSubscribed と hasCompletedOnboarding の両方を返す
   // 新規ユーザーの場合はプロファイルがまだ存在しない可能性があるため、
@@ -872,6 +875,11 @@ function NavigationContent() {
     };
   }, []);
 
+  // authStateが変わるたびにrefを更新（セーフティタイマー用）
+  useEffect(() => {
+    authStateRef.current = authState;
+  }, [authState]);
+
   // Hide splash screen once auth state is resolved
   useEffect(() => {
     if (authState.status !== 'loading') {
@@ -881,12 +889,14 @@ function NavigationContent() {
 
   // Safety: force hide splash after 8s even if auth never resolves
   // Increased from 5s to 8s to accommodate OAuth session establishment
+  // NOTE: authStateRef.current を使用して最新の状態を参照（クロージャ問題を回避）
   useEffect(() => {
     let isMounted = true;
     const safetyTimer = setTimeout(() => {
       if (!isMounted) return; // Component unmounted, skip
       SplashScreen.hideAsync();
-      if (authState.status === 'loading') {
+      // authStateRef.current で最新の値を参照（依存配列が空でも正確な値を取得）
+      if (authStateRef.current.status === 'loading') {
         console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 8s');
         setAuthState({ status: 'unauthenticated' });
       }

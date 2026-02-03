@@ -14,6 +14,7 @@ import {
   Alert,
   StatusBar,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,8 +24,11 @@ import Animated, {
   withTiming,
   withSpring,
   Easing,
+  FadeIn,
+  FadeOut,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useSilentSwitch } from 'react-native-volume-manager';
 import { HapticsService } from '../../lib/HapticsService';
 import { SoundManager, MonkModeSoundKey } from '../../lib/audio';
 import { colors } from '../../theme/colors';
@@ -48,6 +52,11 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Silent mode detection (iOS only)
+  const silentSwitch = useSilentSwitch();
+  const isSilentMode = silentSwitch?.isMuted ?? false;
+  const showSilentBanner = Platform.OS === 'ios' && isSilentMode && soundKey !== 'none' && !isMuted;
 
   // Animation values for entry
   const overlayOpacity = useSharedValue(1);
@@ -267,6 +276,20 @@ export default function MonkModeActiveScreen({ route, navigation }: any) {
             />
           </TouchableOpacity>
 
+          {/* Silent mode banner */}
+          {showSilentBanner && (
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              exiting={FadeOut.duration(300)}
+              style={styles.silentBanner}
+            >
+              <Ionicons name="volume-mute" size={16} color="#FF6B35" />
+              <Text style={styles.silentBannerText}>
+                {i18n.t('monkmode.silent_mode_warning')}
+              </Text>
+            </Animated.View>
+          )}
+
           {/* Timer area */}
           <View style={styles.timerContainer}>
             {/* Book title */}
@@ -396,6 +419,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
+  },
+  silentBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(26, 23, 20, 0.9)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 110,
+    marginHorizontal: 40,
+    gap: 8,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 107, 53, 0.3)',
+  },
+  silentBannerText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '500',
   },
   timerContainer: {
     flex: 1,

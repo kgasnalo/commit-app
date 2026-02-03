@@ -119,6 +119,7 @@ export interface Database {
           currency: string
           target_pages: number
           is_freeze_used: boolean
+          freeze_used_at: string | null
           defaulted_at: string | null
           completed_at: string | null
           created_at: string
@@ -134,6 +135,7 @@ export interface Database {
           currency?: string
           target_pages?: number
           is_freeze_used?: boolean
+          freeze_used_at?: string | null
           defaulted_at?: string | null
           completed_at?: string | null
           created_at?: string
@@ -149,6 +151,7 @@ export interface Database {
           currency?: string
           target_pages?: number
           is_freeze_used?: boolean
+          freeze_used_at?: string | null
           defaulted_at?: string | null
           completed_at?: string | null
           created_at?: string

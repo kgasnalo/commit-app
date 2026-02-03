@@ -327,7 +327,9 @@
     "lifeline_confirm_message": "Extend your deadline by 7 days? This can only be used once per book.",
     "lifeline_success": "Deadline extended by 7 days",
     "lifeline_already_used": "Lifeline already used for this book",
-    "lifeline_unavailable": "Lifeline Unavailable"
+    "lifeline_unavailable": "Lifeline Unavailable",
+    "lifeline_cooldown": "COOLDOWN ({{days}} days left)",
+    "lifeline_hint": "* Lifeline can be used once every 30 days across all books"
   },
   "verification": {
     "title": "Reading Verification",
@@ -457,7 +459,8 @@
     "sound_bonfire": "Bonfire",
     "sound_ocean": "Waves",
     "sound_stream": "Stream",
-    "sound_rain": "Rain"
+    "sound_rain": "Rain",
+    "silent_mode_warning": "Silent mode - ambient sounds disabled"
   },
   "notifications": {
     "settings_title": "Notification Settings",
@@ -551,6 +554,7 @@
     "no_results": "No results",
     "no_books_found": "No books found matching your query.",
     "search_failed": "Failed to search books.",
+    "api_quota_exceeded": "Search service is temporarily unavailable. Please wait a moment or add your book manually.",
     "select_book": "Please select a book.",
     "select_penalty": "Please select a penalty amount.",
     "agree_penalty": "Please agree to the penalty terms.",

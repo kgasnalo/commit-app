@@ -63,6 +63,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [lifelineUsedForBook, setLifelineUsedForBook] = useState(false);
   const [lifelineLoading, setLifelineLoading] = useState(false);
+  const [cooldownDaysRemaining, setCooldownDaysRemaining] = useState<number | null>(null);
 
   // Button press scale for Piano Black luxury feel
   const verifyButtonScale = useSharedValue(1);
@@ -181,6 +182,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) return;
 
+      // Check if lifeline was used for this specific book
       const { data, error } = await supabase
         .from('commitments')
         .select('id')
@@ -191,6 +193,32 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
 
       if (error) throw error;
       setLifelineUsedForBook(data && data.length > 0);
+
+      // Check global cooldown (30 days across all books)
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: cooldownData, error: cooldownError } = await supabase
+        .from('commitments')
+        .select('freeze_used_at')
+        .eq('user_id', session.user.id)
+        .eq('is_freeze_used', true)
+        .not('freeze_used_at', 'is', null)
+        .gte('freeze_used_at', thirtyDaysAgo)
+        .order('freeze_used_at', { ascending: false })
+        .limit(1);
+
+      if (cooldownError) {
+        console.error('[CommitmentDetailScreen] Cooldown check error:', cooldownError);
+        return;
+      }
+
+      if (cooldownData && cooldownData.length > 0 && cooldownData[0].freeze_used_at) {
+        const usedAt = new Date(cooldownData[0].freeze_used_at);
+        const cooldownEnd = new Date(usedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const daysRemaining = Math.ceil((cooldownEnd.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+        setCooldownDaysRemaining(daysRemaining > 0 ? daysRemaining : null);
+      } else {
+        setCooldownDaysRemaining(null);
+      }
     } catch (error) {
       console.error('[CommitmentDetailScreen] Lifeline check error:', error);
     }
@@ -424,33 +452,42 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
                 </TouchableOpacity>
               </Animated.View>
 
-              <Animated.View style={lifelineButtonAnimatedStyle}>
-                <TouchableOpacity
-                  style={[
-                      styles.secondaryButton,
-                      lifelineUsedForBook && styles.secondaryButtonDisabled
-                  ]}
-                  onPress={() => {
-                    HapticsService.feedbackMedium();
-                    handleUseLifeline();
-                  }}
-                  onPressIn={handleLifelinePressIn}
-                  onPressOut={handleLifelinePressOut}
-                  disabled={lifelineUsedForBook || lifelineLoading}
-                  activeOpacity={0.9}
-                >
-                  {lifelineLoading ? (
-                    <ActivityIndicator size="small" color={colors.text.secondary} />
-                  ) : (
-                    <Text style={[
-                        styles.secondaryButtonText,
-                        lifelineUsedForBook && styles.secondaryButtonTextDisabled
-                    ]}>
-                      {lifelineUsedForBook ? 'FREEZE USED' : 'USE FREEZE (+7 DAYS)'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
+              <View>
+                <Animated.View style={lifelineButtonAnimatedStyle}>
+                  <TouchableOpacity
+                    style={[
+                        styles.secondaryButton,
+                        (lifelineUsedForBook || cooldownDaysRemaining !== null) && styles.secondaryButtonDisabled
+                    ]}
+                    onPress={() => {
+                      HapticsService.feedbackMedium();
+                      handleUseLifeline();
+                    }}
+                    onPressIn={handleLifelinePressIn}
+                    onPressOut={handleLifelinePressOut}
+                    disabled={lifelineUsedForBook || lifelineLoading || cooldownDaysRemaining !== null}
+                    activeOpacity={0.9}
+                  >
+                    {lifelineLoading ? (
+                      <ActivityIndicator size="small" color={colors.text.secondary} />
+                    ) : (
+                      <Text style={[
+                          styles.secondaryButtonText,
+                          (lifelineUsedForBook || cooldownDaysRemaining !== null) && styles.secondaryButtonTextDisabled
+                      ]}>
+                        {cooldownDaysRemaining !== null
+                          ? i18n.t('commitment_detail.lifeline_cooldown', { days: cooldownDaysRemaining })
+                          : lifelineUsedForBook
+                            ? 'FREEZE USED'
+                            : 'USE FREEZE (+7 DAYS)'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
+                <Text style={styles.lifelineHint}>
+                  {i18n.t('commitment_detail.lifeline_hint')}
+                </Text>
+              </View>
             </>
           )}
 
@@ -721,5 +758,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'rgba(255, 255, 255, 0.4)',
     fontSize: 15,
+  },
+  lifelineHint: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.4)',
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 18,
   },
 });
