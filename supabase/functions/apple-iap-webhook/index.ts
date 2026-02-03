@@ -219,11 +219,12 @@ function decodeJWSPayload<T>(jws: string): T | null {
 
 /**
  * 通知が既に処理済みかチェック（冪等性）
+ * @returns true: 処理済み, false: 未処理, null: DBエラー
  */
 async function isNotificationProcessed(
   supabase: ReturnType<typeof createClient>,
   notificationUUID: string
-): Promise<boolean> {
+): Promise<boolean | null> {
   const { data, error } = await supabase
     .from('apple_notifications_processed')
     .select('id')
@@ -232,8 +233,9 @@ async function isNotificationProcessed(
 
   if (error) {
     console.error('[apple-iap-webhook] Error checking notification:', error);
-    // エラー時は処理を続行（重複のリスクはあるが処理漏れを防ぐ）
-    return false;
+    // DBエラー時はnullを返して呼び出し元でハンドリングさせる
+    // 処理続行すると重複処理のリスクがあり、falseを返すと処理漏れになる
+    return null;
   }
 
   return data !== null;
@@ -325,14 +327,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 署名検証に失敗した場合は警告ログを出力（本番では拒否を検討）
+    // CRITICAL-1: 署名検証に失敗した場合は不正なリクエストとして拒否
+    // セキュリティ: 改ざんされたWebhookによるsubscription_status操作を防止
     if (!verified) {
-      console.warn('[apple-iap-webhook] WARNING: JWS signature verification failed. Processing anyway for backward compatibility.');
-      // 本番環境では以下のコメントアウトを解除して不正なリクエストを拒否:
-      // return new Response(
-      //   JSON.stringify({ error: 'Signature verification failed' }),
-      //   { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      // );
+      console.error('[apple-iap-webhook] SECURITY: JWS signature verification failed - rejecting request');
+      return new Response(
+        JSON.stringify({ error: 'Signature verification failed' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`[apple-iap-webhook] Received notification: ${payload.notificationType} (${payload.subtype || 'no subtype'}) UUID: ${payload.notificationUUID}`);
@@ -342,7 +344,18 @@ Deno.serve(async (req) => {
 
     // CRITICAL-2: 冪等性チェック - 同じ通知を重複処理しない
     const alreadyProcessed = await isNotificationProcessed(supabase, payload.notificationUUID);
-    if (alreadyProcessed) {
+
+    // DBエラー時 (null) は500を返してAppleにリトライさせる
+    // これにより処理漏れと重複処理の両方を防ぐ
+    if (alreadyProcessed === null) {
+      console.error(`[apple-iap-webhook] DB error checking notification ${payload.notificationUUID}, returning 500 for retry`);
+      return new Response(
+        JSON.stringify({ error: 'Database error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (alreadyProcessed === true) {
       console.log(`[apple-iap-webhook] Notification ${payload.notificationUUID} already processed, skipping`);
       return new Response(
         JSON.stringify({ success: true, message: 'Already processed' }),
@@ -386,12 +399,13 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       console.warn(`[apple-iap-webhook] User not found for transaction: ${transactionInfo.originalTransactionId}`);
-      // ユーザーが見つからなくても処理済みとしてマーク
-      await markNotificationProcessed(supabase, payload.notificationUUID, payload.notificationType, null);
-      // 200 を返す（Apple はリトライする）
+      // CRITICAL: ユーザー未登録時は処理済みとしてマークしない
+      // 500を返してAppleにリトライさせる（ユーザー登録完了まで）
+      // 以前の実装では200を返して処理済みマークしていたため、
+      // ユーザー登録完了後も永遠にサブスクが反映されない問題があった
       return new Response(
-        JSON.stringify({ success: true, message: 'User not found, notification acknowledged' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'User not found, will retry' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

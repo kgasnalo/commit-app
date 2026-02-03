@@ -178,7 +178,9 @@ Deno.serve(async (req) => {
     const newDeadline = new Date(currentDeadline.getTime() + 7 * 24 * 60 * 60 * 1000)
 
     // Update commitment: extend deadline and mark lifeline as used
-    // Optimistic locking: only update if is_freeze_used is still false (prevents race condition)
+    // Optimistic locking: only update if is_freeze_used is still false AND status is still active
+    // CRITICAL: Also check status to prevent race condition with Reaper (process-expired-commitments)
+    // Reaper may have already marked as 'defaulted' - in that case, lifeline should fail
     // Note: new Date().toISOString() returns UTC timestamp (ISO 8601 format)
     const nowUtc = new Date().toISOString()
     const { data: updatedCommitment, error: updateError } = await supabaseAdmin
@@ -191,6 +193,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', commitment_id)
       .eq('is_freeze_used', false) // Optimistic lock: ensures no concurrent update
+      .in('status', ['pending', 'in_progress']) // CRITICAL: Prevent race with Reaper
       .select()
       .single()
 

@@ -691,8 +691,9 @@ function NavigationContent() {
 
       // TOKEN_REFRESHED: セッションのみ更新し、既存のisSubscribed/hasCompletedOnboarding状態を維持
       // これにより、Screen13でrefreshSession()を呼んでもスタックが切り替わらない
+      // 追加: バックグラウンドで非同期にステータス確認（subscription変更検知）
       if (event === 'TOKEN_REFRESHED') {
-        if (__DEV__) console.log('✅ Auth: TOKEN_REFRESHED - preserving current state');
+        if (__DEV__) console.log('✅ Auth: TOKEN_REFRESHED - preserving current state, checking status in background');
         if (isMounted) {
           setAuthState(prev => {
             if (prev.status !== 'authenticated') {
@@ -701,6 +702,21 @@ function NavigationContent() {
             }
             // セッションのみ更新、isSubscribed/hasCompletedOnboardingは維持
             return { ...prev, session };
+          });
+
+          // 非ブロッキングでステータス確認（Web Portalでのサブスク変更を検知）
+          // Note: await不要 - バックグラウンドで実行し、結果が来たら状態更新
+          checkUserStatus(session.user.id).then(updatedStatus => {
+            if (!isMounted) return;
+            setAuthState(prev => {
+              if (prev.status !== 'authenticated') return prev;
+              // キャッシュも更新
+              setCachedUserStatus(session.user.id, updatedStatus);
+              return { ...prev, ...updatedStatus };
+            });
+          }).catch(err => {
+            // 非ブロッキングなのでエラーはログのみ
+            if (__DEV__) console.warn('✅ Auth: TOKEN_REFRESHED status check failed:', err);
           });
         }
         return;
@@ -887,8 +903,9 @@ function NavigationContent() {
     }
   }, [authState.status]);
 
-  // Safety: force hide splash after 8s even if auth never resolves
-  // Increased from 5s to 8s to accommodate OAuth session establishment
+  // Safety: force hide splash after 15s even if auth never resolves
+  // Increased from 8s to 15s to accommodate OAuth + user record creation + subscription check
+  // OAuth後のセッション確立 + ユーザーレコード作成（5s）+ ステータスチェック（8s）に対応
   // NOTE: authStateRef.current を使用して最新の状態を参照（クロージャ問題を回避）
   useEffect(() => {
     let isMounted = true;
@@ -897,10 +914,10 @@ function NavigationContent() {
       SplashScreen.hideAsync();
       // authStateRef.current で最新の値を参照（依存配列が空でも正確な値を取得）
       if (authStateRef.current.status === 'loading') {
-        console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 8s');
+        console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 15s');
         setAuthState({ status: 'unauthenticated' });
       }
-    }, 8000);
+    }, 15000);
     return () => {
       isMounted = false;
       clearTimeout(safetyTimer);

@@ -301,7 +301,7 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const cronSecret = Deno.env.get('CRON_SECRET') || ''
+    const cronSecret = Deno.env.get('CRON_SECRET')
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
 
     if (!supabaseUrl || !serviceRoleKey) {
@@ -310,6 +310,13 @@ Deno.serve(async (req) => {
 
     if (!anthropicKey) {
       return errorResponse(500, 'CONFIGURATION_ERROR', 'Missing Anthropic API key')
+    }
+
+    // SECURITY: CRON_SECRET must be configured for system-only endpoints
+    // Without this check, empty token '' would match empty cronSecret ''
+    if (!cronSecret) {
+      console.error('[generate-x-posts] CRON_SECRET not configured')
+      return errorResponse(500, 'CONFIGURATION_ERROR', 'Missing CRON_SECRET')
     }
 
     if (!verifySystemAuthorization(authHeader, serviceRoleKey, cronSecret)) {

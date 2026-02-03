@@ -257,11 +257,19 @@ Deno.serve(async (req) => {
 
     console.log('[SECURITY] System authorization verified successfully')
 
-    // Parse request body
-    const body: ProcessRequest = await req.json().catch(() => {
-      console.warn('[Reaper] Empty or invalid request body received')
-      return {}
-    })
+    // Parse request body with proper error handling
+    let body: ProcessRequest
+    try {
+      body = await req.json()
+    } catch {
+      // JSONパースエラー時は明確に400エラーを返す
+      // Note: pg_cronからの呼び出しは常に有効なJSONを送るべき
+      console.warn('[Reaper] Invalid JSON in request body')
+      return new Response(
+        JSON.stringify({ error: 'INVALID_REQUEST', details: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     const isRetryMode = body.retry_mode === true
 
     console.log(`[Reaper] Starting ${isRetryMode ? 'RETRY' : 'NORMAL'} mode. Source: ${body.source || 'unknown'}`)
@@ -494,7 +502,9 @@ async function processCommitment(
 ): Promise<void> {
   console.log(`[Reaper] Processing commitment ${commitment.id}`)
 
-  // Step 1: Mark as defaulted (optimistic lock - only if still pending)
+  // Step 1: Mark as defaulted (optimistic lock - only if still pending AND lifeline not used)
+  // CRITICAL: Also check is_freeze_used to prevent race condition with use-lifeline
+  // If user is using lifeline at the same moment, we should not mark as defaulted
   const { error: updateError, count } = await supabaseAdmin
     .from('commitments')
     .update({
@@ -504,6 +514,7 @@ async function processCommitment(
     })
     .eq('id', commitment.id)
     .eq('status', 'pending') // Optimistic lock
+    .eq('is_freeze_used', false) // CRITICAL: Prevent race with lifeline
     .select()
 
   if (updateError || count === 0) {
@@ -671,6 +682,38 @@ async function attemptStripeCharge(
       failure_reason: 'Missing customer or payment method',
       failure_code: 'MISSING_PAYMENT_INFO',
     }
+  }
+
+  // Verify customer exists (handles test→live key migration)
+  try {
+    await stripe.customers.retrieve(customerId)
+  } catch (customerError: unknown) {
+    const stripeError = customerError as { code?: string; message?: string }
+    if (stripeError.code === 'resource_missing') {
+      console.error(`[Reaper] Stripe customer not found: ${customerId} (likely test→live migration)`)
+      return {
+        success: false,
+        failure_reason: 'Stripe customer not found. User needs to re-register payment method.',
+        failure_code: 'CUSTOMER_NOT_FOUND',
+      }
+    }
+    throw customerError
+  }
+
+  // Verify payment method exists
+  try {
+    await stripe.paymentMethods.retrieve(paymentMethodId)
+  } catch (pmError: unknown) {
+    const stripeError = pmError as { code?: string; message?: string }
+    if (stripeError.code === 'resource_missing') {
+      console.error(`[Reaper] Stripe payment method not found: ${paymentMethodId}`)
+      return {
+        success: false,
+        failure_reason: 'Payment method not found. User needs to re-register payment method.',
+        failure_code: 'PAYMENT_METHOD_NOT_FOUND',
+      }
+    }
+    throw pmError
   }
 
   try {

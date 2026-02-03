@@ -75,6 +75,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // CRITICAL: APPLE_APP_SHARED_SECRETが未設定の場合、レシート検証は失敗する
+    // この環境変数がないとIAP購入後にsubscription_statusが更新されず、アプリがフリーズする
+    if (!appSharedSecret) {
+      console.error('[verify-iap-receipt] CRITICAL: APPLE_APP_SHARED_SECRET is not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'CONFIGURATION_ERROR', details: 'Apple shared secret not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // 認証チェック
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -275,6 +285,7 @@ async function verifyWithApple(
 
 /**
  * レシートから指定された商品の購入情報を検索
+ * 複数の購入がある場合、最新の有効期限を持つものを返す
  */
 function findPurchaseInReceipt(
   appleResponse: AppleVerifyResponse,
@@ -287,21 +298,29 @@ function findPurchaseInReceipt(
     appleResponse.receipt?.in_app ||
     [];
 
-  // 指定された productId の購入を検索
-  const matchingPurchase = purchases.find((p) => p.product_id === productId);
+  // 指定された productId の購入をすべて取得
+  const matchingPurchases = purchases.filter((p) => p.product_id === productId);
 
-  if (!matchingPurchase) {
+  if (matchingPurchases.length === 0) {
     return null;
   }
 
+  // 最新の有効期限を持つ購入を検索（複数購入対応）
+  // reduce で最新の expires_date_ms を持つエントリを選択
+  const latestPurchase = matchingPurchases.reduce((latest, current) => {
+    const currentExpires = parseInt(current.expires_date_ms || '0', 10);
+    const latestExpires = parseInt(latest.expires_date_ms || '0', 10);
+    return currentExpires > latestExpires ? current : latest;
+  });
+
   // 有効期限の計算
   let expiresAt: string | null = null;
-  if (matchingPurchase.expires_date_ms) {
-    expiresAt = new Date(parseInt(matchingPurchase.expires_date_ms, 10)).toISOString();
+  if (latestPurchase.expires_date_ms) {
+    expiresAt = new Date(parseInt(latestPurchase.expires_date_ms, 10)).toISOString();
   }
 
   return {
     expiresAt,
-    originalTransactionId: matchingPurchase.original_transaction_id,
+    originalTransactionId: latestPurchase.original_transaction_id,
   };
 }

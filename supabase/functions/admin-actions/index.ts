@@ -235,13 +235,36 @@ async function handleRefund(supabase: any, adminUser: any, penaltyChargeId: stri
   } catch (stripeError) {
     console.error('[admin-actions] Stripe Refund Failed:', stripeError)
     // Revert DB status back to 'succeeded' since refund failed
-    await supabase
-      .from('penalty_charges')
-      .update({
-        charge_status: 'succeeded', // Revert to original status
-        updated_at: new Date().toISOString()
+    try {
+      const { error: revertError } = await supabase
+        .from('penalty_charges')
+        .update({
+          charge_status: 'succeeded', // Revert to original status
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', penaltyChargeId)
+
+      if (revertError) {
+        // Critical: Stripe refund failed AND DB revert failed
+        // Manual intervention required
+        console.error('[admin-actions] CRITICAL: Failed to revert charge status after Stripe failure:', revertError)
+        captureException(new Error('Failed to revert charge status after Stripe refund failure'), {
+          functionName: 'admin-actions.refund.revert',
+          extra: {
+            penaltyChargeId,
+            stripeError: stripeError.message,
+            revertError: revertError.message,
+            currentDbStatus: 'refund_pending',
+          },
+        })
+      }
+    } catch (revertCatchError) {
+      console.error('[admin-actions] CRITICAL: Exception during charge status revert:', revertCatchError)
+      captureException(revertCatchError, {
+        functionName: 'admin-actions.refund.revert',
+        extra: { penaltyChargeId, stripeError: stripeError.message },
       })
-      .eq('id', penaltyChargeId)
+    }
 
     captureException(stripeError, {
       functionName: 'admin-actions',
