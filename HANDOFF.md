@@ -1,118 +1,113 @@
-# Handoff: Session 2026-02-02 (IAP Flow Complete!)
+# Handoff: Session 2026-02-03 (Google Books API Fix)
 
 ## Current Goal
-**✅ Build #65: Sandbox課金テスト完全成功、ダッシュボード遷移確認済み**
+**✅ Google Books API検索復旧 + Open Libraryフォールバック実装**
 
 ---
 
 ## Current Critical Status
 
-### 🎉 IAP購入フロー完全動作
+### 🎉 Google Books API 検索復旧完了
+- **問題**: 日本からのフリーテキスト検索が0件を返す
+- **原因**: GoogleがIPベースで地域制限（日本からのフリーテキスト検索をブロック）
+- **解決**: `intitle:` プレフィックスを自動付与
+- **状態**: ✅ 動作確認済み（「生成AI」「あ」「ハリーポッター」等）
 
-**Build #65 で確認済み:**
-- Google Sign-In ✅
-- Apple Sign-In ✅
-- IAP課金フロー ✅（Sandbox環境）
-- ダッシュボード遷移 ✅
-- i18n「再試行」ボタン ✅
+### ✅ Open Library APIフォールバック実装
+- Google Booksで結果0件の場合、Open Libraryで自動再検索
+- 新規ファイル: `src/utils/openLibraryApi.ts`
 
-### ビルド状況
-
-| Build | 状態 | 内容 |
-|-------|------|------|
-| #61 | ✅ | Google Sign-In修正 |
-| #62-63 | ✅ | APPLE_APP_SHARED_SECRET設定 |
-| #64 | ✅ | ポーリング最適化 + Appleログイン追加 |
-| #65 | ✅ | common.retry i18n修正 + ポーリング30秒に延長 |
+### ⚠️ EAS Build Free Plan クォータ超過（継続中）
+- **状態**: 今月のiOSビルド上限に到達
+- **リセット日**: 2026年3月1日
+- **回避策**: `eas build --local` でローカルビルド
 
 ---
 
 ## What We Fixed Today
 
-### 1. APPLE_APP_SHARED_SECRET（CRITICAL）
+### 1. Google Books API 地域制限対応
+**問題:** 日本IPからの検索が常に0件を返す
+
+**調査結果:**
 ```bash
-supabase secrets set APPLE_APP_SHARED_SECRET=55cbc0d892194a1094ab20dff8f8ff4d
-supabase functions deploy verify-iap-receipt --no-verify-jwt
+# フリーテキスト検索 → 0件（ブロック）
+curl "https://www.googleapis.com/books/v1/volumes?q=zero+to+one"
+# {"totalItems": 0}
+
+# 構造化検索 → 動作する
+curl "https://www.googleapis.com/books/v1/volumes?q=intitle:zero+to+one"
+# {"totalItems": 1000000, "items": [...]}
 ```
 
-### 2. ポーリング最適化
-- `useRef`でpurchaseListener成功を追跡
-- 間隔: 1秒 → 500ms
-- 最大待機: 30秒（60回 × 500ms）
+**原因:** Googleが日本からの「フリーテキスト検索」をブロック。構造化検索（`intitle:`, `inauthor:`, `isbn:`）は許可。
 
-### 3. i18n修正
-- `common.retry` キー追加（ja/en/ko）
-- アカウント作成画面のScrollView追加
+**修正:** `src/utils/searchQueryBuilder.ts`
+```diff
+- googleBooksQuery: query.trim(),
++ googleBooksQuery: `intitle:${query.trim()}`,
+```
 
-### 4. Appleログイン追加（AuthScreen）
+### 2. Open Library APIフォールバック
+**目的:** Google Booksで見つからない場合のバックアップ
 
----
-
-## What Didn't Work（再発防止）
-
-### ❌ ポーリング15秒では短すぎた
-- 500ms × 30回 = 15秒 → verify-iap-receiptの処理時間が足りずタイムアウト
-- **解決**: 500ms × 60回 = 30秒に延長
-
-### ❌ Sandbox再購入でタイムアウト
-- **これは正常な動作**
-- 既にサブスク済みのユーザーが再購入 → Appleが「購入済み」として処理
-- purchaseListenerが発火しない → ポーリングタイムアウト
-- **解決**: アプリ再起動でダッシュボードに遷移（subscription_status=activeを検出）
-
----
-
-## Sandbox課金テストの流れ
-
-1. **アプリアカウント作成**: 普通のGoogle/Appleアカウントで登録
-2. **課金画面で購入**: Apple IDを求められる → Sandboxアカウントでサインイン
-3. **成功確認**: iPhoneの「設定」→「SANDBOXアカウント」項目出現
-4. **注意**: 同じSandboxアカウントで再購入するとタイムアウト（正常動作）
+**実装:**
+- `src/utils/openLibraryApi.ts` 新規作成
+- `src/hooks/useBookSearch.ts` にフォールバックロジック追加
+- GoogleBook形式に変換して既存UIをそのまま使用
 
 ---
 
 ## Immediate Next Steps
 
 ### ✅ 完了した項目
-- [x] APPLE_APP_SHARED_SECRET設定
-- [x] verify-iap-receipt Edge Function再デプロイ
-- [x] Sandbox課金テスト成功
-- [x] ダッシュボード遷移確認
-- [x] ポーリング最適化
-- [x] Appleログイン追加
-- [x] common.retry i18n修正
-- [x] Build #65 TestFlight提出
+- [x] Google Books API検索復旧（`intitle:` プレフィックス）
+- [x] Open Libraryフォールバック実装
+- [x] 動作確認（ローカル開発環境）
 
 ### 次のタスク
-- [ ] App Store Connect Webhook URL設定（サブスク状態自動更新）
-- [ ] 本番リリース前のStripeキー差し替え
+- [ ] 新しいビルド作成（クォータ超過のためローカルビルド）
+- [ ] TestFlightで本検索動作確認
 - [ ] App Store審査提出
 
 ---
 
-## Remaining SHOWSTOPPERs
+## What Didn't Work（再発防止）
 
-### App Store Connect Webhook URL設定（推奨）
-```
-URL: https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/apple-iap-webhook
-```
-設定場所: App Store Connect → アプリ → App Store → App情報 → サーバー通知URL
+### ❌ Google Books APIフリーテキスト検索（日本から）
+- Googleが日本IPからのフリーテキスト検索をブロック
+- エラーではなく「0件」を返すため気づきにくい
+- **解決**: 必ず `intitle:`, `inauthor:`, `isbn:` などの構造化検索を使う
+- **ファイル**: `src/utils/searchQueryBuilder.ts`
 
-### Stripe 本番キー
-- 現在: `pk_test_*` (テストモード)
-- 本番ビルド前に `pk_live_*` に差し替え必須
+### ❌ EAS Build クォータ超過
+- Free Plan の月間ビルド数には上限がある
+- **解決**: `eas build --local --non-interactive` でローカルビルド
+
+---
+
+## Build History
+
+| Build | 内容 | 状態 |
+|-------|------|------|
+| #72 | セーフティタイマー修正 + サイレントモード検出 | ✅ TestFlight提出済み |
+| #70 | 同上（EAS Build試行） | ✅ TestFlight提出 |
+| #65 | IAP購入フロー完全動作 | ✅ 確認済み |
 
 ---
 
 ## Previous Sessions Summary
 
-**IAP Flow Complete (2026-02-02 現セッション):**
-- APPLE_APP_SHARED_SECRET設定でレシート検証成功
-- ポーリング最適化（useRef早期終了 + 30秒タイムアウト）
-- common.retry i18nキー追加
-- Appleログイン追加（AuthScreen）
-- Build #65でダッシュボード遷移完全確認
+**Google Books API Fix (2026-02-03 現セッション):**
+- 日本からのフリーテキスト検索ブロック問題を発見・修正
+- `intitle:` プレフィックス追加で検索復旧
+- Open Libraryフォールバック実装
 
-**Google Sign-In Fix (2026-02-02 earlier):**
-- iOS Client ID のタイポ修正
-- Build #61 で動作確認成功
+**Auth Fix & Silent Mode (2026-02-03):**
+- セーフティタイマーのクロージャ問題を `useRef` で修正
+- サイレントモード検出機能追加（`react-native-volume-manager`）
+- EAS クォータ超過のためローカルビルドで対応
+
+**IAP Flow Complete (2026-02-02):**
+- APPLE_APP_SHARED_SECRET設定でレシート検証成功
+- Build #65でダッシュボード遷移完全確認

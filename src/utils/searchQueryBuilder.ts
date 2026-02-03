@@ -118,10 +118,12 @@ export function buildSearchQuery(params: SearchParams): ParsedQuery {
     }
   }
 
-  // Final fallback: Plain text search
+  // Final fallback: Use intitle: prefix for structured search
+  // Note: Google Books API blocks free-text search from certain regions (Japan),
+  // but structured search (intitle:, inauthor:, isbn:) works.
   return {
     type: 'text',
-    googleBooksQuery: query.trim(),
+    googleBooksQuery: `intitle:${query.trim()}`,
   };
 }
 

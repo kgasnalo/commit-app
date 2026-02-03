@@ -486,6 +486,15 @@
     const bookPageCount = book_total_pages ?? await fetchBookPageCount(google_books_id);
     if (target_pages > bookPageCount + BUFFER) return error;
     ```
+  - **Japan Region Block (CRITICAL):** Google Books API blocks free-text search from Japan IPs. Structured search (`intitle:`, `inauthor:`, `isbn:`) works. ALWAYS use `intitle:` prefix for text searches:
+    ```typescript
+    // BAD - Returns 0 results from Japan
+    googleBooksQuery: query.trim()
+
+    // GOOD - Works from any region
+    googleBooksQuery: `intitle:${query.trim()}`
+    ```
+    The `searchQueryBuilder.ts` automatically adds this prefix. If search returns 0 results, check this first.
 - **Hero/Billboard Overlays:** When placing text over images (HeroBillboard), keep overlay opacity low to ensure the image remains visible.
   - **Bad:** `rgba(0,0,0,0.7)` (Too dark, hides image)
   - **Good:** `rgba(10, 8, 6, 0.1)` to `rgba(8, 6, 4, 0.4)` gradient.
@@ -1809,3 +1818,85 @@ const checkSubscription = async (): Promise<boolean> => {
 4. ポーリングがタイムアウト → エラーダイアログ表示
 
 **これはバグではなく正常な動作**。アプリを再起動すれば`subscription_status=active`を検出してダッシュボードに遷移する。
+
+---
+
+# EAS Build & Local Build
+
+## EAS Free Plan クォータ超過時のローカルビルド
+EAS Free Plan の月間ビルド数上限に達した場合、ローカルでビルドできる：
+```bash
+# ローカルビルド（EASクォータを消費しない）
+eas build --local --profile production --platform ios --non-interactive
+
+# 生成されたIPAをTestFlightに送信
+eas submit --platform ios --path ./build-XXXXX.ipa --non-interactive
+```
+- ローカルビルドは約20〜40分かかる（Macのスペックによる）
+- 生成されるIPAはEAS Buildと同じ品質
+- App Store審査提出も問題なく可能
+
+## 環境変数の不一致（ローカル vs EAS Secrets）
+**症状**: TestFlightでは動くがローカル開発では動かない機能がある
+
+**原因**: `.env` ファイルとEAS Secretsで異なる値が設定されている可能性
+
+**確認方法**:
+```bash
+# EAS Secretsの一覧を確認
+eas secret:list
+
+# ローカルの値を確認
+grep EXPO_PUBLIC_GOOGLE_API_KEY .env
+```
+
+**解決**: EAS Secretsの値を `.env` にコピーするか、逆に `.env` の値でEAS Secretsを更新
+
+---
+
+# React Hooks Closure Problem
+
+## useEffect + setTimeout の Stale Closure 問題 (CRITICAL)
+`useEffect` の空依存配列 `[]` 内で `setTimeout` を使うと、コールバック内の state 値が初期値のままキャプチャされる：
+```typescript
+// BAD - authState.status は常に初期値 'loading' を参照
+useEffect(() => {
+  setTimeout(() => {
+    if (authState.status === 'loading') {  // ← stale value!
+      setAuthState({ status: 'unauthenticated' });
+    }
+  }, 8000);
+}, []);
+
+// GOOD - useRef で最新値を追跡
+const authStateRef = useRef(authState);
+useEffect(() => {
+  authStateRef.current = authState;
+}, [authState]);
+
+useEffect(() => {
+  setTimeout(() => {
+    if (authStateRef.current.status === 'loading') {  // ← fresh value
+      setAuthState({ status: 'unauthenticated' });
+    }
+  }, 8000);
+}, []);
+```
+- `useState` の値は `useEffect` 実行時点でクロージャにキャプチャされる
+- 空依存配列だと、コールバック内の値は永遠に初期値のまま
+- **解決**: `useRef` を使って最新の値を追跡し、コールバック内で `.current` を参照
+
+---
+
+# Silent Mode Detection
+
+## iOS サイレントモード検出
+`react-native-volume-manager` パッケージで iPhone のサイレントスイッチ状態を検出できる：
+```typescript
+import { useSilentSwitch } from 'react-native-volume-manager';
+
+const silentSwitch = useSilentSwitch();
+const isSilentMode = silentSwitch?.isMuted ?? false;
+```
+- iOSのみ対応（Androidは物理サイレントスイッチがない）
+- ネイティブモジュールのため、インストール後にリビルドが必要
