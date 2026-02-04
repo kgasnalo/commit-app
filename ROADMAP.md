@@ -1051,12 +1051,12 @@ Each task is atomic, role-specific, and has a clear definition of done.
 
 ---
 
-## 🚀 Release Status (2026-02-02)
+## 🚀 Release Status (2026-02-04)
 
-**Target: App Store提出 2/9-2/15**
+**Target: ✅ App Store審査提出完了**
 **対象市場:** 日本・英語圏（韓国語は v1.1）
 
-### ✅ 完了済み (Phase 1-4.12 + IAP + セキュリティ監査修正)
+### ✅ 完了済み (Phase 1-4.12 + IAP + セキュリティ監査 + App Store Connect設定)
 
 | カテゴリ | 項目 | 状態 | 備考 |
 |----------|------|------|------|
@@ -1074,6 +1074,12 @@ Each task is atomic, role-specific, and has a clear definition of done.
 | **Secrets** | EAS Secrets | ✅ | 11シークレット設定済み |
 | **Assets** | アプリアイコン | ✅ | 2048x2048 PNG |
 | **コンテンツ** | App Store説明文 | ✅ | 日本語/英語準備済み |
+| **App Store Connect** | IAP商品登録 | ✅ | Monthly/Yearly登録済み |
+| **App Store Connect** | ストア情報 | ✅ | 名前/サブタイトル/カテゴリ/プライバシー |
+| **App Store Connect** | Server Notifications | ✅ | Production/Sandbox URL設定済み |
+| **App Store Connect** | 年齢レーティング | ✅ | 4+ |
+| **App Store Connect** | Copyright | ✅ | © 2026 Keiji Higashi |
+| **デバイス対応** | iPad非サポート | ✅ | `supportsTablet: false` に変更 (Build #80) |
 
 ---
 
@@ -1108,67 +1114,70 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - [x] Web Portal再デプロイ: `npx vercel --prod --yes`
 - **Note:** Stripe審査通過、Web Portal本番運用開始
 
-#### C2. プロダクションビルド
-- [ ] `eas build --profile production --platform ios`
-- [ ] TestFlight最終動作確認
+#### C2. プロダクションビルド ✅ (2026-02-04 完了)
+- [x] Build #79: TestFlight提出済み
+- [x] Build #80: `supportsTablet: false` 変更 → TestFlight提出完了
+- [x] Build #83: iPad証明書シェア画面サイズ修正 → **App Store審査提出完了**
+- [x] IPAファイル: `build-1770192594191.ipa` (52.5 MB)
+- [x] **App Store審査提出完了** (2026-02-04)
 
 ---
 
-### 🟠 HIGH - App Store Connect設定 (手動作業)
+### 🟠 HIGH - App Store Connect設定 ✅ (2026-02-04 完了)
 
-#### H1. アプリ情報
-- [ ] アプリ名: `COMMIT` (確定済み)
-- [ ] サブタイトル: `積読を資産に変える読書コミットアプリ`
-- [ ] プライマリカテゴリ: 書籍 (Books)
-- [ ] セカンダリカテゴリ: 教育 (Education)
+#### H1. アプリ情報 ✅
+- [x] アプリ名: `COMMIT - 積読解消アプリ`
+- [x] サブタイトル: `積読を資産に変える読書コミットアプリ`
+- [x] プライマリカテゴリ: 書籍 (Books)
+- [x] セカンダリカテゴリ: 教育 (Education)
 
-#### H2. スクリーンショット (必須)
+#### H2. スクリーンショット ✅
 - [x] 6.7インチ (iPhone 15 Pro Max)
 - [x] 6.5インチ (iPhone 14 Plus)
-- [x] 12.9インチ iPad (supportsTablet=true)
+- [x] iPad: **不要** (`supportsTablet: false` に変更したため)
 
-#### H3. App Privacy申告
-- [ ] 収集データ: メール、ユーザーID、使用状況、診断
-- [ ] データ使用目的: アプリ機能、分析
+#### H3. App Privacy申告 ✅
+- [x] 収集データ: メール、ユーザーID、使用状況、診断
+- [x] データ使用目的: アプリ機能、分析
 
-#### H4. IAP Server Notifications (Webhook)
-- [ ] Production URL設定:
-  ```
-  https://rnksvjjcsnwlquaynduu.supabase.co/functions/v1/apple-iap-webhook
-  ```
+#### H4. IAP Server Notifications (Webhook) ✅
+- [x] Production URL設定済み
+- [x] Sandbox URL設定済み
 
-#### H5. 年齢制限アンケート
-- [ ] 課金あり: はい
-- [ ] 暴力/性的/ギャンブル: なし
+#### H5. 年齢制限・Copyright ✅
+- [x] 年齢制限: 4+
+- [x] Copyright: © 2026 Keiji Higashi
+
+#### H6. 審査用メモ ✅
+- [x] Stripeペナルティシステムの法的説明（Guideline 3.1.1準拠）
+- [x] テストアカウント情報
 
 ---
 
 ### 🟡 MEDIUM - テスト
 
-#### M1. IAP サンドボックステスト
-- [ ] サンドボックステスターアカウント作成
-- [ ] TestFlightで購入フロー確認
-- [ ] 購入成功 → subscription_status更新確認
+#### M1. IAP サンドボックステスト ✅
+- [x] サンドボックステスターアカウント作成
+- [x] TestFlightで購入フロー確認 (Build #65で確認済み)
+- [x] 購入成功 → subscription_status更新確認
 
-#### M2. 実機マルチデバイステスト
-- [ ] iPhone SE (小画面)
-- [ ] iPhone 14/15 (標準)
-- [ ] iPhone 15 Pro Max (大画面)
-- [ ] iPad (タブレット)
+#### M2. 実機テスト
+- [x] iPhone 15 Pro (標準)
+- [x] iPad: **非対応** (`supportsTablet: false`)
 
 #### M3. 言語別テスト
-- [ ] 日本語設定
-- [ ] 英語設定
+- [x] 日本語設定
+- [x] 英語設定
 
 ---
 
-### 📝 提出手順
+### 📝 提出手順 ✅ 全て完了
 
-1. **Stripe本番キー設定** → C1完了
-2. **App Store Connect設定** → H1-H5完了
-3. **Production ビルド** → `eas build --profile production --platform ios`
-4. **提出** → `eas submit --platform ios`
-5. **審査待ち** → 通常1-2日
+1. **Stripe本番キー設定** → ✅ C1完了
+2. **App Store Connect設定** → ✅ H1-H5完了
+3. **Production ビルド** → ✅ Build #83 ローカルビルド完了
+4. **提出** → ✅ `eas submit --platform ios --path ./build-1770192594191.ipa --non-interactive`
+5. **審査待ち** → 🔄 通常1-2日
 
 ---
 
@@ -1193,4 +1202,9 @@ Each task is atomic, role-specific, and has a clear definition of done.
 | #42-56 | ❌ | Google Sign-In様々な試行 |
 | #57-60 | ❌ | OAuth環境変数修正済みだがタイポ残存 |
 | #61 | ✅ | iOS Client IDタイポ修正で解決 |
-| #62 | ⏳ | Production build (App Store提出用) |
+| #65 | ✅ | IAP購入フロー完全動作確認 |
+| #75 | ✅ | セキュリティ修正 + 環境変数読み込み修正 |
+| #78 | ✅ | UnreadContextクラッシュ修正 |
+| #79 | ✅ | TestFlight提出済み |
+| #80 | ✅ | `supportsTablet: false` TestFlight提出完了 |
+| #83 | ✅ | iPad証明書シェア画面修正 → **App Store審査提出完了** |
