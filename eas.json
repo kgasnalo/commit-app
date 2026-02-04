@@ -22,7 +22,9 @@
       "developmentClient": false,
       "autoIncrement": true,
       "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "257018379058-5cvd5m331619ocm96c0aelrq2dmvq4pl.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "257018379058-ogejion6g0bt4nua9ae1n9744f1ivpuh.apps.googleusercontent.com"
       }
     }
   },

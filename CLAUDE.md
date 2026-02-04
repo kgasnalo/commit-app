@@ -1939,3 +1939,44 @@ const isSilentMode = silentSwitch?.isMuted ?? false;
 2. `eas env:create --environment production` で EAS にも追加
 3. `build-eas-local.sh` の REQUIRED_VARS 配列に追加
 4. `app.config.js` の extra セクションに追加
+
+---
+
+# Context Hook Safe Defaults Pattern (CRITICAL)
+
+## ルール
+React Contextのカスタムフック（`useXxx()`）は、Provider外で呼ばれた場合に**例外をスローしてはならない**。代わりに安全なデフォルト値を返し、Sentryにエラーを報告する。
+
+## 理由
+ナビゲーションスタック遷移中（特に`TOKEN_REFRESHED`や認証状態変更時）、Reactのレンダリングサイクルの一瞬でProviderよりも先にコンポーネントがマウントされようとすることがある。この時に例外がスローされると、ErrorBoundaryでもキャッチできずアプリがクラッシュする。
+
+## 実装パターン
+```typescript
+// 安全なデフォルト値を定義
+const SAFE_DEFAULTS: MyContextValue = {
+  data: null,
+  isLoading: true,
+  doSomething: async () => {},
+};
+
+export function useMyContext(): MyContextValue {
+  const context = useContext(MyContext);
+  if (!context) {
+    // 例外をスローしない！
+    if (__DEV__) console.warn('[MyContext] useMyContext called outside provider');
+    captureError(new Error('useMyContext called outside MyProvider'), {
+      location: 'MyContext.useMyContext',
+    });
+    return SAFE_DEFAULTS;
+  }
+  return context;
+}
+```
+
+## 適用対象
+- ナビゲーションスタック遷移の影響を受けるContext（特に`MainTabs`やその子コンポーネントで使用されるもの）
+- 例: `UnreadContext` は `MainTabs` の直接の親であるため、この問題の影響を受けた
+
+## 例外（throwしても良いケース）
+- アプリの最上位に配置されるProvider（例: `LanguageProvider`）
+- 特定のスタック内でのみ使用されるContext（例: `OnboardingAtmosphereContext`）
