@@ -959,6 +959,33 @@ Each task is atomic, role-specific, and has a clear definition of done.
         - **Plan B (Native):** Migrate to `react-native-google-signin` (Native SDK) to bypass the browser consent modal entirely.
     - **Timing:** Phase 2 (After initial user acquisition).
 
+- [ ] **AUDIT.9 The Reaper Edge Case Handling (課金システムエッジケース)**
+    - **Status:** Deferred (2026-02-04 監査で発見、様子見)
+    - **Priority:** Low (発生確率は極めて低い)
+    - **発見した問題:**
+      1. **penalty_charge INSERT失敗時の不整合**
+         - commitment が `defaulted` に更新された後、penalty_charge の INSERT が UNIQUE制約違反で失敗すると、課金試行も通知もされないまま「宙ぶらりん」状態になる可能性
+         - **ファイル:** `process-expired-commitments/index.ts` (line 576-581)
+      2. **ソフトロック窓口 (200-400ms)**
+         - commitment を `defaulted` に更新してから penalty_charge を作成するまでの間にEdge Functionがクラッシュすると、不整合状態になる可能性
+         - **ファイル:** `process-expired-commitments/index.ts` (line 525-559)
+    - **現状の保護:**
+      - DB UNIQUE制約 + 楽観的ロック + Stripe冪等性キーの3層防御で二重課金は防止
+      - 問題が発生するのは3層防御の「外側」の稀なケースのみ
+    - **監視クエリ:**
+      ```sql
+      SELECT c.id, c.status, c.defaulted_at
+      FROM commitments c
+      LEFT JOIN penalty_charges pc ON c.id = pc.commitment_id
+      WHERE c.status = 'defaulted'
+        AND pc.id IS NULL
+        AND c.defaulted_at < NOW() - INTERVAL '1 hour';
+      ```
+    - **修正案（将来実装時）:**
+      - 処理順序変更: penalty_charge を先に作成してから commitment を更新
+      - または既存レコード確認後に適切に分岐処理
+    - **判断:** 発生確率が極めて低いため、監視を継続しつつ様子見
+
 ---
 
 **Final Deep Dive Audit (Money & Privacy):**
