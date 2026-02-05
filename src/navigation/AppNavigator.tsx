@@ -902,7 +902,9 @@ function NavigationContent() {
   // Hide splash screen once auth state is resolved
   useEffect(() => {
     if (authState.status !== 'loading') {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {
+        // Silently ignore - splash may have already been hidden
+      });
     }
   }, [authState.status]);
 
@@ -914,7 +916,9 @@ function NavigationContent() {
     let isMounted = true;
     const safetyTimer = setTimeout(() => {
       if (!isMounted) return; // Component unmounted, skip
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {
+        // Silently ignore - splash may have already been hidden
+      });
       // authStateRef.current で最新の値を参照（依存配列が空でも正確な値を取得）
       if (authStateRef.current.status === 'loading') {
         console.warn('[AppNavigator] Safety timer: forcing unauthenticated after 15s');

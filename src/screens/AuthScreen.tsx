@@ -50,6 +50,7 @@ export default function AuthScreen({ navigation }: any) {
         webClientId: GOOGLE_WEB_CLIENT_ID,
         iosClientId: GOOGLE_IOS_CLIENT_ID,
         offlineAccess: true,
+        scopes: ['profile', 'email'], // 明示的にスコープを指定
       });
       if (__DEV__) console.log('[AuthScreen] GoogleSignin.configure() called successfully');
     } else {
@@ -189,12 +190,56 @@ export default function AuthScreen({ navigation }: any) {
       // ネイティブのGoogle認証ダイアログを表示
       if (__DEV__) console.log('[AuthScreen] Starting native Google Sign-In...');
       const signInResult = await GoogleSignin.signIn();
-      if (__DEV__) console.log('[AuthScreen] GoogleSignin.signIn result:', { hasIdToken: !!signInResult.data?.idToken });
+      if (__DEV__) {
+        console.log('[AuthScreen] GoogleSignin.signIn result:', JSON.stringify({
+          hasData: !!signInResult.data,
+          hasIdToken: !!signInResult.data?.idToken,
+          idTokenLength: signInResult.data?.idToken?.length ?? 0,
+          hasUser: !!signInResult.data?.user,
+          userEmail: signInResult.data?.user?.email,
+          hasServerAuthCode: !!(signInResult.data as any)?.serverAuthCode,
+        }, null, 2));
+      }
 
-      // idTokenが取得できなかった場合はエラー
-      const idToken = signInResult.data?.idToken;
+      // signIn()からidTokenが取得できなかった場合、getTokens()を試す
+      let idToken = signInResult.data?.idToken;
       if (!idToken) {
-        throw new Error('Google Sign In: idToken not received');
+        if (__DEV__) console.log('[AuthScreen] idToken not in signIn result, trying getTokens()...');
+        try {
+          const tokens = await GoogleSignin.getTokens();
+          if (__DEV__) {
+            console.log('[AuthScreen] getTokens result:', JSON.stringify({
+              hasIdToken: !!tokens.idToken,
+              idTokenLength: tokens.idToken?.length ?? 0,
+              hasAccessToken: !!tokens.accessToken,
+            }, null, 2));
+          }
+          idToken = tokens.idToken;
+        } catch (tokenError) {
+          if (__DEV__) console.error('[AuthScreen] getTokens failed:', tokenError);
+        }
+      }
+
+      // それでもidTokenが取得できなかった場合はエラー
+      if (!idToken) {
+        if (__DEV__) {
+          console.error('[AuthScreen] idToken is missing after all attempts');
+          console.error('[AuthScreen] Config used:', {
+            webClientId: GOOGLE_WEB_CLIENT_ID,
+            iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'NOT_SET',
+          });
+        }
+        captureError(new Error('Google Sign In: idToken not received'), {
+          location: 'AuthScreen.handleGoogleSignIn.idToken_missing',
+          extra: {
+            hasData: !!signInResult.data,
+            hasUser: !!signInResult.data?.user,
+            userEmail: signInResult.data?.user?.email,
+            webClientIdSet: !!GOOGLE_WEB_CLIENT_ID,
+            iosClientIdSet: !!GOOGLE_IOS_CLIENT_ID,
+          },
+        });
+        throw new Error('Google Sign In: idToken not received. Please check Google Cloud Console configuration.');
       }
 
       // Supabaseに IDトークンを渡してセッションを確立

@@ -11,10 +11,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import * as WebBrowser from 'expo-web-browser';
 import { CreditCard, ChevronRight } from 'lucide-react-native';
 import { colors } from '../theme';
 import i18n from '../i18n';
-import { safeOpenURL } from '../utils/linkingUtils';
+import { supabase } from '../lib/supabase';
+import { invokeFunctionWithRetry } from '../lib/supabaseHelpers';
+import { captureError } from '../utils/errorLogger';
 
 interface CardRegistrationBannerProps {
   onPress?: () => void;
@@ -26,9 +29,42 @@ export const CardRegistrationBanner: React.FC<CardRegistrationBannerProps> = ({ 
   const handlePress = async () => {
     if (onPress) {
       onPress();
-    } else {
-      // Default: Open Web Portal billing page with validation
-      await safeOpenURL(`${WEB_PORTAL_URL}/billing`);
+      return;
+    }
+
+    // Default: Open Web Portal billing page with OTT for seamless SSO
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // Not logged in - open login page
+        await WebBrowser.openBrowserAsync(`${WEB_PORTAL_URL}/login`);
+        return;
+      }
+
+      // Generate OTT token
+      const { data, error } = await invokeFunctionWithRetry<{
+        success: boolean;
+        token?: string;
+        error?: string;
+      }>('generate-auth-token', {});
+
+      if (error || !data?.token) {
+        // Fallback to normal URL if OTT generation fails
+        captureError(error || new Error('No token received'), {
+          location: 'CardRegistrationBanner.handlePress',
+        });
+        await WebBrowser.openBrowserAsync(`${WEB_PORTAL_URL}/billing`);
+        return;
+      }
+
+      // Open with OTT for seamless SSO
+      await WebBrowser.openBrowserAsync(
+        `${WEB_PORTAL_URL}/auth/auto?token=${data.token}&redirect=/billing`
+      );
+    } catch (err) {
+      captureError(err, { location: 'CardRegistrationBanner.handlePress' });
+      // Fallback to normal URL
+      await WebBrowser.openBrowserAsync(`${WEB_PORTAL_URL}/billing`);
     }
   };
 

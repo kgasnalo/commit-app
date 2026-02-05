@@ -13,6 +13,7 @@ import {
   markAsRead as markAsReadService,
   initializeLastSeenTimestamps,
 } from '../lib/UnreadService';
+import { captureError } from '../utils/errorLogger';
 
 interface UnreadContextValue {
   /** Current unread counts */
@@ -110,49 +111,62 @@ export function UnreadProvider({ children }: UnreadProviderProps) {
       return;
     }
 
-    // Subscribe to announcements table changes
-    const announcementsChannel = supabase
-      .channel('unread-announcements')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'announcements',
-        },
-        (payload) => {
-          // Check if this is a publish event (published_at changed from null to non-null)
-          const oldPublishedAt = payload.old?.published_at;
-          const newPublishedAt = payload.new?.published_at;
+    let announcementsChannel: ReturnType<typeof supabase.channel> | null = null;
+    let donationsChannel: ReturnType<typeof supabase.channel> | null = null;
 
-          if (!oldPublishedAt && newPublishedAt) {
-            // New announcement published, refresh counts
+    try {
+      // Subscribe to announcements table changes
+      announcementsChannel = supabase
+        .channel('unread-announcements')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'announcements',
+          },
+          (payload) => {
+            // Check if this is a publish event (published_at changed from null to non-null)
+            const oldPublishedAt = payload.old?.published_at;
+            const newPublishedAt = payload.new?.published_at;
+
+            if (!oldPublishedAt && newPublishedAt) {
+              // New announcement published, refresh counts
+              refreshCounts();
+            }
+          }
+        )
+        .subscribe();
+
+      // Subscribe to donations table changes
+      donationsChannel = supabase
+        .channel('unread-donations')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'donations',
+          },
+          () => {
+            // New donation posted, refresh counts
             refreshCounts();
           }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to donations table changes
-    const donationsChannel = supabase
-      .channel('unread-donations')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'donations',
-        },
-        () => {
-          // New donation posted, refresh counts
-          refreshCounts();
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    } catch (err) {
+      console.error('[UnreadContext] Error setting up Realtime subscriptions:', err);
+      captureError(err, { location: 'UnreadContext.Realtime.subscribe' });
+    }
 
     return () => {
-      announcementsChannel.unsubscribe();
-      donationsChannel.unsubscribe();
+      try {
+        announcementsChannel?.unsubscribe();
+        donationsChannel?.unsubscribe();
+      } catch (err) {
+        // Non-critical: silently ignore unsubscribe errors
+        if (__DEV__) console.warn('[UnreadContext] Error unsubscribing:', err);
+      }
     };
   }, [isInitialized, refreshCounts]);
 
@@ -171,12 +185,29 @@ export function UnreadProvider({ children }: UnreadProviderProps) {
 }
 
 /**
+ * Safe default values for when useUnread is called outside of provider
+ * This prevents crashes during navigation stack transitions
+ */
+const SAFE_DEFAULTS: UnreadContextValue = {
+  unreadCounts: { announcements: 0, donations: 0, total: 0 },
+  isLoading: true,
+  markAsRead: async () => {},
+  refreshCounts: async () => {},
+};
+
+/**
  * Hook to access unread state
+ * Returns safe defaults if called outside UnreadProvider (prevents crashes during stack transitions)
  */
 export function useUnread(): UnreadContextValue {
   const context = useContext(UnreadContext);
   if (!context) {
-    throw new Error('useUnread must be used within an UnreadProvider');
+    // Don't throw - return safe defaults to prevent crashes during navigation transitions
+    if (__DEV__) console.warn('[UnreadContext] useUnread called outside UnreadProvider, returning safe defaults');
+    captureError(new Error('useUnread called outside UnreadProvider'), {
+      location: 'UnreadContext.useUnread',
+    });
+    return SAFE_DEFAULTS;
   }
   return context;
 }
