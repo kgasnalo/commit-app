@@ -411,7 +411,27 @@ function NavigationContent() {
     try {
       const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
       if (!onboardingDataStr) {
-        if (__DEV__) console.log('🔗 createUserRecord: No onboarding data found in AsyncStorage');
+        if (__DEV__) console.log('🔗 createUserRecord: No onboarding data, creating with fallback username');
+        // AuthScreen経由の新規OAuth認証ではonboardingDataがない
+        // フォールバックusernameでusersレコードを作成する
+        if (!session.user.email) {
+          if (__DEV__) console.log('🔗 createUserRecord: No email in session, skipping fallback');
+          return;
+        }
+        const { error } = await supabase.from('users').upsert(
+          {
+            id: session.user.id,
+            email: session.user.email,
+            username: 'user_' + session.user.id.substring(0, 8),
+            subscription_status: 'inactive',
+          },
+          { onConflict: 'id' }
+        );
+        if (error) {
+          captureError(error, { location: 'AppNavigator.createUserRecordFromOnboardingData.fallback' });
+        } else {
+          if (__DEV__) console.log('🔗 createUserRecord: Fallback user record created ✅');
+        }
         return;
       }
 
@@ -420,13 +440,18 @@ function NavigationContent() {
         onboardingData = JSON.parse(onboardingDataStr);
       } catch (parseError) {
         captureError(parseError, { location: 'AppNavigator.createUserRecordFromOnboardingData.JSON.parse' });
+        await AsyncStorage.removeItem('onboardingData');
         return;
       }
       const pendingUsername = onboardingData?.username;
 
+      // usernameがなくてもフォールバックで作成（OAuth後のデータ欠損対策）
+      const finalUsername = (pendingUsername && typeof pendingUsername === 'string')
+        ? pendingUsername
+        : 'user_' + session.user.id.substring(0, 8);
+
       if (!pendingUsername || typeof pendingUsername !== 'string') {
-        if (__DEV__) console.log('🔗 createUserRecord: No username found in onboarding data');
-        return;
+        if (__DEV__) console.log('🔗 createUserRecord: No username in onboarding data, using fallback:', finalUsername);
       }
 
       // emailが必須フィールドなので、存在しない場合はスキップ
@@ -435,13 +460,13 @@ function NavigationContent() {
         return;
       }
 
-      if (__DEV__) console.log('🔗 createUserRecord: Creating user record with username:', pendingUsername);
+      if (__DEV__) console.log('🔗 createUserRecord: Creating user record with username:', finalUsername);
 
       const { error } = await supabase.from('users').upsert(
         {
           id: session.user.id,
           email: session.user.email,
-          username: pendingUsername,
+          username: finalUsername,
           subscription_status: 'inactive',
         },
         { onConflict: 'id' }
@@ -452,8 +477,14 @@ function NavigationContent() {
       } else {
         if (__DEV__) console.log('🔗 createUserRecord: User record created successfully ✅');
       }
+
+      // Note: onboardingDataはここでは削除しない
+      // Screen13のhandleSubscribe成功時（コミットメント作成後）に削除される
+      // 早期削除するとScreen13でselectedBook/deadline/pledgeAmountがnullになる
+      if (__DEV__) console.log('🔗 createUserRecord: onboardingData preserved for Screen13');
     } catch (err) {
       captureError(err, { location: 'AppNavigator.createUserRecordFromOnboardingData' });
+      // Note: エラー時もonboardingDataは削除しない（Screen13が必要とするため）
     }
   }
 
@@ -756,13 +787,13 @@ function NavigationContent() {
           );
         }
 
-        // ユーザーステータスチェック（15秒の外部タイムアウト）
+        // ユーザーステータスチェック（8秒の外部タイムアウト）
         // タイムアウト時はキャッシュをフォールバックに使用
         if (__DEV__) console.log('✅ Auth: Checking user status...');
         const authCachedFallback = await getCachedUserStatus(session.user.id);
         userStatus = await withTimeout(
           checkUserStatus(session.user.id),
-          15000,
+          8000,
           authCachedFallback ?? { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'checkUserStatus'
         );
@@ -863,7 +894,7 @@ function NavigationContent() {
         const refreshCachedFallback = await getCachedUserStatus(session.user.id);
         const userStatus = await withTimeout(
           checkUserStatus(session.user.id),
-          15000,
+          8000,
           refreshCachedFallback ?? { isSubscribed: false, hasCompletedOnboarding: false, legalConsentVersion: null },
           'refreshListener.checkUserStatus'
         );

@@ -61,10 +61,11 @@ export default function AuthScreen({ navigation }: any) {
   async function handleAuth() {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(
-        i18n.t('common.error'),
-        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
-      );
+      if (__DEV__) {
+        Alert.alert(i18n.t('common.error'), `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`);
+      } else {
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      }
       return;
     }
 
@@ -81,20 +82,24 @@ export default function AuthScreen({ navigation }: any) {
       });
 
       if (error) {
-        Alert.alert(i18n.t('auth.error_signup'), error.message);
+        Alert.alert(i18n.t('auth.error_signup'), __DEV__ ? error.message : i18n.t('errors.auth_failed'));
       } else if (data.user && data.user.email) {
-        // usersテーブルにレコードを作成
+        // usersテーブルにレコードを作成（upsertでrace condition対策）
         const { error: insertError } = await supabase
           .from('users')
-          .insert({
-            id: data.user.id,
-            email: data.user.email,
-            username: 'user_' + data.user.id.substring(0, 8),
-            subscription_status: 'inactive'
-          });
+          .upsert(
+            {
+              id: data.user.id,
+              email: data.user.email,
+              username: 'user_' + data.user.id.substring(0, 8),
+              subscription_status: 'inactive',
+            },
+            { onConflict: 'id' }
+          );
 
         if (insertError) {
-          console.error('Failed to create user record:', insertError);
+          if (__DEV__) console.error('Failed to create user record:', insertError);
+          captureError(insertError, { location: 'AuthScreen.handleAuth.signUp.insert' });
         }
         Alert.alert(i18n.t('common.success'), i18n.t('auth.success_email_sent'));
       }
@@ -105,7 +110,7 @@ export default function AuthScreen({ navigation }: any) {
       });
 
       if (error) {
-        Alert.alert(i18n.t('auth.error_login'), error.message);
+        Alert.alert(i18n.t('auth.error_login'), __DEV__ ? error.message : i18n.t('errors.auth_failed'));
       } else if (data.user) {
         // ログイン時にusersテーブルのレコードが存在するか確認
         const { data: userData, error: checkError } = await supabase
@@ -114,44 +119,24 @@ export default function AuthScreen({ navigation }: any) {
           .eq('id', data.user.id)
           .maybeSingle();
 
-        // レコードが存在しない場合は作成（既存ユーザー対応）
+        // レコードが存在しない場合は作成（upsertでrace condition対策）
         if (!userData && !checkError && data.user.email) {
           await supabase
             .from('users')
-            .insert({
-              id: data.user.id,
-              email: data.user.email,
-              username: 'user_' + data.user.id.substring(0, 8),
-              subscription_status: 'inactive'
-            });
+            .upsert(
+              {
+                id: data.user.id,
+                email: data.user.email,
+                username: 'user_' + data.user.id.substring(0, 8),
+                subscription_status: 'inactive',
+              },
+              { onConflict: 'id' }
+            );
         }
       }
     }
     setLoading(false);
   }
-
-  // Helper: Ensure user record exists in users table
-  const ensureUserRecord = async (userId: string, userEmail: string | undefined) => {
-    if (!isSupabaseInitialized()) return;
-    if (!userEmail) return;
-
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (!userData) {
-      await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email: userEmail,
-          username: 'user_' + userId.substring(0, 8),
-          subscription_status: 'inactive'
-        });
-    }
-  };
 
   /**
    * Google Sign In (ネイティブ認証)
@@ -163,19 +148,17 @@ export default function AuthScreen({ navigation }: any) {
   async function handleGoogleSignIn() {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(
-        i18n.t('common.error'),
-        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
-      );
+      if (__DEV__) {
+        Alert.alert(i18n.t('common.error'), `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`);
+      } else {
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      }
       return;
     }
 
     // Google Web Client ID チェック
     if (!GOOGLE_WEB_CLIENT_ID) {
-      Alert.alert(
-        i18n.t('common.error'),
-        'Google Sign-In is not configured. Missing GOOGLE_WEB_CLIENT_ID.'
-      );
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.google_signin_not_configured'));
       return;
     }
 
@@ -239,7 +222,7 @@ export default function AuthScreen({ navigation }: any) {
             iosClientIdSet: !!GOOGLE_IOS_CLIENT_ID,
           },
         });
-        throw new Error('Google Sign In: idToken not received. Please check Google Cloud Console configuration.');
+        throw new Error(i18n.t('errors.google_signin_token_failed'));
       }
 
       // Supabaseに IDトークンを渡してセッションを確立
@@ -251,14 +234,13 @@ export default function AuthScreen({ navigation }: any) {
 
       if (sessionError) {
         captureError(sessionError, { location: 'AuthScreen.handleGoogleSignIn.signInWithIdToken' });
-        Alert.alert(i18n.t('common.error'), sessionError.message);
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.auth_failed'));
         return;
       }
 
       if (sessionData.user) {
         if (__DEV__) console.log('[AuthScreen] SUCCESS - User authenticated via native Google Sign-In');
-        // ユーザーレコード作成はonAuthStateChangeで処理されるため、ここでは不要
-        await ensureUserRecord(sessionData.user.id, sessionData.user.email);
+        // ユーザーレコード作成はonAuthStateChangeで処理される
       }
     } catch (error: unknown) {
       // ユーザーがキャンセルした場合は何もしない
@@ -268,7 +250,7 @@ export default function AuthScreen({ navigation }: any) {
       }
       // Google Play Services が利用不可
       if (isErrorWithCode(error) && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert(i18n.t('common.error'), 'Google Play Services is not available');
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.google_play_services_unavailable'));
         return;
       }
       captureError(error, { location: 'AuthScreen.handleGoogleSignIn' });
@@ -286,10 +268,11 @@ export default function AuthScreen({ navigation }: any) {
   async function handleAppleSignIn() {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(
-        i18n.t('common.error'),
-        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
-      );
+      if (__DEV__) {
+        Alert.alert(i18n.t('common.error'), `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`);
+      } else {
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      }
       return;
     }
 
@@ -321,7 +304,7 @@ export default function AuthScreen({ navigation }: any) {
 
       // identityTokenが取得できなかった場合はエラー
       if (!credential.identityToken) {
-        throw new Error('Apple Sign In: identityToken not received');
+        throw new Error(i18n.t('errors.apple_signin_token_failed'));
       }
 
       // Supabaseに IDトークンを渡してセッションを確立
@@ -332,17 +315,21 @@ export default function AuthScreen({ navigation }: any) {
 
       if (sessionError) {
         captureError(sessionError, { location: 'AuthScreen.handleAppleSignIn.signInWithIdToken' });
-        Alert.alert(i18n.t('common.error'), sessionError.message);
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.auth_failed'));
         return;
       }
 
       if (sessionData.user) {
         if (__DEV__) console.log('[AuthScreen] SUCCESS - User authenticated via Apple Sign-In');
-        await ensureUserRecord(sessionData.user.id, sessionData.user.email);
+        // ユーザーレコード作成はonAuthStateChangeで処理される
       }
     } catch (error: unknown) {
       // ユーザーがキャンセルした場合は何もしない
-      if ((error as { code?: string })?.code === 'ERR_REQUEST_CANCELED') {
+      const errorCode = (error as { code?: string })?.code;
+      if (
+        errorCode === 'ERR_REQUEST_CANCELED' ||
+        errorCode === 'ERR_CANCELED'
+      ) {
         if (__DEV__) console.log('[AuthScreen] User cancelled Apple Sign-In');
         return;
       }
@@ -358,7 +345,7 @@ export default function AuthScreen({ navigation }: any) {
       {/* 戻るボタン */}
       <View style={styles.backButtonContainer}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => { if (navigation.canGoBack()) navigation.goBack(); }}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel={i18n.t('accessibility.button.back')}

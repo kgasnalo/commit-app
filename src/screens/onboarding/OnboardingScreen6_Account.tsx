@@ -41,6 +41,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const [usernameValid, setUsernameValid] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const authSucceededRef = useRef(false);
 
   const isPasswordValid = password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
 
@@ -64,6 +65,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         webClientId: GOOGLE_WEB_CLIENT_ID,
         iosClientId: GOOGLE_IOS_CLIENT_ID,
         offlineAccess: true, // サーバー側でトークンを使用する場合に必要
+        scopes: ['profile', 'email'], // 明示的にスコープを指定
       });
       if (__DEV__) console.log('[OnboardingScreen6] GoogleSignin.configure() called successfully');
     } else {
@@ -102,102 +104,14 @@ export default function OnboardingScreen6({ navigation, route }: any) {
     }, 500);
   };
 
-  /**
-   * displayNameをDB制約に合わせてサニタイズ
-   * 制約: ^[a-zA-Z0-9_]{3,20}$
-   */
-  const sanitizeUsername = (displayName: string | null, fallbackId: string): string => {
-    if (!displayName) {
-      return 'user_' + fallbackId.substring(0, 8);
-    }
-
-    // スペースをアンダースコアに変換、許可されない文字を除去
-    let sanitized = displayName
-      .replace(/\s+/g, '_')           // スペース → アンダースコア
-      .replace(/[^a-zA-Z0-9_]/g, '')  // 英数字とアンダースコア以外を除去
-      .substring(0, 20);               // 最大20文字
-
-    // 最小3文字を保証
-    if (sanitized.length < 3) {
-      sanitized = 'user_' + fallbackId.substring(0, 8);
-    }
-
-    return sanitized;
-  };
-
-  /**
-   * ユーザーレコードをusersテーブルに同期（upsert）
-   * Auth Triggerのタイミングに依存しない堅牢な実装
-   */
-  const syncUserToDatabase = async (
-    userId: string,
-    userEmail: string | undefined,
-    displayName: string | null
-  ): Promise<void> => {
-    // Supabase初期化チェック
-    if (!isSupabaseInitialized()) {
-      if (__DEV__) console.warn('syncUserToDatabase: Supabase not initialized');
-      return;
-    }
-
-    // emailが必須フィールドなので、存在しない場合は同期をスキップ
-    if (!userEmail) {
-      if (__DEV__) console.warn('syncUserToDatabase: email is required but not provided');
-      return;
-    }
-
-    const maxRetries = 3;
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // upsertで確実にレコードを作成/更新
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert(
-            {
-              id: userId,
-              email: userEmail,
-              username: sanitizeUsername(displayName, userId),
-              subscription_status: 'inactive',
-            },
-            {
-              onConflict: 'id',
-              ignoreDuplicates: false, // 既存レコードを更新
-            }
-          );
-
-        if (!upsertError) {
-          return;
-        }
-
-        lastError = new Error(upsertError.message);
-        if (__DEV__) console.warn(`User sync attempt ${attempt} failed:`, upsertError.message);
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (__DEV__) console.warn(`User sync attempt ${attempt} exception:`, lastError.message);
-      }
-
-      // 最後の試行でなければ少し待ってリトライ
-      if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 200 * attempt));
-      }
-    }
-
-    // 全リトライ失敗してもログだけ残して続行（後で設定可能）
-    captureError(lastError || new Error('Unknown sync error'), {
-      location: 'OnboardingScreen6.syncUserToDatabase',
-      extra: { userId, retries: maxRetries },
-    });
-  };
-
   const handleEmailSignup = async () => {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(
-        i18n.t('common.error'),
-        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
-      );
+      if (__DEV__) {
+        Alert.alert(i18n.t('common.error'), `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`);
+      } else {
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      }
       return;
     }
 
@@ -236,12 +150,14 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
       // オンボーディングデータをAsyncStorageに保存
       // 認証後にAppNavigatorのスタックが切り替わるため、route.paramsが失われる
+      // username を含める: createUserRecordFromOnboardingData が読み取る
       await AsyncStorage.setItem('onboardingData', JSON.stringify({
         selectedBook,
         deadline,
         pledgeAmount,
         currency,
         tsundokuCount,
+        username,
       }));
 
       const { data, error } = await supabase.auth.signUp({
@@ -255,21 +171,10 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       }
 
       if (data.user) {
-
-        // upsertでusersテーブルにレコードを確実に同期
-        // Auth Triggerのタイミングに依存しない堅牢な実装
-        await syncUserToDatabase(data.user.id, email, username);
-
-
-        // 次の画面に遷移（認証状態は保持される）
-        navigation.navigate('Onboarding7', {
-          selectedBook,
-          deadline,
-          pledgeAmount,
-          currency,
-          tsundokuCount,
-          userId: data.user.id,
-        });
+        // signUp はセッションを即座に作成する → onAuthStateChange(SIGNED_IN) が発火
+        // onAuthStateChange → createUserRecordFromOnboardingData(AsyncStorageからusername読み取り) → スタック切り替え
+        // Screen 6 は loading 状態を維持し、スタック切り替え時にアンマウントされる
+        if (__DEV__) console.log('[EmailSignup] User created, waiting for stack switch via onAuthStateChange...');
       }
     } catch (error: unknown) {
       captureError(error, { location: 'OnboardingScreen6.handleEmailSignup' });
@@ -289,19 +194,17 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const handleGoogleSignIn = async () => {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(
-        i18n.t('common.error'),
-        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
-      );
+      if (__DEV__) {
+        Alert.alert(i18n.t('common.error'), `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`);
+      } else {
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      }
       return;
     }
 
     // Google Web Client ID チェック
     if (!GOOGLE_WEB_CLIENT_ID) {
-      Alert.alert(
-        i18n.t('common.error'),
-        'Google Sign-In is not configured. Missing GOOGLE_WEB_CLIENT_ID.'
-      );
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.google_signin_not_configured'));
       return;
     }
 
@@ -322,12 +225,56 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
       // ネイティブのGoogle認証ダイアログを表示
       const signInResult = await GoogleSignin.signIn();
-      if (__DEV__) console.log('[GoogleSignIn] signIn result:', { hasIdToken: !!signInResult.data?.idToken });
+      if (__DEV__) {
+        console.log('[GoogleSignIn] signIn result:', JSON.stringify({
+          hasData: !!signInResult.data,
+          hasIdToken: !!signInResult.data?.idToken,
+          idTokenLength: signInResult.data?.idToken?.length ?? 0,
+          hasUser: !!signInResult.data?.user,
+          userEmail: signInResult.data?.user?.email,
+          hasServerAuthCode: !!(signInResult.data as any)?.serverAuthCode,
+        }, null, 2));
+      }
 
-      // idTokenが取得できなかった場合はエラー
-      const idToken = signInResult.data?.idToken;
+      // signIn()からidTokenが取得できなかった場合、getTokens()を試す
+      let idToken = signInResult.data?.idToken;
       if (!idToken) {
-        throw new Error('Google Sign In: idToken not received');
+        if (__DEV__) console.log('[GoogleSignIn] idToken not in signIn result, trying getTokens()...');
+        try {
+          const tokens = await GoogleSignin.getTokens();
+          if (__DEV__) {
+            console.log('[GoogleSignIn] getTokens result:', JSON.stringify({
+              hasIdToken: !!tokens.idToken,
+              idTokenLength: tokens.idToken?.length ?? 0,
+              hasAccessToken: !!tokens.accessToken,
+            }, null, 2));
+          }
+          idToken = tokens.idToken;
+        } catch (tokenError) {
+          if (__DEV__) console.error('[GoogleSignIn] getTokens failed:', tokenError);
+        }
+      }
+
+      // それでもidTokenが取得できなかった場合はエラー
+      if (!idToken) {
+        if (__DEV__) {
+          console.error('[GoogleSignIn] idToken is missing after all attempts');
+          console.error('[GoogleSignIn] Config used:', {
+            webClientId: GOOGLE_WEB_CLIENT_ID,
+            iosClientId: GOOGLE_IOS_CLIENT_ID ? 'SET' : 'NOT_SET',
+          });
+        }
+        captureError(new Error('Google Sign In: idToken not received'), {
+          location: 'OnboardingScreen6.handleGoogleSignIn.idToken_missing',
+          extra: {
+            hasData: !!signInResult.data,
+            hasUser: !!signInResult.data?.user,
+            userEmail: signInResult.data?.user?.email,
+            webClientIdSet: !!GOOGLE_WEB_CLIENT_ID,
+            iosClientIdSet: !!GOOGLE_IOS_CLIENT_ID,
+          },
+        });
+        throw new Error(i18n.t('errors.google_signin_token_failed'));
       }
 
       // Supabaseに IDトークンを渡してセッションを確立
@@ -338,44 +285,31 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
       if (sessionError) {
         captureError(sessionError, { location: 'OnboardingScreen6.handleGoogleSignIn.signInWithIdToken' });
-        Alert.alert(i18n.t('common.error'), sessionError.message);
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.auth_failed'));
+        setOauthLoading(null);
         return;
       }
 
       if (sessionData.user) {
-        // Google認証からユーザー名を取得
-        const googleName = signInResult.data?.user?.name;
-        const displayName = username || googleName || null;
-
-        await syncUserToDatabase(
-          sessionData.user.id,
-          sessionData.user.email,
-          displayName
-        );
-
-        navigation.navigate('Onboarding7', {
-          selectedBook,
-          deadline,
-          pledgeAmount,
-          currency,
-          tsundokuCount,
-          userId: sessionData.user.id,
-        });
+        // 認証成功: ボタンを無効化し続ける（スタック切り替えまで）
+        authSucceededRef.current = true;
+        if (__DEV__) console.log('[GoogleSignIn] Session established, waiting for stack switch via onAuthStateChange...');
       }
     } catch (error: unknown) {
       // ユーザーがキャンセルした場合は何もしない
       if (isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED) {
         if (__DEV__) console.log('[GoogleSignIn] User cancelled');
+        setOauthLoading(null);
         return;
       }
       // Google Play Services が利用不可
       if (isErrorWithCode(error) && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert(i18n.t('common.error'), 'Google Play Services is not available');
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.google_play_services_unavailable'));
+        setOauthLoading(null);
         return;
       }
       captureError(error, { location: 'OnboardingScreen6.handleGoogleSignIn' });
       Alert.alert(i18n.t('common.error'), getErrorMessage(error));
-    } finally {
       setOauthLoading(null);
     }
   };
@@ -388,10 +322,11 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const handleAppleSignIn = async () => {
     // Supabase初期化チェック
     if (!isSupabaseInitialized()) {
-      Alert.alert(
-        i18n.t('common.error'),
-        `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`
-      );
+      if (__DEV__) {
+        Alert.alert(i18n.t('common.error'), `${i18n.t('errors.service_unavailable')}\n\n[Debug] ${getSupabaseErrorDetail()}`);
+      } else {
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.service_unavailable'));
+      }
       return;
     }
 
@@ -430,7 +365,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
       // identityTokenが取得できなかった場合はエラー
       if (!credential.identityToken) {
-        throw new Error('Apple Sign In: identityToken not received');
+        throw new Error(i18n.t('errors.apple_signin_token_failed'));
       }
 
       // Supabaseに IDトークンを渡してセッションを確立
@@ -441,41 +376,28 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
       if (sessionError) {
         captureError(sessionError, { location: 'OnboardingScreen6.handleAppleSignIn.signInWithIdToken' });
-        Alert.alert(i18n.t('common.error'), sessionError.message);
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.auth_failed'));
+        setOauthLoading(null);
         return;
       }
 
       if (sessionData.user) {
-        // Apple認証では初回のみfullNameが返される
-        // credential.fullName からユーザー名を取得（なければusernameフィールドを使用）
-        const appleFullName = credential.fullName
-          ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
-          : null;
-        const displayName = username || appleFullName || null;
-
-        await syncUserToDatabase(
-          sessionData.user.id,
-          sessionData.user.email,
-          displayName
-        );
-
-        navigation.navigate('Onboarding7', {
-          selectedBook,
-          deadline,
-          pledgeAmount,
-          currency,
-          tsundokuCount,
-          userId: sessionData.user.id,
-        });
+        // 認証成功: ボタンを無効化し続ける（スタック切り替えまで）
+        authSucceededRef.current = true;
+        if (__DEV__) console.log('[AppleSignIn] Session established, waiting for stack switch via onAuthStateChange...');
       }
     } catch (error: unknown) {
       // ユーザーがキャンセルした場合は何もしない
-      if ((error as { code?: string })?.code === 'ERR_REQUEST_CANCELED') {
+      const errorCode = (error as { code?: string })?.code;
+      if (
+        errorCode === 'ERR_REQUEST_CANCELED' ||
+        errorCode === 'ERR_CANCELED'
+      ) {
+        setOauthLoading(null);
         return;
       }
       captureError(error, { location: 'OnboardingScreen6.handleAppleSignIn' });
       Alert.alert(i18n.t('common.error'), getErrorMessage(error));
-    } finally {
       setOauthLoading(null);
     }
   };
@@ -582,7 +504,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         <TouchableOpacity
           style={[styles.oauthButton, oauthLoading === 'google' && styles.oauthButtonDisabled]}
           onPress={() => handleOAuth('google')}
-          disabled={oauthLoading !== null || loading}
+          disabled={oauthLoading !== null || loading || authSucceededRef.current}
         >
           {oauthLoading === 'google' ? (
             <ActivityIndicator size="small" color={colors.text.primary} />
@@ -599,7 +521,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           <TouchableOpacity
             style={[styles.oauthButton, styles.appleButton, oauthLoading === 'apple' && styles.oauthButtonDisabled]}
             onPress={() => handleOAuth('apple')}
-            disabled={oauthLoading !== null || loading}
+            disabled={oauthLoading !== null || loading || authSucceededRef.current}
           >
             {oauthLoading === 'apple' ? (
               <ActivityIndicator size="small" color={colors.text.primary} />

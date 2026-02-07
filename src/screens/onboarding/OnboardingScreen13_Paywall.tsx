@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import SlideToCommit from '../../components/onboarding/SlideToCommit';
 import CinematicCommitReveal from '../../components/onboarding/CinematicCommitReveal';
+import LegalBottomSheet, { LegalDocumentType } from '../../components/LegalBottomSheet';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { supabase, triggerAuthRefresh } from '../../lib/supabase';
 import { invokeFunctionWithRetry } from '../../lib/supabaseHelpers';
@@ -46,6 +47,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
   const [pageCount, setPageCount] = useState<number>(0);
   const [iapProducts, setIapProducts] = useState<IAPProduct[]>([]);
   const [iapLoading, setIapLoading] = useState(false);
+  const [showLegal, setShowLegal] = useState(false);
+  const [legalDocType, setLegalDocType] = useState<LegalDocumentType>('terms');
 
   // IAP購入成功フラグ（ポーリング早期終了用）
   const iapVerifiedRef = useRef(false);
@@ -186,6 +189,21 @@ export default function OnboardingScreen13({ navigation, route }: any) {
     try {
       if (__DEV__) console.log('[Screen13] Starting subscription flow...');
 
+      // P1: IAP購入前にデータ存在チェック（課金後にエラーになる最悪のUXを防止）
+      const preCheckBook = route.params?.selectedBook || selectedBook;
+      const preCheckDeadline = route.params?.deadline || deadline;
+      const preCheckPledge = route.params?.pledgeAmount || pledgeAmount;
+
+      if (!preCheckBook || !preCheckDeadline || !preCheckPledge) {
+        captureError(new Error('Missing commitment data before IAP'), {
+          location: 'OnboardingScreen13.handleSubscribe.preCheck',
+          extra: { hasBook: !!preCheckBook, hasDeadline: !!preCheckDeadline, hasPledge: !!preCheckPledge },
+        });
+        Alert.alert(i18n.t('common.error'), i18n.t('paywall.missing_data'));
+        setLoading(false);
+        return;
+      }
+
       // iOS の場合は IAP を使用
       if (Platform.OS === 'ios' && isIAPAvailable()) {
         const productId = selectedPlan === 'yearly'
@@ -319,6 +337,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           extra: { hasBook: !!bookToCommit, hasDeadline: !!deadlineToCommit, hasPledge: !!pledgeToCommit },
         });
         Alert.alert(i18n.t('common.error'), i18n.t('paywall.missing_data'));
+        setLoading(false);
         return;
       }
 
@@ -329,8 +348,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       // リクエストボディをログ（デバッグ用）
       const requestBody = {
         google_books_id: bookToCommit.id,
-        book_title: bookToCommit.volumeInfo?.title || 'Unknown',
-        book_author: bookToCommit.volumeInfo?.authors?.join(', ') || 'Unknown',
+        book_title: bookToCommit.volumeInfo?.title || i18n.t('common.untitled'),
+        book_author: bookToCommit.volumeInfo?.authors?.join(', ') || i18n.t('common.unknown_author'),
         book_cover_url: bookToCommit.volumeInfo?.imageLinks?.thumbnail || null,
         book_total_pages: targetPagesToCommit, // Edge Functionの再取得時のAPIミスマッチを防ぐため、クライアント側で取得したページ数を使用
         is_manual_entry: false,
@@ -386,7 +405,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
     } catch (error: unknown) {
       captureError(error, { location: 'OnboardingScreen13.handleSubscribe' });
-      Alert.alert(i18n.t('common.error'), getErrorMessage(error) || i18n.t('errors.subscription_failed'));
+      // detailedErrorMessageは英語でSentry用。ユーザーにはi18nメッセージのみ表示
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.subscription_failed'));
     } finally {
       setLoading(false);
     }
@@ -469,6 +489,29 @@ export default function OnboardingScreen13({ navigation, route }: any) {
               <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
               <Text style={styles.guaranteeText}>{i18n.t('onboarding.screen13_donation_note')}</Text>
             </View>
+            <View style={styles.guarantee}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
+              <Text style={styles.guaranteeText}>{i18n.t('onboarding.screen13_auto_renew_note')}</Text>
+            </View>
+          </View>
+          <View style={styles.legalContainer}>
+            <Text style={styles.legalText}>
+              {i18n.t('onboarding.screen13_legal_prefix')}
+              <Text
+                style={styles.legalLink}
+                onPress={() => { setLegalDocType('terms'); setShowLegal(true); }}
+              >
+                {i18n.t('settings.terms')}
+              </Text>
+              {i18n.t('onboarding.screen13_legal_and')}
+              <Text
+                style={styles.legalLink}
+                onPress={() => { setLegalDocType('privacy'); setShowLegal(true); }}
+              >
+                {i18n.t('settings.privacy')}
+              </Text>
+              {i18n.t('onboarding.screen13_legal_suffix')}
+            </Text>
           </View>
         </View>
       }
@@ -503,6 +546,11 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         </View>
       )}
       </OnboardingLayout>
+      <LegalBottomSheet
+        visible={showLegal}
+        documentType={legalDocType}
+        onClose={() => setShowLegal(false)}
+      />
     </>
   );
 }
@@ -578,5 +626,20 @@ const styles = StyleSheet.create({
   guaranteeText: {
     color: colors.text.secondary,
     fontSize: typography.fontSize.caption,
+  },
+  legalContainer: {
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+  },
+  legalText: {
+    fontSize: typography.fontSize.caption,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  legalLink: {
+    color: colors.accent.primary,
+    textDecorationLine: 'underline' as const,
   },
 });

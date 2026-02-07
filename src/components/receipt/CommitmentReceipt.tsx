@@ -8,7 +8,7 @@ import { ensureHttps } from '../../utils/googleBooks';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Receipt dimensions (9:16 aspect ratio for Instagram Story)
-const RECEIPT_WIDTH = SCREEN_WIDTH * 0.85;
+const RECEIPT_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 400);
 const RECEIPT_HEIGHT = RECEIPT_WIDTH * (16 / 9);
 
 // Cover image dimensions
