@@ -1235,3 +1235,54 @@ Each task is atomic, role-specific, and has a clear definition of done.
 | #79 | ✅ | TestFlight提出済み |
 | #80 | ✅ | `supportsTablet: false` TestFlight提出完了 |
 | #83 | ✅ | iPad証明書シェア画面修正 → **App Store審査提出完了** |
+
+---
+
+### 🔴 Guideline 2.1 再申請チェックリスト (2026-02-06)
+
+**却下理由:** OAuth後のナビゲーションレース条件 → Guideline 2.1 (Performance: App Completeness)
+**修正内容:** Screen6の直接ナビゲーション削除、onAuthStateChangeへの完全委譲、AsyncStorageクリーンアップ強化
+
+#### 手動対応（あなたがやること）
+
+| # | タスク | 場所 | 状態 |
+|---|--------|------|------|
+| 1 | コード変更をコミット | ターミナル | ⬜ |
+| 2 | プロダクションビルド作成 | ターミナル (`./build-eas-local.sh` or `eas build`) | ⬜ |
+| 3 | TestFlightにアップロード | ターミナル (`eas submit`) | ⬜ |
+| 4 | TestFlightで3フローの動作確認 | iPhone実機 | ⬜ |
+| 5 | App Store Connectで新ビルドを選択 | ブラウザ | ⬜ |
+| 6 | 審査メモを更新 | App Store Connect | ⬜ |
+| 7 | 「審査に提出」 | App Store Connect | ⬜ |
+
+#### 詳細手順
+
+**Step 1: コミット & ビルド**
+- 変更ファイル: `src/navigation/AppNavigator.tsx` (AsyncStorage早期クリーンアップ2箇所)
+- ビルド: `./build-eas-local.sh` (ローカル) or `eas build --profile production --platform ios` (リモート)
+- 提出: `eas submit --platform ios --path ./build-*.ipa --non-interactive`
+
+**Step 2: TestFlight実機検証（3フロー必須）**
+1. **Email新規登録** → Screen6でアカウント作成 → 自動的にScreen7へ遷移するか
+2. **Googleサインイン** → Screen6でGoogle認証 → 自動的にScreen7へ遷移するか
+3. **Appleサインイン** → Screen6でApple認証 → 自動的にScreen7へ遷移するか
+- 各フローで「画面が固まる」「白画面になる」がないことを確認
+- 成功基準: 認証完了後5秒以内にScreen7（またはダッシュボード）に遷移
+
+**Step 3: App Store Connect操作**
+1. https://appstoreconnect.apple.com → COMMIT → 現在のバージョン
+2. 「ビルド」セクション → 新しいビルドを選択
+3. 「審査に関するメモ」を以下に更新:
+
+> **Guideline 2.1 修正内容 (Re-submission):**
+>
+> Fixed OAuth post-authentication navigation race condition:
+> - Removed direct navigation calls from Screen 6 (Account Creation)
+> - Authentication state changes now exclusively handled by onAuthStateChange listener in AppNavigator
+> - Username data persisted to AsyncStorage before auth calls, recovered after auth state change
+> - Added safety timer (15s) to prevent indefinite loading states
+> - Added AsyncStorage cleanup for all early-return paths to prevent stale data
+>
+> All three auth flows (Email, Google Sign-In, Apple Sign-In) have been verified to transition smoothly after authentication without blank screens or freezes.
+
+4. 「審査に提出」をクリック

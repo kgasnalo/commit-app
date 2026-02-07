@@ -147,7 +147,15 @@ enabled = true
 # in emails.
 site_url = "https://commit-app-web.vercel.app"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://commit-app-web.vercel.app/callback"]
+additional_redirect_urls = [
+  "https://commit-app-web.vercel.app/callback",
+  "https://commit-app-web.vercel.app/auth/callback",
+  "commitapp://",
+  "commitapp://*",
+  "commitapp://auth/callback",
+  "exp://*",
+  "https://rnksvjjcsnwlquaynduu.supabase.co/auth/v1/callback"
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).
