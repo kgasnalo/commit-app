@@ -14,7 +14,7 @@
       "backgroundColor": "#000000"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.kgxxx.commitapp",
       "buildNumber": "1",
       "usesAppleSignIn": true,
