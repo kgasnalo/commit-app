@@ -315,12 +315,12 @@ const styles = StyleSheet.create({
   },
   bookAuthor: {
     color: colors.text.muted,
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: spacing.xs,
   },
   readCount: {
     color: colors.accent.primary,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   loadingContainer: {

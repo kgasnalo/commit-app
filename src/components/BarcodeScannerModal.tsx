@@ -179,7 +179,11 @@ export default function BarcodeScannerModal({
   const handleRequestPermission = async () => {
     const result = await requestPermission();
     if (!result.granted) {
-      Alert.alert(i18n.t('common.error'), i18n.t('scanner.permission_denied'));
+      Alert.alert(
+        i18n.t('common.error'),
+        i18n.t('scanner.permission_denied'),
+        [{ text: i18n.t('common.continue_button') }]
+      );
     }
   };
 
@@ -223,7 +227,7 @@ export default function BarcodeScannerModal({
               onPress={handleRequestPermission}
             >
               <Text style={styles.permissionButtonText}>
-                {i18n.t('common.ok')}
+                {i18n.t('common.continue_button')}
               </Text>
             </TouchableOpacity>
           </View>

@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   amazonButtonText: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 160, 120, 0.6)',
   },
   selectBookButton: {

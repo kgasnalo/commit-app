@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   typeName: {
     fontSize: 28,
-    fontWeight: '200',
+    fontWeight: '400',
     color: '#FAFAFA',
     textAlign: 'center',
     letterSpacing: 1,

@@ -188,11 +188,6 @@ export default function CommitmentCard({
           </View>
 
           <View style={styles.sideInfo}>
-            <Text style={[styles.pledgeValue, isUrgent && styles.urgentText]}>
-              {commitment.currency === 'JPY' ? '¥' : commitment.currency}
-              {commitment.pledge_amount.toLocaleString()}
-            </Text>
-
             {commitment.status === 'pending' && (
               <Text style={[styles.countdown, isUrgent && styles.urgentText]}>
                 {countdown.expired ? 'EXPIRED' : `${countdown.days}D ${countdown.hours}H`}
@@ -294,7 +289,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   linkedBadgeText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#FF6B35',
     fontWeight: '600',
   },
@@ -304,13 +299,13 @@ const styles = StyleSheet.create({
   },
   pledgeValue: {
     fontSize: 18,
-    fontWeight: '300',
+    fontWeight: '400',
     color: '#FAFAFA',
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
   countdown: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.4)',
     fontWeight: '500',
     marginTop: 4,

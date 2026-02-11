@@ -148,10 +148,10 @@
     "screen11_title": "Voices from COMMIT users",
     "screen11_testimonial1_name": "Taro S.",
     "screen11_testimonial1_role": "34, CEO",
-    "screen11_testimonial1_text": "I had 30 unread books, but finished them all in 3 months. When you set a donation amount, you get serious.",
+    "screen11_testimonial1_text": "I had 30 unread books, but finished them all in 3 months. Having a deadline makes you serious.",
     "screen11_testimonial2_name": "Yuki M.",
     "screen11_testimonial2_role": "29, Investor",
-    "screen11_testimonial2_text": "The system that doesn't rely on willpower is great. No guilt even if you fail because it becomes a donation.",
+    "screen11_testimonial2_text": "The system that doesn't rely on willpower is great. The accountability structure keeps me on track.",
     "screen11_testimonial3_name": "Ken T.",
     "screen11_testimonial3_role": "41, Consultant",
     "screen11_testimonial3_text": "Now reading one book per week. 50 books a year, my life has changed.",
@@ -308,6 +308,7 @@
     "progress_near_max": "Amazing! You've already read {{pages}} pages of this book.",
     "slider_min_note": "* {{pages}} pages already read. You can set goals from page {{next}}.",
     "success_message": "Commitment created!\nDeadline: {{deadline}}\nDonation: {{penalty}}",
+    "success_message_simple": "Commitment created!\nDeadline: {{deadline}}",
     "edit_total_pages_title": "Edit Total Pages",
     "edit_total_pages_message": "Enter the total page count of your book",
     "edit_total_pages_button": "Wrong page count? Edit"
@@ -498,6 +499,7 @@
   },
   "common": {
     "ok": "OK",
+    "continue_button": "Continue",
     "cancel": "Cancel",
     "error": "Error",
     "success": "Success",

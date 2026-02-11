@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     paddingHorizontal: 24,
     marginBottom: 16,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1,
     color: titanColors.text.secondary,
   },
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '300',
+    fontWeight: '400',
     color: titanColors.text.primary,
     textAlign: 'center',
     marginBottom: 12,

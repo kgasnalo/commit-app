@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
@@ -470,11 +470,46 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         onComplete={handleWarpComplete}
       />
       <OnboardingLayout
-      currentStep={14}
-      totalSteps={15}
+      currentStep={13}
+      totalSteps={14}
       title={i18n.t('onboarding.screen13_title')}
-      footer={
-        <View>
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+      >
+        {iapLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.accent.primary} />
+          </View>
+        ) : (
+          <View style={styles.plans}>
+            <TouchableOpacity
+              style={[styles.planCard, selectedPlan === 'yearly' && styles.planCardSelected]}
+              onPress={() => setSelectedPlan('yearly')}
+            >
+              <View style={styles.planBadge}>
+                <Text style={styles.planBadgeText}>50% OFF</Text>
+              </View>
+              <Text style={styles.planName}>{i18n.t('onboarding.screen13_annual')}</Text>
+              <Text style={styles.planPrice}>{getDisplayPrice(IAP_PRODUCT_IDS.YEARLY)}</Text>
+              <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_annual_note')}</Text>
+              <Text style={styles.planLabel}>{i18n.t('paywall.for_serious')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
+              onPress={() => setSelectedPlan('monthly')}
+            >
+              <Text style={styles.planName}>{i18n.t('onboarding.screen13_monthly')}</Text>
+              <Text style={styles.planPrice}>{getDisplayPrice(IAP_PRODUCT_IDS.MONTHLY)}</Text>
+              <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_monthly_note')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.footerSection}>
           <SlideToCommit
             label={i18n.t('onboarding.screen13_slide_to_commit')}
             onComplete={handleSubscribe}
@@ -484,10 +519,6 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             <View style={styles.guarantee}>
               <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
               <Text style={styles.guaranteeText}>{i18n.t('onboarding.screen13_cancel_note')}</Text>
-            </View>
-            <View style={styles.guarantee}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
-              <Text style={styles.guaranteeText}>{i18n.t('onboarding.screen13_donation_note')}</Text>
             </View>
             <View style={styles.guarantee}>
               <Ionicons name="checkmark-circle" size={16} color={colors.status.success} />
@@ -514,37 +545,7 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             </Text>
           </View>
         </View>
-      }
-    >
-      {iapLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent.primary} />
-        </View>
-      ) : (
-        <View style={styles.plans}>
-          <TouchableOpacity
-            style={[styles.planCard, selectedPlan === 'yearly' && styles.planCardSelected]}
-            onPress={() => setSelectedPlan('yearly')}
-          >
-            <View style={styles.planBadge}>
-              <Text style={styles.planBadgeText}>50% OFF</Text>
-            </View>
-            <Text style={styles.planName}>{i18n.t('onboarding.screen13_annual')}</Text>
-            <Text style={styles.planPrice}>{getDisplayPrice(IAP_PRODUCT_IDS.YEARLY)}</Text>
-            <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_annual_note')}</Text>
-            <Text style={styles.planLabel}>{i18n.t('paywall.for_serious')}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
-            onPress={() => setSelectedPlan('monthly')}
-          >
-            <Text style={styles.planName}>{i18n.t('onboarding.screen13_monthly')}</Text>
-            <Text style={styles.planPrice}>{getDisplayPrice(IAP_PRODUCT_IDS.MONTHLY)}</Text>
-            <Text style={styles.planDetail}>{i18n.t('onboarding.screen13_monthly_note')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      </ScrollView>
       </OnboardingLayout>
       <LegalBottomSheet
         visible={showLegal}
@@ -556,10 +557,18 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+    paddingBottom: spacing.md,
+  },
   loadingContainer: {
     paddingVertical: spacing.xl * 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  footerSection: {
+    marginTop: spacing.lg,
   },
   plans: {
     gap: spacing.md,
@@ -614,8 +623,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   guarantees: {
-    marginTop: spacing.lg,
-    gap: spacing.sm,
+    marginTop: spacing.sm,
+    gap: spacing.xs,
   },
   guarantee: {
     flexDirection: 'row',
@@ -624,17 +633,17 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   guaranteeText: {
-    color: colors.text.secondary,
+    color: '#B5B0AB',
     fontSize: typography.fontSize.caption,
   },
   legalContainer: {
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
   },
   legalText: {
     fontSize: typography.fontSize.caption,
-    color: colors.text.secondary,
+    color: '#B5B0AB',
     textAlign: 'center',
     lineHeight: 20,
   },

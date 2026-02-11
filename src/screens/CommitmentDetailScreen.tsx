@@ -390,12 +390,7 @@ export default function CommitmentDetailScreen({ route, navigation }: any) {
                 </View>
             )}
 
-            <View style={styles.dataRow}>
-                <MicroLabel>PLEDGED AMOUNT</MicroLabel>
-                <TacticalText size={16} color={colors.text.primary}>
-                     {getCurrencySymbol(commitment.currency)}{commitment.pledge_amount.toLocaleString()}
-                </TacticalText>
-            </View>
+            {/* Pledged amount hidden for App Review compliance */}
 
             <View style={styles.dataRow}>
                 <MicroLabel>DEADLINE</MicroLabel>
@@ -609,7 +604,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 107, 107, 0.3)',
   },
   statusChipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FF6B35',
     letterSpacing: 0.5,
@@ -658,7 +653,7 @@ const styles = StyleSheet.create({
   // Giant glowing chronograph numbers
   countdownValue: {
     fontSize: 48,
-    fontWeight: '200',
+    fontWeight: '400',
     color: '#FAFAFA',
     letterSpacing: -1,
     // Luxury gauge glow
@@ -667,7 +662,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 16,
   },
   countdownUnit: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: 'rgba(255, 160, 120, 0.5)',
     marginTop: 8,

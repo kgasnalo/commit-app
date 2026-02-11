@@ -1286,3 +1286,31 @@ Each task is atomic, role-specific, and has a clear definition of done.
 > All three auth flows (Email, Google Sign-In, Apple Sign-In) have been verified to transition smoothly after authentication without blank screens or freezes.
 
 4. 「審査に提出」をクリック
+
+---
+
+### 🔴 Guideline 4.0 再申請チェックリスト (2026-02-11)
+
+**却下理由:** Guideline 4.0 - Design: Preamble — "hard to read type or typography"
+**修正概要:** fontWeight '200'/'300' → '400'、fontSize 9-10px → 11px の一括改善
+
+#### Fix 1: fontWeight '200' → '400' ✅
+- 超極細フォントを通常ウェイトに変更（高級感テキスト全般）
+
+#### Fix 2: fontSize 9-10px → 11px ✅
+- Apple最低推奨サイズ(11pt)未満のテキストを修正
+
+#### Fix 3: fontWeight '300' → '400' ✅ (9箇所・8ファイル)
+- `src/screens/DashboardScreen.tsx` (userName)
+- `src/screens/ProfileScreen.tsx` (userName, statValue)
+- `src/screens/LibraryScreen.tsx` (emptyTitle)
+- `src/screens/monkmode/MonkModeScreen.tsx` (statsValue)
+- `src/components/monkmode/DurationSlider.tsx` (durationUnit)
+- `src/components/reading-dna/InsightCard.tsx` (value)
+- `src/components/CommitmentCard.tsx` (pledgeValue)
+- `src/components/DonationAnnouncementModal.tsx` (amountValue)
+
+#### 検証
+- `grep "fontWeight.*'300'" src/` → TacticalText.tsx の条件式のみ（正当）
+- `grep "fontWeight.*'200'" src/` → 残存ゼロ
+- `npx tsc --noEmit` → 型エラーなし

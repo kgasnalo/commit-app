@@ -40,8 +40,7 @@ import { GlassTile } from '../components/titan/GlassTile';
 import { MetricDisplay } from '../components/titan/MetricDisplay';
 import { StatusIndicator } from '../components/titan/StatusIndicator';
 import { MonkModeService, StreakStats } from '../lib/MonkModeService';
-import { CardRegistrationBanner } from '../components/CardRegistrationBanner';
-import { DonationAnnouncementModal, useUnreadDonation } from '../components/DonationAnnouncementModal';
+// CardRegistrationBanner and DonationAnnouncementModal removed for App Review compliance (Guideline 3.2.2)
 import { captureError } from '../utils/errorLogger';
 import { WidgetService } from '../lib/WidgetService';
 import JobRecommendations from '../components/JobRecommendations';
@@ -91,13 +90,8 @@ export default function DashboardScreen({ navigation }: any) {
   const [currentLocale, setCurrentLocale] = useState(i18n.locale);
   const [userName, setUserName] = useState<string>('Guest');
   const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
-  const [paymentMethodRegistered, setPaymentMethodRegistered] = useState<boolean>(true); // Default true to avoid flash
-  const [showDonationModal, setShowDonationModal] = useState(false);
   const [rankingPosition, setRankingPosition] = useState<number | null>(null);
   const [jobCategory, setJobCategory] = useState<JobCategory | null | undefined>(undefined);
-
-  // Donation announcement
-  const { unreadDonation, markAsRead } = useUnreadDonation();
 
   // Cinematic fade-in from black
   const [showFadeOverlay, setShowFadeOverlay] = useState(false);
@@ -248,22 +242,12 @@ export default function DashboardScreen({ navigation }: any) {
     };
     initNotifications();
 
-    // Show donation modal if there's an unread donation
-    // Small delay to not interrupt initial load
-    const donationTimer = setTimeout(() => {
-      if (!isMountedRef.current) return;
-      if (unreadDonation) {
-        setShowDonationModal(true);
-      }
-    }, 1500);
-    timersRef.current.push(donationTimer);
-
     return () => {
       isMountedRef.current = false;
       timersRef.current.forEach(timer => clearTimeout(timer));
       timersRef.current = [];
     };
-  }, [unreadDonation]);
+  }, []);
 
   const fetchUserProfile = async () => {
     try {
@@ -277,7 +261,6 @@ export default function DashboardScreen({ navigation }: any) {
         let name = data?.username;
         if (!name) name = user.email?.split('@')[0];
         setUserName(name || 'Guest');
-        setPaymentMethodRegistered(data?.payment_method_registered ?? false);
         setJobCategory(data?.job_category as JobCategory | null);
       }
     } catch (e) {
@@ -383,9 +366,7 @@ export default function DashboardScreen({ navigation }: any) {
                  <Text style={styles.historyTitle}>{commitment.book.title}</Text>
                  <Text style={styles.historyDate}>{new Date(commitment.created_at).toLocaleDateString()}</Text>
              </View>
-             <TacticalText style={styles.historyAmount} color={colors.text.muted}>
-                 -{commitment.currency === 'JPY' ? '¥' : commitment.currency}{commitment.pledge_amount.toLocaleString()}
-             </TacticalText>
+             {/* Pledge amount hidden for App Review compliance */}
           </View>
       )
   };
@@ -496,9 +477,6 @@ export default function DashboardScreen({ navigation }: any) {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Card Registration Banner - Non-dismissable */}
-        {!paymentMethodRegistered && <CardRegistrationBanner />}
-
         {/* Badges Row - Streak & Ranking */}
         <View style={styles.badgeRow}>
           {/* Streak Counter - Duolingo Style */}
@@ -530,28 +508,7 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* Stats Grid: Reference Design Style */}
         <View style={styles.statsGrid}>
-          {/* Main Pool - Glowing Tile (最強調) */}
-          <GlassTile
-            variant="glowing"
-            innerGlow="strong"
-            padding="xl"
-            borderRadius={28}
-            topBorder="none"
-            style={styles.mainStatTile}
-          >
-            <Text style={styles.statLabel}>{i18n.t('dashboard.donation_pool')}</Text>
-            <View style={styles.mainStatValueRow}>
-              <Text style={styles.currencySymbol}>{primaryPool.symbol}</Text>
-              <Text style={styles.mainStatValue}>{primaryPool.amount}</Text>
-              {poolDisplay.length > 1 && (
-                <Text style={styles.additionalCurrency}>
-                  {poolDisplay.slice(1).map(p => ` + ${p.symbol}${p.amount}`).join('')}
-                </Text>
-              )}
-            </View>
-          </GlassTile>
-
-          {/* Finexaスタイル: 4つの円形ボタン横並び */}
+          {/* Finexaスタイル: 円形ボタン横並び */}
           <View style={styles.circleButtonRow}>
             {/* 進行中 */}
             <View style={styles.circleButtonContainer}>
@@ -603,29 +560,7 @@ export default function DashboardScreen({ navigation }: any) {
               <Text style={styles.circleButtonLabel}>{i18n.t('dashboard.failed_short') || 'Failed'}</Text>
             </View>
 
-            {/* 寄付済 */}
-            <View style={styles.circleButtonContainer}>
-              <View style={[
-                styles.circleButton,
-                Object.values(donatedByCurrency).some(v => v > 0) && styles.circleButtonActive,
-              ]}>
-                <Ionicons
-                  name="heart-outline"
-                  size={24}
-                  color={Object.values(donatedByCurrency).some(v => v > 0) ? '#FF6B35' : 'rgba(255, 255, 255, 0.5)'}
-                />
-              </View>
-              <Text style={styles.circleButtonValue}>
-                {Object.entries(donatedByCurrency)
-                  .filter(([_, amount]) => amount > 0)
-                  .map(([currency, amount]) => {
-                    const symbol = CURRENCY_SYMBOLS[currency] || currency;
-                    return amount >= 1000 ? `${symbol}${Math.floor(amount / 1000)}k` : `${symbol}${amount}`;
-                  })
-                  .join('+') || '¥0'}
-              </Text>
-              <Text style={styles.circleButtonLabel}>{i18n.t('dashboard.donated_short') || 'Donated'}</Text>
-            </View>
+            {/* Donated circle removed for App Review compliance */}
           </View>
         </View>
 
@@ -694,15 +629,6 @@ export default function DashboardScreen({ navigation }: any) {
         <Animated.View style={[styles.fadeOverlay, fadeOverlayStyle]} pointerEvents="none" />
       )}
 
-      {/* Donation Announcement Modal */}
-      <DonationAnnouncementModal
-        visible={showDonationModal}
-        donation={unreadDonation}
-        onClose={() => {
-          setShowDonationModal(false);
-          markAsRead();
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -728,7 +654,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 26,
     color: '#FAFAFA',
-    fontWeight: '300',
+    fontWeight: '400',
     marginTop: 8,
     letterSpacing: -0.5,
   },
@@ -843,7 +769,7 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.45)',
     fontWeight: '500',
     letterSpacing: 0.8,
@@ -925,7 +851,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   circleButtonLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.4)',
     fontWeight: '500',
     letterSpacing: 0.3,

@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   },
   userName: {
       fontSize: 24,
-      fontWeight: '300',
+      fontWeight: '400',
       color: colors.text.primary,
       marginBottom: 4,
   },
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
       fontSize: 24,
-      fontWeight: '300',
+      fontWeight: '400',
       color: colors.text.primary,
   },
   chartContainer: {

@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   motivationText: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.35)',
     textAlign: 'center',
     fontStyle: 'italic',

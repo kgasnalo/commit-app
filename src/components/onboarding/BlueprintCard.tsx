@@ -259,19 +259,23 @@ export default function BlueprintCard({
         onRevealComplete={triggerMediumHaptic}
       />
 
-      <AnimatedDivider delay={DELAYS.divider2} />
+      {pledgeAmount > 0 && (
+        <>
+          <AnimatedDivider delay={DELAYS.divider2} />
 
-      {/* Row 3: Pledge */}
-      <BlueprintRow
-        icon="heart"
-        label={i18n.t('blueprint.pledge_label')}
-        value={formatAmount()}
-        note={i18n.t('blueprint.pledge_note')}
-        delay={DELAYS.row3Start}
-        duration={ROW_REVEAL_DURATION}
-        onRevealStart={triggerLightHaptic}
-        onRevealComplete={triggerMediumHaptic}
-      />
+          {/* Row 3: Pledge (hidden when pledgeAmount=0) */}
+          <BlueprintRow
+            icon="heart"
+            label={i18n.t('blueprint.pledge_label')}
+            value={formatAmount()}
+            note={i18n.t('blueprint.pledge_note')}
+            delay={DELAYS.row3Start}
+            duration={ROW_REVEAL_DURATION}
+            onRevealStart={triggerLightHaptic}
+            onRevealComplete={triggerMediumHaptic}
+          />
+        </>
+      )}
     </Animated.View>
   );
 }

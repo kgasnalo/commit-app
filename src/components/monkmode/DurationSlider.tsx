@@ -233,14 +233,14 @@ const styles = StyleSheet.create({
   },
   durationDisplay: {
     fontSize: 72,
-    fontWeight: '200', // 細めで高級感
+    fontWeight: '400', // 読みやすさ重視
     color: '#FF6B35',
     letterSpacing: -2,
     // 最小限のグロー（背景に任せる）
   },
   durationUnit: {
     fontSize: 22,
-    fontWeight: '300',
+    fontWeight: '400',
     color: 'rgba(255, 160, 120, 0.6)',
   },
   trackContainer: {

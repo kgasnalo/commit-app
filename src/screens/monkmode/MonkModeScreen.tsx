@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   statsLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.4)',
     textTransform: 'uppercase',
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   statsValue: {
     fontSize: 32,
-    fontWeight: '300', // 細めで高級感
+    fontWeight: '400',
     color: '#FAFAFA',
     letterSpacing: 1,
   },

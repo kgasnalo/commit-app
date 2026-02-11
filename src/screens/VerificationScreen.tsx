@@ -50,7 +50,11 @@ export default function VerificationScreen({ route, navigation }: any) {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.camera_permission'));
+      Alert.alert(
+        i18n.t('common.error'),
+        i18n.t('errors.camera_permission'),
+        [{ text: i18n.t('common.continue_button') }]
+      );
       return;
     }
 

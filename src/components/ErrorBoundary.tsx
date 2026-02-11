@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   errorText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.status.error,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     lineHeight: 16,

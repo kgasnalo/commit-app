@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 32,
-    fontWeight: '200',
+    fontWeight: '400',
     color: '#FAFAFA',
     fontVariant: ['tabular-nums'],
     marginBottom: 4,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   statLabel: {
     color: 'rgba(255, 255, 255, 0.4)',
     textAlign: 'center',
-    fontSize: 10,
+    fontSize: 12,
   },
 });
 

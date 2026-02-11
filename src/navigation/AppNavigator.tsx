@@ -41,7 +41,7 @@ import CommitmentDetailScreen from '../screens/CommitmentDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
-import DonationHistoryScreen from '../screens/DonationHistoryScreen';
+// DonationHistoryScreen removed for App Review compliance (Guideline 3.2.2)
 import AnnouncementsScreen from '../screens/AnnouncementsScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
@@ -62,7 +62,7 @@ import OnboardingJobCategory from '../screens/onboarding/OnboardingScreen1_5_Job
 import OnboardingScreen2 from '../screens/onboarding/OnboardingScreen2_LastRead';
 import OnboardingScreen3 from '../screens/onboarding/OnboardingScreen3_BookSelect';
 import OnboardingScreen4 from '../screens/onboarding/OnboardingScreen4_Deadline';
-import OnboardingScreen5 from '../screens/onboarding/OnboardingScreen5_Penalty';
+// OnboardingScreen5 (Penalty) removed for App Review compliance (Guideline 3.2.2)
 import OnboardingScreen6 from '../screens/onboarding/OnboardingScreen6_Account';
 import OnboardingScreen7 from '../screens/onboarding/OnboardingScreen7_OpportunityCost';
 import OnboardingScreen8 from '../screens/onboarding/OnboardingScreen8_Stats';
@@ -126,7 +126,7 @@ function SettingsStackNavigator() {
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
-        <Stack.Screen name="DonationHistory" component={DonationHistoryScreen} />
+        {/* DonationHistory removed for App Review compliance */}
         <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
         <Stack.Screen name="JobCategorySettings" component={JobCategorySettingsScreen} />
         <Stack.Screen name="JobRanking" component={JobRankingScreen} />
@@ -157,7 +157,7 @@ function MainTabs() {
         tabBarInactiveTintColor: colors.text.muted, // Dark Grey
         tabBarLabelStyle: {
           fontFamily: typography.fontFamily.heading,
-          fontSize: 10,
+          fontSize: 12,
           letterSpacing: 0.5,
           marginTop: 2,
         },
@@ -224,7 +224,7 @@ function MainTabs() {
           tabBarBadge: unreadCounts.total > 0 ? unreadCounts.total : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.signal.danger,
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: '600',
             minWidth: 18,
             height: 18,
@@ -1088,7 +1088,7 @@ function NavigationContent() {
           <Stack.Screen name="Onboarding3" component={OnboardingScreen3} />
           <Stack.Screen name="ManualBookEntry" component={ManualBookEntryScreen} />
           <Stack.Screen name="Onboarding4" component={OnboardingScreen4} />
-          <Stack.Screen name="Onboarding5" component={OnboardingScreen5} />
+          {/* Onboarding5 (Penalty) removed for App Review compliance */}
           <Stack.Screen name="Onboarding6" component={OnboardingScreen6} />
           <Stack.Screen name="Onboarding7" component={OnboardingScreen7} />
           <Stack.Screen name="Onboarding8" component={OnboardingScreen8} />

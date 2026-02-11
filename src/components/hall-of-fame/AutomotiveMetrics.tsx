@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   // Micro label - guaranteed visibility with shadow
   label: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.5,
     color: '#FFFFFF',
     fontWeight: '600',
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   labelCompact: {
-    fontSize: 9,
+    fontSize: 12,
     marginBottom: 4,
   },
   // Precision instrument number - bolder with guaranteed visibility

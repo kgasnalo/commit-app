@@ -307,6 +307,9 @@ export default function AuthScreen({ navigation }: any) {
         throw new Error(i18n.t('errors.apple_signin_token_failed'));
       }
 
+      // Apple認証シートのdismissを待つ（iPad互換モードでのUI衝突を回避）
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Supabaseに IDトークンを渡してセッションを確立
       const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
@@ -314,7 +317,13 @@ export default function AuthScreen({ navigation }: any) {
       });
 
       if (sessionError) {
-        captureError(sessionError, { location: 'AuthScreen.handleAppleSignIn.signInWithIdToken' });
+        captureError(sessionError, {
+          location: 'AuthScreen.handleAppleSignIn.signInWithIdToken',
+          extra: {
+            errorMessage: sessionError.message,
+            errorStatus: (sessionError as any)?.status,
+          },
+        });
         Alert.alert(i18n.t('common.error'), i18n.t('errors.auth_failed'));
         return;
       }
@@ -324,16 +333,34 @@ export default function AuthScreen({ navigation }: any) {
         // ユーザーレコード作成はonAuthStateChangeで処理される
       }
     } catch (error: unknown) {
-      // ユーザーがキャンセルした場合は何もしない
       const errorCode = (error as { code?: string })?.code;
+      const errorMessage = (error as Error)?.message;
+
+      // 全エラーをSentryに送信（キャンセル含む、デバッグ用）
+      captureError(error, {
+        location: 'AuthScreen.handleAppleSignIn',
+        extra: { errorCode, errorMessage },
+      });
+
+      // ユーザーがキャンセルした場合は何もしない
       if (
         errorCode === 'ERR_REQUEST_CANCELED' ||
-        errorCode === 'ERR_CANCELED'
+        errorCode === 'ERR_CANCELED' ||
+        errorCode === 'ERR_REQUEST_UNKNOWN' ||
+        errorCode === 'ERR_NOT_HANDLED_REQUEST'
       ) {
-        if (__DEV__) console.log('[AuthScreen] User cancelled Apple Sign-In');
+        if (__DEV__) console.log('[AuthScreen] User cancelled Apple Sign-In:', errorCode);
         return;
       }
-      captureError(error, { location: 'AuthScreen.handleAppleSignIn' });
+      // iPad互換モードやポップオーバー表示で発生しうるエラー
+      if (
+        errorCode === 'ERR_INVALID_RESPONSE' ||
+        errorCode === 'ERR_NOT_AVAILABLE'
+      ) {
+        if (__DEV__) console.log('[AuthScreen] Apple Sign-In error:', errorCode, errorMessage);
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_unavailable'));
+        return;
+      }
       Alert.alert(i18n.t('common.error'), getErrorMessage(error));
     } finally {
       setLoading(false);

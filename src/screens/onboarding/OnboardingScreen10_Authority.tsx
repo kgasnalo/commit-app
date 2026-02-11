@@ -9,8 +9,8 @@ import i18n from '../../i18n';
 export default function OnboardingScreen10({ navigation }: any) {
   return (
     <OnboardingLayout
-      currentStep={11}
-      totalSteps={15}
+      currentStep={10}
+      totalSteps={14}
       title=""
       footer={
         <PrimaryButton

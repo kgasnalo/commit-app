@@ -178,16 +178,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
       return;
     }
 
-    if (!form.pledgeAmount) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.select_penalty'));
-      return;
-    }
-
-    if (!form.agreedToPenalty) {
-      Alert.alert(i18n.t('common.error'), i18n.t('errors.agree_penalty'));
-      return;
-    }
-
     const minDeadline = new Date(getNowDate().getTime() + 24 * 60 * 60 * 1000);
     if (form.deadline < minDeadline) {
       Alert.alert(i18n.t('common.error'), i18n.t('errors.validation.DEADLINE_TOO_SOON'));
@@ -220,8 +210,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         book_author: selectedBook.volumeInfo.authors?.join(', ') || i18n.t('common.unknown_author'),
         book_cover_url: coverUrl,
         deadline: form.deadline.toISOString(),
-        pledge_amount: form.pledgeAmount,
-        currency: form.currency,
+        pledge_amount: 0,
+        currency: 'JPY',
         target_pages: pagesToRead,
       };
 
@@ -287,8 +277,8 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
         (form.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
       );
       AnalyticsService.commitmentCreated({
-        currency: form.currency,
-        amount: form.pledgeAmount,
+        currency: 'JPY',
+        amount: 0,
         deadline_days: deadlineDays,
         target_pages: Math.max(1, form.pageCount - continueFlow.totalPagesRead),
         is_continue_flow: continueFlow.isContinueFlow,
@@ -296,12 +286,10 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
 
       setCreating(false);
 
-      const currencySymbol = CURRENCY_OPTIONS.find(c => c.code === form.currency)?.symbol || form.currency;
       Alert.alert(
         i18n.t('common.success'),
-        i18n.t('commitment.success_message', {
+        i18n.t('commitment.success_message_simple', {
           deadline: form.deadline.toLocaleDateString(),
-          penalty: `${currencySymbol}${form.pledgeAmount.toLocaleString()}`
         }),
         [
           {
@@ -544,88 +532,14 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* SECTION 4: STAKE (Penalty) */}
-        <View style={styles.section}>
-          <MicroLabel style={[styles.sectionTitle, { color: colors.signal.danger }]}>
-            4. STAKE (PENALTY)
-          </MicroLabel>
-
-          {/* CURRENCY */}
-          <MicroLabel style={styles.subsectionTitle}>CURRENCY PROTOCOL</MicroLabel>
-          <View style={styles.currencyButtons}>
-            {CURRENCY_OPTIONS.map((curr) => (
-              <TouchableOpacity
-                key={curr.code}
-                style={[
-                  styles.currencyButton,
-                  form.currency === curr.code && styles.currencyButtonSelected,
-                ]}
-                onPress={() => {
-                  form.setCurrency(curr.code);
-                  form.setPledgeAmount(null);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.currencyButtonText,
-                    form.currency === curr.code && styles.currencyButtonTextSelected,
-                  ]}
-                >
-                  {curr.code}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* AMOUNT */}
-          <MicroLabel style={styles.subsectionTitle}>RISK LEVEL</MicroLabel>
-          <View style={styles.amountButtons}>
-            {AMOUNTS_BY_CURRENCY[form.currency].map((amount) => (
-              <TouchableOpacity
-                key={amount}
-                style={[
-                  styles.amountButton,
-                  form.pledgeAmount === amount && styles.amountButtonSelected,
-                ]}
-                onPress={() => {
-                  form.setPledgeAmount(amount);
-                  const tierIndex = AMOUNTS_BY_CURRENCY[form.currency].indexOf(amount);
-                  if (tierIndex >= 2) {
-                    HapticsService.feedbackMedium();
-                  } else {
-                    HapticsService.feedbackLight();
-                  }
-                }}
-              >
-                <TacticalText
-                  size={18}
-                  color={form.pledgeAmount === amount ? '#000' : colors.text.secondary}
-                >
-                  {CURRENCY_OPTIONS.find(c => c.code === form.currency)?.symbol}{amount.toLocaleString()}
-                </TacticalText>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={styles.checkbox}
-            onPress={() => form.setAgreedToPenalty(!form.agreedToPenalty)}
-          >
-            <View style={[styles.checkboxBox, form.agreedToPenalty && styles.checkboxBoxChecked]}>
-              {form.agreedToPenalty && <Ionicons name="checkmark" size={16} color="#000" />}
-            </View>
-            <Text style={styles.checkboxLabel}>
-              I ACCEPT THE CONSEQUENCES OF FAILURE.
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* SECTION 4 (Penalty) removed for App Review compliance (Guideline 3.2.2) */}
 
           {/* CREATE BUTTON */}
           <Animated.View style={form.createButtonAnimatedStyle}>
             <TouchableOpacity
               style={[
                 styles.createButton,
-                (!selectedBook || !form.pledgeAmount || !form.agreedToPenalty) && styles.createButtonDisabled
+                !selectedBook && styles.createButtonDisabled
               ]}
               onPress={() => {
                 HapticsService.feedbackHeavy();
@@ -633,7 +547,7 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
               }}
               onPressIn={form.handleCreateButtonPressIn}
               onPressOut={form.handleCreateButtonPressOut}
-              disabled={!selectedBook || !form.pledgeAmount || !form.agreedToPenalty || creating}
+              disabled={!selectedBook || creating}
               activeOpacity={0.9}
             >
               {creating ? (
@@ -645,8 +559,6 @@ export default function CreateCommitmentScreen({ navigation, route }: Props) {
           </Animated.View>
         </ScrollView>
 
-          {/* Vignette Overlay */}
-          <VignetteOverlay intensity={form.vignetteIntensity} />
         </View>
       </KeyboardAvoidingView>
 
@@ -713,7 +625,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 16,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: 'rgba(255, 160, 120, 0.6)',
     letterSpacing: 1.5,
@@ -725,7 +637,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   totalPagesLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.5)',
     letterSpacing: 1,
@@ -886,7 +798,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   subsectionTitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.35)',
     marginBottom: 10,
@@ -1020,7 +932,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   progressInfo: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#4CAF50',
     marginTop: 6,

@@ -31,7 +31,7 @@ import { captureError } from '../../utils/errorLogger';
 import { validateUsernameFormat, checkUsernameAvailability } from '../../utils/usernameValidator';
 
 export default function OnboardingScreen6({ navigation, route }: any) {
-  const { selectedBook, deadline, pledgeAmount, currency = 'JPY', tsundokuCount } = route.params || {};
+  const { selectedBook, deadline, pledgeAmount = 0, currency = 'JPY', tsundokuCount } = route.params || {};
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -368,6 +368,9 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         throw new Error(i18n.t('errors.apple_signin_token_failed'));
       }
 
+      // Apple認証シートのdismissを待つ（iPad互換モードでのUI衝突を回避）
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Supabaseに IDトークンを渡してセッションを確立
       const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
@@ -375,7 +378,13 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       });
 
       if (sessionError) {
-        captureError(sessionError, { location: 'OnboardingScreen6.handleAppleSignIn.signInWithIdToken' });
+        captureError(sessionError, {
+          location: 'OnboardingScreen6.handleAppleSignIn.signInWithIdToken',
+          extra: {
+            errorMessage: sessionError.message,
+            errorStatus: (sessionError as any)?.status,
+          },
+        });
         Alert.alert(i18n.t('common.error'), i18n.t('errors.auth_failed'));
         setOauthLoading(null);
         return;
@@ -387,16 +396,36 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         if (__DEV__) console.log('[AppleSignIn] Session established, waiting for stack switch via onAuthStateChange...');
       }
     } catch (error: unknown) {
-      // ユーザーがキャンセルした場合は何もしない
       const errorCode = (error as { code?: string })?.code;
+      const errorMessage = (error as Error)?.message;
+
+      // 全エラーをSentryに送信（キャンセル含む、デバッグ用）
+      captureError(error, {
+        location: 'OnboardingScreen6.handleAppleSignIn',
+        extra: { errorCode, errorMessage },
+      });
+
+      // ユーザーがキャンセルした場合は何もしない
       if (
         errorCode === 'ERR_REQUEST_CANCELED' ||
-        errorCode === 'ERR_CANCELED'
+        errorCode === 'ERR_CANCELED' ||
+        errorCode === 'ERR_REQUEST_UNKNOWN' ||
+        errorCode === 'ERR_NOT_HANDLED_REQUEST'
       ) {
+        if (__DEV__) console.log('[AppleSignIn] User cancelled or not handled:', errorCode);
         setOauthLoading(null);
         return;
       }
-      captureError(error, { location: 'OnboardingScreen6.handleAppleSignIn' });
+      // iPad互換モードやポップオーバー表示で発生しうるエラー
+      if (
+        errorCode === 'ERR_INVALID_RESPONSE' ||
+        errorCode === 'ERR_NOT_AVAILABLE'
+      ) {
+        if (__DEV__) console.log('[AppleSignIn] Apple auth error:', errorCode, errorMessage);
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_unavailable'));
+        setOauthLoading(null);
+        return;
+      }
       Alert.alert(i18n.t('common.error'), getErrorMessage(error));
       setOauthLoading(null);
     }
@@ -417,8 +446,8 @@ export default function OnboardingScreen6({ navigation, route }: any) {
 
   return (
     <OnboardingLayout
-      currentStep={7}
-      totalSteps={15}
+      currentStep={6}
+      totalSteps={14}
       title={i18n.t('onboarding.screen6_title')}
       subtitle={i18n.t('onboarding.screen6_subtitle')}
       footer={

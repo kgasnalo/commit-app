@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   duration: {
     color: 'rgba(255, 255, 255, 0.3)',
-    fontSize: 10,
+    fontSize: 12,
   },
   monthLabelsRow: {
     position: 'relative',
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     position: 'absolute',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.4)',
     letterSpacing: 0.5,

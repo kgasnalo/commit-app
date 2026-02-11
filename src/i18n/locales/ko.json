@@ -148,10 +148,10 @@
     "screen11_title": "COMMIT을 사용한 사람들의 목소리",
     "screen11_testimonial1_name": "Taro S.",
     "screen11_testimonial1_role": "34세・경영자",
-    "screen11_testimonial1_text": "밀린 책이 30권이나 있었는데 3개월 만에 전부 소화했다. 기부를 정하면 진지해진다.",
+    "screen11_testimonial1_text": "밀린 책이 30권이나 있었는데 3개월 만에 전부 소화했다. 마감일이 있으면 진지해진다.",
     "screen11_testimonial2_name": "Yuki M.",
     "screen11_testimonial2_role": "29세・투자가",
-    "screen11_testimonial2_text": "의지력에 의존하지 않는 시스템이 좋다. 실패해도 기부가 되니까 죄책감이 없다.",
+    "screen11_testimonial2_text": "의지력에 의존하지 않는 시스템이 좋다. 커밋먼트가 행동을 이끌어준다.",
     "screen11_testimonial3_name": "Ken T.",
     "screen11_testimonial3_role": "41세・컨설턴트",
     "screen11_testimonial3_text": "주 1권 페이스로 읽을 수 있게 되었다. 연간 50권, 인생이 바뀌었다.",
@@ -330,6 +330,7 @@
     "progress_near_max": "대단해요! 이 책을 이미 {{pages}}페이지 읽었습니다.",
     "slider_min_note": "※ 이전까지 {{pages}}페이지 읽음. {{next}}페이지부터 설정할 수 있습니다.",
     "success_message": "커밋먼트를 생성했습니다.\n기한: {{deadline}}\n기부금: {{penalty}}",
+    "success_message_simple": "커밋먼트를 생성했습니다.\n기한: {{deadline}}",
     "edit_total_pages_title": "총 페이지 수 수정",
     "edit_total_pages_message": "책의 총 페이지 수를 입력해주세요",
     "edit_total_pages_button": "페이지 수가 다르다면? 수정"
@@ -520,6 +521,7 @@
   },
   "common": {
     "ok": "확인",
+    "continue_button": "다음",
     "cancel": "취소",
     "error": "오류",
     "success": "성공",

@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   // Card registration notice
   cardNoticeText: {
     color: 'rgba(255, 200, 100, 0.7)',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     lineHeight: 16,
     marginTop: GRID / 2, // 4

@@ -17,9 +17,11 @@ export default function OnboardingScreen4({ navigation, route }: any) {
   const handleSelect = (option: ReturnType<typeof getOptions>[0]) => {
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + option.days);
-    navigation.navigate('Onboarding5', {
+    navigation.navigate('Onboarding6', {
       selectedBook,
       deadline: deadline.toISOString(),
+      pledgeAmount: 0,
+      currency: 'JPY',
       tsundokuCount,
     });
   };
@@ -27,7 +29,7 @@ export default function OnboardingScreen4({ navigation, route }: any) {
   return (
     <OnboardingLayout
       currentStep={5}
-      totalSteps={15}
+      totalSteps={14}
       title={i18n.t('onboarding.screen4_title')}
     >
       <View>

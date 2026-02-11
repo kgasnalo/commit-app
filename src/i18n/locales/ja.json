@@ -148,10 +148,10 @@
     "screen11_title": "COMMITを使ったユーザーの声",
     "screen11_testimonial1_name": "Taro S.",
     "screen11_testimonial1_role": "34歳・経営者",
-    "screen11_testimonial1_text": "積読が30冊あったのに、3ヶ月で全部消化できた。金額を決めると本気になる。",
+    "screen11_testimonial1_text": "積読が30冊あったのに、3ヶ月で全部消化できた。締め切りがあると本気になる。",
     "screen11_testimonial2_name": "Yuki M.",
     "screen11_testimonial2_role": "29歳・投資家",
-    "screen11_testimonial2_text": "意志力に頼らない仕組みが良い。失敗しても寄付になるから罪悪感がない。",
+    "screen11_testimonial2_text": "意志力に頼らない仕組みが良い。コミットメントが行動を後押ししてくれる。",
     "screen11_testimonial3_name": "Ken T.",
     "screen11_testimonial3_role": "41歳・コンサルタント",
     "screen11_testimonial3_text": "週1冊ペースで読めるようになった。年間50冊、人生変わった。",
@@ -308,6 +308,7 @@
     "progress_near_max": "すごい！この本はすでに{{pages}}ページ読みました。",
     "slider_min_note": "※ 前回までに{{pages}}ページ読了済み。{{next}}ページ目から設定できます。",
     "success_message": "コミットメントを作成しました。\n期限: {{deadline}}\n寄付金: {{penalty}}",
+    "success_message_simple": "コミットメントを作成しました。\n期限: {{deadline}}",
     "edit_total_pages_title": "総ページ数を修正",
     "edit_total_pages_message": "お手元の本の総ページ数を入力してください",
     "edit_total_pages_button": "ページ数が違う？修正する"
@@ -498,6 +499,7 @@
   },
   "common": {
     "ok": "OK",
+    "continue_button": "次へ",
     "cancel": "キャンセル",
     "error": "エラー",
     "success": "成功",

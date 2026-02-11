@@ -156,10 +156,10 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   textSm: {
-    fontSize: 8,
+    fontSize: 12,
   },
   textMd: {
-    fontSize: 10,
+    fontSize: 12,
   },
   textLg: {
     fontSize: 12,

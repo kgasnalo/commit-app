@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 107, 53, 0.05)',
   },
   pillText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     letterSpacing: 0.5,
     color: titanColors.text.muted,

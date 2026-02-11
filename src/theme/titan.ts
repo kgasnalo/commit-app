@@ -100,7 +100,7 @@ export const titanTypography = {
   
   // "Micro-caps" -> "Elegant Label"
   microCaps: {
-    fontSize: 10,
+    fontSize: 12,
     textTransform: 'none' as const, // No forced uppercase
     letterSpacing: 0.5,
     fontWeight: '500' as const,
@@ -115,12 +115,12 @@ export const titanTypography = {
   // Metric display (speedometer style)
   metricLarge: {
     fontSize: 32,
-    fontWeight: '200' as const, // Ultra-light
+    fontWeight: '400' as const, // Regular weight for readability
     letterSpacing: -0.5,
   },
   metricMedium: {
     fontSize: 24,
-    fontWeight: '300' as const, // Light
+    fontWeight: '400' as const, // Regular weight for readability
     letterSpacing: 0,
   },
 
@@ -131,7 +131,7 @@ export const titanTypography = {
     headingSmall: 18,
     body: 15,
     bodySmall: 13,
-    caption: 11,
+    caption: 13,
     button: 15,
   },
   fontWeight: {

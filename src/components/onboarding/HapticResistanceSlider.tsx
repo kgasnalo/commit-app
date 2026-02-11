@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   presetLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.4)',
     textAlign: 'center',

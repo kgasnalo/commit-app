@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   // Orange glow label
   valueLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FF6B35',
     letterSpacing: 3,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 160, 120, 0.2)',
   },
   detailLabel: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '600',
     color: 'rgba(255, 160, 120, 0.5)',
     letterSpacing: 2,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     paddingBottom: BASE_UNIT * 3, // 24px
   },
   footerText: {
-    fontSize: 10,
+    fontSize: 12,
     color: 'rgba(255, 160, 120, 0.3)',
     letterSpacing: 1.5,
   },

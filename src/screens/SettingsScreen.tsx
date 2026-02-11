@@ -346,11 +346,7 @@ export default function SettingsScreen({ navigation }: any) {
             />
           </>
         )}
-        <MenuItem
-          icon="card-outline"
-          label={i18n.t('settings.manage_payment')}
-          onPress={openBillingPage}
-        />
+        {/* Payment management removed for App Review compliance (Guideline 3.2.2) */}
         <MenuItem
           icon="briefcase-outline"
           label={i18n.t('settings.job_category')}
@@ -416,16 +412,7 @@ export default function SettingsScreen({ navigation }: any) {
           label={i18n.t('announcements.menu_item')}
           onPress={() => navigation.navigate('Announcements')}
         />
-        <MenuItem
-          icon="heart-outline"
-          label={i18n.t('donations.settings_link')}
-          onPress={() => openURL('https://commit-app-web.vercel.app/donations')}
-        />
-        <MenuItem
-          icon="receipt-outline"
-          label={i18n.t('donation_history.menu_item')}
-          onPress={() => navigation.navigate('DonationHistory')}
-        />
+        {/* Donation links removed for App Review compliance (Guideline 3.2.2) */}
         <MenuItem
           icon="mail-outline"
           label={i18n.t('settings.contact_support')}

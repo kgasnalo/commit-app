@@ -45,7 +45,7 @@ export default function OnboardingScreen1({ navigation }: any) {
   return (
     <OnboardingLayout
       currentStep={1}
-      totalSteps={15}
+      totalSteps={14}
       title={i18n.t('onboarding.screen1_title')}
       subtitle={i18n.t('onboarding.screen1_subtitle')}
       footer={

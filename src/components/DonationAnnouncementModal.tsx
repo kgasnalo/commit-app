@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   amountValue: {
     fontSize: 32,
-    fontWeight: '300',
+    fontWeight: '400',
     color: '#FF6B35',
     letterSpacing: -0.5,
   },

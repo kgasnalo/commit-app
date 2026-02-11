@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 20,
-    fontWeight: '300',
+    fontWeight: '400',
     color: '#FAFAFA',
     textAlign: 'center',
   },
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
   },
   subtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.3)',
     marginTop: 4,
     textAlign: 'center',

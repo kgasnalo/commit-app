@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   // Luxury gauge-style glowing digits
   time: {
     fontSize: 64,
-    fontWeight: '200',
+    fontWeight: '400',
     color: '#FAFAFA',
     letterSpacing: 2,
     fontVariant: ['tabular-nums'],

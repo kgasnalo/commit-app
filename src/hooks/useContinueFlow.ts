@@ -110,15 +110,7 @@ export function useContinueFlow({
         }
 
         if (progress.lastCommitment) {
-          const lastCurrency = progress.lastCommitment.currency as Currency;
-          if (CURRENCY_OPTIONS.some(c => c.code === lastCurrency)) {
-            onCurrency(lastCurrency);
-          }
-
-          const lastAmount = progress.lastCommitment.pledge_amount;
-          if (AMOUNTS_BY_CURRENCY[lastCurrency]?.includes(lastAmount)) {
-            onPledgeAmount(lastAmount);
-          }
+          // Pledge amount prefill removed for App Review compliance (Guideline 3.2.2)
 
           const suggestedDeadline = calculateSuggestedDeadline(
             progress.lastCommitment.deadline,
