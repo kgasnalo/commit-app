@@ -29,7 +29,6 @@ const appJson = require('./app.json');
 const extra = {
   SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
   SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-  STRIPE_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   GOOGLE_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_API_KEY,
   SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
   POSTHOG_API_KEY: process.env.EXPO_PUBLIC_POSTHOG_API_KEY,
@@ -45,7 +44,6 @@ console.log('[app.config.js] Environment variables status:');
 const envKeys = [
   'SUPABASE_URL',
   'SUPABASE_ANON_KEY',
-  'STRIPE_PUBLISHABLE_KEY',
   'GOOGLE_API_KEY',
   'SENTRY_DSN',
   'POSTHOG_API_KEY',

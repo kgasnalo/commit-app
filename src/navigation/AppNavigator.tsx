@@ -9,8 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, AUTH_REFRESH_EVENT, isSupabaseInitialized } from '../lib/supabase';
 import { Session, RealtimeChannel } from '@supabase/supabase-js';
-import { StripeProvider } from '@stripe/stripe-react-native';
-import { STRIPE_PUBLISHABLE_KEY, ENV_INIT_ERROR } from '../config/env';
+import { ENV_INIT_ERROR } from '../config/env';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { AnalyticsProvider, useAnalytics } from '../contexts/AnalyticsContext';
 import { OfflineProvider } from '../contexts/OfflineContext';
@@ -42,7 +41,6 @@ import CommitmentDetailScreen from '../screens/CommitmentDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
-// DonationHistoryScreen removed for App Review compliance (Guideline 3.2.2)
 import AnnouncementsScreen from '../screens/AnnouncementsScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import BookDetailScreen from '../screens/BookDetailScreen';
@@ -1195,21 +1193,11 @@ function AppNavigatorInner() {
     </NavigationContainer>
   );
 
-  // Skip StripeProvider if env vars are missing/invalid to prevent native crash
-  if (ENV_INIT_ERROR || !STRIPE_PUBLISHABLE_KEY) {
-    return (
-      <>
-        {navigationContent}
-        <OfflineBanner />
-      </>
-    );
-  }
-
   return (
-    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+    <>
       {navigationContent}
       <OfflineBanner />
-    </StripeProvider>
+    </>
   );
 }
 

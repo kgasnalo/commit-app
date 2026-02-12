@@ -215,6 +215,20 @@
     "days_suffix": "D",
     "ranking_this_month": "This Month"
   },
+  "weekly_breakdown": {
+    "title": "Weekly Breakdown",
+    "success_rate": "Success",
+    "total": "Total",
+    "minutes_value": "{{count}} min",
+    "no_data": "No sessions",
+    "day_0": "Mon",
+    "day_1": "Tue",
+    "day_2": "Wed",
+    "day_3": "Thu",
+    "day_4": "Fri",
+    "day_5": "Sat",
+    "day_6": "Sun"
+  },
   "leaderboard": {
     "title": "Leaderboard",
     "tab_month": "This Month",
@@ -736,34 +750,6 @@
     "update_title": "Update Required",
     "update_message": "Please update to the latest version to continue using the app.",
     "update_button": "Update"
-  },
-  "card_registration": {
-    "banner_title": "Support Room to Read",
-    "banner_description": "Set up your donation method on our website"
-  },
-  "donations": {
-    "announcement_title": "Donation Report",
-    "announcement_subtitle": "Your donations have been delivered",
-    "quarter_format": "Q{{quarter}} {{year}}",
-    "amount_donated": "Amount Donated",
-    "destination": "Donated to",
-    "destination_name": "Room to Read (Children's Education)",
-    "view_proof": "View Transfer Proof",
-    "close": "Close",
-    "settings_link": "Donation Report"
-  },
-  "donation_history": {
-    "title": "Donation History",
-    "menu_item": "Donation History",
-    "empty_title": "No donation history",
-    "empty_subtitle": "When you fail a commitment, your donation history will appear here",
-    "total_donated": "Total Donated",
-    "status_succeeded": "Donated",
-    "status_failed": "Failed",
-    "status_refunded": "Refunded",
-    "status_pending": "Pending",
-    "status_processing": "Processing",
-    "status_requires_action": "Action Required"
   },
   "accessibility": {
     "button": {

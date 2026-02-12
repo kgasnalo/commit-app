@@ -215,6 +215,20 @@
     "days_suffix": "일",
     "ranking_this_month": "이번 달"
   },
+  "weekly_breakdown": {
+    "title": "주간 리포트",
+    "success_rate": "달성률",
+    "total": "합계",
+    "minutes_value": "{{count}}분",
+    "no_data": "세션 없음",
+    "day_0": "월",
+    "day_1": "화",
+    "day_2": "수",
+    "day_3": "목",
+    "day_4": "금",
+    "day_5": "토",
+    "day_6": "일"
+  },
   "leaderboard": {
     "title": "랭킹",
     "tab_month": "이번 달",
@@ -736,34 +750,6 @@
     "update_title": "업데이트 필요",
     "update_message": "앱을 계속 사용하려면 최신 버전으로 업데이트해 주세요.",
     "update_button": "업데이트"
-  },
-  "card_registration": {
-    "banner_title": "Room to Read 지원하기",
-    "banner_description": "웹사이트에서 기부 방법을 설정하세요"
-  },
-  "donations": {
-    "announcement_title": "기부 보고",
-    "announcement_subtitle": "여러분의 기부금이 전달되었습니다",
-    "quarter_format": "{{year}}년 {{quarter}}분기",
-    "amount_donated": "기부액",
-    "destination": "기부처",
-    "destination_name": "Room to Read (어린이 교육 지원)",
-    "view_proof": "이체 증명 보기",
-    "close": "닫기",
-    "settings_link": "기부 보고"
-  },
-  "donation_history": {
-    "title": "기부 내역",
-    "menu_item": "기부 내역",
-    "empty_title": "기부 내역이 없습니다",
-    "empty_subtitle": "커밋먼트에 실패하면 여기에 기부 내역이 표시됩니다",
-    "total_donated": "총 기부액",
-    "status_succeeded": "기부 완료",
-    "status_failed": "실패",
-    "status_refunded": "환불됨",
-    "status_pending": "대기 중",
-    "status_processing": "처리 중",
-    "status_requires_action": "조치 필요"
   },
   "accessibility": {
     "button": {

@@ -215,6 +215,20 @@
     "days_suffix": "日",
     "ranking_this_month": "今月"
   },
+  "weekly_breakdown": {
+    "title": "週間レポート",
+    "success_rate": "達成率",
+    "total": "合計",
+    "minutes_value": "{{count}}分",
+    "no_data": "セッションなし",
+    "day_0": "月",
+    "day_1": "火",
+    "day_2": "水",
+    "day_3": "木",
+    "day_4": "金",
+    "day_5": "土",
+    "day_6": "日"
+  },
   "leaderboard": {
     "title": "ランキング",
     "tab_month": "今月",
@@ -736,34 +750,6 @@
     "update_title": "アップデートが必要です",
     "update_message": "最新バージョンにアップデートしてご利用ください。",
     "update_button": "アップデート"
-  },
-  "card_registration": {
-    "banner_title": "Room to Readを支援する",
-    "banner_description": "Webサイトで寄付方法を設定してください"
-  },
-  "donations": {
-    "announcement_title": "寄付報告",
-    "announcement_subtitle": "皆さまの寄付金が届けられました",
-    "quarter_format": "{{year}}年 第{{quarter}}四半期",
-    "amount_donated": "寄付額",
-    "destination": "寄付先",
-    "destination_name": "Room to Read（子どもの教育支援）",
-    "view_proof": "振込証明を見る",
-    "close": "閉じる",
-    "settings_link": "寄付報告"
-  },
-  "donation_history": {
-    "title": "寄付履歴",
-    "menu_item": "寄付履歴",
-    "empty_title": "寄付履歴はありません",
-    "empty_subtitle": "コミットメントに失敗した場合、ここに寄付履歴が表示されます",
-    "total_donated": "累計寄付額",
-    "status_succeeded": "寄付完了",
-    "status_failed": "失敗",
-    "status_refunded": "返金済み",
-    "status_pending": "処理待ち",
-    "status_processing": "処理中",
-    "status_requires_action": "要対応"
   },
   "accessibility": {
     "button": {

@@ -72,40 +72,6 @@ export interface Database {
         }
         Relationships: []
       }
-      auth_tokens: {
-        Row: {
-          id: string
-          user_id: string
-          token: string
-          expires_at: string
-          used_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          token: string
-          expires_at: string
-          used_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          token?: string
-          expires_at?: string
-          used_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "auth_tokens_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       books: {
         Row: {
           id: string

@@ -30,7 +30,6 @@
     "@react-navigation/stack": "^7.6.13",
     "@sentry/react-native": "~7.2.0",
     "@shopify/react-native-skia": "2.2.12",
-    "@stripe/stripe-react-native": "^0.57.2",
     "@supabase/supabase-js": "^2.89.0",
     "babel-preset-expo": "~54.0.9",
     "expo": "~54.0.30",

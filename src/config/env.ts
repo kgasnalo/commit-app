@@ -18,7 +18,6 @@ import Constants from 'expo-constants';
 interface RequiredEnvVars {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
-  STRIPE_PUBLISHABLE_KEY: string;
 }
 
 interface OptionalEnvVars {
@@ -138,20 +137,6 @@ function buildEnvConfig(): EnvConfig {
     20
   );
 
-  const stripePublishableKey = validateApiKey(
-    getRequiredEnv('STRIPE_PUBLISHABLE_KEY'),
-    'STRIPE_PUBLISHABLE_KEY',
-    10
-  );
-
-  // Stripe key format validation (should start with pk_)
-  if (!stripePublishableKey.startsWith('pk_')) {
-    throw new Error(
-      `[ENV ERROR] STRIPE_PUBLISHABLE_KEY should start with "pk_".\n` +
-        `Got: "${stripePublishableKey.substring(0, 10)}..."`
-    );
-  }
-
   // Optional variables - will log warning if missing
   const googleApiKey = getOptionalEnv('GOOGLE_API_KEY');
   const sentryDsn = getOptionalEnv('SENTRY_DSN');
@@ -162,7 +147,6 @@ function buildEnvConfig(): EnvConfig {
   return {
     SUPABASE_URL: supabaseUrl,
     SUPABASE_ANON_KEY: supabaseAnonKey,
-    STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
     GOOGLE_API_KEY: googleApiKey,
     SENTRY_DSN: sentryDsn,
     POSTHOG_API_KEY: posthogApiKey,
@@ -196,7 +180,6 @@ try {
   _env = {
     SUPABASE_URL: '',
     SUPABASE_ANON_KEY: '',
-    STRIPE_PUBLISHABLE_KEY: '',
     GOOGLE_API_KEY: undefined,
     SENTRY_DSN: undefined,
     POSTHOG_API_KEY: undefined,
@@ -211,7 +194,6 @@ export const env: EnvConfig = _env;
 export const {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
-  STRIPE_PUBLISHABLE_KEY,
   GOOGLE_API_KEY,
   SENTRY_DSN,
   POSTHOG_API_KEY,
