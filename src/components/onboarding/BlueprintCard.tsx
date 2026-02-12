@@ -35,26 +35,16 @@ const DELAYS = {
   row1Start: 300,
   divider1: 1500,
   row2Start: 1600,
-  divider2: 2600,
-  row3Start: 2700,
-  complete: 3900,
+  complete: 2800,
 };
 
 interface BlueprintCardProps {
   bookTitle: string;
   deadline: string;
-  pledgeAmount: number;
-  currency: string;
+  pledgeAmount?: number;
+  currency?: string;
   onAnimationComplete?: () => void;
 }
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  JPY: '¥',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  KRW: '₩',
-};
 
 // Individual row component with typewriter animation
 interface BlueprintRowProps {
@@ -189,8 +179,6 @@ function AnimatedDivider({ delay }: AnimatedDividerProps) {
 export default function BlueprintCard({
   bookTitle,
   deadline,
-  pledgeAmount,
-  currency,
   onAnimationComplete,
 }: BlueprintCardProps) {
   // Haptic feedback functions
@@ -205,19 +193,6 @@ export default function BlueprintCard({
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString(i18n.locale, { month: 'numeric', day: 'numeric' });
-  };
-
-  const formatCurrency = (amount: number | null, curr: string): string => {
-    if (amount === null) return '---';
-    const symbol = CURRENCY_SYMBOLS[curr] || curr;
-    if (curr === 'JPY' || curr === 'KRW') {
-      return `${symbol}${amount.toLocaleString()}`;
-    }
-    return `${symbol}${amount}`;
-  };
-
-  const formatAmount = (): string => {
-    return formatCurrency(pledgeAmount, currency);
   };
 
   // Trigger completion callback after all animations
@@ -259,23 +234,6 @@ export default function BlueprintCard({
         onRevealComplete={triggerMediumHaptic}
       />
 
-      {pledgeAmount > 0 && (
-        <>
-          <AnimatedDivider delay={DELAYS.divider2} />
-
-          {/* Row 3: Pledge (hidden when pledgeAmount=0) */}
-          <BlueprintRow
-            icon="heart"
-            label={i18n.t('blueprint.pledge_label')}
-            value={formatAmount()}
-            note={i18n.t('blueprint.pledge_note')}
-            delay={DELAYS.row3Start}
-            duration={ROW_REVEAL_DURATION}
-            onRevealStart={triggerLightHaptic}
-            onRevealComplete={triggerMediumHaptic}
-          />
-        </>
-      )}
     </Animated.View>
   );
 }

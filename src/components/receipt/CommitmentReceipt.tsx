@@ -165,21 +165,25 @@ export default function CommitmentReceipt({
         {/* Divider */}
         <View style={styles.divider} />
 
-        {/* Value Retained Section - Golden ratio spacing */}
-        <View style={styles.valueSection}>
-          <View style={styles.valueLabelRow}>
-            <Ionicons name="checkmark-circle" size={18} color="#FF6B35" />
-            <Text style={styles.valueLabel}>
-              {i18n.t('receipt.value_retained')}
-            </Text>
-          </View>
-          {formattedAmount && (
-            <Text style={styles.valueAmount}>{formattedAmount}</Text>
-          )}
-        </View>
+        {/* Value Retained Section - only shown when savedAmount > 0 */}
+        {savedAmount && savedAmount > 0 && (
+          <>
+            <View style={styles.valueSection}>
+              <View style={styles.valueLabelRow}>
+                <Ionicons name="checkmark-circle" size={18} color="#FF6B35" />
+                <Text style={styles.valueLabel}>
+                  {i18n.t('receipt.value_retained')}
+                </Text>
+              </View>
+              {formattedAmount && (
+                <Text style={styles.valueAmount}>{formattedAmount}</Text>
+              )}
+            </View>
 
-        {/* Divider */}
-        <View style={styles.divider} />
+            {/* Divider */}
+            <View style={styles.divider} />
+          </>
+        )}
 
         {/* Completion Details - Horizontal Layout with unified English */}
         <View style={styles.detailsRow}>

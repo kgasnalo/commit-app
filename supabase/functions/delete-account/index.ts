@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { initSentry, captureException, addBreadcrumb, logBusinessEvent } from '../_shared/sentry.ts'
+import { generateAppleClientSecret, exchangeAppleCodeForTokens, revokeAppleToken } from '../_shared/apple-auth.ts'
 
 // Initialize Sentry
 initSentry('delete-account')
@@ -58,6 +59,17 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Parse request body (optional - contains apple_authorization_code for Apple users)
+    let appleAuthorizationCode: string | null = null
+    try {
+      const body = await req.json()
+      if (body && typeof body.apple_authorization_code === 'string') {
+        appleAuthorizationCode = body.apple_authorization_code
+      }
+    } catch {
+      // Empty body is fine - not all deletions include Apple auth code
+    }
+
     console.log(`Deleting user: ${user.id}`)
     addBreadcrumb('Delete account request authenticated', 'auth', { userId: user.id })
 
@@ -85,6 +97,40 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'UNPAID_DEBT' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Apple Token Revocation (App Store Guideline 5.1.1)
+    // Best-effort: failure does NOT block account deletion
+    const userMetadata = user.app_metadata
+    const isAppleUser = userMetadata?.provider === 'apple' || userMetadata?.providers?.includes('apple')
+
+    if (isAppleUser && appleAuthorizationCode) {
+      try {
+        addBreadcrumb('Apple token revocation starting', 'auth', { userId: user.id })
+
+        // Step 1: Generate client_secret JWT
+        const clientSecret = await generateAppleClientSecret()
+
+        // Step 2: Exchange authorization_code for refresh_token
+        const { refresh_token } = await exchangeAppleCodeForTokens(appleAuthorizationCode, clientSecret)
+
+        // Step 3: Revoke the refresh_token
+        await revokeAppleToken(refresh_token, clientSecret)
+
+        console.log(`[delete-account] Apple token revoked for user: ${user.id}`)
+        addBreadcrumb('Apple token revoked successfully', 'auth', { userId: user.id })
+      } catch (appleError) {
+        // Best-effort: log error but continue with account deletion
+        console.error('[delete-account] Apple token revocation failed:', String(appleError))
+        captureException(appleError instanceof Error ? appleError : new Error(String(appleError)), {
+          functionName: 'delete-account',
+          userId: user.id,
+          extra: { step: 'apple_token_revocation' },
+        })
+      }
+    } else if (isAppleUser && !appleAuthorizationCode) {
+      console.warn(`[delete-account] Apple user ${user.id} without authorization_code - skipping revocation`)
+      addBreadcrumb('Apple revocation skipped (no auth code)', 'auth', { userId: user.id })
     }
 
     // Delete the user from auth.users

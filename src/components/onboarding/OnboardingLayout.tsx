@@ -128,8 +128,9 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
+    minHeight: 200,
   },
   footer: {
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xl,
   },
 });

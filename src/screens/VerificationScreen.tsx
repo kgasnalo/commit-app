@@ -207,7 +207,7 @@ export default function VerificationScreen({ route, navigation }: any) {
       // Phase 8.3: Track commitment completion and verification
       AnalyticsService.commitmentCompleted({
         currency: commitmentData.currency,
-        amount_saved: commitmentData.pledge_amount,
+        amount_saved: 0,
         days_to_complete: readingDays,
       });
       AnalyticsService.verificationSubmitted({
@@ -215,7 +215,7 @@ export default function VerificationScreen({ route, navigation }: any) {
       });
 
       // Show celebration modal instead of Alert
-      setSavedAmount(commitmentData.pledge_amount);
+      setSavedAmount(0);
       setCurrency(commitmentData.currency);
       setShowSuccessModal(true);
     } catch (error) {

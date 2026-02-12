@@ -72,21 +72,11 @@ type CommitmentQueryResult = Omit<Commitment, 'book'> & {
   book: BookData | BookData[];
 };
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  JPY: '¥',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  KRW: '₩',
-};
-
 export default function DashboardScreen({ navigation }: any) {
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [groupedCommitments, setGroupedCommitments] = useState<GroupedBookCommitments[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [poolByCurrency, setPoolByCurrency] = useState<Record<string, number>>({});
-  const [donatedByCurrency, setDonatedByCurrency] = useState<Record<string, number>>({});
   const [currentLocale, setCurrentLocale] = useState(i18n.locale);
   const [userName, setUserName] = useState<string>('Guest');
   const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
@@ -305,24 +295,6 @@ export default function DashboardScreen({ navigation }: any) {
         const grouped = groupCommitmentsByBook(withRanges);
         setGroupedCommitments(grouped);
 
-        const pending = data.filter(c => c.status === 'pending');
-        const defaulted = data.filter(c => c.status === 'defaulted');
-
-        const poolByC = pending.reduce((acc, c) => {
-          const currency = c.currency || 'JPY';
-          acc[currency] = (acc[currency] || 0) + (c.pledge_amount || 0);
-          return acc;
-        }, {} as Record<string, number>);
-
-        const donatedByC = defaulted.reduce((acc, c) => {
-          const currency = c.currency || 'JPY';
-          acc[currency] = (acc[currency] || 0) + (c.pledge_amount || 0);
-          return acc;
-        }, {} as Record<string, number>);
-
-        setPoolByCurrency(poolByC);
-        setDonatedByCurrency(donatedByC);
-
         // Update iOS home screen widget with first active commitment
         const activeCommitment = normalizedData.find(c => c.status === 'pending');
         if (activeCommitment) {
@@ -385,17 +357,6 @@ export default function DashboardScreen({ navigation }: any) {
   const activeCommitmentsCount = groupedCommitments.filter(g => g.activeCount > 0).length;
   const completedCount = commitments.filter(c => c.status === 'completed').length;
   const failedCount = commitments.filter(c => c.status === 'defaulted').length;
-
-  // Split currency symbol and amount for typography styling
-  const poolDisplay = Object.entries(poolByCurrency)
-    .filter(([_, amount]) => amount > 0)
-    .map(([currency, amount]) => ({
-      symbol: CURRENCY_SYMBOLS[currency] || currency,
-      amount: amount.toLocaleString(),
-    }));
-
-  const hasPool = poolDisplay.length > 0;
-  const primaryPool = hasPool ? poolDisplay[0] : { symbol: '¥', amount: '0' };
 
   return (
     <SafeAreaView style={styles.container}>

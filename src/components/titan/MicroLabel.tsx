@@ -41,7 +41,7 @@ export const MicroLabel: React.FC<MicroLabelProps> = ({
 const styles = StyleSheet.create({
   base: {
     fontFamily: typography.fontFamily.body,
-    fontSize: 12,
+    fontSize: 13,
     letterSpacing: 0.5,
     fontWeight: '500',
   },

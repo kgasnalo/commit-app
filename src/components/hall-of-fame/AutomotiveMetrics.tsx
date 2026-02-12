@@ -16,9 +16,9 @@ interface AutomotiveMetricsProps {
  * Luxury car gauge / watch dial aesthetic
  *
  * Features:
- * - Ultra-large thin numbers (fontWeight: 200, fontSize: 48)
+ * - Ultra-large bold numbers (fontWeight: 600, fontSize: 48)
  * - Self-glow effect (orange text shadow)
- * - Micro labels (fontSize: 10, opacity: 0.4)
+ * - Micro labels (fontSize: 12, fontWeight: 600)
  * - Glass rod separator (gradient fade top/bottom)
  */
 export function AutomotiveMetrics({

@@ -23,6 +23,8 @@ import { MicroLabel } from '../components/titan/MicroLabel';
 import * as AnalyticsService from '../lib/AnalyticsService';
 import { safeOpenURL } from '../utils/linkingUtils';
 import { captureError } from '../utils/errorLogger';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import LegalBottomSheet, { LegalDocumentType } from '../components/LegalBottomSheet';
 import type { JobCategory } from '../types';
 import { restorePurchases, isIAPAvailable } from '../lib/IAPService';
@@ -163,6 +165,39 @@ export default function SettingsScreen({ navigation }: any) {
     );
   };
 
+  /**
+   * Get Apple authorization code for token revocation (App Store Guideline 5.1.1).
+   * Returns the authorizationCode or null if user cancels or auth fails.
+   */
+  const getAppleAuthorizationCode = async (): Promise<string | null> => {
+    try {
+      // Generate nonce (same pattern as AuthScreen / OnboardingScreen6)
+      const randomBytes = await Crypto.getRandomBytesAsync(32);
+      const rawNonce = Array.from(randomBytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [],
+        nonce: hashedNonce,
+      });
+
+      return credential.authorizationCode ?? null;
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        // User cancelled Apple auth - return null to abort deletion
+        return null;
+      }
+      captureError(error, { location: 'SettingsScreen.getAppleAuthorizationCode' });
+      Alert.alert(i18n.t('common.error'), i18n.t('settings.delete_account_apple_reauth_failed'));
+      return null;
+    }
+  };
+
   const handleDeleteAccount = () => {
     Alert.alert(
       i18n.t('settings.delete_account'),
@@ -177,11 +212,46 @@ export default function SettingsScreen({ navigation }: any) {
               const { data: { session } } = await supabase.auth.getSession();
               if (!session) return;
 
+              // Check if Apple user - need re-auth for token revocation
+              let appleAuthorizationCode: string | undefined;
+              const provider = session.user.app_metadata?.provider;
+              const providers: string[] = session.user.app_metadata?.providers ?? [];
+              const isAppleUser = provider === 'apple' || providers.includes('apple');
+
+              if (isAppleUser && Platform.OS === 'ios') {
+                // Show explanation, then request Apple re-auth
+                const code = await new Promise<string | null>((resolve) => {
+                  Alert.alert(
+                    i18n.t('settings.delete_account'),
+                    i18n.t('settings.delete_account_apple_reauth'),
+                    [
+                      {
+                        text: i18n.t('common.cancel'),
+                        style: 'cancel',
+                        onPress: () => resolve(null),
+                      },
+                      {
+                        text: i18n.t('common.continue_button'),
+                        onPress: async () => {
+                          const authCode = await getAppleAuthorizationCode();
+                          resolve(authCode);
+                        },
+                      },
+                    ]
+                  );
+                });
+
+                if (!code) return; // User cancelled
+                appleAuthorizationCode = code;
+              }
+
               // WORKER_ERROR 対策としてリトライロジックを使用
               const { data, error } = await invokeFunctionWithRetry<{
                 success: boolean;
                 error?: string;
-              }>('delete-account', {});
+              }>('delete-account', {
+                ...(appleAuthorizationCode ? { apple_authorization_code: appleAuthorizationCode } : {}),
+              });
 
               if (error) throw error;
 

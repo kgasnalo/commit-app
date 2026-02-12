@@ -1371,3 +1371,53 @@ Each task is atomic, role-specific, and has a clear definition of done.
   5. **Admin Dashboard:** 寄付関連の管理UI削除/更新
   6. **Stripe連携:** 不要な場合は削除、必要な場合は用途を明確化
 - **DoD:** 寄付/ペナルティ関連のUI・文言・法的ページが全て更新済み
+
+### 9.5 Apple App Review Rejection #4 対応 ✅ (2026-02-12)
+
+- **背景:** Submission ID `9ea09983` で5つのガイドライン違反によりリジェクト。レビューデバイス: iPad Air 11-inch (M3) + iPhone 17 Pro Max, iOS/iPadOS 26.2.1
+- **修正内容:**
+
+  #### 9.5.1 Guideline 5.1.1 — ハードコード文字列修正 ✅
+  - `SettingsScreen.tsx` — Apple再認証ダイアログの `'OK'` → `i18n.t('common.ok')`
+
+  #### 9.5.2 Guideline 3.2.2 — ペナルティUI痕跡の完全削除 ✅
+  - Phase 9.2 で `pledge_amount=0` にしたが、UIに大量の痕跡が残存していた
+  - **削除箇所:**
+    - `BookDetailScreen.tsx`: VALUE行（pledge_amount表示）削除
+    - `CommitmentCard.tsx`: アクセシビリティラベルから金額参照除外
+    - `BlueprintCard.tsx`: pledge行全体削除、props整理（pledgeAmount/currency除外）
+    - `DashboardScreen.tsx`: poolByCurrency/donatedByCurrency state・計算・CURRENCY_SYMBOLS全削除
+    - `VerificationScreen.tsx`: savedAmount → 0固定
+    - `VerificationSuccessModal.tsx`: savedAmount > 0の場合のみ金額表示（0なら非表示）
+    - `CommitmentReceipt.tsx`: value retained セクションを条件付き表示（savedAmount > 0のみ）
+    - i18n 3言語: `celebration.saved_note` を中立的な祝福メッセージに変更
+
+  #### 9.5.3 Guideline 4.0 — タイポグラフィ改善 ✅
+  - `MicroLabel.tsx`: fontSize 12→13（Apple最小推奨に近づける）
+  - `AutomotiveMetrics.tsx`: コメント内の古いfontWeight値を修正
+
+  #### 9.5.4 Guideline 2.1 — Apple Sign-In エラーハンドリング強化 ✅
+  - iPad互換モード delay: 1500ms → 2000ms
+  - Sentry送信情報にplatform/osVersionを追加
+  - `ERR_NOT_HANDLED_REQUEST` 発生時に3秒後自動リトライ（1回のみ、`appleRetryCountRef`で制御）
+  - 新i18nキー `errors.apple_signin_try_again` を3言語追加
+
+  #### 9.5.5 Guideline 4.0 — iPad Paywall画面切れ修正 ✅
+  - `OnboardingScreen13_Paywall.tsx`: scrollContent paddingBottom増加、planCard paddingをレスポンシブ化
+  - `OnboardingLayout.tsx`: body minHeight: 200追加、footer paddingBottom増加
+
+- **対象ファイル (12ファイル):**
+  - `src/screens/BookDetailScreen.tsx`
+  - `src/screens/DashboardScreen.tsx`
+  - `src/screens/VerificationScreen.tsx`
+  - `src/screens/SettingsScreen.tsx`
+  - `src/screens/onboarding/OnboardingScreen6_Account.tsx`
+  - `src/screens/onboarding/OnboardingScreen13_Paywall.tsx`
+  - `src/components/CommitmentCard.tsx`
+  - `src/components/VerificationSuccessModal.tsx`
+  - `src/components/onboarding/BlueprintCard.tsx`
+  - `src/components/onboarding/OnboardingLayout.tsx`
+  - `src/components/receipt/CommitmentReceipt.tsx`
+  - `src/components/titan/MicroLabel.tsx`
+  - `src/i18n/locales/{en,ja,ko}.json`
+- **DoD:** 型エラーなし、ペナルティUIの表示箇所がgrepで0件確認済み

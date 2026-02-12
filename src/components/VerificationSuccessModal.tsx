@@ -218,20 +218,22 @@ export default function VerificationSuccessModal({
             {completionMessage}
           </Text>
 
-          {/* Reward Display - Giant Glowing Numbers */}
-          <View style={styles.savedContainer}>
-            <View style={styles.amountRow}>
-              <Animated.Text style={[styles.currencySymbol, amountStyle]}>
-                {getCurrencySymbol(currency)}
-              </Animated.Text>
-              <Animated.Text style={[styles.savedAmount, amountStyle]}>
-                {displayAmount.toLocaleString()}
-              </Animated.Text>
+          {/* Reward Display - only shown when savedAmount > 0 */}
+          {savedAmount > 0 && (
+            <View style={styles.savedContainer}>
+              <View style={styles.amountRow}>
+                <Animated.Text style={[styles.currencySymbol, amountStyle]}>
+                  {getCurrencySymbol(currency)}
+                </Animated.Text>
+                <Animated.Text style={[styles.savedAmount, amountStyle]}>
+                  {displayAmount.toLocaleString()}
+                </Animated.Text>
+              </View>
+              <Text style={styles.savedNote}>
+                {i18n.t('celebration.saved_note')}
+              </Text>
             </View>
-            <Text style={styles.savedNote}>
-              {i18n.t('celebration.saved_note')}
-            </Text>
-          </View>
+          )}
 
           {/* Share Receipt Button */}
           {hasReceiptData && (

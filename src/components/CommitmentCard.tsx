@@ -65,9 +65,6 @@ export default function CommitmentCard({
 
   // Build accessibility label
   const getAccessibilityLabel = () => {
-    const currencySymbol = commitment.currency === 'JPY' ? '¥' : commitment.currency;
-    const amount = `${currencySymbol}${commitment.pledge_amount.toLocaleString()}`;
-
     if (commitment.status === 'completed') {
       return i18n.t('accessibility.card.commitment_completed', {
         title: commitment.book.title,
@@ -82,7 +79,6 @@ export default function CommitmentCard({
 
     return i18n.t('accessibility.card.commitment', {
       title: commitment.book.title,
-      amount,
       days: countdown.days,
       hours: countdown.hours,
     });

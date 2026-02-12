@@ -308,13 +308,6 @@ export default function BookDetailScreen() {
           </View>
 
           <View style={styles.dataRow}>
-            <MicroLabel>VALUE</MicroLabel>
-            <TacticalText color={isSuccess ? colors.signal.success : colors.signal.danger}>
-              {detail.commitment.currency} {detail.commitment.pledge_amount.toLocaleString()}
-            </TacticalText>
-          </View>
-
-          <View style={styles.dataRow}>
             <MicroLabel>DURATION</MicroLabel>
             <TacticalText>
               {readingDays} Days

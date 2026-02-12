@@ -22,6 +22,7 @@ import { NotificationService } from '../lib/NotificationService';
 import i18n from '../i18n';
 import { setUserContext, clearUserContext, captureError } from '../utils/errorLogger';
 import { trackScreenView } from '../lib/AnalyticsService';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 // 統一された認証状態型
 type AuthState =
@@ -683,6 +684,14 @@ function NavigationContent() {
         );
         if (__DEV__) console.log('🚀 initializeAuth: User status:', userStatus);
 
+        // サブスク未完了 + オンボーディング未完了 → サインアウトして初期画面へ
+        if (!userStatus.isSubscribed && !userStatus.hasCompletedOnboarding) {
+          if (__DEV__) console.log('🚀 initializeAuth: Incomplete onboarding detected, signing out to restart');
+          await supabase.auth.signOut();
+          if (isMounted) setAuthState({ status: 'unauthenticated' });
+          return;
+        }
+
         if (isMounted) {
           if (__DEV__) console.log('🚀 initializeAuth: Setting authenticated state');
           setAuthState({
@@ -909,11 +918,24 @@ function NavigationContent() {
       }
     });
 
+    // Apple credential revocation listener (iOS only)
+    // When user revokes Apple Sign-In from iOS Settings, auto sign out
+    let appleRevokeSubscription: { remove: () => void } | null = null;
+    if (Platform.OS === 'ios') {
+      appleRevokeSubscription = AppleAuthentication.addRevokeListener(() => {
+        if (__DEV__) console.log('[Auth] Apple credential revoked from iOS Settings');
+        if (isSupabaseInitialized()) {
+          supabase.auth.signOut();
+        }
+      });
+    }
+
     return () => {
       isMounted = false;
       linkingSubscription.remove();
       authSubscription?.unsubscribe();
       refreshListener.remove();
+      appleRevokeSubscription?.remove();
       if (realtimeSubscription) {
         try {
           realtimeSubscription.unsubscribe();

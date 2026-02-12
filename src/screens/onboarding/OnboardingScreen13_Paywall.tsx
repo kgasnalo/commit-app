@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'space-between',
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xl * 2,
   },
   loadingContainer: {
     paddingVertical: spacing.xl * 2,
@@ -601,7 +601,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.default,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     alignItems: 'center',
     position: 'relative',
   },

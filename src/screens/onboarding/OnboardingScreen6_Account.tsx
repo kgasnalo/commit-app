@@ -43,6 +43,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const authSucceededRef = useRef(false);
+  const appleRetryCountRef = useRef(0);
 
   const isPasswordValid = password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
 
@@ -381,7 +382,7 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       }
 
       // Apple認証シートのdismissを待つ（iPad互換モードでのUI衝突を回避）
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Supabaseに IDトークンを渡してセッションを確立（rawNonceを渡す）
       const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
@@ -396,6 +397,8 @@ export default function OnboardingScreen6({ navigation, route }: any) {
           extra: {
             errorMessage: sessionError.message,
             errorStatus: (sessionError as any)?.status,
+            platform: Platform.OS,
+            osVersion: Platform.Version,
           },
         });
         Alert.alert(i18n.t('common.error'), i18n.t('errors.auth_failed'));
@@ -435,7 +438,20 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         errorCode === 'ERR_NOT_HANDLED_REQUEST'
       ) {
         if (__DEV__) console.log('[AppleSignIn] Apple auth error:', errorCode, errorMessage);
-        Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_unavailable'));
+        // ERR_NOT_HANDLED_REQUEST は一時的な問題の可能性があるため自動リトライ（1回のみ）
+        if (errorCode === 'ERR_NOT_HANDLED_REQUEST' && appleRetryCountRef.current < 1) {
+          appleRetryCountRef.current += 1;
+          if (__DEV__) console.log('[AppleSignIn] Auto-retrying after ERR_NOT_HANDLED_REQUEST...');
+          setOauthLoading(null);
+          setTimeout(() => {
+            handleAppleSignIn();
+          }, 3000);
+          return;
+        }
+        Alert.alert(
+          i18n.t('common.error'),
+          i18n.t('errors.apple_signin_try_again'),
+        );
         setOauthLoading(null);
         return;
       }
