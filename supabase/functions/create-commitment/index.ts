@@ -50,6 +50,11 @@ function errorResponse(status: number, errorCode: string, details?: string) {
 }
 
 function validateAmount(amount: number, currency: string): { valid: boolean; error?: string } {
+  // ペナルティ廃止: pledge_amount=0 は常に有効
+  if (amount === 0) {
+    return { valid: true }
+  }
+
   if (!Number.isInteger(amount)) {
     return { valid: false, error: 'INVALID_AMOUNT' }
   }
@@ -192,7 +197,7 @@ Deno.serve(async (req) => {
     } = body
 
     // 3. Validate required fields
-    if (!book_title || !deadline || !pledge_amount || !currency || !target_pages) {
+    if (!book_title || !deadline || (pledge_amount === undefined || pledge_amount === null) || !currency || !target_pages) {
       return errorResponse(400, 'MISSING_FIELDS')
     }
 

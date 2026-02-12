@@ -52,6 +52,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
 
   // IAP購入成功フラグ（ポーリング早期終了用）
   const iapVerifiedRef = useRef(false);
+  // IAPエラーフラグ（ポーリング即中断用）
+  const iapErrorRef = useRef(false);
 
   // IAP の初期化と商品情報取得
   useEffect(() => {
@@ -84,6 +86,9 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           },
           (error) => {
             if (__DEV__) console.error('[Screen13] Purchase error:', error);
+
+            // エラーフラグを立ててポーリングを即中断
+            iapErrorRef.current = true;
 
             // Sentryにエラーを送信（デバッグ用）
             captureError(new Error(`IAP purchase failed: ${error}`), {
@@ -143,7 +148,8 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             }
             setSelectedBook(parsed.selectedBook);
             setDeadline(parsed.deadline);
-            setPledgeAmount(parsed.pledgeAmount);
+            // pledgeAmountは常に0にリセット（Screen5削除済み、古いキャッシュに3000が残る可能性）
+            setPledgeAmount(0);
             setCurrency(parsed.currency || 'JPY');
 
             // AsyncStorageから復元した場合、targetPagesがないのでGoogle Books APIから取得
@@ -192,9 +198,9 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       // P1: IAP購入前にデータ存在チェック（課金後にエラーになる最悪のUXを防止）
       const preCheckBook = route.params?.selectedBook || selectedBook;
       const preCheckDeadline = route.params?.deadline || deadline;
-      const preCheckPledge = route.params?.pledgeAmount || pledgeAmount;
+      const preCheckPledge = route.params?.pledgeAmount ?? pledgeAmount;
 
-      if (!preCheckBook || !preCheckDeadline || !preCheckPledge) {
+      if (!preCheckBook || !preCheckDeadline || (preCheckPledge === null || preCheckPledge === undefined)) {
         captureError(new Error('Missing commitment data before IAP'), {
           location: 'OnboardingScreen13.handleSubscribe.preCheck',
           extra: { hasBook: !!preCheckBook, hasDeadline: !!preCheckDeadline, hasPledge: !!preCheckPledge },
@@ -229,11 +235,15 @@ export default function OnboardingScreen13({ navigation, route }: any) {
         // verify-iap-receipt が subscription_status を更新する
         // purchaseListenerが成功を検知したらiapVerifiedRef.currentがtrueになる
 
-        // 購入完了を待つ（最大30秒、500msごとにチェック）
+        // 購入完了を待つ（最大30秒、エクスポネンシャルバックオフ）
         // iapVerifiedRef.currentがtrueになったら即座に終了
+        // iapErrorRef.currentがtrueになったら即中断
         let attempts = 0;
-        const maxAttempts = 60; // 500ms x 60 = 30秒
+        const maxAttempts = 20;
         let subscriptionActivated = false;
+
+        // iapErrorRefをリセット（リトライ時のため）
+        iapErrorRef.current = false;
 
         const checkSubscription = async (): Promise<boolean> => {
           // purchaseListenerが成功を検知していたら即座にtrue
@@ -254,8 +264,16 @@ export default function OnboardingScreen13({ navigation, route }: any) {
           return !error && data?.subscription_status === 'active';
         };
 
+        // 初回1秒遅延（レシート検証の処理時間を確保）
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 500)); // 500msに短縮
+          // IAPエラーが発生していたら即中断
+          if (iapErrorRef.current) {
+            if (__DEV__) console.log('[Screen13] iapErrorRef is true - aborting poll');
+            break;
+          }
+
           const isActive = await checkSubscription();
           if (isActive) {
             if (__DEV__) console.log('[Screen13] Subscription activated!');
@@ -263,6 +281,10 @@ export default function OnboardingScreen13({ navigation, route }: any) {
             break;
           }
           attempts++;
+
+          // エクスポネンシャルバックオフ（1s → 1.5s → 2s → 2.5s → 3s...最大3s）
+          const delay = Math.min(1000 + attempts * 500, 3000);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
 
         if (!subscriptionActivated) {
@@ -326,12 +348,12 @@ export default function OnboardingScreen13({ navigation, route }: any) {
       // Step 2: データソースを確定（stateよりもroute.paramsを優先、なければstate）
       const bookToCommit = route.params?.selectedBook || selectedBook;
       const deadlineToCommit = route.params?.deadline || deadline;
-      const pledgeToCommit = route.params?.pledgeAmount || pledgeAmount;
+      const pledgeToCommit = route.params?.pledgeAmount ?? pledgeAmount;
       const currencyToCommit = route.params?.currency || currency;
       const targetPagesToCommit = route.params?.targetPages || pageCount || 100;
 
       // コミットメント作成（bookToCommitがある場合のみ）
-      if (!bookToCommit || !deadlineToCommit || !pledgeToCommit) {
+      if (!bookToCommit || !deadlineToCommit || (pledgeToCommit === null || pledgeToCommit === undefined)) {
         captureError(new Error('Missing commitment data'), {
           location: 'OnboardingScreen13.handleSubscribe',
           extra: { hasBook: !!bookToCommit, hasDeadline: !!deadlineToCommit, hasPledge: !!pledgeToCommit },

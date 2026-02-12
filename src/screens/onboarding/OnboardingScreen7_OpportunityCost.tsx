@@ -52,7 +52,7 @@ const getCurrencySymbol = (currency: Currency): string => {
 type BurnPhase = 'intro' | 'reveal' | 'counting' | 'burning' | 'complete';
 
 // Default values for data integrity
-const DEFAULT_PLEDGE_AMOUNT = 3000;
+const DEFAULT_PLEDGE_AMOUNT = 0;
 const DEFAULT_CURRENCY: Currency = 'JPY';
 const DEFAULT_TSUNDOKU_COUNT = 5;
 const HOURS_PER_UNREAD_BOOK = 2;
@@ -77,7 +77,7 @@ export default function OnboardingScreen7({ navigation, route }: any) {
       const params = route.params || {};
 
       // First try route.params
-      let loadedPledgeAmount = typeof params.pledgeAmount === 'number' && params.pledgeAmount > 0
+      let loadedPledgeAmount = typeof params.pledgeAmount === 'number'
         ? params.pledgeAmount
         : null;
       let loadedCurrency = params.currency as Currency || null;
@@ -86,7 +86,7 @@ export default function OnboardingScreen7({ navigation, route }: any) {
         : null;
 
       // If not in route.params, try AsyncStorage (OAuth flow)
-      if (!loadedPledgeAmount || !loadedTsundokuCount) {
+      if (loadedPledgeAmount === null || !loadedTsundokuCount) {
         try {
           const onboardingDataStr = await AsyncStorage.getItem('onboardingData');
           if (onboardingDataStr) {
@@ -97,9 +97,8 @@ export default function OnboardingScreen7({ navigation, route }: any) {
               captureError(parseError, { location: 'OnboardingScreen7.loadData.JSON.parse' });
               // Continue with defaults
             }
-            if (!loadedPledgeAmount && typeof onboardingData.pledgeAmount === 'number') {
-              loadedPledgeAmount = onboardingData.pledgeAmount;
-            }
+            // pledgeAmountは常に0にリセット（Screen5削除済み、古いキャッシュに3000が残る可能性）
+            loadedPledgeAmount = 0;
             if (!loadedCurrency && onboardingData.currency) {
               loadedCurrency = onboardingData.currency as Currency;
             }
@@ -113,15 +112,20 @@ export default function OnboardingScreen7({ navigation, route }: any) {
       }
 
       // Apply loaded values or defaults
-      setPledgeAmount(loadedPledgeAmount || DEFAULT_PLEDGE_AMOUNT);
+      setPledgeAmount(loadedPledgeAmount ?? DEFAULT_PLEDGE_AMOUNT);
       setCurrency(loadedCurrency || DEFAULT_CURRENCY);
-      setTsundokuCount(loadedTsundokuCount || DEFAULT_TSUNDOKU_COUNT);
+      setTsundokuCount(loadedTsundokuCount ?? DEFAULT_TSUNDOKU_COUNT);
       setDataLoaded(true);
     };
 
     loadData();
   }, [route.params]);
-  const [countUpComplete, setCountUpComplete] = useState([false, false, false]);
+  // moneyAtRisk が 0 の場合、最初のカウントアップはスキップ（完了済みとして初期化）
+  const [countUpComplete, setCountUpComplete] = useState([
+    pledgeAmount === 0, // Row 1 (Money at Risk) - スキップ if 0
+    false,              // Row 2 (Hours Wasted)
+    false,              // Row 3 (Books Unfinished)
+  ]);
   const { showToast } = useOnboardingAtmosphere();
   const burnProgress = useSharedValue(0);
   const cardOpacity = useSharedValue(1);
@@ -261,47 +265,51 @@ export default function OnboardingScreen7({ navigation, route }: any) {
               </Text>
             </Animated.View>
 
-            {/* Row 1: Money at Risk - First to appear */}
-            <Animated.View
-              entering={FadeInUp.delay(0).duration(400)}
-              style={styles.lossRow}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="cash-outline" size={28} color={ACT_THEMES.act2.orbColors[1]} />
-              </View>
-              <View style={styles.rowContent}>
-                <Animated.Text style={[styles.rowLabel, labelAnimatedStyle]}>
-                  {i18n.t('onboarding.screen7_money_at_risk')}
-                </Animated.Text>
-                <View style={styles.valueContainer}>
-                  {burnPhase === 'burning' ? (
-                    <BurningText
-                      text={`${currencySymbol}${opportunityCosts.moneyAtRisk.toLocaleString()}`}
-                      fontSize={40}
-                      triggerBurn={true}
-                      delay={0}
-                      duration={900}
-                    />
-                  ) : (
-                    <CountUpText
-                      value={opportunityCosts.moneyAtRisk}
-                      prefix={currencySymbol}
-                      duration={COUNT_UP_DURATION}
-                      delay={COUNT_UP_DELAY_BASE}
-                      fontSize={40}
-                      active={isCountingOrBurning}
-                      onComplete={() => handleCountUpComplete(0)}
-                    />
-                  )}
-                </View>
-              </View>
-            </Animated.View>
+            {/* Row 1: Money at Risk - Hidden when pledgeAmount is 0 */}
+            {opportunityCosts.moneyAtRisk > 0 && (
+              <>
+                <Animated.View
+                  entering={FadeInUp.delay(0).duration(400)}
+                  style={styles.lossRow}
+                >
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="cash-outline" size={28} color={ACT_THEMES.act2.orbColors[1]} />
+                  </View>
+                  <View style={styles.rowContent}>
+                    <Animated.Text style={[styles.rowLabel, labelAnimatedStyle]}>
+                      {i18n.t('onboarding.screen7_money_at_risk')}
+                    </Animated.Text>
+                    <View style={styles.valueContainer}>
+                      {burnPhase === 'burning' ? (
+                        <BurningText
+                          text={`${currencySymbol}${opportunityCosts.moneyAtRisk.toLocaleString()}`}
+                          fontSize={40}
+                          triggerBurn={true}
+                          delay={0}
+                          duration={900}
+                        />
+                      ) : (
+                        <CountUpText
+                          value={opportunityCosts.moneyAtRisk}
+                          prefix={currencySymbol}
+                          duration={COUNT_UP_DURATION}
+                          delay={COUNT_UP_DELAY_BASE}
+                          fontSize={40}
+                          active={isCountingOrBurning}
+                          onComplete={() => handleCountUpComplete(0)}
+                        />
+                      )}
+                    </View>
+                  </View>
+                </Animated.View>
 
-            {/* Divider */}
-            <Animated.View
-              entering={FadeIn.delay(ROW_REVEAL_DELAY).duration(300)}
-              style={styles.divider}
-            />
+                {/* Divider */}
+                <Animated.View
+                  entering={FadeIn.delay(ROW_REVEAL_DELAY).duration(300)}
+                  style={styles.divider}
+                />
+              </>
+            )}
 
             {/* Row 2: Time Wasted - 200ms delay */}
             <Animated.View

@@ -14,14 +14,14 @@ const getFEATURES = () => [
     descriptionKey: 'onboarding.screen9_feature1_desc',
   },
   {
-    id: 'penalty',
-    icon: 'flame-outline',
+    id: 'tracking',
+    icon: 'stats-chart-outline',
     titleKey: 'onboarding.screen9_feature2_title',
     descriptionKey: 'onboarding.screen9_feature2_desc',
   },
   {
-    id: 'donation',
-    icon: 'heart-outline',
+    id: 'accountability',
+    icon: 'shield-checkmark-outline',
     titleKey: 'onboarding.screen9_feature3_title',
     descriptionKey: 'onboarding.screen9_feature3_desc',
   },

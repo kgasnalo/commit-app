@@ -1314,3 +1314,60 @@ Each task is atomic, role-specific, and has a clear definition of done.
 - `grep "fontWeight.*'300'" src/` → TacticalText.tsx の条件式のみ（正当）
 - `grep "fontWeight.*'200'" src/` → 残存ゼロ
 - `npx tsc --noEmit` → 型エラーなし
+
+---
+
+## 🟢 Phase 9: Penalty Abolition & Auth Fixes (2026-02-11〜12)
+
+**背景:** Build #91 以降、ペナルティ（寄付）制度を廃止し、pledge_amount=0 を正規フローとして確立。同時に Apple Sign-In の nonce 未設定問題を修正。
+
+**ステータス: ✅ 完了（9.4 Web Portal改修を除く）**
+
+---
+
+### 9.1 Apple Sign-In nonce 修正 ✅
+
+- **根本原因:** `expo-apple-authentication` の `signInAsync()` で `nonce` を渡していなかった。Supabase の `signInWithIdToken` は nonce 検証を要求するため認証失敗。
+- **修正内容:**
+  - `expo-crypto` で SHA256 ハッシュ化した nonce を生成
+  - `signInAsync({ nonce: hashedNonce })` → `signInWithIdToken({ nonce: rawNonce })` のペアで渡す
+  - Apple認証シートの dismiss 待機を 500ms → 1500ms に延長（iPad互換モード対応）
+  - エラーコード分類を整理: `ERR_REQUEST_UNKNOWN` / `ERR_NOT_HANDLED_REQUEST` をキャンセルからエラーカテゴリに移動
+- **対象ファイル:**
+  - `src/screens/onboarding/OnboardingScreen6_Account.tsx`
+  - `src/screens/AuthScreen.tsx`
+
+### 9.2 ペナルティ制度廃止 & pledge_amount=0 対応 ✅
+
+- **修正内容:**
+  - **Screen5 削除:** `OnboardingScreen5_Penalty.tsx` を完全削除
+  - **CardRegistrationBanner 削除:** `src/components/CardRegistrationBanner.tsx` を削除
+  - **Screen0:** 寄付情報（donation_info）を削除
+  - **Screen4 → Screen6:** `pledgeAmount: 0` をハードコードで渡す
+  - **Screen7:** `DEFAULT_PLEDGE_AMOUNT` を 3000 → 0 に変更。`moneyAtRisk === 0` の場合は金額行を非表示
+  - **Screen9:** 「覚悟/貢献」→「記録/習慣化」にフィーチャー内容を変更
+  - **Screen12/13:** AsyncStorage からの読み込み時に `setPledgeAmount(0)` で古いキャッシュをリセット
+  - **Screen13 バリデーション修正:** `pledgeAmount || ...` (falsy check) → `pledgeAmount ?? ...` (nullish check) に変更。`pledge_amount=0` が false 扱いされる問題を解消
+  - **Edge Function:** `validateAmount(0)` → `{ valid: true }` を即返し。MISSING_FIELDS チェックで `!pledge_amount` → `pledge_amount === undefined || pledge_amount === null` に修正
+  - **SettingsScreen:** Billing ページリンク（`openBillingPage`）を削除
+  - **i18n:** 3言語（ja/en/ko）すべてで寄付・ペナルティ関連文言を更新
+- **検証:** pledge_amount=0 は subscription フローに一切影響なし（独立アーキテクチャ確認済み）
+
+### 9.3 IAP ポーリング改善 ✅
+
+- **修正内容（Screen13）:**
+  - `iapErrorRef` 追加: purchaseListener エラー時にフラグを立て、ポーリングを即中断
+  - 固定 500ms ポーリング → エクスポネンシャルバックオフ（1s → 1.5s → 2s → ... 最大 3s）
+  - 初回 1 秒遅延追加（レシート検証の処理時間を確保）
+
+### 9.4 Web Portal 全面改修（寄付制度廃止対応）🔴 未着手
+
+- **背景:** 寄付制度廃止に伴い、Web Portal の法的ページ・Stripe連携の見直しが必要
+- **修正対象:**
+  1. **カード登録ページ (`/billing`):** 廃止または用途変更
+  2. **特商法ページ (`/tokushoho`):** 寄付/課金がなくなるので内容改訂
+  3. **プライバシーポリシー:** カード情報取扱いの記述を更新
+  4. **利用規約:** ペナルティ条項の削除/更新
+  5. **Admin Dashboard:** 寄付関連の管理UI削除/更新
+  6. **Stripe連携:** 不要な場合は削除、必要な場合は用途を明確化
+- **DoD:** 寄付/ペナルティ関連のUI・文言・法的ページが全て更新済み

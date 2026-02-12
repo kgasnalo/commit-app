@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityInd
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { GoogleSignin, statusCodes, isErrorWithCode } from '@react-native-google-signin/google-signin';
 import OnboardingLayout from '../../components/onboarding/OnboardingLayout';
 import PrimaryButton from '../../components/onboarding/PrimaryButton';
@@ -355,12 +356,23 @@ export default function OnboardingScreen6({ navigation, route }: any) {
         username,
       }));
 
+      // nonce生成（Supabase Apple認証に必須）— セキュアなランダムバイト使用
+      const randomBytes = await Crypto.getRandomBytesAsync(32);
+      const rawNonce = Array.from(randomBytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
       // ネイティブのApple認証ダイアログを表示
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
 
       // identityTokenが取得できなかった場合はエラー
@@ -369,12 +381,13 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       }
 
       // Apple認証シートのdismissを待つ（iPad互換モードでのUI衝突を回避）
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Supabaseに IDトークンを渡してセッションを確立
+      // Supabaseに IDトークンを渡してセッションを確立（rawNonceを渡す）
       const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
         token: credential.identityToken,
+        nonce: rawNonce,
       });
 
       if (sessionError) {
@@ -408,18 +421,18 @@ export default function OnboardingScreen6({ navigation, route }: any) {
       // ユーザーがキャンセルした場合は何もしない
       if (
         errorCode === 'ERR_REQUEST_CANCELED' ||
-        errorCode === 'ERR_CANCELED' ||
-        errorCode === 'ERR_REQUEST_UNKNOWN' ||
-        errorCode === 'ERR_NOT_HANDLED_REQUEST'
+        errorCode === 'ERR_CANCELED'
       ) {
-        if (__DEV__) console.log('[AppleSignIn] User cancelled or not handled:', errorCode);
+        if (__DEV__) console.log('[AppleSignIn] User cancelled:', errorCode);
         setOauthLoading(null);
         return;
       }
       // iPad互換モードやポップオーバー表示で発生しうるエラー
       if (
         errorCode === 'ERR_INVALID_RESPONSE' ||
-        errorCode === 'ERR_NOT_AVAILABLE'
+        errorCode === 'ERR_NOT_AVAILABLE' ||
+        errorCode === 'ERR_REQUEST_UNKNOWN' ||
+        errorCode === 'ERR_NOT_HANDLED_REQUEST'
       ) {
         if (__DEV__) console.log('[AppleSignIn] Apple auth error:', errorCode, errorMessage);
         Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_unavailable'));

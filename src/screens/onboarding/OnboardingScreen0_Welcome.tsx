@@ -81,14 +81,6 @@ export default function OnboardingScreen0({ navigation }: any) {
 
         {/* Footer with Slide to Begin */}
         <View style={styles.footer}>
-          {/* Donation Info */}
-          <View style={styles.donationInfo}>
-            <Ionicons name="heart" size={20} color={colors.accent.primary} />
-            <Text style={styles.donationText}>
-              {i18n.t('welcome.donation_info')}
-            </Text>
-          </View>
-
           <SlideToBegin
             onComplete={handleSlideComplete}
             disabled={!introComplete}
@@ -198,21 +190,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text.primary,
     letterSpacing: 4,
-  },
-  donationInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.background.secondary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  donationText: {
-    flex: 1,
-    fontSize: typography.fontSize.caption,
-    color: colors.text.secondary,
-    lineHeight: typography.fontSize.caption * 1.6,
   },
   footer: {
     paddingHorizontal: spacing.lg,

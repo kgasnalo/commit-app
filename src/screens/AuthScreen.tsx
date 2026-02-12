@@ -7,6 +7,7 @@ import { ENV_INIT_ERROR, SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_WEB_CLIENT_ID, 
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { GoogleSignin, statusCodes, isErrorWithCode } from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { captureError } from '../utils/errorLogger';
 
 /**
@@ -294,12 +295,23 @@ export default function AuthScreen({ navigation }: any) {
       // Auth画面からのログインであることを識別するフラグを設定
       await AsyncStorage.setItem('loginSource', 'auth_screen');
 
+      // nonce生成（Supabase Apple認証に必須）— セキュアなランダムバイト使用
+      const randomBytes = await Crypto.getRandomBytesAsync(32);
+      const rawNonce = Array.from(randomBytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
       // ネイティブのApple認証ダイアログを表示
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
 
       // identityTokenが取得できなかった場合はエラー
@@ -308,12 +320,13 @@ export default function AuthScreen({ navigation }: any) {
       }
 
       // Apple認証シートのdismissを待つ（iPad互換モードでのUI衝突を回避）
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Supabaseに IDトークンを渡してセッションを確立
+      // Supabaseに IDトークンを渡してセッションを確立（rawNonceを渡す）
       const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
         token: credential.identityToken,
+        nonce: rawNonce,
       });
 
       if (sessionError) {
@@ -345,9 +358,7 @@ export default function AuthScreen({ navigation }: any) {
       // ユーザーがキャンセルした場合は何もしない
       if (
         errorCode === 'ERR_REQUEST_CANCELED' ||
-        errorCode === 'ERR_CANCELED' ||
-        errorCode === 'ERR_REQUEST_UNKNOWN' ||
-        errorCode === 'ERR_NOT_HANDLED_REQUEST'
+        errorCode === 'ERR_CANCELED'
       ) {
         if (__DEV__) console.log('[AuthScreen] User cancelled Apple Sign-In:', errorCode);
         return;
@@ -355,7 +366,9 @@ export default function AuthScreen({ navigation }: any) {
       // iPad互換モードやポップオーバー表示で発生しうるエラー
       if (
         errorCode === 'ERR_INVALID_RESPONSE' ||
-        errorCode === 'ERR_NOT_AVAILABLE'
+        errorCode === 'ERR_NOT_AVAILABLE' ||
+        errorCode === 'ERR_REQUEST_UNKNOWN' ||
+        errorCode === 'ERR_NOT_HANDLED_REQUEST'
       ) {
         if (__DEV__) console.log('[AuthScreen] Apple Sign-In error:', errorCode, errorMessage);
         Alert.alert(i18n.t('common.error'), i18n.t('errors.apple_signin_unavailable'));

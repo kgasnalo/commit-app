@@ -44,7 +44,7 @@ export default function OnboardingScreen12({ navigation, route }: any) {
             bookData = parsed.selectedBook;
             setSelectedBook(bookData);
             setDeadline(parsed.deadline);
-            setPledgeAmount(parsed.pledgeAmount);
+            setPledgeAmount(0); // Screen5削除済み、古いキャッシュ対策
             setCurrency(parsed.currency || 'JPY');
           } else {
             console.warn('No onboarding data found in AsyncStorage in Screen12');

@@ -224,43 +224,6 @@ export default function SettingsScreen({ navigation }: any) {
     }
   };
 
-  // Open billing page with OTT for seamless authentication
-  const openBillingPage = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // Not logged in - open login page
-        await WebBrowser.openBrowserAsync('https://commit-app-web.vercel.app/login');
-        return;
-      }
-
-      // Generate OTT token
-      const { data, error } = await invokeFunctionWithRetry<{
-        success: boolean;
-        token?: string;
-        error?: string;
-      }>('generate-auth-token', {});
-
-      if (error || !data?.token) {
-        // Fallback to normal URL if OTT generation fails
-        captureError(error || new Error('No token received'), {
-          location: 'SettingsScreen.openBillingPage',
-        });
-        await WebBrowser.openBrowserAsync('https://commit-app-web.vercel.app/billing');
-        return;
-      }
-
-      // Open with OTT for seamless SSO
-      await WebBrowser.openBrowserAsync(
-        `https://commit-app-web.vercel.app/auth/auto?token=${data.token}&redirect=/billing`
-      );
-    } catch (err) {
-      captureError(err, { location: 'SettingsScreen.openBillingPage' });
-      // Fallback to normal URL
-      await WebBrowser.openBrowserAsync('https://commit-app-web.vercel.app/billing');
-    }
-  };
-
   // 購入復元ハンドラ（iOS のみ）
   const handleRestorePurchases = async () => {
     if (!isIAPAvailable()) return;
